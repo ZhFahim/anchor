@@ -10,10 +10,33 @@ import 'package:anchor/core/widgets/quill_preview.dart';
 import 'notes_controller.dart';
 import '../../auth/presentation/auth_controller.dart';
 
-class NotesListScreen extends ConsumerWidget {
+class NotesListScreen extends ConsumerStatefulWidget {
   const NotesListScreen({super.key});
 
-  void _showLogoutDialog(BuildContext context, WidgetRef ref) {
+  @override
+  ConsumerState<NotesListScreen> createState() => _NotesListScreenState();
+}
+
+class _NotesListScreenState extends ConsumerState<NotesListScreen> {
+  final _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Sync controller with provider state if it exists
+    final currentQuery = ref.read(searchQueryProvider);
+    if (currentQuery.isNotEmpty) {
+      _searchController.text = currentQuery;
+    }
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _showLogoutDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (ctx) => ConfirmDialog(
@@ -32,8 +55,9 @@ class NotesListScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final notesAsync = ref.watch(notesControllerProvider);
+    final searchQuery = ref.watch(searchQueryProvider);
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -51,6 +75,7 @@ class NotesListScreen extends ConsumerWidget {
           ),
         ),
         child: CustomScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           slivers: [
             SliverAppBar(
               backgroundColor: theme.colorScheme.surface.withValues(alpha: 0.8),
@@ -84,7 +109,7 @@ class NotesListScreen extends ConsumerWidget {
                 ),
                 IconButton(
                   icon: const Icon(LucideIcons.logOut),
-                  onPressed: () => _showLogoutDialog(context, ref),
+                  onPressed: () => _showLogoutDialog(context),
                   tooltip: 'Log Out',
                 ),
               ],
@@ -93,6 +118,7 @@ class NotesListScreen extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               sliver: SliverToBoxAdapter(
                 child: SearchBar(
+                  controller: _searchController,
                   elevation: WidgetStateProperty.all(0),
                   backgroundColor: WidgetStateProperty.all(
                     Theme.of(context).colorScheme.surfaceContainerHighest
@@ -100,21 +126,55 @@ class NotesListScreen extends ConsumerWidget {
                   ),
                   hintText: 'Search your thoughts...',
                   leading: const Icon(LucideIcons.search),
+                  trailing: [
+                    if (searchQuery.isNotEmpty)
+                      IconButton(
+                        icon: const Icon(LucideIcons.x),
+                        onPressed: () {
+                          _searchController.clear();
+                          ref.read(searchQueryProvider.notifier).set('');
+                        },
+                      ),
+                  ],
                   shape: WidgetStateProperty.all(
                     RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
                   onChanged: (value) {
-                    // Implement search filter locally or provider family
-                    // For now basic layout
+                    ref.read(searchQueryProvider.notifier).set(value);
                   },
                 ),
               ),
             ),
             notesAsync.when(
               data: (notes) {
-                if (notes.isEmpty) {
+                final filteredNotes = notes.where((note) {
+                  if (searchQuery.isEmpty) return true;
+                  final q = searchQuery.toLowerCase();
+                  return note.title.toLowerCase().contains(q) ||
+                      (note.content?.toLowerCase().contains(q) ?? false);
+                }).toList();
+
+                if (filteredNotes.isEmpty) {
+                  if (searchQuery.isNotEmpty) {
+                    return const SliverFillRemaining(
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              LucideIcons.search,
+                              size: 64,
+                              color: Colors.grey,
+                            ),
+                            SizedBox(height: 16),
+                            Text('No matching notes found'),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
                   return const SliverFillRemaining(
                     child: Center(
                       child: Column(
@@ -138,9 +198,9 @@ class NotesListScreen extends ConsumerWidget {
                     crossAxisCount: 2,
                     mainAxisSpacing: 16,
                     crossAxisSpacing: 16,
-                    childCount: notes.length,
+                    childCount: filteredNotes.length,
                     itemBuilder: (context, index) {
-                      return NoteCard(note: notes[index]);
+                      return NoteCard(note: filteredNotes[index]);
                     },
                   ),
                 );
@@ -180,7 +240,7 @@ class NoteCard extends StatelessWidget {
               ? Color(int.parse(note.color!))
               : Theme.of(context).cardTheme.color,
           child: InkWell(
-            onTap: () => context.go('/note/${note.id}'),
+            onTap: () => context.go('/note/${note.id}', extra: note),
             borderRadius: BorderRadius.circular(24),
             child: Padding(
               padding: const EdgeInsets.all(20),

@@ -22,6 +22,22 @@ final notesControllerProvider =
     );
 
 typedef _$NotesController = AutoDisposeStreamNotifier<List<Note>>;
+String _$searchQueryHash() => r'99ff8829a2de8a3351c2c5a931316b171cd121ee';
+
+/// See also [SearchQuery].
+@ProviderFor(SearchQuery)
+final searchQueryProvider =
+    AutoDisposeNotifierProvider<SearchQuery, String>.internal(
+      SearchQuery.new,
+      name: r'searchQueryProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$searchQueryHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+typedef _$SearchQuery = AutoDisposeNotifier<String>;
 String _$trashControllerHash() => r'bab1244e95ae3358ac5aba5bfaa843258f6987a3';
 
 /// See also [TrashController].

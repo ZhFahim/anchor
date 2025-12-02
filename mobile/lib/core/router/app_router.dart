@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
+import '../../features/notes/domain/note.dart';
 import '../../features/notes/presentation/notes_list_screen.dart';
 import '../../features/notes/presentation/note_edit_screen.dart';
 import '../../features/notes/presentation/trash_screen.dart';
@@ -75,7 +76,8 @@ GoRouter goRouter(Ref ref) {
             path: AppRoutes.noteEdit,
             builder: (context, state) {
               final id = state.pathParameters['id'];
-              return NoteEditScreen(noteId: id);
+              final note = state.extra as Note?;
+              return NoteEditScreen(noteId: id, note: note);
             },
           ),
           GoRoute(

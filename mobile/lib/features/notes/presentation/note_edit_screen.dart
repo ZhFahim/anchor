@@ -10,7 +10,8 @@ import '../data/repository/notes_repository.dart';
 
 class NoteEditScreen extends ConsumerStatefulWidget {
   final String? noteId;
-  const NoteEditScreen({super.key, this.noteId});
+  final Note? note;
+  const NoteEditScreen({super.key, this.noteId, this.note});
 
   @override
   ConsumerState<NoteEditScreen> createState() => _NoteEditScreenState();
@@ -29,7 +30,15 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
   @override
   void initState() {
     super.initState();
-    if (widget.noteId != null) {
+    if (widget.note != null) {
+      // Note passed directly
+      _isNew = false;
+      _existingNote = widget.note;
+      _titleController.text = widget.note!.title;
+      _initialContent = widget.note!.content;
+      _isLoaded = true;
+    } else if (widget.noteId != null) {
+      // Fallback: fetch from repository if only ID is provided
       _isNew = false;
       _loadNote();
     } else {

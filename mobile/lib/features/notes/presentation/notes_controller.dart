@@ -23,6 +23,16 @@ class NotesController extends _$NotesController {
 }
 
 @riverpod
+class SearchQuery extends _$SearchQuery {
+  @override
+  String build() => '';
+
+  void set(String query) {
+    state = query;
+  }
+}
+
+@riverpod
 class TrashController extends _$TrashController {
   @override
   Stream<List<Note>> build() {
