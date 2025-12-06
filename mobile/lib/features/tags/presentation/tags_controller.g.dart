@@ -164,7 +164,7 @@ final availableTagsProvider = AutoDisposeFutureProvider<List<Tag>>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef AvailableTagsRef = AutoDisposeFutureProviderRef<List<Tag>>;
-String _$tagsControllerHash() => r'5af80d67b112d5ee572547e56ea10ce4041ffee8';
+String _$tagsControllerHash() => r'300f71be67b03b3d441a9660d56aaf447b33ce2b';
 
 /// See also [TagsController].
 @ProviderFor(TagsController)

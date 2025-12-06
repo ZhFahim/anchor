@@ -482,9 +482,9 @@ class _AppDrawerState extends ConsumerState<AppDrawer>
       child: _buildNavItem(
         icon: LucideIcons.settings,
         label: 'Settings',
-        enabled: false,
         onTap: () {
-          // TODO: Navigate to settings
+          Navigator.pop(context);
+          context.push('/settings');
         },
         theme: theme,
       ),

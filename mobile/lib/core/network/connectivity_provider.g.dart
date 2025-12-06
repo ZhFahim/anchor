@@ -43,7 +43,7 @@ final isOnlineProvider = AutoDisposeFutureProvider<bool>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef IsOnlineRef = AutoDisposeFutureProviderRef<bool>;
-String _$syncManagerHash() => r'c274809846c7f877706d14713587845468287f0b';
+String _$syncManagerHash() => r'c5b5b44c4a3d7acc00506ff14067edb34f040ba4';
 
 /// See also [SyncManager].
 @ProviderFor(SyncManager)

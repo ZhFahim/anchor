@@ -7,6 +7,17 @@ import '../../tags/presentation/tags_controller.dart';
 
 part 'notes_controller.g.dart';
 
+/// Provider to track syncing state globally
+@riverpod
+class SyncingState extends _$SyncingState {
+  @override
+  bool build() => false;
+
+  void setSyncing(bool syncing) {
+    state = syncing;
+  }
+}
+
 @riverpod
 class NotesController extends _$NotesController {
   @override
@@ -21,6 +32,8 @@ class NotesController extends _$NotesController {
   }
 
   Future<void> sync() async {
+    final syncingNotifier = ref.read(syncingStateProvider.notifier);
+    syncingNotifier.setSyncing(true);
     try {
       // Sync tags FIRST to ensure tag IDs are resolved
       await ref.read(tagsRepositoryProvider).sync();
@@ -28,6 +41,8 @@ class NotesController extends _$NotesController {
       await ref.read(notesRepositoryProvider).sync();
     } catch (e) {
       debugPrint('Sync error: $e');
+    } finally {
+      syncingNotifier.setSyncing(false);
     }
   }
 

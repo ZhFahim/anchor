@@ -8,4 +8,5 @@ class AppRoutes {
   static const noteNew = 'note/new';
   static const noteEdit = 'note/:id';
   static const trash = 'trash';
+  static const settings = 'settings';
 }

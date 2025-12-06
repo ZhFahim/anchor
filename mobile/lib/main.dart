@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_quill/flutter_quill.dart';
+import 'core/app_initializer.dart';
 import 'core/network/connectivity_provider.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
-import 'package:flutter_quill/flutter_quill.dart';
+import 'core/theme/theme_mode_provider.dart';
 
-void main() {
+void main() async {
+  await initializeApp();
   runApp(const ProviderScope(child: AnchorApp()));
 }
 
@@ -15,6 +18,7 @@ class AnchorApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(goRouterProvider);
+    final themeMode = ref.watch(themeModeControllerProvider);
 
     // Initialize sync manager to listen for connectivity changes
     ref.watch(syncManagerProvider);
@@ -23,7 +27,7 @@ class AnchorApp extends ConsumerWidget {
       title: 'Anchor',
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
+      themeMode: themeMode,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
       localizationsDelegates: const [FlutterQuillLocalizations.delegate],

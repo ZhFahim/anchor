@@ -10,6 +10,7 @@ import '../../features/notes/presentation/note_edit_screen.dart';
 import '../../features/notes/presentation/trash_screen.dart';
 import '../presentation/splash_screen.dart';
 import '../presentation/server_config_screen.dart';
+import '../presentation/settings_screen.dart';
 import '../../features/auth/presentation/auth_controller.dart';
 import '../network/server_config_provider.dart';
 import 'app_routes.dart';
@@ -83,6 +84,10 @@ GoRouter goRouter(Ref ref) {
           GoRoute(
             path: AppRoutes.trash,
             builder: (context, state) => const TrashScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.settings,
+            builder: (context, state) => const SettingsScreen(),
           ),
         ],
       ),

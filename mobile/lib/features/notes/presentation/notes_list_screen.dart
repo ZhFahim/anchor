@@ -5,14 +5,12 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:anchor/features/notes/domain/note.dart';
-import 'package:anchor/core/widgets/confirm_dialog.dart';
 import 'package:anchor/core/widgets/quill_preview.dart';
 import 'package:anchor/core/widgets/app_drawer.dart';
 import 'package:anchor/features/tags/presentation/tags_controller.dart';
 import 'package:anchor/features/tags/presentation/widgets/tag_chip.dart';
 import 'package:anchor/features/tags/domain/tag.dart';
 import 'notes_controller.dart';
-import '../../auth/presentation/auth_controller.dart';
 
 class NotesListScreen extends ConsumerStatefulWidget {
   const NotesListScreen({super.key});
@@ -40,22 +38,9 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
     super.dispose();
   }
 
-  void _showLogoutDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => ConfirmDialog(
-        icon: LucideIcons.logOut,
-        title: 'Log Out',
-        message:
-            'Are you sure you want to log out? Your unsynced notes will stay safe on this device.',
-        cancelText: 'Stay',
-        confirmText: 'Log Out',
-        onConfirm: () async {
-          await ref.read(authControllerProvider.notifier).logout();
-          // Navigation is handled by the router redirect logic
-        },
-      ),
-    );
+  Future<void> _onRefresh() async {
+    await ref.read(notesControllerProvider.notifier).sync();
+    ref.read(tagsControllerProvider.notifier).sync();
   }
 
   @override
@@ -64,6 +49,7 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
     final searchQuery = ref.watch(searchQueryProvider);
     final selectedTagId = ref.watch(selectedTagFilterProvider);
     final tagsAsync = ref.watch(tagsControllerProvider);
+    final isSyncing = ref.watch(syncingStateProvider);
     final theme = Theme.of(context);
 
     // Get selected tag
@@ -89,163 +75,170 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
             ],
           ),
         ),
-        child: CustomScrollView(
-          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          slivers: [
-            SliverAppBar(
-              backgroundColor: theme.colorScheme.surface.withValues(alpha: 0.8),
-              floating: true,
-              pinned: true,
-              expandedHeight: 80,
-              scrolledUnderElevation: 0,
-              leading: Builder(
-                builder: (context) => IconButton(
-                  icon: const Icon(LucideIcons.menu),
-                  onPressed: () => Scaffold.of(context).openDrawer(),
-                  tooltip: 'Menu',
+        child: RefreshIndicator(
+          onRefresh: _onRefresh,
+          displacement: 20,
+          edgeOffset: 120, // Position below the pinned app bar
+          color: theme.colorScheme.primary,
+          child: CustomScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              SliverAppBar(
+                backgroundColor: theme.colorScheme.surface.withValues(
+                  alpha: 0.8,
                 ),
+                floating: true,
+                pinned: true,
+                expandedHeight: 80,
+                scrolledUnderElevation: 0,
+                leading: Builder(
+                  builder: (context) => IconButton(
+                    icon: const Icon(LucideIcons.menu),
+                    onPressed: () => Scaffold.of(context).openDrawer(),
+                    tooltip: 'Menu',
+                  ),
+                ),
+                flexibleSpace: FlexibleSpaceBar(
+                  titlePadding: const EdgeInsets.only(left: 56, bottom: 16),
+                  title: Text(
+                    'Anchor',
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ),
+                actions: [
+                  // Only show sync indicator when actively syncing
+                  if (isSyncing)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 16),
+                      child: Center(child: _SyncIndicator(theme: theme)),
+                    ),
+                ],
               ),
-              flexibleSpace: FlexibleSpaceBar(
-                titlePadding: const EdgeInsets.only(left: 56, bottom: 16),
-                title: Text(
-                  'Anchor',
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    color: theme.colorScheme.primary,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: -0.5,
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                sliver: SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SearchBar(
+                        controller: _searchController,
+                        elevation: WidgetStateProperty.all(0),
+                        backgroundColor: WidgetStateProperty.all(
+                          Theme.of(context).colorScheme.surfaceContainerHighest
+                              .withValues(alpha: 0.5),
+                        ),
+                        hintText: 'Search your thoughts...',
+                        leading: const Icon(LucideIcons.search),
+                        trailing: [
+                          if (searchQuery.isNotEmpty)
+                            IconButton(
+                              icon: const Icon(LucideIcons.x),
+                              onPressed: () {
+                                _searchController.clear();
+                                ref.read(searchQueryProvider.notifier).set('');
+                              },
+                            ),
+                        ],
+                        shape: WidgetStateProperty.all(
+                          RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        onChanged: (value) {
+                          ref.read(searchQueryProvider.notifier).set(value);
+                        },
+                      ),
+                      // Tag filter indicator
+                      if (selectedTag != null) ...[
+                        const SizedBox(height: 12),
+                        _TagFilterChip(
+                          tag: selectedTag,
+                          onClear: () {
+                            ref
+                                .read(selectedTagFilterProvider.notifier)
+                                .clear();
+                          },
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ),
-              actions: [
-                IconButton(
-                  icon: const Icon(LucideIcons.refreshCw),
-                  onPressed: () {
-                    ref.read(notesControllerProvider.notifier).sync();
-                    ref.read(tagsControllerProvider.notifier).sync();
-                  },
-                  tooltip: 'Sync',
-                ),
-                IconButton(
-                  icon: const Icon(LucideIcons.logOut),
-                  onPressed: () => _showLogoutDialog(context),
-                  tooltip: 'Log Out',
-                ),
-              ],
-            ),
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              sliver: SliverToBoxAdapter(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SearchBar(
-                      controller: _searchController,
-                      elevation: WidgetStateProperty.all(0),
-                      backgroundColor: WidgetStateProperty.all(
-                        Theme.of(context).colorScheme.surfaceContainerHighest
-                            .withValues(alpha: 0.5),
-                      ),
-                      hintText: 'Search your thoughts...',
-                      leading: const Icon(LucideIcons.search),
-                      trailing: [
-                        if (searchQuery.isNotEmpty)
-                          IconButton(
-                            icon: const Icon(LucideIcons.x),
-                            onPressed: () {
-                              _searchController.clear();
-                              ref.read(searchQueryProvider.notifier).set('');
-                            },
-                          ),
-                      ],
-                      shape: WidgetStateProperty.all(
-                        RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      onChanged: (value) {
-                        ref.read(searchQueryProvider.notifier).set(value);
-                      },
-                    ),
-                    // Tag filter indicator
-                    if (selectedTag != null) ...[
-                      const SizedBox(height: 12),
-                      _TagFilterChip(
-                        tag: selectedTag,
-                        onClear: () {
-                          ref.read(selectedTagFilterProvider.notifier).clear();
-                        },
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-            notesAsync.when(
-              data: (notes) {
-                final filteredNotes = notes.where((note) {
-                  if (searchQuery.isEmpty) return true;
-                  final q = searchQuery.toLowerCase();
-                  return note.title.toLowerCase().contains(q) ||
-                      (note.content?.toLowerCase().contains(q) ?? false);
-                }).toList();
+              notesAsync.when(
+                data: (notes) {
+                  final filteredNotes = notes.where((note) {
+                    if (searchQuery.isEmpty) return true;
+                    final q = searchQuery.toLowerCase();
+                    return note.title.toLowerCase().contains(q) ||
+                        (note.content?.toLowerCase().contains(q) ?? false);
+                  }).toList();
 
-                if (filteredNotes.isEmpty) {
-                  if (searchQuery.isNotEmpty) {
+                  if (filteredNotes.isEmpty) {
+                    if (searchQuery.isNotEmpty) {
+                      return const SliverFillRemaining(
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                LucideIcons.search,
+                                size: 64,
+                                color: Colors.grey,
+                              ),
+                              SizedBox(height: 16),
+                              Text('No matching notes found'),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
                     return const SliverFillRemaining(
                       child: Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
-                              LucideIcons.search,
+                              LucideIcons.sparkles,
                               size: 64,
                               color: Colors.grey,
                             ),
                             SizedBox(height: 16),
-                            Text('No matching notes found'),
+                            Text('Capture your ideas here'),
                           ],
                         ),
                       ),
                     );
                   }
-                  return const SliverFillRemaining(
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            LucideIcons.sparkles,
-                            size: 64,
-                            color: Colors.grey,
-                          ),
-                          SizedBox(height: 16),
-                          Text('Capture your ideas here'),
-                        ],
-                      ),
+                  return SliverPadding(
+                    padding: const EdgeInsets.all(16),
+                    sliver: SliverMasonryGrid.count(
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 16,
+                      crossAxisSpacing: 16,
+                      childCount: filteredNotes.length,
+                      itemBuilder: (context, index) {
+                        return NoteCard(note: filteredNotes[index]);
+                      },
                     ),
                   );
-                }
-                return SliverPadding(
-                  padding: const EdgeInsets.all(16),
-                  sliver: SliverMasonryGrid.count(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 16,
-                    crossAxisSpacing: 16,
-                    childCount: filteredNotes.length,
-                    itemBuilder: (context, index) {
-                      return NoteCard(note: filteredNotes[index]);
-                    },
-                  ),
-                );
-              },
-              loading: () => const SliverFillRemaining(
-                child: Center(child: CircularProgressIndicator()),
+                },
+                loading: () => const SliverFillRemaining(
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+                error: (err, stack) => SliverFillRemaining(
+                  child: Center(child: Text('Error: $err')),
+                ),
               ),
-              error: (err, stack) => SliverFillRemaining(
-                child: Center(child: Text('Error: $err')),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -443,6 +436,53 @@ class _TagFilterChip extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SyncIndicator extends StatefulWidget {
+  final ThemeData theme;
+
+  const _SyncIndicator({required this.theme});
+
+  @override
+  State<_SyncIndicator> createState() => _SyncIndicatorState();
+}
+
+class _SyncIndicatorState extends State<_SyncIndicator>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _rotation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat();
+
+    _rotation = Tween<double>(
+      begin: 0,
+      end: 1,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.linear));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return RotationTransition(
+      turns: _rotation,
+      child: Icon(
+        LucideIcons.refreshCw,
+        size: 20,
+        color: widget.theme.colorScheme.onSurface,
       ),
     );
   }
