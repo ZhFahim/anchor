@@ -7,56 +7,58 @@ import {
   Param,
   Delete,
   UseGuards,
-  Request,
 } from '@nestjs/common';
 import { TagsService } from './tags.service';
 import { CreateTagDto } from './dto/create-tag.dto';
 import { UpdateTagDto } from './dto/update-tag.dto';
 import { SyncTagsDto } from './dto/sync-tags.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Controller('api/tags')
 @UseGuards(JwtAuthGuard)
 export class TagsController {
-  constructor(private readonly tagsService: TagsService) {}
+  constructor(private readonly tagsService: TagsService) { }
 
   @Post()
-  create(@Request() req, @Body() createTagDto: CreateTagDto) {
-    return this.tagsService.create(req.user.userId, createTagDto);
+  create(
+    @CurrentUser('id') userId: string,
+    @Body() createTagDto: CreateTagDto,
+  ) {
+    return this.tagsService.create(userId, createTagDto);
   }
 
   @Post('sync')
-  sync(@Request() req, @Body() syncDto: SyncTagsDto) {
-    return this.tagsService.sync(req.user.userId, syncDto);
+  sync(@CurrentUser('id') userId: string, @Body() syncDto: SyncTagsDto) {
+    return this.tagsService.sync(userId, syncDto);
   }
 
   @Get()
-  findAll(@Request() req) {
-    return this.tagsService.findAll(req.user.userId);
+  findAll(@CurrentUser('id') userId: string) {
+    return this.tagsService.findAll(userId);
   }
 
   @Get(':id')
-  findOne(@Request() req, @Param('id') id: string) {
-    return this.tagsService.findOne(req.user.userId, id);
+  findOne(@CurrentUser('id') userId: string, @Param('id') id: string) {
+    return this.tagsService.findOne(userId, id);
   }
 
   @Get(':id/notes')
-  getNotesByTag(@Request() req, @Param('id') id: string) {
-    return this.tagsService.getNotesByTag(req.user.userId, id);
+  getNotesByTag(@CurrentUser('id') userId: string, @Param('id') id: string) {
+    return this.tagsService.getNotesByTag(userId, id);
   }
 
   @Patch(':id')
   update(
-    @Request() req,
+    @CurrentUser('id') userId: string,
     @Param('id') id: string,
     @Body() updateTagDto: UpdateTagDto,
   ) {
-    return this.tagsService.update(req.user.userId, id, updateTagDto);
+    return this.tagsService.update(userId, id, updateTagDto);
   }
 
   @Delete(':id')
-  remove(@Request() req, @Param('id') id: string) {
-    return this.tagsService.remove(req.user.userId, id);
+  remove(@CurrentUser('id') userId: string, @Param('id') id: string) {
+    return this.tagsService.remove(userId, id);
   }
 }
-

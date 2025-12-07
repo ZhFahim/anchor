@@ -7,7 +7,6 @@ import {
   Param,
   Delete,
   UseGuards,
-  Request,
   Query,
 } from '@nestjs/common';
 import { NotesService } from './notes.service';
@@ -15,62 +14,69 @@ import { CreateNoteDto } from './dto/create-note.dto';
 import { UpdateNoteDto } from './dto/update-note.dto';
 import { SyncNotesDto } from './dto/sync-notes.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Controller('api/notes')
 @UseGuards(JwtAuthGuard)
 export class NotesController {
-  constructor(private readonly notesService: NotesService) { }
+  constructor(private readonly notesService: NotesService) {}
 
   @Post()
-  create(@Request() req, @Body() createNoteDto: CreateNoteDto) {
-    return this.notesService.create(req.user.userId, createNoteDto);
+  create(
+    @CurrentUser('id') userId: string,
+    @Body() createNoteDto: CreateNoteDto,
+  ) {
+    return this.notesService.create(userId, createNoteDto);
   }
 
   @Post('sync')
-  sync(@Request() req, @Body() syncDto: SyncNotesDto) {
-    return this.notesService.sync(req.user.userId, syncDto);
+  sync(@CurrentUser('id') userId: string, @Body() syncDto: SyncNotesDto) {
+    return this.notesService.sync(userId, syncDto);
   }
 
   @Get()
   findAll(
-    @Request() req,
+    @CurrentUser('id') userId: string,
     @Query('search') search?: string,
     @Query('tagId') tagId?: string,
   ) {
-    return this.notesService.findAll(req.user.userId, search, tagId);
+    return this.notesService.findAll(userId, search, tagId);
   }
 
   @Get('trash')
-  findTrashed(@Request() req) {
-    return this.notesService.findTrashed(req.user.userId);
+  findTrashed(@CurrentUser('id') userId: string) {
+    return this.notesService.findTrashed(userId);
   }
 
   @Get(':id')
-  findOne(@Request() req, @Param('id') id: string) {
-    return this.notesService.findOne(req.user.userId, id);
+  findOne(@CurrentUser('id') userId: string, @Param('id') id: string) {
+    return this.notesService.findOne(userId, id);
   }
 
   @Patch(':id')
   update(
-    @Request() req,
+    @CurrentUser('id') userId: string,
     @Param('id') id: string,
     @Body() updateNoteDto: UpdateNoteDto,
   ) {
-    return this.notesService.update(req.user.userId, id, updateNoteDto);
+    return this.notesService.update(userId, id, updateNoteDto);
   }
 
   @Patch(':id/restore')
-  restore(@Request() req, @Param('id') id: string) {
-    return this.notesService.restore(req.user.userId, id);
+  restore(@CurrentUser('id') userId: string, @Param('id') id: string) {
+    return this.notesService.restore(userId, id);
   }
 
   @Delete(':id')
-  remove(@Request() req, @Param('id') id: string) {
-    return this.notesService.remove(req.user.userId, id);
+  remove(@CurrentUser('id') userId: string, @Param('id') id: string) {
+    return this.notesService.remove(userId, id);
   }
 
   @Delete(':id/permanent')
-  permanentDelete(@Request() req, @Param('id') id: string) {
-    return this.notesService.permanentDelete(req.user.userId, id);
+  permanentDelete(
+    @CurrentUser('id') userId: string,
+    @Param('id') id: string,
+  ) {
+    return this.notesService.permanentDelete(userId, id);
   }
 }
