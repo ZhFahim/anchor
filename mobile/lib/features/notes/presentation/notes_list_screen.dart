@@ -10,6 +10,7 @@ import 'package:anchor/core/widgets/app_drawer.dart';
 import 'package:anchor/features/tags/presentation/tags_controller.dart';
 import 'package:anchor/features/tags/presentation/widgets/tag_chip.dart';
 import 'package:anchor/features/tags/domain/tag.dart';
+import 'package:anchor/features/notes/presentation/widgets/note_background.dart';
 import 'notes_controller.dart';
 
 class NotesListScreen extends ConsumerStatefulWidget {
@@ -263,108 +264,122 @@ class NoteCard extends ConsumerWidget {
     final tagsAsync = ref.watch(tagsControllerProvider);
     final theme = Theme.of(context);
 
+    // Resolve card color for the Material/Card background
+    // If note.background is null, we use the card theme color or surface
+    final cardColor = note.background != null
+        ? NoteBackground.resolveColor(context, note.background)
+        : theme.cardTheme.color ?? theme.colorScheme.surface;
+
     return Hero(
       tag: 'note_${note.id}',
       child: Material(
         color: Colors.transparent,
         child: Card(
-          color: note.color != null
-              ? Color(int.parse(note.color!))
-              : theme.cardTheme.color,
+          color: cardColor,
+          clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: () => context.go('/note/${note.id}', extra: note),
-            borderRadius: BorderRadius.circular(24),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          note.title,
-                          style: theme.textTheme.titleLarge,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (note.isPinned) ...[
-                        const SizedBox(width: 8),
-                        Icon(
-                          LucideIcons.pin,
-                          size: 16,
-                          color: theme.colorScheme.primary,
-                        ),
-                      ],
-                    ],
-                  ),
-                  if (note.content != null && note.content!.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    QuillPreview(content: note.content, maxLines: 6),
-                  ],
-                  if (note.tagIds.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    tagsAsync.when(
-                      data: (allTags) {
-                        final noteTags = allTags
-                            .where((t) => note.tagIds.contains(t.id))
-                            .take(3)
-                            .toList();
-                        final remaining = note.tagIds.length - noteTags.length;
-
-                        return Wrap(
-                          spacing: 4,
-                          runSpacing: 4,
-                          children: [
-                            ...noteTags.map(
-                              (tag) => TagChip(tag: tag, selected: false),
-                            ),
-                            if (remaining > 0)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.surfaceContainerHighest,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  '+$remaining',
-                                  style: Theme.of(context).textTheme.labelSmall,
-                                ),
-                              ),
-                          ],
-                        );
-                      },
-                      loading: () => const SizedBox.shrink(),
-                      error: (_, __) => const SizedBox.shrink(),
-                    ),
-                  ],
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      if (note.updatedAt != null)
-                        Text(
-                          DateFormat.MMMd().format(note.updatedAt!),
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.hintColor,
+            borderRadius: BorderRadius.circular(
+              12,
+            ), // Match default Card radius usually
+            child: NoteBackground(
+              styleId: note.background,
+              borderRadius: BorderRadius.zero,
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            note.title,
+                            style: theme.textTheme.titleLarge,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                      if (!note.isSynced)
-                        Icon(
-                          LucideIcons.cloudOff,
-                          size: 16,
-                          color: theme.hintColor,
-                        ),
+                        if (note.isPinned) ...[
+                          const SizedBox(width: 8),
+                          Icon(
+                            LucideIcons.pin,
+                            size: 16,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ],
+                      ],
+                    ),
+                    if (note.content != null && note.content!.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      QuillPreview(content: note.content, maxLines: 6),
                     ],
-                  ),
-                ],
+                    if (note.tagIds.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      tagsAsync.when(
+                        data: (allTags) {
+                          final noteTags = allTags
+                              .where((t) => note.tagIds.contains(t.id))
+                              .take(3)
+                              .toList();
+                          final remaining =
+                              note.tagIds.length - noteTags.length;
+
+                          return Wrap(
+                            spacing: 4,
+                            runSpacing: 4,
+                            children: [
+                              ...noteTags.map(
+                                (tag) => TagChip(tag: tag, selected: false),
+                              ),
+                              if (remaining > 0)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.surfaceContainerHighest,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    '+$remaining',
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.labelSmall,
+                                  ),
+                                ),
+                            ],
+                          );
+                        },
+                        loading: () => const SizedBox.shrink(),
+                        error: (_, __) => const SizedBox.shrink(),
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        if (note.updatedAt != null)
+                          Text(
+                            DateFormat.MMMd().format(note.updatedAt!),
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.hintColor,
+                            ),
+                          ),
+                        if (!note.isSynced)
+                          Icon(
+                            LucideIcons.cloudOff,
+                            size: 16,
+                            color: theme.hintColor,
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

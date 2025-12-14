@@ -25,7 +25,7 @@ export class CreateNoteDto {
 
   @IsString()
   @IsOptional()
-  color?: string;
+  background?: string;
 
   @IsArray()
   @IsString({ each: true })

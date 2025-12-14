@@ -60,10 +60,13 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const payload = { email: user.email, sub: user.id };
+    // Remove password from user object
+    const { password: _, ...userWithoutPassword } = user;
+
+    const payload = { email: userWithoutPassword.email, sub: userWithoutPassword.id };
     return {
       access_token: this.jwtService.sign(payload),
-      user,
+      user: userWithoutPassword,
     };
   }
 }

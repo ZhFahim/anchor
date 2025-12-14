@@ -36,7 +36,7 @@ export class SyncNoteDto {
 
   @IsString()
   @IsOptional()
-  color?: string;
+  background?: string;
 
   @IsEnum(SyncNoteState)
   @IsOptional()

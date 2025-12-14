@@ -237,7 +237,7 @@ class NotesRepository {
     sync();
   }
 
-  // Bulletproof bi-directional sync
+  // Bi-directional sync with server
   Future<void> sync() async {
     try {
       // 1. Get last sync timestamp
@@ -258,7 +258,7 @@ class NotesRepository {
           'content': note.content,
           'isPinned': note.isPinned,
           'isArchived': note.isArchived,
-          'color': note.color,
+          'background': note.background,
           'state': note.state.name,
           'tagIds': note.tagIds,
           'updatedAt': note.updatedAt?.toIso8601String(),
@@ -322,7 +322,7 @@ class NotesRepository {
                   content: drift.Value(serverNote.content),
                   isPinned: drift.Value(serverNote.isPinned),
                   isArchived: drift.Value(serverNote.isArchived),
-                  color: drift.Value(serverNote.color),
+                  background: drift.Value(serverNote.background),
                   state: drift.Value(serverNote.state.name),
                   updatedAt: drift.Value(serverNote.updatedAt),
                   isSynced: const drift.Value(true),
@@ -378,7 +378,7 @@ class NotesRepository {
       content: row.content,
       isPinned: row.isPinned,
       isArchived: row.isArchived,
-      color: row.color,
+      background: row.background,
       state: domain.NoteState.fromString(row.state),
       updatedAt: row.updatedAt,
       tagIds: tagIds,
@@ -393,7 +393,7 @@ class NotesRepository {
       content: note.content,
       isPinned: note.isPinned,
       isArchived: note.isArchived,
-      color: note.color,
+      background: note.background,
       state: note.state.name,
       updatedAt: note.updatedAt,
       isSynced: isSynced,

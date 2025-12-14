@@ -57,6 +57,7 @@ dependencies:
   flutter_staggered_grid_view: ^0.7.0
   uuid: ^4.4.0
   intl: ^0.20.2
+  freezed_annotation: ^2.4.4
   json_annotation: ^4.9.0
   equatable: ^2.0.5
   gap: ^3.0.1
@@ -81,6 +82,7 @@ dev_dependencies:
   build_runner: ^2.4.9
   riverpod_generator: ^2.4.0
   drift_dev: ^2.24.0
+  freezed: ^2.5.7
   json_serializable: ^6.8.0
 
 # For information on the generic Dart part of this file, see the

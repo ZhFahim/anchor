@@ -67,10 +67,12 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
     ),
     defaultValue: const Constant(false),
   );
-  static const VerificationMeta _colorMeta = const VerificationMeta('color');
+  static const VerificationMeta _backgroundMeta = const VerificationMeta(
+    'background',
+  );
   @override
-  late final GeneratedColumn<String> color = GeneratedColumn<String>(
-    'color',
+  late final GeneratedColumn<String> background = GeneratedColumn<String>(
+    'background',
     aliasedName,
     true,
     type: DriftSqlType.string,
@@ -119,7 +121,7 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
     content,
     isPinned,
     isArchived,
-    color,
+    background,
     state,
     updatedAt,
     isSynced,
@@ -167,10 +169,10 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
         isArchived.isAcceptableOrUnknown(data['is_archived']!, _isArchivedMeta),
       );
     }
-    if (data.containsKey('color')) {
+    if (data.containsKey('background')) {
       context.handle(
-        _colorMeta,
-        color.isAcceptableOrUnknown(data['color']!, _colorMeta),
+        _backgroundMeta,
+        background.isAcceptableOrUnknown(data['background']!, _backgroundMeta),
       );
     }
     if (data.containsKey('state')) {
@@ -220,9 +222,9 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
         DriftSqlType.bool,
         data['${effectivePrefix}is_archived'],
       )!,
-      color: attachedDatabase.typeMapping.read(
+      background: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}color'],
+        data['${effectivePrefix}background'],
       ),
       state: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -251,7 +253,7 @@ class Note extends DataClass implements Insertable<Note> {
   final String? content;
   final bool isPinned;
   final bool isArchived;
-  final String? color;
+  final String? background;
   final String state;
   final DateTime? updatedAt;
   final bool isSynced;
@@ -261,7 +263,7 @@ class Note extends DataClass implements Insertable<Note> {
     this.content,
     required this.isPinned,
     required this.isArchived,
-    this.color,
+    this.background,
     required this.state,
     this.updatedAt,
     required this.isSynced,
@@ -276,8 +278,8 @@ class Note extends DataClass implements Insertable<Note> {
     }
     map['is_pinned'] = Variable<bool>(isPinned);
     map['is_archived'] = Variable<bool>(isArchived);
-    if (!nullToAbsent || color != null) {
-      map['color'] = Variable<String>(color);
+    if (!nullToAbsent || background != null) {
+      map['background'] = Variable<String>(background);
     }
     map['state'] = Variable<String>(state);
     if (!nullToAbsent || updatedAt != null) {
@@ -296,9 +298,9 @@ class Note extends DataClass implements Insertable<Note> {
           : Value(content),
       isPinned: Value(isPinned),
       isArchived: Value(isArchived),
-      color: color == null && nullToAbsent
+      background: background == null && nullToAbsent
           ? const Value.absent()
-          : Value(color),
+          : Value(background),
       state: Value(state),
       updatedAt: updatedAt == null && nullToAbsent
           ? const Value.absent()
@@ -318,7 +320,7 @@ class Note extends DataClass implements Insertable<Note> {
       content: serializer.fromJson<String?>(json['content']),
       isPinned: serializer.fromJson<bool>(json['isPinned']),
       isArchived: serializer.fromJson<bool>(json['isArchived']),
-      color: serializer.fromJson<String?>(json['color']),
+      background: serializer.fromJson<String?>(json['background']),
       state: serializer.fromJson<String>(json['state']),
       updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
       isSynced: serializer.fromJson<bool>(json['isSynced']),
@@ -333,7 +335,7 @@ class Note extends DataClass implements Insertable<Note> {
       'content': serializer.toJson<String?>(content),
       'isPinned': serializer.toJson<bool>(isPinned),
       'isArchived': serializer.toJson<bool>(isArchived),
-      'color': serializer.toJson<String?>(color),
+      'background': serializer.toJson<String?>(background),
       'state': serializer.toJson<String>(state),
       'updatedAt': serializer.toJson<DateTime?>(updatedAt),
       'isSynced': serializer.toJson<bool>(isSynced),
@@ -346,7 +348,7 @@ class Note extends DataClass implements Insertable<Note> {
     Value<String?> content = const Value.absent(),
     bool? isPinned,
     bool? isArchived,
-    Value<String?> color = const Value.absent(),
+    Value<String?> background = const Value.absent(),
     String? state,
     Value<DateTime?> updatedAt = const Value.absent(),
     bool? isSynced,
@@ -356,7 +358,7 @@ class Note extends DataClass implements Insertable<Note> {
     content: content.present ? content.value : this.content,
     isPinned: isPinned ?? this.isPinned,
     isArchived: isArchived ?? this.isArchived,
-    color: color.present ? color.value : this.color,
+    background: background.present ? background.value : this.background,
     state: state ?? this.state,
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
     isSynced: isSynced ?? this.isSynced,
@@ -370,7 +372,9 @@ class Note extends DataClass implements Insertable<Note> {
       isArchived: data.isArchived.present
           ? data.isArchived.value
           : this.isArchived,
-      color: data.color.present ? data.color.value : this.color,
+      background: data.background.present
+          ? data.background.value
+          : this.background,
       state: data.state.present ? data.state.value : this.state,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       isSynced: data.isSynced.present ? data.isSynced.value : this.isSynced,
@@ -385,7 +389,7 @@ class Note extends DataClass implements Insertable<Note> {
           ..write('content: $content, ')
           ..write('isPinned: $isPinned, ')
           ..write('isArchived: $isArchived, ')
-          ..write('color: $color, ')
+          ..write('background: $background, ')
           ..write('state: $state, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('isSynced: $isSynced')
@@ -400,7 +404,7 @@ class Note extends DataClass implements Insertable<Note> {
     content,
     isPinned,
     isArchived,
-    color,
+    background,
     state,
     updatedAt,
     isSynced,
@@ -414,7 +418,7 @@ class Note extends DataClass implements Insertable<Note> {
           other.content == this.content &&
           other.isPinned == this.isPinned &&
           other.isArchived == this.isArchived &&
-          other.color == this.color &&
+          other.background == this.background &&
           other.state == this.state &&
           other.updatedAt == this.updatedAt &&
           other.isSynced == this.isSynced);
@@ -426,7 +430,7 @@ class NotesCompanion extends UpdateCompanion<Note> {
   final Value<String?> content;
   final Value<bool> isPinned;
   final Value<bool> isArchived;
-  final Value<String?> color;
+  final Value<String?> background;
   final Value<String> state;
   final Value<DateTime?> updatedAt;
   final Value<bool> isSynced;
@@ -437,7 +441,7 @@ class NotesCompanion extends UpdateCompanion<Note> {
     this.content = const Value.absent(),
     this.isPinned = const Value.absent(),
     this.isArchived = const Value.absent(),
-    this.color = const Value.absent(),
+    this.background = const Value.absent(),
     this.state = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.isSynced = const Value.absent(),
@@ -449,7 +453,7 @@ class NotesCompanion extends UpdateCompanion<Note> {
     this.content = const Value.absent(),
     this.isPinned = const Value.absent(),
     this.isArchived = const Value.absent(),
-    this.color = const Value.absent(),
+    this.background = const Value.absent(),
     this.state = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.isSynced = const Value.absent(),
@@ -462,7 +466,7 @@ class NotesCompanion extends UpdateCompanion<Note> {
     Expression<String>? content,
     Expression<bool>? isPinned,
     Expression<bool>? isArchived,
-    Expression<String>? color,
+    Expression<String>? background,
     Expression<String>? state,
     Expression<DateTime>? updatedAt,
     Expression<bool>? isSynced,
@@ -474,7 +478,7 @@ class NotesCompanion extends UpdateCompanion<Note> {
       if (content != null) 'content': content,
       if (isPinned != null) 'is_pinned': isPinned,
       if (isArchived != null) 'is_archived': isArchived,
-      if (color != null) 'color': color,
+      if (background != null) 'background': background,
       if (state != null) 'state': state,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (isSynced != null) 'is_synced': isSynced,
@@ -488,7 +492,7 @@ class NotesCompanion extends UpdateCompanion<Note> {
     Value<String?>? content,
     Value<bool>? isPinned,
     Value<bool>? isArchived,
-    Value<String?>? color,
+    Value<String?>? background,
     Value<String>? state,
     Value<DateTime?>? updatedAt,
     Value<bool>? isSynced,
@@ -500,7 +504,7 @@ class NotesCompanion extends UpdateCompanion<Note> {
       content: content ?? this.content,
       isPinned: isPinned ?? this.isPinned,
       isArchived: isArchived ?? this.isArchived,
-      color: color ?? this.color,
+      background: background ?? this.background,
       state: state ?? this.state,
       updatedAt: updatedAt ?? this.updatedAt,
       isSynced: isSynced ?? this.isSynced,
@@ -526,8 +530,8 @@ class NotesCompanion extends UpdateCompanion<Note> {
     if (isArchived.present) {
       map['is_archived'] = Variable<bool>(isArchived.value);
     }
-    if (color.present) {
-      map['color'] = Variable<String>(color.value);
+    if (background.present) {
+      map['background'] = Variable<String>(background.value);
     }
     if (state.present) {
       map['state'] = Variable<String>(state.value);
@@ -552,7 +556,7 @@ class NotesCompanion extends UpdateCompanion<Note> {
           ..write('content: $content, ')
           ..write('isPinned: $isPinned, ')
           ..write('isArchived: $isArchived, ')
-          ..write('color: $color, ')
+          ..write('background: $background, ')
           ..write('state: $state, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('isSynced: $isSynced, ')
@@ -1198,7 +1202,7 @@ typedef $$NotesTableCreateCompanionBuilder =
       Value<String?> content,
       Value<bool> isPinned,
       Value<bool> isArchived,
-      Value<String?> color,
+      Value<String?> background,
       Value<String> state,
       Value<DateTime?> updatedAt,
       Value<bool> isSynced,
@@ -1211,7 +1215,7 @@ typedef $$NotesTableUpdateCompanionBuilder =
       Value<String?> content,
       Value<bool> isPinned,
       Value<bool> isArchived,
-      Value<String?> color,
+      Value<String?> background,
       Value<String> state,
       Value<DateTime?> updatedAt,
       Value<bool> isSynced,
@@ -1251,8 +1255,8 @@ class $$NotesTableFilterComposer extends Composer<_$AppDatabase, $NotesTable> {
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get color => $composableBuilder(
-    column: $table.color,
+  ColumnFilters<String> get background => $composableBuilder(
+    column: $table.background,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1306,8 +1310,8 @@ class $$NotesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get color => $composableBuilder(
-    column: $table.color,
+  ColumnOrderings<String> get background => $composableBuilder(
+    column: $table.background,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -1353,8 +1357,10 @@ class $$NotesTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get color =>
-      $composableBuilder(column: $table.color, builder: (column) => column);
+  GeneratedColumn<String> get background => $composableBuilder(
+    column: $table.background,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get state =>
       $composableBuilder(column: $table.state, builder: (column) => column);
@@ -1399,7 +1405,7 @@ class $$NotesTableTableManager
                 Value<String?> content = const Value.absent(),
                 Value<bool> isPinned = const Value.absent(),
                 Value<bool> isArchived = const Value.absent(),
-                Value<String?> color = const Value.absent(),
+                Value<String?> background = const Value.absent(),
                 Value<String> state = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
                 Value<bool> isSynced = const Value.absent(),
@@ -1410,7 +1416,7 @@ class $$NotesTableTableManager
                 content: content,
                 isPinned: isPinned,
                 isArchived: isArchived,
-                color: color,
+                background: background,
                 state: state,
                 updatedAt: updatedAt,
                 isSynced: isSynced,
@@ -1423,7 +1429,7 @@ class $$NotesTableTableManager
                 Value<String?> content = const Value.absent(),
                 Value<bool> isPinned = const Value.absent(),
                 Value<bool> isArchived = const Value.absent(),
-                Value<String?> color = const Value.absent(),
+                Value<String?> background = const Value.absent(),
                 Value<String> state = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
                 Value<bool> isSynced = const Value.absent(),
@@ -1434,7 +1440,7 @@ class $$NotesTableTableManager
                 content: content,
                 isPinned: isPinned,
                 isArchived: isArchived,
-                color: color,
+                background: background,
                 state: state,
                 updatedAt: updatedAt,
                 isSynced: isSynced,

@@ -6,13 +6,13 @@ part of 'note.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-Note _$NoteFromJson(Map<String, dynamic> json) => Note(
+_$NoteImpl _$$NoteImplFromJson(Map<String, dynamic> json) => _$NoteImpl(
   id: json['id'] as String,
   title: json['title'] as String,
   content: json['content'] as String?,
   isPinned: json['isPinned'] as bool? ?? false,
   isArchived: json['isArchived'] as bool? ?? false,
-  color: json['color'] as String?,
+  background: json['background'] as String?,
   state:
       $enumDecodeNullable(_$NoteStateEnumMap, json['state']) ??
       NoteState.active,
@@ -24,17 +24,18 @@ Note _$NoteFromJson(Map<String, dynamic> json) => Note(
       const [],
 );
 
-Map<String, dynamic> _$NoteToJson(Note instance) => <String, dynamic>{
-  'id': instance.id,
-  'title': instance.title,
-  'content': instance.content,
-  'isPinned': instance.isPinned,
-  'isArchived': instance.isArchived,
-  'color': instance.color,
-  'state': _$NoteStateEnumMap[instance.state]!,
-  'updatedAt': instance.updatedAt?.toIso8601String(),
-  'tagIds': instance.tagIds,
-};
+Map<String, dynamic> _$$NoteImplToJson(_$NoteImpl instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'title': instance.title,
+      'content': instance.content,
+      'isPinned': instance.isPinned,
+      'isArchived': instance.isArchived,
+      'background': instance.background,
+      'state': _$NoteStateEnumMap[instance.state]!,
+      'updatedAt': instance.updatedAt?.toIso8601String(),
+      'tagIds': instance.tagIds,
+    };
 
 const _$NoteStateEnumMap = {
   NoteState.active: 'active',

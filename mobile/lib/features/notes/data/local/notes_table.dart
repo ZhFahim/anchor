@@ -6,7 +6,7 @@ class Notes extends Table {
   TextColumn get content => text().nullable()();
   BoolColumn get isPinned => boolean().withDefault(const Constant(false))();
   BoolColumn get isArchived => boolean().withDefault(const Constant(false))();
-  TextColumn get color => text().nullable()();
+  TextColumn get background => text().nullable()();
   // State: 'active', 'trashed', 'deleted'
   TextColumn get state => text().withDefault(const Constant('active'))();
   DateTimeColumn get updatedAt => dateTime().nullable()();

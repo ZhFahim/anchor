@@ -212,7 +212,7 @@ export class NotesService {
             content: change.content,
             isPinned: change.isPinned ?? false,
             isArchived: change.isArchived ?? false,
-            color: change.color,
+            background: change.background,
             state: (change.state as NoteState) ?? NoteState.active,
             userId,
             tags: change.tagIds?.length
@@ -237,7 +237,7 @@ export class NotesService {
               content: change.content,
               isPinned: change.isPinned,
               isArchived: change.isArchived,
-              color: change.color,
+              background: change.background,
               state: (change.state as NoteState) ?? existingNote.state,
               // Update tags if provided
               ...(change.tagIds !== undefined && {

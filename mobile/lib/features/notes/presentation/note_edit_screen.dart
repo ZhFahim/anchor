@@ -7,6 +7,8 @@ import 'package:anchor/features/notes/domain/note.dart';
 import 'package:anchor/core/widgets/confirm_dialog.dart';
 import 'package:anchor/core/widgets/rich_text_editor.dart';
 import 'package:anchor/features/tags/presentation/widgets/tag_selector.dart';
+import 'package:anchor/features/notes/presentation/widgets/note_background.dart';
+import 'package:anchor/features/notes/presentation/widgets/note_background_picker.dart';
 import '../data/repository/notes_repository.dart';
 
 class NoteEditScreen extends ConsumerStatefulWidget {
@@ -29,6 +31,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
   Note? _existingNote;
   String? _initialContent;
   List<String> _selectedTagIds = [];
+  String? _selectedBackground;
 
   @override
   void initState() {
@@ -41,6 +44,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
       _titleController.text = widget.note!.title;
       _initialContent = widget.note!.content;
       _selectedTagIds = List.from(widget.note!.tagIds);
+      _selectedBackground = widget.note!.background;
       _isLoaded = true;
     } else if (widget.noteId != null) {
       // Fallback: fetch from repository if only ID is provided
@@ -71,28 +75,34 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
         _titleController.text = note.title;
         _initialContent = note.content;
         _selectedTagIds = List.from(note.tagIds);
+        _selectedBackground = note.background;
         _isLoaded = true;
       });
     }
   }
 
   Future<void> _togglePinned() async {
-    final newPinned = !_isPinned;
     setState(() {
-      _isPinned = newPinned;
+      _isPinned = !_isPinned;
     });
+    await _saveNote();
+  }
 
-    // For new notes, just keep state; it will be persisted on save/create.
-    if (_isNew || _existingNote == null) return;
-
-    final updated = _existingNote!.copyWith(
-      isPinned: newPinned,
-      isSynced: false,
+  void _showColorPicker() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => NoteBackgroundPicker(
+        selectedColor: _selectedBackground,
+        onColorChanged: (color) {
+          setState(() {
+            _selectedBackground = color;
+          });
+          _saveNote();
+        },
+      ),
     );
-    // Update local copy immediately so subsequent saves/compares are correct.
-    _existingNote = updated;
-
-    await ref.read(notesRepositoryProvider).updateNote(updated);
   }
 
   @override
@@ -107,7 +117,12 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
     final content = editorState?.getContent() ?? '';
     final plainText = editorState?.getPlainText() ?? '';
 
-    if (title.isEmpty && plainText.isEmpty) return;
+    if (title.isEmpty &&
+        plainText.isEmpty &&
+        _selectedBackground == null &&
+        !_isPinned) {
+      return;
+    }
 
     final repository = ref.read(notesRepositoryProvider);
 
@@ -118,16 +133,24 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
         content: content,
         isPinned: _isPinned,
         tagIds: _selectedTagIds,
+        background: _selectedBackground,
         updatedAt: DateTime.now(),
         isSynced: false,
       );
       await repository.createNote(newNote);
+      if (mounted) {
+        setState(() {
+          _isNew = false;
+          _existingNote = newNote;
+        });
+      }
     } else if (_existingNote != null) {
       // Check if anything changed
       final tagsChanged = !_listEquals(_existingNote!.tagIds, _selectedTagIds);
       if (_existingNote!.title == title &&
           _existingNote!.content == content &&
           _existingNote!.isPinned == _isPinned &&
+          _existingNote!.background == _selectedBackground &&
           !tagsChanged) {
         return;
       }
@@ -137,9 +160,16 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
         content: content,
         isPinned: _isPinned,
         tagIds: _selectedTagIds,
+        background: _selectedBackground,
+        updatedAt: DateTime.now(),
         isSynced: false,
       );
       await repository.updateNote(updatedNote);
+      if (mounted) {
+        setState(() {
+          _existingNote = updatedNote;
+        });
+      }
     }
   }
 
@@ -190,122 +220,128 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
 
     return PopScope(
       onPopInvokedWithResult: (didPop, result) async {
-        if (didPop && !_isDeleted && _isEditing) {
+        if (didPop && !_isDeleted) {
           await _saveNote();
         }
       },
-      child: Scaffold(
-        backgroundColor: theme.colorScheme.surface,
-        appBar: AppBar(
+      child: NoteBackground(
+        styleId: _selectedBackground,
+        borderRadius: BorderRadius.zero,
+        child: Scaffold(
           backgroundColor: Colors.transparent,
-          leading: IconButton(
-            icon: const Icon(LucideIcons.chevronLeft),
-            onPressed: () => context.pop(),
-          ),
-          actions: [
-            IconButton(
-              icon: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Icon(
-                    LucideIcons.pin,
-                    color: _isPinned
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.onSurface,
-                  ),
-                  if (_isPinned)
-                    Positioned(
-                      right: -2,
-                      top: -2,
-                      child: Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.tertiary,
-                          shape: BoxShape.circle,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            leading: IconButton(
+              icon: const Icon(LucideIcons.chevronLeft),
+              onPressed: () => context.pop(),
+            ),
+            actions: [
+              IconButton(
+                icon: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Icon(
+                      LucideIcons.pin,
+                      color: _isPinned
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.onSurface,
+                    ),
+                    if (_isPinned)
+                      Positioned(
+                        right: -2,
+                        top: -2,
+                        child: Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.tertiary,
+                            shape: BoxShape.circle,
+                          ),
                         ),
                       ),
+                  ],
+                ),
+                onPressed: _isLoaded ? _togglePinned : null,
+                tooltip: _isPinned ? 'Unpin Note' : 'Pin Note',
+              ),
+              IconButton(
+                icon: const Icon(LucideIcons.palette),
+                onPressed: _showColorPicker,
+                tooltip: 'Change Background',
+              ),
+              IconButton(
+                icon: const Icon(LucideIcons.trash2),
+                onPressed: _deleteNote,
+                tooltip: 'Delete Note',
+              ),
+              const SizedBox(width: 8),
+            ],
+          ),
+          floatingActionButton: !_isEditing
+              ? FloatingActionButton(
+                  onPressed: _startEditing,
+                  tooltip: 'Edit Note',
+                  child: const Icon(LucideIcons.pencil),
+                )
+              : null,
+          body: Hero(
+            tag: 'note_${widget.noteId ?? 'new'}',
+            child: Material(
+              color: Colors.transparent,
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: TextField(
+                      controller: _titleController,
+                      readOnly: !_isEditing,
+                      style: theme.textTheme.displaySmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: _isEditing ? 'Title' : null,
+                        hintStyle: TextStyle(
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.3,
+                          ),
+                        ),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 16,
+                        ),
+                        filled: false,
+                      ),
+                      textCapitalization: TextCapitalization.sentences,
                     ),
+                  ),
+                  if (_isEditing || _selectedTagIds.isNotEmpty)
+                    TagSelector(
+                      selectedTagIds: _selectedTagIds,
+                      readOnly: !_isEditing,
+                      onTagsChanged: (tagIds) {
+                        setState(() {
+                          _selectedTagIds = tagIds;
+                        });
+                      },
+                    ),
+                  Expanded(
+                    child: _isLoaded
+                        ? RichTextEditor(
+                            key: _editorKey,
+                            initialContent: _initialContent,
+                            hintText: 'Start typing...',
+                            showToolbar: _isEditing,
+                            readOnly: !_isEditing,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 16,
+                            ),
+                          )
+                        : const Center(child: CircularProgressIndicator()),
+                  ),
                 ],
               ),
-              onPressed: _isLoaded ? _togglePinned : null,
-              tooltip: _isPinned ? 'Unpin Note' : 'Pin Note',
-            ),
-            IconButton(
-              icon: const Icon(LucideIcons.palette),
-              onPressed: () {}, // TODO: Implement color picker
-              tooltip: 'Change Color',
-            ),
-            IconButton(
-              icon: const Icon(LucideIcons.trash2),
-              onPressed: _deleteNote,
-              tooltip: 'Delete Note',
-            ),
-            const SizedBox(width: 8),
-          ],
-        ),
-        floatingActionButton: !_isEditing
-            ? FloatingActionButton(
-                onPressed: _startEditing,
-                tooltip: 'Edit Note',
-                child: const Icon(LucideIcons.pencil),
-              )
-            : null,
-        body: Hero(
-          tag: 'note_${widget.noteId ?? 'new'}',
-          child: Material(
-            color: Colors.transparent,
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: TextField(
-                    controller: _titleController,
-                    readOnly: !_isEditing,
-                    style: theme.textTheme.displaySmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: _isEditing ? 'Title' : null,
-                      hintStyle: TextStyle(
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.3,
-                        ),
-                      ),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                      filled: false,
-                    ),
-                    textCapitalization: TextCapitalization.sentences,
-                  ),
-                ),
-                if (_isEditing || _selectedTagIds.isNotEmpty)
-                  TagSelector(
-                    selectedTagIds: _selectedTagIds,
-                    readOnly: !_isEditing,
-                    onTagsChanged: (tagIds) {
-                      setState(() {
-                        _selectedTagIds = tagIds;
-                      });
-                    },
-                  ),
-                Expanded(
-                  child: _isLoaded
-                      ? RichTextEditor(
-                          key: _editorKey,
-                          initialContent: _initialContent,
-                          hintText: 'Start typing...',
-                          showToolbar: _isEditing,
-                          readOnly: !_isEditing,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 16,
-                          ),
-                        )
-                      : const Center(child: CircularProgressIndicator()),
-                ),
-              ],
             ),
           ),
         ),

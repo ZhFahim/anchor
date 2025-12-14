@@ -1,7 +1,8 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:json_annotation/json_annotation.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 
+part 'tag.freezed.dart';
 part 'tag.g.dart';
 
 /// Curated list of pleasant tag colors (standard hex format for cross-platform)
@@ -55,67 +56,35 @@ Color parseTagColor(String? hexColor, {Color fallback = Colors.grey}) {
   }
 }
 
-@JsonSerializable()
-class Tag {
-  final String id;
-  final String name;
-  final String? color;
-  final DateTime? updatedAt;
+@freezed
+abstract class Tag with _$Tag {
+  const Tag._();
 
-  // Note count from server (optional, not stored locally)
-  @JsonKey(name: '_count')
-  final TagCount? count;
-
-  // Local only
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  final bool isSynced;
-
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  final bool isDeleted;
-
-  Tag({
-    required this.id,
-    required this.name,
-    this.color,
-    this.updatedAt,
-    this.count,
-    this.isSynced = true,
-    this.isDeleted = false,
-  });
-
-  factory Tag.fromJson(Map<String, dynamic> json) => _$TagFromJson(json);
-  Map<String, dynamic> toJson() => _$TagToJson(this);
-
-  int get noteCount => count?.notes ?? 0;
-
-  Tag copyWith({
-    String? id,
-    String? name,
+  const factory Tag({
+    required String id,
+    required String name,
     String? color,
     DateTime? updatedAt,
-    TagCount? count,
-    bool? isSynced,
-    bool? isDeleted,
-  }) {
-    return Tag(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      color: color ?? this.color,
-      updatedAt: updatedAt ?? this.updatedAt,
-      count: count ?? this.count,
-      isSynced: isSynced ?? this.isSynced,
-      isDeleted: isDeleted ?? this.isDeleted,
-    );
-  }
+    // Note count from server (optional, not stored locally)
+    @JsonKey(name: '_count') TagCount? count,
+    // Local only - not serialized
+    @Default(true)
+    @JsonKey(includeFromJson: false, includeToJson: false)
+    bool isSynced,
+    @Default(false)
+    @JsonKey(includeFromJson: false, includeToJson: false)
+    bool isDeleted,
+  }) = _Tag;
+
+  factory Tag.fromJson(Map<String, dynamic> json) => _$TagFromJson(json);
+
+  int get noteCount => count?.notes ?? 0;
 }
 
-@JsonSerializable()
-class TagCount {
-  final int notes;
-
-  TagCount({required this.notes});
+@freezed
+abstract class TagCount with _$TagCount {
+  const factory TagCount({required int notes}) = _TagCount;
 
   factory TagCount.fromJson(Map<String, dynamic> json) =>
       _$TagCountFromJson(json);
-  Map<String, dynamic> toJson() => _$TagCountToJson(this);
 }
