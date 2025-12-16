@@ -1,11 +1,10 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Trash2, RotateCcw, Loader2, AlertTriangle, Pin } from "lucide-react";
+import { Archive, ArchiveRestore, Loader2 } from "lucide-react";
 import {
-  getTrashedNotes,
-  restoreNote,
-  permanentDeleteNote,
+  getArchivedNotes,
+  unarchiveNote,
   deltaToFullPlainText,
   NoteBackground,
 } from "@/features/notes";
@@ -15,9 +14,8 @@ import { Header } from "@/components/layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Pin } from "lucide-react";
 import { useMemo } from "react";
-import { useRouter } from "next/navigation";
-import Masonry from "react-masonry-css";
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -31,6 +29,8 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { useState } from "react";
 import * as React from "react";
+import { useRouter } from "next/navigation";
+import Masonry from "react-masonry-css";
 import {
   Tooltip,
   TooltipContent,
@@ -47,14 +47,14 @@ const masonryBreakpoints = {
   640: 1,
 };
 
-export default function TrashPage() {
+export default function ArchivePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const queryClient = useQueryClient();
   const router = useRouter();
 
   const { data: notes = [], isLoading } = useQuery({
-    queryKey: ["notes", "trash"],
-    queryFn: getTrashedNotes,
+    queryKey: ["notes", "archive"],
+    queryFn: getArchivedNotes,
   });
 
   const { data: tags = [] } = useQuery({
@@ -74,25 +74,15 @@ export default function TrashPage() {
     }));
   }, [notes, tags]);
 
-  const restoreMutation = useMutation({
-    mutationFn: restoreNote,
+  const unarchiveMutation = useMutation({
+    mutationFn: unarchiveNote,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notes"] });
-      toast.success("Note restored");
+      queryClient.invalidateQueries({ queryKey: ["notes", "archive"] });
+      toast.success("Note unarchived");
     },
     onError: () => {
-      toast.error("Failed to restore note");
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: permanentDeleteNote,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notes", "trash"] });
-      toast.success("Note permanently deleted");
-    },
-    onError: () => {
-      toast.error("Failed to delete note");
+      toast.error("Failed to unarchive note");
     },
   });
 
@@ -119,9 +109,9 @@ export default function TrashPage() {
 
       <div className="flex-1 p-4 lg:p-6">
         <div className="mb-6">
-          <h1 className="font-serif text-2xl font-bold">Trash</h1>
+          <h1 className="font-serif text-2xl font-bold">Archive</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Notes in trash will be permanently deleted after 30 days
+            Archived notes are hidden from your main notes list
           </p>
         </div>
 
@@ -132,13 +122,13 @@ export default function TrashPage() {
         ) : filteredNotes.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-center">
             <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center mb-4">
-              <Trash2 className="h-10 w-10 text-muted-foreground/50" />
+              <Archive className="h-10 w-10 text-muted-foreground/50" />
             </div>
             <h3 className="text-xl font-medium text-foreground">
-              Trash is empty
+              Archive is empty
             </h3>
             <p className="text-sm text-muted-foreground mt-1">
-              Deleted notes will appear here
+              Archived notes will appear here
             </p>
           </div>
         ) : (
@@ -149,13 +139,11 @@ export default function TrashPage() {
           >
             {filteredNotes.map((note) => (
               <div key={note.id} className="mb-4">
-                <TrashNoteCard
+                <ArchiveNoteCard
                   note={note}
-                  onRestore={() => restoreMutation.mutate(note.id)}
-                  onDelete={() => deleteMutation.mutate(note.id)}
+                  onUnarchive={() => unarchiveMutation.mutate(note.id)}
                   onClick={() => handleNoteClick(note)}
-                  isRestoring={restoreMutation.isPending}
-                  isDeleting={deleteMutation.isPending}
+                  isUnarchiving={unarchiveMutation.isPending}
                 />
               </div>
             ))}
@@ -166,44 +154,33 @@ export default function TrashPage() {
   );
 }
 
-interface TrashNoteCardProps {
+interface ArchiveNoteCardProps {
   note: Note;
-  onRestore: () => void;
-  onDelete: () => void;
+  onUnarchive: () => void;
   onClick: () => void;
-  isRestoring: boolean;
-  isDeleting: boolean;
+  isUnarchiving: boolean;
 }
 
-function TrashNoteCard({
+function ArchiveNoteCard({
   note,
-  onRestore,
-  onDelete,
+  onUnarchive,
   onClick,
-  isRestoring,
-  isDeleting,
-}: TrashNoteCardProps) {
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [restoreTooltipOpen, setRestoreTooltipOpen] = useState(false);
-  const [deleteTooltipOpen, setDeleteTooltipOpen] = useState(false);
+  isUnarchiving,
+}: ArchiveNoteCardProps) {
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [tooltipOpen, setTooltipOpen] = useState(false);
   const dialogJustClosedRef = React.useRef(false);
 
-  const handleRestoreClick = (e: React.MouseEvent) => {
+  const handleButtonClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setRestoreTooltipOpen(false);
-    onRestore();
-  };
-
-  const handleDeleteButtonClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setDeleteTooltipOpen(false);
-    setDeleteDialogOpen(true);
+    setTooltipOpen(false);
+    setDialogOpen(true);
   };
 
   const handleDialogClose = (open: boolean) => {
-    setDeleteDialogOpen(open);
+    setDialogOpen(open);
     if (!open) {
-      setDeleteTooltipOpen(false);
+      setTooltipOpen(false);
       dialogJustClosedRef.current = true;
       setTimeout(() => {
         dialogJustClosedRef.current = false;
@@ -216,7 +193,7 @@ function TrashNoteCard({
       (e.target as HTMLElement).closest("button") ||
       (e.target as HTMLElement).closest("[data-slot='dialog-content']") ||
       (e.target as HTMLElement).closest("[data-slot='dialog-overlay']") ||
-      deleteDialogOpen ||
+      dialogOpen ||
       dialogJustClosedRef.current
     ) {
       return;
@@ -296,72 +273,54 @@ function TrashNoteCard({
           {/* Footer */}
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span className="font-medium">
-              Deleted {format(new Date(note.updatedAt), "MMM d, yyyy")}
+              Archived {format(new Date(note.updatedAt), "MMM d, yyyy")}
             </span>
             <TooltipProvider>
-              <div className="flex items-center gap-2">
-                <Tooltip open={restoreTooltipOpen} onOpenChange={setRestoreTooltipOpen}>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={handleRestoreClick}
-                      disabled={isRestoring}
-                      className="h-7 w-7 hover:bg-accent hover:text-accent-foreground opacity-0 group-hover:opacity-100 transition-all duration-200 bg-background/80 backdrop-blur-sm border border-border/50"
-                    >
-                      <RotateCcw className="h-3.5 w-3.5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">Restore</TooltipContent>
-                </Tooltip>
-                <Tooltip open={deleteTooltipOpen && !deleteDialogOpen} onOpenChange={setDeleteTooltipOpen}>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all duration-200 bg-background/80 backdrop-blur-sm border border-border/50"
-                      onClick={handleDeleteButtonClick}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">Delete Forever</TooltipContent>
-                </Tooltip>
-              </div>
+              <Tooltip open={tooltipOpen && !dialogOpen} onOpenChange={setTooltipOpen}>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 hover:bg-accent hover:text-accent-foreground opacity-0 group-hover:opacity-100 transition-all duration-200 bg-background/80 backdrop-blur-sm border border-border/50"
+                    onClick={handleButtonClick}
+                  >
+                    <ArchiveRestore className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top">Unarchive</TooltipContent>
+              </Tooltip>
             </TooltipProvider>
-            <Dialog open={deleteDialogOpen} onOpenChange={handleDialogClose}>
+            <Dialog open={dialogOpen} onOpenChange={handleDialogClose}>
               <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
-                    <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
-                      <AlertTriangle className="h-5 w-5 text-destructive" />
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <ArchiveRestore className="h-5 w-5 text-primary" />
                     </div>
-                    Delete permanently?
+                    Unarchive Note?
                   </DialogTitle>
                   <DialogDescription className="pt-2">
-                    This action cannot be undone. This note will be permanently
-                    deleted and cannot be recovered.
+                    This note will be moved back to your notes.
                   </DialogDescription>
                 </DialogHeader>
                 <DialogFooter className="gap-2 sm:gap-0">
                   <Button
                     variant="ghost"
-                    onClick={() => setDeleteDialogOpen(false)}
+                    onClick={() => setDialogOpen(false)}
                   >
                     Cancel
                   </Button>
                   <Button
-                    variant="destructive"
                     onClick={() => {
-                      onDelete();
-                      setDeleteDialogOpen(false);
+                      onUnarchive();
+                      setDialogOpen(false);
                     }}
-                    disabled={isDeleting}
+                    disabled={isUnarchiving}
                   >
-                    {isDeleting ? (
+                    {isUnarchiving ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      "Delete Forever"
+                      "Unarchive"
                     )}
                   </Button>
                 </DialogFooter>
@@ -373,4 +332,3 @@ function TrashNoteCard({
     </Card>
   );
 }
-

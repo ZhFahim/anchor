@@ -48,6 +48,11 @@ export class NotesController {
     return this.notesService.findTrashed(userId);
   }
 
+  @Get('archive')
+  findArchived(@CurrentUser('id') userId: string) {
+    return this.notesService.findArchived(userId);
+  }
+
   @Get(':id')
   findOne(@CurrentUser('id') userId: string, @Param('id') id: string) {
     return this.notesService.findOne(userId, id);

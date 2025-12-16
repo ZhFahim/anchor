@@ -45,3 +45,15 @@ export async function permanentDeleteNote(id: string): Promise<void> {
   await api.delete(`api/notes/${id}/permanent`);
 }
 
+export async function getArchivedNotes(): Promise<Note[]> {
+  return api.get("api/notes/archive").json<Note[]>();
+}
+
+export async function archiveNote(id: string): Promise<Note> {
+  return api.patch(`api/notes/${id}`, { json: { isArchived: true } }).json<Note>();
+}
+
+export async function unarchiveNote(id: string): Promise<Note> {
+  return api.patch(`api/notes/${id}`, { json: { isArchived: false } }).json<Note>();
+}
+

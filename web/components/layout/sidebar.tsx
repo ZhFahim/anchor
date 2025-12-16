@@ -7,6 +7,7 @@ import {
   Anchor,
   FileText,
   Trash2,
+  Archive,
   Tag,
   LogOut,
   Moon,
@@ -69,6 +70,11 @@ export function Sidebar({
       href: "/notes",
       label: "All Notes",
       icon: FileText,
+    },
+    {
+      href: "/archive",
+      label: "Archive",
+      icon: Archive,
     },
     {
       href: "/trash",

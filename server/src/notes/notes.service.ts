@@ -46,6 +46,7 @@ export class NotesService {
       where: {
         userId,
         state: NoteState.active,
+        isArchived: false, // Exclude archived notes from main list
         ...(tagId && {
           tags: {
             some: { id: tagId },
@@ -166,6 +167,23 @@ export class NotesService {
       where: {
         userId,
         state: NoteState.trashed,
+      },
+      orderBy: { updatedAt: 'desc' },
+      include: {
+        tags: true,
+      },
+    });
+
+    return notes.map(transformNote);
+  }
+
+  // Get archived notes
+  async findArchived(userId: string) {
+    const notes = await this.prisma.note.findMany({
+      where: {
+        userId,
+        state: NoteState.active,
+        isArchived: true,
       },
       orderBy: { updatedAt: 'desc' },
       include: {

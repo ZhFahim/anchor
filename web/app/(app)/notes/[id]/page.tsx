@@ -11,12 +11,16 @@ import {
   Loader2,
   AlertTriangle,
   Check,
+  Archive,
+  ArchiveRestore,
 } from "lucide-react";
 import {
   getNote,
   createNote,
   updateNote,
   deleteNote,
+  archiveNote,
+  unarchiveNote,
   isStoredContentEmpty,
 } from "@/features/notes";
 import type { CreateNoteDto, UpdateNoteDto, Note } from "@/features/notes";
@@ -55,9 +59,11 @@ export default function NoteEditorPage() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [isPinned, setIsPinned] = useState(false);
+  const [isArchived, setIsArchived] = useState(false);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [background, setBackground] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -104,6 +110,7 @@ export default function NoteEditorPage() {
       setTitle(note.title);
       setContent(note.content || "");
       setIsPinned(note.isPinned);
+      setIsArchived(note.isArchived);
       const tagIds = note.tagIds || note.tags?.map((t) => t.id) || [];
       setSelectedTagIds(tagIds);
       setBackground(note.background || null);
@@ -160,6 +167,37 @@ export default function NoteEditorPage() {
     },
     onError: () => {
       toast.error("Failed to delete note");
+    },
+  });
+
+  // Archive note mutation
+  const archiveMutation = useMutation({
+    mutationFn: () => archiveNote(noteId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      queryClient.invalidateQueries({ queryKey: ["notes", "archive"] });
+      queryClient.invalidateQueries({ queryKey: ["notes", noteId] });
+      setIsArchived(true);
+      toast.success("Note archived");
+      router.push("/notes");
+    },
+    onError: () => {
+      toast.error("Failed to archive note");
+    },
+  });
+
+  // Unarchive note mutation
+  const unarchiveMutation = useMutation({
+    mutationFn: () => unarchiveNote(noteId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      queryClient.invalidateQueries({ queryKey: ["notes", "archive"] });
+      queryClient.invalidateQueries({ queryKey: ["notes", noteId] });
+      setIsArchived(false);
+      toast.success("Note unarchived");
+    },
+    onError: () => {
+      toast.error("Failed to unarchive note");
     },
   });
 
@@ -239,7 +277,7 @@ export default function NoteEditorPage() {
     if (hasUnsavedChanges) {
       save();
     }
-    router.push("/notes");
+    router.back();
   };
 
   const togglePin = () => {
@@ -354,19 +392,46 @@ export default function NoteEditorPage() {
             </Tooltip>
 
             {!isNew && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setDeleteDialogOpen(true)}
-                    className="h-9 w-9 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">Move to trash</TooltipContent>
-              </Tooltip>
+              <>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setArchiveDialogOpen(true)}
+                      className={cn(
+                        "h-9 w-9 rounded-xl transition-colors",
+                        isArchived
+                          ? "text-primary bg-primary/10 hover:bg-primary/20"
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      {isArchived ? (
+                        <ArchiveRestore className="h-4 w-4" />
+                      ) : (
+                        <Archive className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    {isArchived ? "Unarchive note" : "Archive note"}
+                  </TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setDeleteDialogOpen(true)}
+                      className="h-9 w-9 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">Move to trash</TooltipContent>
+                </Tooltip>
+              </>
             )}
           </div>
         </header>
@@ -405,6 +470,56 @@ export default function NoteEditorPage() {
             />
           </div>
         </div>
+
+        {/* Archive Dialog */}
+        <Dialog open={archiveDialogOpen} onOpenChange={setArchiveDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  {isArchived ? (
+                    <ArchiveRestore className="h-5 w-5 text-primary" />
+                  ) : (
+                    <Archive className="h-5 w-5 text-primary" />
+                  )}
+                </div>
+                {isArchived ? "Unarchive note?" : "Archive note?"}
+              </DialogTitle>
+              <DialogDescription className="pt-2">
+                {isArchived
+                  ? "This note will be moved back to your notes."
+                  : "This note will be moved to archive."}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button
+                variant="ghost"
+                onClick={() => setArchiveDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  if (isArchived) {
+                    unarchiveMutation.mutate();
+                  } else {
+                    archiveMutation.mutate();
+                  }
+                  setArchiveDialogOpen(false);
+                }}
+                disabled={archiveMutation.isPending || unarchiveMutation.isPending}
+              >
+                {archiveMutation.isPending || unarchiveMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : isArchived ? (
+                  "Unarchive"
+                ) : (
+                  "Archive"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Delete Dialog */}
         <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
