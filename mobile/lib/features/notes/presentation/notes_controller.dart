@@ -76,3 +76,15 @@ class TrashController extends _$TrashController {
     await ref.read(notesRepositoryProvider).permanentDelete(id);
   }
 }
+
+@riverpod
+class ArchiveController extends _$ArchiveController {
+  @override
+  Stream<List<Note>> build() {
+    return ref.watch(notesRepositoryProvider).watchArchivedNotes();
+  }
+
+  Future<void> unarchiveNote(String id) async {
+    await ref.read(notesRepositoryProvider).unarchiveNote(id);
+  }
+}

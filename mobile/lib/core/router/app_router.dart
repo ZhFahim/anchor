@@ -7,6 +7,7 @@ import '../../features/notes/domain/note.dart';
 import '../../features/notes/presentation/notes_list_screen.dart';
 import '../../features/notes/presentation/note_edit_screen.dart';
 import '../../features/notes/presentation/trash_screen.dart';
+import '../../features/notes/presentation/archive_screen.dart';
 import '../presentation/splash_screen.dart';
 import '../presentation/server_config_screen.dart';
 import '../presentation/settings_screen.dart';
@@ -83,6 +84,10 @@ GoRouter goRouter(Ref ref) {
           GoRoute(
             path: AppRoutes.trash,
             builder: (context, state) => const TrashScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.archive,
+            builder: (context, state) => const ArchiveScreen(),
           ),
           GoRoute(
             path: AppRoutes.settings,

@@ -6,73 +6,39 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:anchor/features/notes/domain/note.dart';
 import 'package:anchor/core/widgets/confirm_dialog.dart';
 import 'package:anchor/core/widgets/quill_preview.dart';
-import 'package:anchor/core/widgets/app_snackbar.dart';
-import 'package:anchor/features/notes/presentation/widgets/note_background.dart';
 import 'package:anchor/features/tags/presentation/tags_controller.dart';
 import 'package:anchor/features/tags/presentation/widgets/tag_chip.dart';
+import 'package:anchor/features/notes/presentation/widgets/note_background.dart';
+import 'package:anchor/core/widgets/app_snackbar.dart';
 import 'notes_controller.dart';
 
-class TrashScreen extends ConsumerWidget {
-  const TrashScreen({super.key});
+class ArchiveScreen extends ConsumerWidget {
+  const ArchiveScreen({super.key});
 
-  void _showRestoreDialog(BuildContext context, WidgetRef ref, Note note) {
+  void _showUnarchiveDialog(BuildContext context, WidgetRef ref, Note note) {
     showDialog(
       context: context,
       builder: (ctx) => ConfirmDialog(
-        icon: LucideIcons.rotateCcw,
+        icon: LucideIcons.archiveRestore,
         iconColor: Theme.of(context).colorScheme.primary,
-        title: 'Restore Note',
+        title: 'Unarchive Note',
         message: 'This note will be moved back to your notes.',
         cancelText: 'Cancel',
-        confirmText: 'Restore',
+        confirmText: 'Unarchive',
         onConfirm: () async {
           try {
             await ref
-                .read(trashControllerProvider.notifier)
-                .restoreNote(note.id);
+                .read(archiveControllerProvider.notifier)
+                .unarchiveNote(note.id);
             if (context.mounted) {
-              AppSnackbar.showSuccess(context, message: 'Note restored');
+              AppSnackbar.showSuccess(context, message: 'Note unarchived');
             }
-          } catch (_) {
+          } catch (e) {
             if (context.mounted) {
-              AppSnackbar.showError(context, message: 'Failed to restore note');
-            }
-          }
-        },
-      ),
-    );
-  }
-
-  void _showPermanentDeleteDialog(
-    BuildContext context,
-    WidgetRef ref,
-    Note note,
-  ) {
-    showDialog(
-      context: context,
-      builder: (ctx) => ConfirmDialog(
-        icon: LucideIcons.trash2,
-        iconColor: Theme.of(context).colorScheme.error,
-        title: 'Delete Forever',
-        message:
-            'This note will be permanently deleted and cannot be recovered.',
-        cancelText: 'Cancel',
-        confirmText: 'Delete Forever',
-        confirmColor: Theme.of(context).colorScheme.error,
-        onConfirm: () async {
-          try {
-            await ref
-                .read(trashControllerProvider.notifier)
-                .permanentDelete(note.id);
-            if (context.mounted) {
-              AppSnackbar.showSuccess(
+              AppSnackbar.showError(
                 context,
-                message: 'Note permanently deleted',
+                message: 'Failed to unarchive note',
               );
-            }
-          } catch (_) {
-            if (context.mounted) {
-              AppSnackbar.showError(context, message: 'Failed to delete note');
             }
           }
         },
@@ -82,7 +48,7 @@ class TrashScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final trashAsync = ref.watch(trashControllerProvider);
+    final archiveAsync = ref.watch(archiveControllerProvider);
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -93,7 +59,7 @@ class TrashScreen extends ConsumerWidget {
           onPressed: () => context.pop(),
         ),
         title: Text(
-          'Trash',
+          'Archive',
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
           ),
@@ -110,17 +76,17 @@ class TrashScreen extends ConsumerWidget {
             ],
           ),
         ),
-        child: trashAsync.when(
+        child: archiveAsync.when(
           data: (notes) {
             if (notes.isEmpty) {
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(LucideIcons.trash2, size: 64, color: theme.hintColor),
+                    Icon(LucideIcons.archive, size: 64, color: theme.hintColor),
                     const SizedBox(height: 16),
                     Text(
-                      'Trash is empty',
+                      'Archive is empty',
                       style: theme.textTheme.bodyLarge?.copyWith(
                         color: theme.hintColor,
                       ),
@@ -134,11 +100,9 @@ class TrashScreen extends ConsumerWidget {
               itemCount: notes.length,
               itemBuilder: (context, index) {
                 final note = notes[index];
-                return _TrashNoteCard(
+                return _ArchiveNoteCard(
                   note: note,
-                  onRestore: () => _showRestoreDialog(context, ref, note),
-                  onDelete: () =>
-                      _showPermanentDeleteDialog(context, ref, note),
+                  onUnarchive: () => _showUnarchiveDialog(context, ref, note),
                 );
               },
             );
@@ -151,16 +115,11 @@ class TrashScreen extends ConsumerWidget {
   }
 }
 
-class _TrashNoteCard extends ConsumerWidget {
+class _ArchiveNoteCard extends ConsumerWidget {
   final Note note;
-  final VoidCallback onRestore;
-  final VoidCallback onDelete;
+  final VoidCallback onUnarchive;
 
-  const _TrashNoteCard({
-    required this.note,
-    required this.onRestore,
-    required this.onDelete,
-  });
+  const _ArchiveNoteCard({required this.note, required this.onUnarchive});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -211,7 +170,7 @@ class _TrashNoteCard extends ConsumerWidget {
                 ),
                 if (note.content != null && note.content!.isNotEmpty) ...[
                   const SizedBox(height: 8),
-                  QuillPreview(content: note.content, maxLines: 2),
+                  QuillPreview(content: note.content, maxLines: 3),
                 ],
                 if (note.tagIds.isNotEmpty) ...[
                   const SizedBox(height: 8),
@@ -258,25 +217,16 @@ class _TrashNoteCard extends ConsumerWidget {
                   children: [
                     if (note.updatedAt != null)
                       Text(
-                        'Moved to trash ${DateFormat.MMMd().format(note.updatedAt!)}',
+                        'Archived ${DateFormat.MMMd().format(note.updatedAt!)}',
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: theme.hintColor,
                         ),
                       ),
                     const Spacer(),
                     IconButton(
-                      icon: const Icon(LucideIcons.rotateCcw),
-                      onPressed: onRestore,
-                      tooltip: 'Restore',
-                      visualDensity: VisualDensity.compact,
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        LucideIcons.trash2,
-                        color: theme.colorScheme.error,
-                      ),
-                      onPressed: onDelete,
-                      tooltip: 'Delete Forever',
+                      icon: const Icon(LucideIcons.archiveRestore),
+                      onPressed: onUnarchive,
+                      tooltip: 'Unarchive',
                       visualDensity: VisualDensity.compact,
                     ),
                   ],

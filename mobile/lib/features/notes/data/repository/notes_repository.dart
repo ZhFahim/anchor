@@ -40,8 +40,9 @@ class NotesRepository {
       ),
     ]);
 
-    // Apply filters
+    // Apply filters - exclude archived notes from main list
     query.where(_db.notes.state.equals('active'));
+    query.where(_db.notes.isArchived.equals(false));
 
     if (tagId != null) {
       // If filtering by tag, we first need to find note IDs that have this tag
@@ -146,6 +147,49 @@ class NotesRepository {
     });
   }
 
+  // Watch archived notes for Archive screen
+  Stream<List<domain.Note>> watchArchivedNotes() {
+    final query =
+        _db.select(_db.notes).join([
+            drift.leftOuterJoin(
+              _db.noteTags,
+              _db.noteTags.noteId.equalsExp(_db.notes.id),
+            ),
+          ])
+          ..where(_db.notes.state.equals('active'))
+          ..where(_db.notes.isArchived.equals(true))
+          ..orderBy([
+            drift.OrderingTerm(
+              expression: _db.notes.updatedAt,
+              mode: drift.OrderingMode.desc,
+            ),
+          ]);
+
+    return query.watch().map((rows) {
+      final noteMap = <String, domain.Note>{};
+
+      for (final row in rows) {
+        final note = row.readTable(_db.notes);
+        final tagId = row.readTableOrNull(_db.noteTags)?.tagId;
+
+        if (!noteMap.containsKey(note.id)) {
+          noteMap[note.id] = _mapToDomain(note, []);
+        }
+
+        if (tagId != null) {
+          final currentNote = noteMap[note.id]!;
+          if (!currentNote.tagIds.contains(tagId)) {
+            noteMap[note.id] = currentNote.copyWith(
+              tagIds: [...currentNote.tagIds, tagId],
+            );
+          }
+        }
+      }
+
+      return noteMap.values.toList();
+    });
+  }
+
   Future<domain.Note?> getNote(String id) async {
     final row = await (_db.select(
       _db.notes,
@@ -208,6 +252,36 @@ class NotesRepository {
     await (_db.update(_db.notes)..where((tbl) => tbl.id.equals(id))).write(
       NotesCompanion(
         state: const drift.Value('active'),
+        updatedAt: drift.Value(now),
+        isSynced: const drift.Value(false),
+      ),
+    );
+
+    sync();
+  }
+
+  // Archive a note
+  Future<void> archiveNote(String id) async {
+    final now = DateTime.now();
+
+    await (_db.update(_db.notes)..where((tbl) => tbl.id.equals(id))).write(
+      NotesCompanion(
+        isArchived: const drift.Value(true),
+        updatedAt: drift.Value(now),
+        isSynced: const drift.Value(false),
+      ),
+    );
+
+    sync();
+  }
+
+  // Unarchive a note
+  Future<void> unarchiveNote(String id) async {
+    final now = DateTime.now();
+
+    await (_db.update(_db.notes)..where((tbl) => tbl.id.equals(id))).write(
+      NotesCompanion(
+        isArchived: const drift.Value(false),
         updatedAt: drift.Value(now),
         isSynced: const drift.Value(false),
       ),

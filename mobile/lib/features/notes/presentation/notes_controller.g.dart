@@ -207,3 +207,48 @@ abstract class _$TrashController extends $StreamNotifier<List<Note>> {
     element.handleValue(ref, created);
   }
 }
+
+@ProviderFor(ArchiveController)
+const archiveControllerProvider = ArchiveControllerProvider._();
+
+final class ArchiveControllerProvider
+    extends $StreamNotifierProvider<ArchiveController, List<Note>> {
+  const ArchiveControllerProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'archiveControllerProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$archiveControllerHash();
+
+  @$internal
+  @override
+  ArchiveController create() => ArchiveController();
+}
+
+String _$archiveControllerHash() => r'4fa865310cc5d1a6653e6982f26b1bbf51dba7d5';
+
+abstract class _$ArchiveController extends $StreamNotifier<List<Note>> {
+  Stream<List<Note>> build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final created = build();
+    final ref = this.ref as $Ref<AsyncValue<List<Note>>, List<Note>>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<List<Note>>, List<Note>>,
+              AsyncValue<List<Note>>,
+              Object?,
+              Object?
+            >;
+    element.handleValue(ref, created);
+  }
+}

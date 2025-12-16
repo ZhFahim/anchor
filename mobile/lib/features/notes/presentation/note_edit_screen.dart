@@ -5,6 +5,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:uuid/uuid.dart';
 import 'package:anchor/features/notes/domain/note.dart';
 import 'package:anchor/core/widgets/confirm_dialog.dart';
+import 'package:anchor/core/widgets/app_snackbar.dart';
 import 'package:anchor/core/widgets/rich_text_editor.dart';
 import 'package:anchor/features/tags/presentation/widgets/tag_selector.dart';
 import 'package:anchor/features/notes/presentation/widgets/note_background.dart';
@@ -28,6 +29,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
   bool _isLoaded = false;
   bool _isEditing = false;
   bool _isPinned = false;
+  bool _isArchived = false;
   Note? _existingNote;
   String? _initialContent;
   List<String> _selectedTagIds = [];
@@ -41,6 +43,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
       _isNew = false;
       _existingNote = widget.note;
       _isPinned = widget.note!.isPinned;
+      _isArchived = widget.note!.isArchived;
       _titleController.text = widget.note!.title;
       _initialContent = widget.note!.content;
       _selectedTagIds = List.from(widget.note!.tagIds);
@@ -72,6 +75,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
       setState(() {
         _existingNote = note;
         _isPinned = note.isPinned;
+        _isArchived = note.isArchived;
         _titleController.text = note.title;
         _initialContent = note.content;
         _selectedTagIds = List.from(note.tagIds);
@@ -86,6 +90,67 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
       _isPinned = !_isPinned;
     });
     await _saveNote();
+  }
+
+  Future<void> _toggleArchived() async {
+    if (_isNew) return;
+
+    final wasArchived = _isArchived;
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => ConfirmDialog(
+        icon: LucideIcons.archive,
+        iconColor: Theme.of(context).colorScheme.primary,
+        title: wasArchived ? 'Unarchive Note' : 'Archive Note',
+        message: wasArchived
+            ? 'This note will be moved back to your notes.'
+            : 'This note will be moved to archive.',
+        cancelText: 'Cancel',
+        confirmText: wasArchived ? 'Unarchive' : 'Archive',
+        onConfirm: () {},
+      ),
+    );
+
+    if (confirm != true || !mounted) return;
+
+    final repository = ref.read(notesRepositoryProvider);
+    try {
+      if (wasArchived) {
+        await repository.unarchiveNote(widget.noteId!);
+      } else {
+        await repository.archiveNote(widget.noteId!);
+      }
+
+      // Reload note to get updated state
+      await _loadNote();
+
+      // Show success snackbar
+      if (mounted) {
+        AppSnackbar.showSuccess(
+          context,
+          message: wasArchived ? 'Note unarchived' : 'Note archived',
+        );
+
+        // If archiving, go back after showing snackbar
+        if (!wasArchived) {
+          // Small delay to ensure snackbar is visible
+          await Future.delayed(const Duration(milliseconds: 300));
+          if (mounted) {
+            context.pop();
+          }
+        }
+      }
+    } catch (e) {
+      // Show error snackbar
+      if (mounted) {
+        AppSnackbar.showError(
+          context,
+          message: wasArchived
+              ? 'Failed to unarchive note'
+              : 'Failed to archive note',
+        );
+      }
+    }
   }
 
   void _showColorPicker() {
@@ -159,6 +224,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
         title: title,
         content: content,
         isPinned: _isPinned,
+        isArchived: _isArchived,
         tagIds: _selectedTagIds,
         background: _selectedBackground,
         updatedAt: DateTime.now(),
@@ -205,11 +271,18 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
     );
 
     if (confirm == true && mounted) {
-      await ref.read(notesRepositoryProvider).deleteNote(widget.noteId!);
-      _isDeleted = true;
+      try {
+        await ref.read(notesRepositoryProvider).deleteNote(widget.noteId!);
+        _isDeleted = true;
 
-      if (mounted) {
-        context.pop();
+        if (mounted) {
+          AppSnackbar.showSuccess(context, message: 'Note moved to trash');
+          context.pop();
+        }
+      } catch (e) {
+        if (mounted) {
+          AppSnackbar.showError(context, message: 'Failed to delete note');
+        }
       }
     }
   }
@@ -268,6 +341,15 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
                 icon: const Icon(LucideIcons.palette),
                 onPressed: _showColorPicker,
                 tooltip: 'Change Background',
+              ),
+              IconButton(
+                icon: Icon(
+                  _isArchived
+                      ? LucideIcons.archiveRestore
+                      : LucideIcons.archive,
+                ),
+                onPressed: _isLoaded && !_isNew ? _toggleArchived : null,
+                tooltip: _isArchived ? 'Unarchive Note' : 'Archive Note',
               ),
               IconButton(
                 icon: const Icon(LucideIcons.trash2),

@@ -101,4 +101,4 @@ final class ServerUrlProvider
   }
 }
 
-String _$serverUrlHash() => r'58615c09a242bb4d31c991795211b7596bf3cebe';
+String _$serverUrlHash() => r'63a240a49181caae9967d39f599039c1fb394626';

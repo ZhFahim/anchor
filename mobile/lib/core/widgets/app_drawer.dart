@@ -87,6 +87,16 @@ class _AppDrawerState extends ConsumerState<AppDrawer>
                         ),
 
                         _buildNavItem(
+                          icon: LucideIcons.archive,
+                          label: 'Archive',
+                          onTap: () {
+                            Navigator.pop(context);
+                            context.push('/archive');
+                          },
+                          theme: theme,
+                        ),
+
+                        _buildNavItem(
                           icon: LucideIcons.trash2,
                           label: 'Trash',
                           onTap: () {

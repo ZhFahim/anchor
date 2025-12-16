@@ -41,6 +41,10 @@ class TagsRepository {
               _db.noteTags,
               _db.noteTags.tagId.equalsExp(_db.tags.id),
             ),
+            drift.leftOuterJoin(
+              _db.notes,
+              _db.notes.id.equalsExp(_db.noteTags.noteId),
+            ),
           ])
           ..where(_db.tags.isDeleted.equals(false))
           ..orderBy([
@@ -56,14 +60,19 @@ class TagsRepository {
 
       for (final row in rows) {
         final tag = row.readTable(_db.tags);
-        final noteId = row.readTableOrNull(_db.noteTags)?.noteId;
+        final noteTag = row.readTableOrNull(_db.noteTags);
+        final note = row.readTableOrNull(_db.notes);
 
         if (!tagMap.containsKey(tag.id)) {
           tagMap[tag.id] = _mapToDomain(tag);
         }
 
-        if (noteId != null) {
-          tagCounts[tag.id] = (tagCounts[tag.id] ?? 0) + 1;
+        // Only count active, non-archived notes
+        if (noteTag != null && note != null) {
+          final isActive = note.state == 'active' && !note.isArchived;
+          if (isActive) {
+            tagCounts[tag.id] = (tagCounts[tag.id] ?? 0) + 1;
+          }
         }
       }
 
