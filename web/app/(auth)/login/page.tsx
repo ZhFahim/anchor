@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Anchor, Mail, Lock, Loader2 } from "lucide-react";
+import Image from "next/image";
+import { Mail, Lock, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,8 +23,13 @@ export default function LoginPage() {
   return (
     <Card className="border-0 shadow-xl bg-card/80 backdrop-blur-sm">
       <CardHeader className="space-y-4 text-center pb-2">
-        <div className="mx-auto w-16 h-16 bg-accent/10 rounded-2xl flex items-center justify-center">
-          <Anchor className="w-8 h-8 text-accent" />
+        <div className="mx-auto flex items-center justify-center">
+          <Image
+            src="/icons/anchor_icon.png"
+            alt="Anchor"
+            width={64}
+            height={64}
+          />
         </div>
         <div className="space-y-1">
           <CardTitle className="text-3xl font-serif">Welcome Back</CardTitle>

@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
-  Anchor,
   FileText,
   Trash2,
   Archive,
@@ -46,6 +46,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { AnchorIcon } from "@/components/ui/anchor-icon";
 import { useTheme } from "next-themes";
 import { useAuth } from "@/features/auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -178,9 +179,12 @@ export function Sidebar({
           )}
         >
           <div className={cn("flex items-center gap-2", isCollapsed && "justify-center")}>
-            <div className="w-9 h-9 bg-accent/10 rounded-xl flex items-center justify-center flex-shrink-0">
-              <Anchor className="w-5 h-5 text-accent" />
-            </div>
+            <Image
+              src="/icons/anchor_icon.png"
+              alt="Anchor"
+              width={36}
+              height={36}
+            />
             {!isCollapsed && (
               <span className="font-serif text-xl font-bold text-sidebar-foreground">
                 Anchor

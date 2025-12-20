@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../features/tags/domain/tag.dart';
 import '../../features/tags/presentation/tags_controller.dart';
+import 'anchor_icon.dart';
 
 class AppDrawer extends ConsumerStatefulWidget {
   const AppDrawer({super.key});
@@ -134,60 +135,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer>
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
       child: Row(
         children: [
-          SizedBox(
-            width: 52,
-            height: 52,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Transform.rotate(
-                  angle: -0.1,
-                  child: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer.withValues(
-                        alpha: 0.5,
-                      ),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                ),
-                Transform.rotate(
-                  angle: 0.1,
-                  child: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          theme.colorScheme.primary,
-                          theme.colorScheme.secondary,
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: [
-                        BoxShadow(
-                          color: theme.colorScheme.primary.withValues(
-                            alpha: 0.3,
-                          ),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      LucideIcons.anchor,
-                      size: 24,
-                      color: theme.colorScheme.onPrimary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          const SizedBox(width: 52, height: 52, child: AnchorIcon(size: 48)),
           const SizedBox(width: 14),
           Expanded(
             child: Column(

@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../network/server_config_provider.dart';
 import '../widgets/app_snackbar.dart';
+import '../widgets/anchor_icon.dart';
 
 class ServerConfigScreen extends ConsumerStatefulWidget {
   final String? initialUrl;
@@ -190,57 +191,7 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Center(
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Transform.rotate(
-                          angle: -0.1,
-                          child: Container(
-                            width: 100,
-                            height: 100,
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.primaryContainer
-                                  .withValues(alpha: 0.5),
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                          ),
-                        ),
-                        Transform.rotate(
-                          angle: 0.1,
-                          child: Container(
-                            width: 100,
-                            height: 100,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  theme.colorScheme.primary,
-                                  theme.colorScheme.secondary,
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(30),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: theme.colorScheme.primary.withValues(
-                                    alpha: 0.3,
-                                  ),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 10),
-                                ),
-                              ],
-                            ),
-                            child: Icon(
-                              LucideIcons.anchor,
-                              size: 50,
-                              color: theme.colorScheme.onPrimary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  const Center(child: AnchorIcon(size: 100)),
                   const SizedBox(height: 48),
 
                   // Title
