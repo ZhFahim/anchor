@@ -24,9 +24,26 @@ class TagsController extends _$TagsController {
   }
 
   Future<Tag> createTag(String name, {String? color}) async {
+    // Validate name is not empty
+    final trimmedName = name.trim();
+    if (trimmedName.isEmpty) {
+      throw ArgumentError('Tag name cannot be empty');
+    }
+
+    // Check for duplicate name
+    final existingTags = await ref.read(tagsRepositoryProvider).getTags();
+    final duplicateTag = existingTags.firstWhere(
+      (tag) => tag.name.toLowerCase() == trimmedName.toLowerCase(),
+      orElse: () => Tag(id: '', name: '', isSynced: false),
+    );
+
+    if (duplicateTag.id.isNotEmpty) {
+      throw Exception('A tag with this name already exists');
+    }
+
     final tag = Tag(
       id: const Uuid().v4(),
-      name: name,
+      name: trimmedName,
       color: color ?? generateRandomTagColor(),
       updatedAt: DateTime.now(),
       isSynced: false,
@@ -36,7 +53,27 @@ class TagsController extends _$TagsController {
   }
 
   Future<void> updateTag(Tag tag) async {
-    await ref.read(tagsRepositoryProvider).updateTag(tag);
+    // Validate name is not empty
+    final trimmedName = tag.name.trim();
+    if (trimmedName.isEmpty) {
+      throw ArgumentError('Tag name cannot be empty');
+    }
+
+    // Check for duplicate name (excluding current tag)
+    final existingTags = await ref.read(tagsRepositoryProvider).getTags();
+    final duplicateTag = existingTags.firstWhere(
+      (t) =>
+          t.id != tag.id && t.name.toLowerCase() == trimmedName.toLowerCase(),
+      orElse: () => Tag(id: '', name: '', isSynced: false),
+    );
+
+    if (duplicateTag.id.isNotEmpty) {
+      throw Exception('A tag with this name already exists');
+    }
+
+    await ref
+        .read(tagsRepositoryProvider)
+        .updateTag(tag.copyWith(name: trimmedName));
   }
 
   Future<void> deleteTag(String id) async {

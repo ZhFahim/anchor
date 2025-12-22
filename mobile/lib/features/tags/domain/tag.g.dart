@@ -16,6 +16,7 @@ _Tag _$TagFromJson(Map<String, dynamic> json) => _Tag(
   count: json['_count'] == null
       ? null
       : TagCount.fromJson(json['_count'] as Map<String, dynamic>),
+  isDeleted: json['isDeleted'] as bool? ?? false,
 );
 
 Map<String, dynamic> _$TagToJson(_Tag instance) => <String, dynamic>{

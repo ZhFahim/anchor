@@ -572,126 +572,179 @@ class _AppDrawerState extends ConsumerState<AppDrawer>
       tag.color,
       fallback: theme.colorScheme.primary,
     );
+    String? errorMessage;
 
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: isDark
-                  ? [const Color(0xFF262A36), const Color(0xFF1C1E26)]
-                  : [Colors.white, const Color(0xFFF8F9FC)],
-            ),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
           ),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Handle bar
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.15,
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: isDark
+                    ? [const Color(0xFF262A36), const Color(0xFF1C1E26)]
+                    : [Colors.white, const Color(0xFFF8F9FC)],
+              ),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(28),
+              ),
+            ),
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Handle bar
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.15,
+                          ),
+                          borderRadius: BorderRadius.circular(2),
                         ),
-                        borderRadius: BorderRadius.circular(2),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
-                  // Title
-                  Text(
-                    'Rename Tag',
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Input field
-                  TextField(
-                    controller: controller,
-                    autofocus: true,
-                    textCapitalization: TextCapitalization.words,
-                    style: theme.textTheme.bodyLarge,
-                    decoration: InputDecoration(
-                      hintText: 'Tag name',
-                      prefixIcon: Icon(LucideIcons.hash, color: tagColor),
-                      filled: true,
-                      fillColor: theme.colorScheme.onSurface.withValues(
-                        alpha: 0.05,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide.none,
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(color: tagColor, width: 1.5),
+                    // Title
+                    Text(
+                      'Rename Tag',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 20),
 
-                  // Buttons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.pop(context),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            side: BorderSide(
-                              color: theme.colorScheme.onSurface.withValues(
-                                alpha: 0.2,
+                    // Input field
+                    TextField(
+                      controller: controller,
+                      autofocus: true,
+                      textCapitalization: TextCapitalization.words,
+                      style: theme.textTheme.bodyLarge,
+                      onChanged: (_) {
+                        if (errorMessage != null) {
+                          setState(() => errorMessage = null);
+                        }
+                      },
+                      decoration: InputDecoration(
+                        hintText: 'Tag name',
+                        prefixIcon: Icon(
+                          LucideIcons.hash,
+                          color: errorMessage != null
+                              ? theme.colorScheme.error
+                              : tagColor,
+                        ),
+                        filled: true,
+                        fillColor: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.05,
+                        ),
+                        errorText: errorMessage,
+                        errorStyle: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.error,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide.none,
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(
+                            color: errorMessage != null
+                                ? theme.colorScheme.error
+                                : tagColor,
+                            width: 1.5,
+                          ),
+                        ),
+                        errorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(
+                            color: theme.colorScheme.error,
+                            width: 1.5,
+                          ),
+                        ),
+                        focusedErrorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(
+                            color: theme.colorScheme.error,
+                            width: 1.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Buttons
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              side: BorderSide(
+                                color: theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.2,
+                                ),
                               ),
                             ),
+                            child: const Text('Cancel'),
                           ),
-                          child: const Text('Cancel'),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: FilledButton(
-                          onPressed: () async {
-                            final newName = controller.text.trim();
-                            if (newName.isNotEmpty && newName != tag.name) {
-                              await ref
-                                  .read(tagsControllerProvider.notifier)
-                                  .updateTag(tag.copyWith(name: newName));
-                            }
-                            if (context.mounted) Navigator.pop(context);
-                          },
-                          style: FilledButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: () async {
+                              final newName = controller.text.trim();
+                              if (newName.isEmpty) return;
+
+                              // If name hasn't changed, just close
+                              if (newName == tag.name) {
+                                if (context.mounted) Navigator.pop(context);
+                                return;
+                              }
+
+                              try {
+                                await ref
+                                    .read(tagsControllerProvider.notifier)
+                                    .updateTag(tag.copyWith(name: newName));
+                                if (context.mounted) Navigator.pop(context);
+                              } catch (e) {
+                                setState(() {
+                                  errorMessage = e.toString().replaceFirst(
+                                    'Exception: ',
+                                    '',
+                                  );
+                                });
+                              }
+                            },
+                            style: FilledButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
+                            child: const Text('Rename'),
                           ),
-                          child: const Text('Rename'),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -823,139 +876,182 @@ class _AppDrawerState extends ConsumerState<AppDrawer>
     final controller = TextEditingController();
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    String? errorMessage;
 
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: isDark
-                  ? [const Color(0xFF262A36), const Color(0xFF1C1E26)]
-                  : [Colors.white, const Color(0xFFF8F9FC)],
-            ),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
           ),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Handle bar
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: isDark
+                    ? [const Color(0xFF262A36), const Color(0xFF1C1E26)]
+                    : [Colors.white, const Color(0xFFF8F9FC)],
+              ),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(28),
+              ),
+            ),
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Handle bar
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.15,
+                          ),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Title
+                    Text(
+                      'New Tag',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Create a tag to organize your notes',
+                      style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.15,
-                        ),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Title
-                  Text(
-                    'New Tag',
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Create a tag to organize your notes',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Input field
-                  TextField(
-                    controller: controller,
-                    autofocus: true,
-                    textCapitalization: TextCapitalization.words,
-                    style: theme.textTheme.bodyLarge,
-                    decoration: InputDecoration(
-                      hintText: 'Tag name',
-                      prefixIcon: Icon(
-                        LucideIcons.hash,
-                        color: theme.colorScheme.primary,
-                      ),
-                      filled: true,
-                      fillColor: theme.colorScheme.onSurface.withValues(
-                        alpha: 0.05,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide.none,
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(
-                          color: theme.colorScheme.primary,
-                          width: 1.5,
+                          alpha: 0.6,
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 20),
 
-                  // Buttons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.pop(context),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            side: BorderSide(
-                              color: theme.colorScheme.onSurface.withValues(
-                                alpha: 0.2,
+                    // Input field
+                    TextField(
+                      controller: controller,
+                      autofocus: true,
+                      textCapitalization: TextCapitalization.words,
+                      style: theme.textTheme.bodyLarge,
+                      onChanged: (_) {
+                        if (errorMessage != null) {
+                          setState(() => errorMessage = null);
+                        }
+                      },
+                      decoration: InputDecoration(
+                        hintText: 'Tag name',
+                        prefixIcon: Icon(
+                          LucideIcons.hash,
+                          color: errorMessage != null
+                              ? theme.colorScheme.error
+                              : theme.colorScheme.primary,
+                        ),
+                        filled: true,
+                        fillColor: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.05,
+                        ),
+                        errorText: errorMessage,
+                        errorStyle: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.error,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide.none,
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(
+                            color: errorMessage != null
+                                ? theme.colorScheme.error
+                                : theme.colorScheme.primary,
+                            width: 1.5,
+                          ),
+                        ),
+                        errorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(
+                            color: theme.colorScheme.error,
+                            width: 1.5,
+                          ),
+                        ),
+                        focusedErrorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(
+                            color: theme.colorScheme.error,
+                            width: 1.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Buttons
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              side: BorderSide(
+                                color: theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.2,
+                                ),
                               ),
                             ),
+                            child: const Text('Cancel'),
                           ),
-                          child: const Text('Cancel'),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: FilledButton(
-                          onPressed: () async {
-                            final name = controller.text.trim();
-                            if (name.isNotEmpty) {
-                              await ref
-                                  .read(tagsControllerProvider.notifier)
-                                  .createTag(name);
-                            }
-                            if (context.mounted) Navigator.pop(context);
-                          },
-                          style: FilledButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: () async {
+                              final name = controller.text.trim();
+                              if (name.isEmpty) return;
+
+                              try {
+                                await ref
+                                    .read(tagsControllerProvider.notifier)
+                                    .createTag(name);
+                                if (context.mounted) Navigator.pop(context);
+                              } catch (e) {
+                                setState(() {
+                                  errorMessage = e.toString().replaceFirst(
+                                    'Exception: ',
+                                    '',
+                                  );
+                                });
+                              }
+                            },
+                            style: FilledButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
+                            child: const Text('Create'),
                           ),
-                          child: const Text('Create'),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

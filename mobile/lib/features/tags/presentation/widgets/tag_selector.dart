@@ -184,17 +184,27 @@ class _TagPickerSheetState extends ConsumerState<TagPickerSheet> {
   late List<String> _selectedIds;
   final _newTagController = TextEditingController();
   bool _isCreatingTag = false;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
     _selectedIds = List.from(widget.selectedTagIds);
+    _newTagController.addListener(_onTextChanged);
   }
 
   @override
   void dispose() {
+    _newTagController.removeListener(_onTextChanged);
     _newTagController.dispose();
     super.dispose();
+  }
+
+  void _onTextChanged() {
+    // Clear error when user starts typing
+    if (_errorMessage != null) {
+      setState(() => _errorMessage = null);
+    }
   }
 
   void _toggleTag(String tagId) {
@@ -212,7 +222,10 @@ class _TagPickerSheetState extends ConsumerState<TagPickerSheet> {
     final name = _newTagController.text.trim();
     if (name.isEmpty) return;
 
-    setState(() => _isCreatingTag = true);
+    setState(() {
+      _isCreatingTag = true;
+      _errorMessage = null;
+    });
 
     try {
       final tag = await ref
@@ -222,15 +235,14 @@ class _TagPickerSheetState extends ConsumerState<TagPickerSheet> {
       setState(() {
         _selectedIds.add(tag.id);
         _isCreatingTag = false;
+        _errorMessage = null;
       });
       widget.onTagsChanged(_selectedIds);
     } catch (e) {
-      setState(() => _isCreatingTag = false);
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to create tag: $e')));
-      }
+      setState(() {
+        _isCreatingTag = false;
+        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      });
     }
   }
 
@@ -339,68 +351,107 @@ class _TagPickerSheetState extends ConsumerState<TagPickerSheet> {
             // Create new tag input
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: TextField(
-                controller: _newTagController,
-                textCapitalization: TextCapitalization.words,
-                style: theme.textTheme.bodyLarge,
-                decoration: InputDecoration(
-                  hintText: 'Create new tag...',
-                  hintStyle: TextStyle(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
-                  ),
-                  prefixIcon: Icon(
-                    LucideIcons.plus,
-                    size: 18,
-                    color: theme.colorScheme.primary,
-                  ),
-                  suffixIcon: _isCreatingTag
-                      ? const Padding(
-                          padding: EdgeInsets.all(12),
-                          child: SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                        )
-                      : _newTagController.text.isNotEmpty
-                      ? IconButton(
-                          icon: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.primary,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              LucideIcons.check,
-                              size: 14,
-                              color: Colors.white,
-                            ),
-                          ),
-                          onPressed: _createTag,
-                        )
-                      : null,
-                  filled: true,
-                  fillColor: theme.colorScheme.onSurface.withValues(
-                    alpha: 0.05,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide.none,
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(
-                      color: theme.colorScheme.primary,
-                      width: 1.5,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: _newTagController,
+                    textCapitalization: TextCapitalization.words,
+                    style: theme.textTheme.bodyLarge,
+                    decoration: InputDecoration(
+                      hintText: 'Create new tag...',
+                      hintStyle: TextStyle(
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.4,
+                        ),
+                      ),
+                      prefixIcon: Icon(
+                        LucideIcons.plus,
+                        size: 18,
+                        color: _errorMessage != null
+                            ? theme.colorScheme.error
+                            : theme.colorScheme.primary,
+                      ),
+                      suffixIcon: _isCreatingTag
+                          ? const Padding(
+                              padding: EdgeInsets.all(12),
+                              child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            )
+                          : _newTagController.text.isNotEmpty
+                          ? IconButton(
+                              icon: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: _errorMessage != null
+                                      ? theme.colorScheme.error
+                                      : theme.colorScheme.primary,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  _errorMessage != null
+                                      ? LucideIcons.x
+                                      : LucideIcons.check,
+                                  size: 14,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              onPressed: _errorMessage != null
+                                  ? () {
+                                      setState(() => _errorMessage = null);
+                                    }
+                                  : _createTag,
+                            )
+                          : null,
+                      filled: true,
+                      fillColor: theme.colorScheme.onSurface.withValues(
+                        alpha: 0.05,
+                      ),
+                      errorText: _errorMessage,
+                      errorStyle: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.error,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                          color: _errorMessage != null
+                              ? theme.colorScheme.error
+                              : theme.colorScheme.primary,
+                          width: 1.5,
+                        ),
+                      ),
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                          color: theme.colorScheme.error,
+                          width: 1.5,
+                        ),
+                      ),
+                      focusedErrorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                          color: theme.colorScheme.error,
+                          width: 1.5,
+                        ),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
                     ),
+                    onChanged: (_) => setState(() {}),
+                    onSubmitted: (_) => _createTag(),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
-                ),
-                onChanged: (_) => setState(() {}),
-                onSubmitted: (_) => _createTag(),
+                ],
               ),
             ),
 

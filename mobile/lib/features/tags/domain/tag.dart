@@ -72,7 +72,7 @@ abstract class Tag with _$Tag {
     @JsonKey(includeFromJson: false, includeToJson: false)
     bool isSynced,
     @Default(false)
-    @JsonKey(includeFromJson: false, includeToJson: false)
+    @JsonKey(includeFromJson: true, includeToJson: false)
     bool isDeleted,
   }) = _Tag;
 

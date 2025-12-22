@@ -44,6 +44,7 @@ model Tag {
   id        String    @id @default(uuid())
   name      String
   color     String?
+  isDeleted Boolean   @default(false)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   userId    String

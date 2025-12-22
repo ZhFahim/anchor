@@ -13,13 +13,12 @@ export class TagsService {
   constructor(private prisma: PrismaService) { }
 
   async create(userId: string, createTagDto: CreateTagDto) {
-    // Check if tag with same name already exists for this user
-    const existing = await this.prisma.tag.findUnique({
+    // Check if tag with same name already exists for this user (not deleted)
+    const existing = await this.prisma.tag.findFirst({
       where: {
-        userId_name: {
-          userId,
-          name: createTagDto.name,
-        },
+        userId,
+        name: createTagDto.name,
+        isDeleted: false,
       },
     });
 
@@ -49,7 +48,10 @@ export class TagsService {
 
   async findAll(userId: string) {
     return this.prisma.tag.findMany({
-      where: { userId },
+      where: {
+        userId,
+        isDeleted: false,
+      },
       orderBy: { name: 'asc' },
       include: {
         _count: {
@@ -83,7 +85,7 @@ export class TagsService {
       },
     });
 
-    if (!tag || tag.userId !== userId) {
+    if (!tag || tag.userId !== userId || tag.isDeleted) {
       throw new NotFoundException('Tag not found');
     }
 
@@ -95,16 +97,16 @@ export class TagsService {
 
     // Check for name conflict if name is being updated
     if (updateTagDto.name) {
-      const existing = await this.prisma.tag.findUnique({
+      const existing = await this.prisma.tag.findFirst({
         where: {
-          userId_name: {
-            userId,
-            name: updateTagDto.name,
-          },
+          userId,
+          name: updateTagDto.name,
+          isDeleted: false,
+          id: { not: id },
         },
       });
 
-      if (existing && existing.id !== id) {
+      if (existing) {
         throw new ConflictException('A tag with this name already exists');
       }
     }
@@ -130,8 +132,11 @@ export class TagsService {
   async remove(userId: string, id: string) {
     await this.findOne(userId, id);
 
-    return this.prisma.tag.delete({
+    return this.prisma.tag.update({
       where: { id },
+      data: {
+        isDeleted: true,
+      },
     });
   }
 
@@ -170,10 +175,11 @@ export class TagsService {
     // Process incoming changes from client
     for (const change of changes || []) {
       if (change.isDeleted) {
-        // Delete tag
+        // Soft delete tag
         try {
-          await this.prisma.tag.delete({
+          await this.prisma.tag.update({
             where: { id: change.id },
+            data: { isDeleted: true },
           });
         } catch {
           // Tag might not exist, ignore

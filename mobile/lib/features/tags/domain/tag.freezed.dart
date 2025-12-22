@@ -17,7 +17,7 @@ mixin _$Tag {
 
  String get id; String get name; String? get color; DateTime? get updatedAt;// Note count from server (optional, not stored locally)
 @JsonKey(name: '_count') TagCount? get count;// Local only - not serialized
-@JsonKey(includeFromJson: false, includeToJson: false) bool get isSynced;@JsonKey(includeFromJson: false, includeToJson: false) bool get isDeleted;
+@JsonKey(includeFromJson: false, includeToJson: false) bool get isSynced;@JsonKey(includeFromJson: true, includeToJson: false) bool get isDeleted;
 /// Create a copy of Tag
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -50,7 +50,7 @@ abstract mixin class $TagCopyWith<$Res>  {
   factory $TagCopyWith(Tag value, $Res Function(Tag) _then) = _$TagCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, String? color, DateTime? updatedAt,@JsonKey(name: '_count') TagCount? count,@JsonKey(includeFromJson: false, includeToJson: false) bool isSynced,@JsonKey(includeFromJson: false, includeToJson: false) bool isDeleted
+ String id, String name, String? color, DateTime? updatedAt,@JsonKey(name: '_count') TagCount? count,@JsonKey(includeFromJson: false, includeToJson: false) bool isSynced,@JsonKey(includeFromJson: true, includeToJson: false) bool isDeleted
 });
 
 
@@ -173,7 +173,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String? color,  DateTime? updatedAt, @JsonKey(name: '_count')  TagCount? count, @JsonKey(includeFromJson: false, includeToJson: false)  bool isSynced, @JsonKey(includeFromJson: false, includeToJson: false)  bool isDeleted)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String? color,  DateTime? updatedAt, @JsonKey(name: '_count')  TagCount? count, @JsonKey(includeFromJson: false, includeToJson: false)  bool isSynced, @JsonKey(includeFromJson: true, includeToJson: false)  bool isDeleted)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Tag() when $default != null:
 return $default(_that.id,_that.name,_that.color,_that.updatedAt,_that.count,_that.isSynced,_that.isDeleted);case _:
@@ -194,7 +194,7 @@ return $default(_that.id,_that.name,_that.color,_that.updatedAt,_that.count,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String? color,  DateTime? updatedAt, @JsonKey(name: '_count')  TagCount? count, @JsonKey(includeFromJson: false, includeToJson: false)  bool isSynced, @JsonKey(includeFromJson: false, includeToJson: false)  bool isDeleted)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String? color,  DateTime? updatedAt, @JsonKey(name: '_count')  TagCount? count, @JsonKey(includeFromJson: false, includeToJson: false)  bool isSynced, @JsonKey(includeFromJson: true, includeToJson: false)  bool isDeleted)  $default,) {final _that = this;
 switch (_that) {
 case _Tag():
 return $default(_that.id,_that.name,_that.color,_that.updatedAt,_that.count,_that.isSynced,_that.isDeleted);case _:
@@ -214,7 +214,7 @@ return $default(_that.id,_that.name,_that.color,_that.updatedAt,_that.count,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String? color,  DateTime? updatedAt, @JsonKey(name: '_count')  TagCount? count, @JsonKey(includeFromJson: false, includeToJson: false)  bool isSynced, @JsonKey(includeFromJson: false, includeToJson: false)  bool isDeleted)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String? color,  DateTime? updatedAt, @JsonKey(name: '_count')  TagCount? count, @JsonKey(includeFromJson: false, includeToJson: false)  bool isSynced, @JsonKey(includeFromJson: true, includeToJson: false)  bool isDeleted)?  $default,) {final _that = this;
 switch (_that) {
 case _Tag() when $default != null:
 return $default(_that.id,_that.name,_that.color,_that.updatedAt,_that.count,_that.isSynced,_that.isDeleted);case _:
@@ -229,7 +229,7 @@ return $default(_that.id,_that.name,_that.color,_that.updatedAt,_that.count,_tha
 @JsonSerializable()
 
 class _Tag extends Tag {
-  const _Tag({required this.id, required this.name, this.color, this.updatedAt, @JsonKey(name: '_count') this.count, @JsonKey(includeFromJson: false, includeToJson: false) this.isSynced = true, @JsonKey(includeFromJson: false, includeToJson: false) this.isDeleted = false}): super._();
+  const _Tag({required this.id, required this.name, this.color, this.updatedAt, @JsonKey(name: '_count') this.count, @JsonKey(includeFromJson: false, includeToJson: false) this.isSynced = true, @JsonKey(includeFromJson: true, includeToJson: false) this.isDeleted = false}): super._();
   factory _Tag.fromJson(Map<String, dynamic> json) => _$TagFromJson(json);
 
 @override final  String id;
@@ -240,7 +240,7 @@ class _Tag extends Tag {
 @override@JsonKey(name: '_count') final  TagCount? count;
 // Local only - not serialized
 @override@JsonKey(includeFromJson: false, includeToJson: false) final  bool isSynced;
-@override@JsonKey(includeFromJson: false, includeToJson: false) final  bool isDeleted;
+@override@JsonKey(includeFromJson: true, includeToJson: false) final  bool isDeleted;
 
 /// Create a copy of Tag
 /// with the given fields replaced by the non-null parameter values.
@@ -275,7 +275,7 @@ abstract mixin class _$TagCopyWith<$Res> implements $TagCopyWith<$Res> {
   factory _$TagCopyWith(_Tag value, $Res Function(_Tag) _then) = __$TagCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, String? color, DateTime? updatedAt,@JsonKey(name: '_count') TagCount? count,@JsonKey(includeFromJson: false, includeToJson: false) bool isSynced,@JsonKey(includeFromJson: false, includeToJson: false) bool isDeleted
+ String id, String name, String? color, DateTime? updatedAt,@JsonKey(name: '_count') TagCount? count,@JsonKey(includeFromJson: false, includeToJson: false) bool isSynced,@JsonKey(includeFromJson: true, includeToJson: false) bool isDeleted
 });
 
 

@@ -245,6 +245,17 @@ class TagsRepository {
       // 4. Process server changes
       await _db.transaction(() async {
         for (final serverTag in serverChanges) {
+          // If server tag is deleted (tombstone), remove it locally
+          if (serverTag.isDeleted) {
+            await (_db.delete(
+              _db.noteTags,
+            )..where((tbl) => tbl.tagId.equals(serverTag.id))).go();
+            await (_db.delete(
+              _db.tags,
+            )..where((tbl) => tbl.id.equals(serverTag.id))).go();
+            continue;
+          }
+
           final localTag = await (_db.select(
             _db.tags,
           )..where((tbl) => tbl.id.equals(serverTag.id))).getSingleOrNull();
