@@ -32,7 +32,7 @@ export function IconPattern({
           style={{
             left: `${x}px`,
             top: `${y}px`,
-            transform: `translate(-50%, -50%) ${rotation !== 0 ? `rotate(${rotation * 180}deg)` : ""
+            transform: `translate(-50%, -50%) ${rotation !== 0 ? `rotate(${rotation * (180 / Math.PI)}deg)` : ""
               }`,
             color,
           }}

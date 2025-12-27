@@ -1,27 +1,27 @@
 import type { NoteBackgroundData } from "./types";
 
 export const SOLID_COLORS: NoteBackgroundData[] = [
-  { id: "color_red", isPattern: false, lightColor: "#FFEBEE", darkColor: "#4A1C1C" },
-  { id: "color_orange", isPattern: false, lightColor: "#FFF3E0", darkColor: "#4A2C1C" },
-  { id: "color_yellow", isPattern: false, lightColor: "#FFFDE7", darkColor: "#4A4A1C" },
-  { id: "color_green", isPattern: false, lightColor: "#E8F5E9", darkColor: "#1C4A1C" },
-  { id: "color_teal", isPattern: false, lightColor: "#E0F2F1", darkColor: "#1C4A4A" },
-  { id: "color_blue", isPattern: false, lightColor: "#E3F2FD", darkColor: "#1C2C4A" },
-  { id: "color_purple", isPattern: false, lightColor: "#F3E5F5", darkColor: "#3A1C4A" },
-  { id: "color_pink", isPattern: false, lightColor: "#FCE4EC", darkColor: "#4A1C3A" },
-  { id: "color_brown", isPattern: false, lightColor: "#EFEBE9", darkColor: "#3A2C1C" },
-  { id: "color_gray", isPattern: false, lightColor: "#ECEFF1", darkColor: "#2C2C2C" },
+  { id: "color_red", isPattern: false, lightColor: "#FFEBEE", darkColor: "#331D21" },
+  { id: "color_orange", isPattern: false, lightColor: "#FFE8D6", darkColor: "#3D2A1A" },
+  { id: "color_yellow", isPattern: false, lightColor: "#FFF9DC", darkColor: "#3A3A1A" },
+  { id: "color_green", isPattern: false, lightColor: "#E8F5E9", darkColor: "#1B3022" },
+  { id: "color_teal", isPattern: false, lightColor: "#E0F7FA", darkColor: "#193135" },
+  { id: "color_blue", isPattern: false, lightColor: "#E3F2FD", darkColor: "#192A3A" },
+  { id: "color_dark_blue", isPattern: false, lightColor: "#E8EAF6", darkColor: "#1A1F3A" },
+  { id: "color_purple", isPattern: false, lightColor: "#F3E5F5", darkColor: "#2D1D31" },
+  { id: "color_pink", isPattern: false, lightColor: "#FCE4EC", darkColor: "#331D21" },
+  { id: "color_brown", isPattern: false, lightColor: "#EFEBE9", darkColor: "#2E1F1A" },
 ];
 
 export const PATTERNS: NoteBackgroundData[] = [
-  { id: "pattern_dots", isPattern: true, lightColor: "#FAFAFA", darkColor: "#1A1A1A" },
-  { id: "pattern_grid", isPattern: true, lightColor: "#FAFAFA", darkColor: "#1A1A1A" },
-  { id: "pattern_lines", isPattern: true, lightColor: "#FAFAFA", darkColor: "#1A1A1A" },
-  { id: "pattern_waves", isPattern: true, lightColor: "#E3F2FD", darkColor: "#1C2C4A" },
-  { id: "pattern_groceries", isPattern: true, lightColor: "#FFF3E0", darkColor: "#4A2C1C" },
-  { id: "pattern_music", isPattern: true, lightColor: "#F3E5F5", darkColor: "#3A1C4A" },
-  { id: "pattern_travel", isPattern: true, lightColor: "#E0F2F1", darkColor: "#1C4A4A" },
-  { id: "pattern_code", isPattern: true, lightColor: "#ECEFF1", darkColor: "#2C2C2C" },
+  { id: "pattern_dots", isPattern: true, lightColor: "#F5F5F5", darkColor: "#1E1E1E" },
+  { id: "pattern_grid", isPattern: true, lightColor: "#FFF9DC", darkColor: "#3A3A1A" },
+  { id: "pattern_lines", isPattern: true, lightColor: "#E3F2FD", darkColor: "#192A3A" },
+  { id: "pattern_waves", isPattern: true, lightColor: "#E8F5E9", darkColor: "#1B3022" },
+  { id: "pattern_groceries", isPattern: true, lightColor: "#FFEBEE", darkColor: "#331D21" },
+  { id: "pattern_music", isPattern: true, lightColor: "#F3E5F5", darkColor: "#2D1D31" },
+  { id: "pattern_travel", isPattern: true, lightColor: "#E0F7FA", darkColor: "#193135" },
+  { id: "pattern_code", isPattern: true, lightColor: "#ECEFF1", darkColor: "#1E2325" },
 ];
 
 export const NOTE_BACKGROUND_STYLES: NoteBackgroundData[] = [

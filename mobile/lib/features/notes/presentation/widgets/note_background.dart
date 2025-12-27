@@ -109,13 +109,13 @@ class NoteBackgroundStyle {
     ),
     const NoteBackgroundData(
       id: colorOrange,
-      lightColor: Color(0xFFFFF3E0), // Soft orange/peach
-      darkColor: Color(0xFF332B1E), // Softer dark orange
+      lightColor: Color(0xFFFFE8D6), // Soft orange
+      darkColor: Color(0xFF3D2A1A), // Softer dark orange
     ),
     const NoteBackgroundData(
       id: colorYellow,
-      lightColor: Color(0xFFFFF8E1), // Soft yellow
-      darkColor: Color(0xFF332B1E), // Softer dark yellow
+      lightColor: Color(0xFFFFF9DC), // Soft yellow
+      darkColor: Color(0xFF3A3A1A), // Softer dark yellow
     ),
     const NoteBackgroundData(
       id: colorGreen,
@@ -149,7 +149,7 @@ class NoteBackgroundStyle {
     ),
     const NoteBackgroundData(
       id: colorBrown,
-      lightColor: Color(0xFFEFEBE9), // Soft beige/brown
+      lightColor: Color(0xFFEFEBE9), // Soft brown
       darkColor: Color(0xFF2E1F1A), // Softer dark brown
     ),
 
@@ -162,8 +162,8 @@ class NoteBackgroundStyle {
     ),
     NoteBackgroundData(
       id: patternGrid,
-      lightColor: const Color(0xFFFFF8E1),
-      darkColor: const Color(0xFF332B1E), // Soft dark brown
+      lightColor: const Color(0xFFFFF9DC), // Soft yellow
+      darkColor: const Color(0xFF3A3A1A), // Soft dark yellow
       painterBuilder: (c) => GridPainter(color: c),
     ),
     NoteBackgroundData(
