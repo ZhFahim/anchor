@@ -42,7 +42,13 @@ git clone <repository-url>
 cd anchor/web
 ```
 
-2. Install dependencies:
+2. Start the backend (required):
+Ensure you have a database and backend running. From the project root:
+```bash
+docker compose -f docker-compose.dev.yml up -d
+```
+
+3. Install dependencies:
 ```bash
 pnpm install
 ```

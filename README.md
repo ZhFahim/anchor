@@ -63,23 +63,26 @@ This repository includes:
    cd anchor
    ```
 
-2. **Copy environment variable templates:**
-   - `server/.env.example` → `server/.env`
-   - `web/.env.example` → `web/.env`
-   
-   Set the following variables:
-   - `DATABASE_URL` - PostgreSQL connection string
-   - `JWT_SECRET` - Secret key for JWT tokens
-   - `NEXT_PUBLIC_API_URL` - Backend API URL (for web app)
+2. **(Optional) Configure environment:**
+   Copy `.env.example` to `.env` and adjust values. Most users can skip this step - defaults work out of the box.
 
-3. **Start the stack:**
+   Available options:
+   | Variable | Default | Description |
+   |----------|---------|-------------|
+   | `JWT_SECRET` | (auto-generated) | Auth token secret (persisted in `/data`) |
+   | `PG_HOST` | (empty) | External Postgres host (leave empty for embedded) |
+   | `PG_PORT` | `5432` | Postgres port |
+   | `PG_USER` | `anchor` | Postgres username |
+   | `PG_PASSWORD` | `password` | Postgres password |
+   | `PG_DATABASE` | `anchor` | Database name |
+
+3. **Start the container:**
    ```bash
-   docker-compose up --build
+   docker compose up -d
    ```
 
-4. **Access the services:**
-   - API Server: http://localhost:3001
-   - Web App: http://localhost:3000
+4. **Access the app:**
+   Open http://localhost:3000
 
 
 ## Roadmap

@@ -6,12 +6,12 @@ node_modules
 # Testing
 coverage
 .nyc_output
-test
 
-# Build outputs
-dist
+# Next.js
+.next
+out
 build
-*.tsbuildinfo
+dist
 
 # Production
 *.log
@@ -36,6 +36,13 @@ pnpm-debug.log*
 .env.test.local
 .env.production.local
 
+# Vercel
+.vercel
+
+# Typescript
+*.tsbuildinfo
+next-env.d.ts
+
 # IDE
 .vscode
 .idea
@@ -47,6 +54,3 @@ pnpm-debug.log*
 .git
 .gitignore
 README.md
-
-# Env files
-.env*

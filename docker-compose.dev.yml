@@ -1,33 +1,60 @@
 services:
-  postgres:
+  db:
     image: postgres:18-alpine
+    container_name: anchor-db-dev
     environment:
       POSTGRES_USER: anchor
       POSTGRES_PASSWORD: password
       POSTGRES_DB: anchor
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data_dev:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U anchor -d anchor" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
-  anchor:
+  server:
     build:
       context: ./server
-      dockerfile: Dockerfile
-    image: anchor-dev
+      dockerfile: Dockerfile.dev
+    container_name: anchor-server-dev
     depends_on:
-      - postgres
+      db:
+        condition: service_healthy
     ports:
-      - "3000:3000"
+      - "3001:3001"
     environment:
-      - DATABASE_URL=postgresql://anchor:password@postgres:5432/anchor
-      - JWT_SECRET=supersecretkey
       - NODE_ENV=development
+      - PORT=3001
+      - DATABASE_URL=postgresql://anchor:password@db:5432/anchor
+      - JWT_SECRET=supersecretkey
     volumes:
       - ./server:/app
       - /app/node_modules
     # Runs migrations and starts the app in watch mode
-    command: /bin/sh -c "npx prisma generate && npx prisma migrate deploy && pnpm run start:dev"
+    command: /bin/sh -c "pnpm prisma generate && pnpm prisma migrate deploy && pnpm run start:dev"
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile.dev
+    container_name: anchor-web-dev
+    depends_on:
+      server:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - SERVER_URL=http://server:3001
+    volumes:
+      - ./web:/app
+      - /app/node_modules
+      - /app/.next
 
 volumes:
-  postgres_data:
+  postgres_data_dev:

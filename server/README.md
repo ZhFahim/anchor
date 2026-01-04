@@ -17,15 +17,15 @@ Nest.js backend for Anchor application.
 2.  Set up environment variables:
     Copy `.env.example` to `.env` (if it exists) or ensure `.env` has:
     ```env
-    DATABASE_URL="postgresql://user:password@localhost:5432/anchor?schema=public"
+    DATABASE_URL="postgresql://anchor:password@localhost:5432/anchor?schema=public"
     JWT_SECRET="supersecretkey"
-    PORT=4000
+    PORT=3001
     ```
 
 3.  Start Database:
     From the project root:
     ```bash
-    docker-compose up -d
+    docker compose -f ../docker-compose.dev.yml up -d db
     ```
 
 4.  Generate Prisma Client:

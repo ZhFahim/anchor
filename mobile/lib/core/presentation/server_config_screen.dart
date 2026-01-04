@@ -88,7 +88,7 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
 
     try {
       final dio = _getDio();
-      final response = await dio.get('$url/health');
+      final response = await dio.get('$url/api/health');
 
       if (response.statusCode == 200 && response.data['app'] == 'anchor') {
         final version = response.data['version'] ?? 'Unknown';
@@ -125,7 +125,7 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
 
     try {
       final dio = _getDio();
-      final response = await dio.get('$url/health');
+      final response = await dio.get('$url/api/health');
 
       if (response.statusCode == 200 && response.data['app'] == 'anchor') {
         // Server is valid, save the URL

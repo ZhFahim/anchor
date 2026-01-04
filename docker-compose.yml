@@ -1,27 +1,19 @@
 services:
-  postgres:
-    image: postgres:18-alpine
-    environment:
-      POSTGRES_USER: anchor
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: anchor
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-
   anchor:
     build:
-      context: ./server
+      context: .
       dockerfile: Dockerfile
     image: anchor
-    depends_on:
-      - postgres
+    container_name: anchor
+    restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
-      - DATABASE_URL=postgresql://anchor:password@postgres:5432/anchor
-      - JWT_SECRET=supersecretkey
+      - PG_USER=anchor
+      - PG_PASSWORD=password
+      - PG_DATABASE=anchor
+    volumes:
+      - anchor_data:/data
 
 volumes:
-  postgres_data:
+  anchor_data:
