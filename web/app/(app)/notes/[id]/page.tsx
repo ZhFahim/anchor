@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import {
@@ -29,9 +29,11 @@ import { toast } from "sonner";
 export default function NoteEditorPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const noteId = params.id as string;
   const isNew = noteId === "new";
+  const tagIdFromUrl = searchParams.get("tagId");
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -86,7 +88,7 @@ export default function NoteEditorPage() {
   // Check if note is read-only (only trashed notes are read-only)
   const isReadOnly = note ? note.state === "trashed" : false;
 
-  // Initialize form with note data
+  // Initialize form with note data or tag from URL
   useEffect(() => {
     if (note) {
       setTitle(note.title);
@@ -103,8 +105,11 @@ export default function NoteEditorPage() {
         tagIds,
         background: note.background || null,
       };
+    } else if (isNew && tagIdFromUrl) {
+      // Initialize with tag from URL when creating a new note
+      setSelectedTagIds([tagIdFromUrl]);
     }
-  }, [note]);
+  }, [note, isNew, tagIdFromUrl]);
 
   // Create note mutation
   const createMutation = useMutation({

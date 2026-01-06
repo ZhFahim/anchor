@@ -10,9 +10,6 @@ import {
   Loader2,
   X,
   Plus,
-  Grid3x3,
-  LayoutGrid,
-  List,
   Pin,
   Archive,
   Trash2,
@@ -32,9 +29,8 @@ import { Header } from "@/components/layout";
 import { NoteCard } from "@/features/notes";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { BulkDeleteDialog, BulkArchiveDialog } from "@/features/notes";
+import { BulkDeleteDialog, BulkArchiveDialog, ViewSettings } from "@/features/notes";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -49,6 +45,8 @@ const masonryBreakpoints = {
 };
 
 type ViewMode = "masonry" | "grid" | "list";
+type SortBy = "updatedAt" | "createdAt" | "title";
+type SortOrder = "asc" | "desc";
 
 export default function NotesPage() {
   const router = useRouter();
@@ -64,6 +62,22 @@ export default function NotesPage() {
     }
     return "masonry";
   });
+  const [sortBy, setSortBy] = useState<SortBy>(() => {
+    if (typeof window === "undefined") return "updatedAt";
+    const saved = localStorage.getItem("notes-sort-by") as SortBy | null;
+    if (saved && ["updatedAt", "createdAt", "title"].includes(saved)) {
+      return saved;
+    }
+    return "updatedAt";
+  });
+  const [sortOrder, setSortOrder] = useState<SortOrder>(() => {
+    if (typeof window === "undefined") return "desc";
+    const saved = localStorage.getItem("notes-sort-order") as SortOrder | null;
+    if (saved && ["asc", "desc"].includes(saved)) {
+      return saved;
+    }
+    return "desc";
+  });
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedNoteIds, setSelectedNoteIds] = useState<Set<string>>(new Set());
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -74,6 +88,15 @@ export default function NotesPage() {
   useEffect(() => {
     localStorage.setItem("notes-view-mode", viewMode);
   }, [viewMode]);
+
+  // Save sort preferences
+  useEffect(() => {
+    localStorage.setItem("notes-sort-by", sortBy);
+  }, [sortBy]);
+
+  useEffect(() => {
+    localStorage.setItem("notes-sort-order", sortOrder);
+  }, [sortOrder]);
 
   // Clear selection when exiting selection mode
   useEffect(() => {
@@ -127,9 +150,38 @@ export default function NotesPage() {
     });
   }, [notesWithTags, searchQuery]);
 
-  // Separate pinned and unpinned notes
+  // Separate pinned and unpinned notes (pinned always first, then sorted)
   const pinnedNotes = filteredNotes.filter((note) => note.isPinned);
   const unpinnedNotes = filteredNotes.filter((note) => !note.isPinned);
+
+  // Sort pinned and unpinned separately
+  const sortedPinnedNotes = useMemo(() => {
+    return [...pinnedNotes].sort((a, b) => {
+      let comparison = 0;
+      if (sortBy === "title") {
+        comparison = a.title.localeCompare(b.title);
+      } else if (sortBy === "updatedAt") {
+        comparison = new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
+      } else if (sortBy === "createdAt") {
+        comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      }
+      return sortOrder === "asc" ? comparison : -comparison;
+    });
+  }, [pinnedNotes, sortBy, sortOrder]);
+
+  const sortedUnpinnedNotes = useMemo(() => {
+    return [...unpinnedNotes].sort((a, b) => {
+      let comparison = 0;
+      if (sortBy === "title") {
+        comparison = a.title.localeCompare(b.title);
+      } else if (sortBy === "updatedAt") {
+        comparison = new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
+      } else if (sortBy === "createdAt") {
+        comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      }
+      return sortOrder === "asc" ? comparison : -comparison;
+    });
+  }, [unpinnedNotes, sortBy, sortOrder]);
 
   // Get selected tag
   const selectedTag = tagIdParam
@@ -175,17 +227,22 @@ export default function NotesPage() {
     }
   };
 
+  // Combined sorted notes for selection
+  const allSortedNotes = useMemo(() => {
+    return [...sortedPinnedNotes, ...sortedUnpinnedNotes];
+  }, [sortedPinnedNotes, sortedUnpinnedNotes]);
+
   // Select all / deselect all
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedNoteIds(new Set(filteredNotes.map((note) => note.id)));
+      setSelectedNoteIds(new Set(allSortedNotes.map((note) => note.id)));
     } else {
       setSelectedNoteIds(new Set());
     }
   };
 
-  const allSelected = filteredNotes.length > 0 && selectedNoteIds.size === filteredNotes.length;
-  const someSelected = selectedNoteIds.size > 0 && selectedNoteIds.size < filteredNotes.length;
+  const allSelected = allSortedNotes.length > 0 && selectedNoteIds.size === allSortedNotes.length;
+  const someSelected = selectedNoteIds.size > 0 && selectedNoteIds.size < allSortedNotes.length;
 
   // Bulk delete mutation
   const bulkDeleteMutation = useMutation({
@@ -434,33 +491,17 @@ export default function NotesPage() {
                 </div>
               )}
 
-              {/* View Mode Toggle and Selection Mode Toggle */}
+              {/* View Settings and Selection Mode Toggle */}
               {filteredNotes.length > 0 && (
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground hidden sm:inline">
-                      View:
-                    </span>
-                    <ToggleGroup
-                      type="single"
-                      value={viewMode}
-                      onValueChange={(value) => {
-                        if (value) setViewMode(value as ViewMode);
-                      }}
-                      variant="outline"
-                      size="sm"
-                    >
-                      <ToggleGroupItem value="masonry" aria-label="Masonry view">
-                        <LayoutGrid className="h-4 w-4" />
-                      </ToggleGroupItem>
-                      <ToggleGroupItem value="grid" aria-label="Grid view">
-                        <Grid3x3 className="h-4 w-4" />
-                      </ToggleGroupItem>
-                      <ToggleGroupItem value="list" aria-label="List view">
-                        <List className="h-4 w-4" />
-                      </ToggleGroupItem>
-                    </ToggleGroup>
-                  </div>
+                <div className="flex items-center justify-end gap-2">
+                  <ViewSettings
+                    viewMode={viewMode}
+                    onViewModeChange={setViewMode}
+                    sortBy={sortBy}
+                    onSortByChange={setSortBy}
+                    sortOrder={sortOrder}
+                    onSortOrderChange={setSortOrder}
+                  />
 
                   <Button
                     variant="outline"
@@ -523,7 +564,12 @@ export default function NotesPage() {
                     Create your first note to begin organizing your thoughts
                   </p>
                   <Button
-                    onClick={() => router.push("/notes/new")}
+                    onClick={() => {
+                      const url = tagIdParam
+                        ? `/notes/new?tagId=${tagIdParam}`
+                        : "/notes/new";
+                      router.push(url);
+                    }}
                     size="lg"
                     className="gap-2"
                   >
@@ -536,7 +582,7 @@ export default function NotesPage() {
           ) : (
             <div className="max-w-7xl mx-auto space-y-10">
               {/* Pinned Notes */}
-              {pinnedNotes.length > 0 && (
+              {sortedPinnedNotes.length > 0 && (
                 <section className="space-y-4">
                   <div className="flex items-center gap-3">
                     <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
@@ -544,31 +590,31 @@ export default function NotesPage() {
                       <Pin className="h-3 w-3" />
                       <span>Pinned</span>
                       <span className="text-muted-foreground/60">
-                        ({pinnedNotes.length})
+                        ({sortedPinnedNotes.length})
                       </span>
                     </h2>
                     <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
                   </div>
-                  {renderNotesGrid(pinnedNotes, 0)}
+                  {renderNotesGrid(sortedPinnedNotes, 0)}
                 </section>
               )}
 
               {/* Other Notes */}
-              {unpinnedNotes.length > 0 && (
+              {sortedUnpinnedNotes.length > 0 && (
                 <section className="space-y-4">
-                  {pinnedNotes.length > 0 && (
+                  {sortedPinnedNotes.length > 0 && (
                     <div className="flex items-center gap-3">
                       <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
                       <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/30 border border-border/40">
                         <span>All Notes</span>
                         <span className="text-muted-foreground/60">
-                          ({unpinnedNotes.length})
+                          ({sortedUnpinnedNotes.length})
                         </span>
                       </h2>
                       <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
                     </div>
                   )}
-                  {renderNotesGrid(unpinnedNotes, pinnedNotes.length)}
+                  {renderNotesGrid(sortedUnpinnedNotes, sortedPinnedNotes.length)}
                 </section>
               )}
             </div>

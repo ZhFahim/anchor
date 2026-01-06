@@ -14,3 +14,4 @@ export {
   NoteEditorHeader,
   NoteEditorContent,
 } from "./note-editor";
+export { ViewSettings } from "./view-settings";
