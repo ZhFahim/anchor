@@ -90,7 +90,7 @@ final class NotesControllerProvider
   NotesController create() => NotesController();
 }
 
-String _$notesControllerHash() => r'82c997dc332d506727ee6f10965053734816412e';
+String _$notesControllerHash() => r'e0e017df3fbd90aeb7068da1bf2f59c0baf35df0';
 
 abstract class _$NotesController extends $StreamNotifier<List<Note>> {
   Stream<List<Note>> build();
@@ -156,6 +156,124 @@ abstract class _$SearchQuery extends $Notifier<String> {
             as $ClassProviderElement<
               AnyNotifier<String, String>,
               String,
+              Object?,
+              Object?
+            >;
+    element.handleValue(ref, created);
+  }
+}
+
+/// Provider to track selection mode state
+
+@ProviderFor(SelectionMode)
+const selectionModeProvider = SelectionModeProvider._();
+
+/// Provider to track selection mode state
+final class SelectionModeProvider
+    extends $NotifierProvider<SelectionMode, bool> {
+  /// Provider to track selection mode state
+  const SelectionModeProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'selectionModeProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$selectionModeHash();
+
+  @$internal
+  @override
+  SelectionMode create() => SelectionMode();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(bool value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<bool>(value),
+    );
+  }
+}
+
+String _$selectionModeHash() => r'7c4ef78c428243bcf513370860e626143a8c75b4';
+
+/// Provider to track selection mode state
+
+abstract class _$SelectionMode extends $Notifier<bool> {
+  bool build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final created = build();
+    final ref = this.ref as $Ref<bool, bool>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<bool, bool>,
+              bool,
+              Object?,
+              Object?
+            >;
+    element.handleValue(ref, created);
+  }
+}
+
+/// Provider to track selected note IDs
+
+@ProviderFor(SelectedNoteIds)
+const selectedNoteIdsProvider = SelectedNoteIdsProvider._();
+
+/// Provider to track selected note IDs
+final class SelectedNoteIdsProvider
+    extends $NotifierProvider<SelectedNoteIds, Set<String>> {
+  /// Provider to track selected note IDs
+  const SelectedNoteIdsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'selectedNoteIdsProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$selectedNoteIdsHash();
+
+  @$internal
+  @override
+  SelectedNoteIds create() => SelectedNoteIds();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(Set<String> value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<Set<String>>(value),
+    );
+  }
+}
+
+String _$selectedNoteIdsHash() => r'72f5639a9e051b238b7dc97ff19588dec8897550';
+
+/// Provider to track selected note IDs
+
+abstract class _$SelectedNoteIds extends $Notifier<Set<String>> {
+  Set<String> build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final created = build();
+    final ref = this.ref as $Ref<Set<String>, Set<String>>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<Set<String>, Set<String>>,
+              Set<String>,
               Object?,
               Object?
             >;

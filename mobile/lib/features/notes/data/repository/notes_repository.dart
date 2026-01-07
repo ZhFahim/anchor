@@ -290,6 +290,40 @@ class NotesRepository {
     sync();
   }
 
+  // Bulk delete notes
+  Future<int> bulkDeleteNotes(List<String> ids) async {
+    if (ids.isEmpty) return 0;
+    final now = DateTime.now();
+
+    await (_db.update(_db.notes)..where((tbl) => tbl.id.isIn(ids))).write(
+      NotesCompanion(
+        state: const drift.Value('trashed'),
+        updatedAt: drift.Value(now),
+        isSynced: const drift.Value(false),
+      ),
+    );
+
+    sync();
+    return ids.length;
+  }
+
+  // Bulk archive notes
+  Future<int> bulkArchiveNotes(List<String> ids) async {
+    if (ids.isEmpty) return 0;
+    final now = DateTime.now();
+
+    await (_db.update(_db.notes)..where((tbl) => tbl.id.isIn(ids))).write(
+      NotesCompanion(
+        isArchived: const drift.Value(true),
+        updatedAt: drift.Value(now),
+        isSynced: const drift.Value(false),
+      ),
+    );
+
+    sync();
+    return ids.length;
+  }
+
   // Permanent delete - sets state to deleted (tombstone)
   // The note will be removed locally after sync confirms server received it
   Future<void> permanentDelete(String id) async {

@@ -49,6 +49,14 @@ class NotesController extends _$NotesController {
   Future<void> deleteNote(String id) async {
     await ref.read(notesRepositoryProvider).deleteNote(id);
   }
+
+  Future<int> bulkDeleteNotes(List<String> ids) async {
+    return await ref.read(notesRepositoryProvider).bulkDeleteNotes(ids);
+  }
+
+  Future<int> bulkArchiveNotes(List<String> ids) async {
+    return await ref.read(notesRepositoryProvider).bulkArchiveNotes(ids);
+  }
 }
 
 @riverpod
@@ -58,6 +66,54 @@ class SearchQuery extends _$SearchQuery {
 
   void set(String query) {
     state = query;
+  }
+}
+
+/// Provider to track selection mode state
+@riverpod
+class SelectionMode extends _$SelectionMode {
+  @override
+  bool build() => false;
+
+  void setEnabled(bool enabled) {
+    state = enabled;
+  }
+}
+
+/// Provider to track selected note IDs
+@riverpod
+class SelectedNoteIds extends _$SelectedNoteIds {
+  @override
+  Set<String> build() => {};
+
+  void toggle(String id) {
+    final newSet = Set<String>.from(state);
+    if (newSet.contains(id)) {
+      newSet.remove(id);
+    } else {
+      newSet.add(id);
+    }
+    state = newSet;
+  }
+
+  void selectAll(List<String> ids) {
+    state = Set<String>.from(ids);
+  }
+
+  void clear() {
+    state = {};
+  }
+
+  void add(String id) {
+    final newSet = Set<String>.from(state);
+    newSet.add(id);
+    state = newSet;
+  }
+
+  void remove(String id) {
+    final newSet = Set<String>.from(state);
+    newSet.remove(id);
+    state = newSet;
   }
 }
 
