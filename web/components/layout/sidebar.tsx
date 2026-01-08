@@ -548,6 +548,41 @@ export function Sidebar({
             </Button>
           )}
 
+          {/* Settings */}
+          {isCollapsed ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link
+                  href="/settings"
+                  onClick={handleNavClick}
+                  className={cn(
+                    "flex items-center justify-center",
+                    "w-10 h-10 mx-auto rounded-xl",
+                    "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50",
+                    "transition-all duration-200"
+                  )}
+                >
+                  <Settings className="h-4 w-4" />
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="right">Settings</TooltipContent>
+            </Tooltip>
+          ) : (
+            <Link
+              href="/settings"
+              onClick={handleNavClick}
+              className={cn(
+                "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200",
+                pathname === "/settings"
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+              )}
+            >
+              <Settings className="h-4 w-4" />
+              Settings
+            </Link>
+          )}
+
           {/* Logout */}
           {isCollapsed ? (
             <Tooltip>

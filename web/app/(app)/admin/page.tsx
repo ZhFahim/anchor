@@ -189,7 +189,7 @@ export default function AdminPage() {
       <div className="container mx-auto p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Admin Settings</h1>
+            <h1 className="text-3xl font-serif font-bold">Admin Settings</h1>
             <p className="text-muted-foreground mt-1">
               Manage users and view statistics
             </p>
@@ -355,7 +355,8 @@ export default function AdminPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, password: e.target.value })
                     }
-                    placeholder="Minimum 6 characters"
+                    placeholder="Minimum 8 characters"
+                    minLength={8}
                   />
                 </div>
               )}

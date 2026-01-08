@@ -26,8 +26,8 @@ export default function RegisterPage() {
       return;
     }
 
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters");
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters");
       return;
     }
 
@@ -81,7 +81,7 @@ export default function RegisterPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="pl-10 h-12 bg-background/50"
                 required
-                minLength={6}
+                minLength={8}
               />
             </div>
           </div>
@@ -97,7 +97,7 @@ export default function RegisterPage() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 className="pl-10 h-12 bg-background/50"
                 required
-                minLength={6}
+                minLength={8}
               />
             </div>
           </div>

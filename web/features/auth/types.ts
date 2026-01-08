@@ -20,3 +20,8 @@ export interface RegisterCredentials {
   email: string;
   password: string;
 }
+
+export interface ChangePasswordCredentials {
+  currentPassword: string;
+  newPassword: string;
+}
