@@ -6,6 +6,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../theme/theme_mode_provider.dart';
 import '../widgets/confirm_dialog.dart';
 import '../../features/auth/presentation/auth_controller.dart';
+import '../router/app_routes.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -174,13 +175,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                       const SizedBox(height: 12),
                       _buildSettingsCard(
                         context,
-                        child: _buildActionItem(
-                          context,
-                          title: 'Log Out',
-                          subtitle: 'Sign out of your account',
-                          icon: LucideIcons.logOut,
-                          isDestructive: true,
-                          onTap: _showLogoutDialog,
+                        child: Column(
+                          children: [
+                            _buildActionItem(
+                              context,
+                              title: 'Change Password',
+                              subtitle: 'Update your account password',
+                              icon: LucideIcons.lock,
+                              onTap: () => context.push('/${AppRoutes.settings}/${AppRoutes.changePassword}'),
+                            ),
+                            _buildDivider(context),
+                            _buildActionItem(
+                              context,
+                              title: 'Log Out',
+                              subtitle: 'Sign out of your account',
+                              icon: LucideIcons.logOut,
+                              isDestructive: true,
+                              onTap: _showLogoutDialog,
+                            ),
+                          ],
                         ),
                       ),
                     ],

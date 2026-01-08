@@ -38,4 +38,12 @@ class AuthController extends _$AuthController {
       return null;
     });
   }
+
+  Future<void> changePassword(String currentPassword, String newPassword) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await ref.read(authRepositoryProvider).changePassword(currentPassword, newPassword);
+      return state.value; // Keep the current user state
+    });
+  }
 }

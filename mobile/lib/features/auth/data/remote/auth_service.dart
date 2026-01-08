@@ -40,4 +40,18 @@ class AuthService {
       throw e.response?.data['message'] ?? 'Registration failed';
     }
   }
+
+  Future<void> changePassword(String currentPassword, String newPassword) async {
+    try {
+      await _dio.post(
+        '/api/auth/change-password',
+        data: {
+          'currentPassword': currentPassword,
+          'newPassword': newPassword,
+        },
+      );
+    } on DioException catch (e) {
+      throw e.response?.data['message'] ?? 'Failed to change password';
+    }
+  }
 }

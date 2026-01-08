@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
+import '../../features/auth/presentation/change_password_screen.dart';
 import '../../features/notes/domain/note.dart';
 import '../../features/notes/presentation/notes_list_screen.dart';
 import '../../features/notes/presentation/note_edit_screen.dart';
@@ -92,6 +93,12 @@ GoRouter goRouter(Ref ref) {
           GoRoute(
             path: AppRoutes.settings,
             builder: (context, state) => const SettingsScreen(),
+            routes: [
+              GoRoute(
+                path: AppRoutes.changePassword,
+                builder: (context, state) => const ChangePasswordScreen(),
+              ),
+            ],
           ),
         ],
       ),

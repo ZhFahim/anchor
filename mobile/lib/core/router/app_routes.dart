@@ -10,4 +10,5 @@ class AppRoutes {
   static const trash = 'trash';
   static const archive = 'archive';
   static const settings = 'settings';
+  static const changePassword = 'change-password';
 }
