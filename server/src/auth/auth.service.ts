@@ -7,9 +7,11 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
+import { SettingsService } from '../settings/settings.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { UserStatus } from '../generated/prisma/enums';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -17,9 +19,22 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private settingsService: SettingsService,
   ) { }
 
+  async getRegistrationMode() {
+    return {
+      mode: await this.settingsService.getRegistrationMode(),
+    };
+  }
+
   async register(registerDto: RegisterDto) {
+    const registrationMode = await this.settingsService.getRegistrationMode();
+
+    if (registrationMode === 'disabled') {
+      throw new ForbiddenException('Registration is disabled');
+    }
+
     const existingUser = await this.prisma.user.findUnique({
       where: { email: registerDto.email },
     });
@@ -35,32 +50,53 @@ export class AuthService {
       where: { isAdmin: true },
     });
 
+    // Determine user status based on registration mode
+    const userStatus =
+      registrationMode === 'review' ? UserStatus.pending : UserStatus.active;
+
     const user = await this.prisma.user.create({
       data: {
         email: registerDto.email,
         password: hashedPassword,
         isAdmin: adminCount === 0, // First user becomes admin
+        status: userStatus,
       },
       select: {
         id: true,
         email: true,
         isAdmin: true,
+        status: true,
         createdAt: true,
         updatedAt: true,
       },
     });
 
-    const payload = { email: user.email, sub: user.id };
+    // Only return token if user is active (not pending)
+    if (user.status === UserStatus.active) {
+      const payload = { email: user.email, sub: user.id };
+      return {
+        access_token: this.jwtService.sign(payload),
+        user,
+      };
+    }
+
+    // Return without token for pending users
     return {
-      access_token: this.jwtService.sign(payload),
       user,
+      message: 'Registration successful. Your account is pending approval.',
     };
   }
 
   async login(loginDto: LoginDto) {
     const user = await this.prisma.user.findUnique({
       where: { email: loginDto.email },
-      select: { id: true, email: true, password: true, isAdmin: true },
+      select: {
+        id: true,
+        email: true,
+        password: true,
+        isAdmin: true,
+        status: true,
+      },
     });
 
     if (!user) {
@@ -74,6 +110,13 @@ export class AuthService {
 
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // Check if user is pending approval
+    if (user.status === UserStatus.pending) {
+      throw new ForbiddenException(
+        'Account pending approval. Please wait for an administrator to approve your account.',
+      );
     }
 
     // Remove password from user object

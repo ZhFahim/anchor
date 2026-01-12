@@ -53,9 +53,11 @@ export function useAuth() {
   const loginMutation = useMutation({
     mutationFn: (credentials: LoginCredentials) => loginApi(credentials),
     onSuccess: (data) => {
-      setAuth(data.user, data.access_token);
-      toast.success("Welcome back!");
-      router.push("/");
+      if (data.access_token) {
+        setAuth(data.user, data.access_token);
+        toast.success("Welcome back!");
+        router.push("/");
+      }
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to login");
@@ -65,9 +67,16 @@ export function useAuth() {
   const registerMutation = useMutation({
     mutationFn: (credentials: RegisterCredentials) => registerApi(credentials),
     onSuccess: (data) => {
-      setAuth(data.user, data.access_token);
-      toast.success("Account created successfully!");
-      router.push("/");
+      if (data.access_token) {
+        // User is active, log them in
+        setAuth(data.user, data.access_token);
+        toast.success("Account created successfully!");
+        router.push("/");
+      } else {
+        // User is pending approval
+        toast.success(data.message || "Registration successful. Your account is pending approval.");
+        router.push("/login");
+      }
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to create account");

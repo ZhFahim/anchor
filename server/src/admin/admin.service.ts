@@ -5,14 +5,20 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { SettingsService } from '../settings/settings.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { NoteState } from 'src/generated/prisma/enums';
+import { UserStatus } from 'src/generated/prisma/enums';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class AdminService {
-  constructor(private prisma: PrismaService) { }
+  constructor(
+    private prisma: PrismaService,
+    private settingsService: SettingsService,
+  ) { }
 
   async getStats() {
     const [totalUsers, totalNotes, totalTags] = await Promise.all([
@@ -32,6 +38,15 @@ export class AdminService {
     };
   }
 
+  async getRegistrationSettings() {
+    return this.settingsService.getRegistrationSettings();
+  }
+
+  async updateRegistrationMode(mode: 'disabled' | 'enabled' | 'review') {
+    await this.settingsService.setRegistrationMode(mode);
+    return this.settingsService.getRegistrationSettings();
+  }
+
   async findAllUsers(skip = 0, take = 50) {
     const [users, total] = await Promise.all([
       this.prisma.user.findMany({
@@ -42,6 +57,7 @@ export class AdminService {
           id: true,
           email: true,
           isAdmin: true,
+          status: true,
           createdAt: true,
           updatedAt: true,
           _count: {
@@ -65,6 +81,23 @@ export class AdminService {
       skip,
       take,
     };
+  }
+
+  async getPendingUsers() {
+    const users = await this.prisma.user.findMany({
+      where: { status: UserStatus.pending },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        email: true,
+        isAdmin: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return users;
   }
 
   async createUser(createUserDto: CreateUserDto) {
@@ -168,10 +201,10 @@ export class AdminService {
       throw new NotFoundException('User not found');
     }
 
-    // Generate random password if not provided
+    // Generate secure random password if not provided
     const password =
       newPassword ||
-      Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-12);
+      crypto.randomBytes(12).toString('base64').replace(/[+/=]/g, '').slice(0, 16);
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -188,5 +221,54 @@ export class AdminService {
         : 'Password reset successfully. New password generated.',
     };
   }
-}
 
+  async approveUser(id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.status !== UserStatus.pending) {
+      throw new BadRequestException('User is not pending approval');
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id },
+      data: { status: UserStatus.active },
+      select: {
+        id: true,
+        email: true,
+        isAdmin: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return updatedUser;
+  }
+
+  async rejectUser(id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.status !== UserStatus.pending) {
+      throw new BadRequestException('User is not pending approval');
+    }
+
+    // Delete the user
+    await this.prisma.user.delete({
+      where: { id },
+    });
+
+    return { message: 'User rejected and deleted successfully' };
+  }
+}

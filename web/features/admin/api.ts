@@ -6,6 +6,8 @@ import type {
   CreateUserDto,
   UpdateUserDto,
   ResetPasswordResponse,
+  RegistrationSettings,
+  UpdateRegistrationModeDto,
 } from "./types";
 
 export async function getAdminStats(): Promise<AdminStats> {
@@ -51,3 +53,28 @@ export async function resetPassword(
     .json<ResetPasswordResponse>();
 }
 
+export async function getRegistrationSettings(): Promise<RegistrationSettings> {
+  return api
+    .get("api/admin/settings/registration")
+    .json<RegistrationSettings>();
+}
+
+export async function updateRegistrationMode(
+  data: UpdateRegistrationModeDto
+): Promise<RegistrationSettings> {
+  return api
+    .patch("api/admin/settings/registration", { json: data })
+    .json<RegistrationSettings>();
+}
+
+export async function getPendingUsers(): Promise<AdminUser[]> {
+  return api.get("api/admin/users/pending").json<AdminUser[]>();
+}
+
+export async function approveUser(id: string): Promise<AdminUser> {
+  return api.post(`api/admin/users/${id}/approve`).json<AdminUser>();
+}
+
+export async function rejectUser(id: string): Promise<{ message: string }> {
+  return api.post(`api/admin/users/${id}/reject`).json<{ message: string }>();
+}

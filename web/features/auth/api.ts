@@ -13,6 +13,10 @@ export async function getMe(): Promise<User> {
   return api.get("api/auth/me").json<User>();
 }
 
+export async function getRegistrationMode(): Promise<{ mode: "disabled" | "enabled" | "review" }> {
+  return api.get("api/auth/registration-mode").json<{ mode: "disabled" | "enabled" | "review" }>();
+}
+
 export async function changePassword(credentials: ChangePasswordCredentials): Promise<{ message: string }> {
   return api.post("api/auth/change-password", { json: credentials }).json<{ message: string }>();
 }

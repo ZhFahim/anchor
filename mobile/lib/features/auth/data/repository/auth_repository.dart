@@ -30,7 +30,16 @@ class AuthRepository {
   }
 
   Future<void> register(String email, String password) async {
-    await _authService.register(email, password);
+    final data = await _authService.register(email, password);
+
+    if (data.containsKey('access_token') && data['access_token'] != null) {
+      final token = data['access_token'] as String;
+      final userJson = data['user'] as Map<String, dynamic>;
+
+      await _storage.write(key: 'access_token', value: token);
+      await _storage.write(key: 'user_id', value: userJson['id']);
+      await _storage.write(key: 'user_email', value: userJson['email']);
+    }
   }
 
   Future<void> logout() async {
@@ -52,7 +61,10 @@ class AuthRepository {
     return null;
   }
 
-  Future<void> changePassword(String currentPassword, String newPassword) async {
+  Future<void> changePassword(
+    String currentPassword,
+    String newPassword,
+  ) async {
     await _authService.changePassword(currentPassword, newPassword);
   }
 }

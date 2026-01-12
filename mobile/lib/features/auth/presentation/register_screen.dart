@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:anchor/core/widgets/app_snackbar.dart';
 import 'auth_controller.dart';
+import '../data/repository/auth_repository.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -38,11 +39,28 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       if (mounted) {
         final state = ref.read(authControllerProvider);
         if (!state.hasError) {
-          AppSnackbar.showSuccess(
-            context,
-            message: 'Registration successful! Please login.',
-          );
-          context.go(AppRoutes.login);
+          // Check if user was logged in (has token) or is pending approval
+          final token = await ref.read(authRepositoryProvider).getToken();
+          if (token != null) {
+            // User is active, navigate to home
+            if (mounted) {
+              AppSnackbar.showSuccess(
+                context,
+                message: 'Registration successful!',
+              );
+              context.go(AppRoutes.home);
+            }
+          } else {
+            // User is pending approval
+            if (mounted) {
+              AppSnackbar.showSuccess(
+                context,
+                message:
+                    'Registration successful! Your account is pending approval.',
+              );
+              context.go(AppRoutes.login);
+            }
+          }
         }
       }
     }

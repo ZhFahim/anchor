@@ -14,7 +14,7 @@ A modern, feature-rich note-taking web application built with Next.js, React, an
 - **Dark Mode** - Beautiful dark and light themes
 - **Responsive Design** - Works seamlessly on desktop and mobile devices
 - **Authentication** - Secure user authentication and session management
-- **Admin Panel** - User management for admin users
+- **Admin Panel** - User management, registration control, and system statistics
 
 ## Tech Stack
 

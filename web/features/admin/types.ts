@@ -8,6 +8,7 @@ export interface AdminUser {
   id: string;
   email: string;
   isAdmin: boolean;
+  status: "active" | "pending";
   createdAt: string;
   updatedAt: string;
   _count?: {
@@ -37,3 +38,14 @@ export interface ResetPasswordResponse {
   message: string;
 }
 
+export type RegistrationMode = "disabled" | "enabled" | "review";
+
+export interface RegistrationSettings {
+  mode: RegistrationMode;
+  isLocked: boolean;
+  source: "env" | "database" | "default";
+}
+
+export interface UpdateRegistrationModeDto {
+  mode: RegistrationMode;
+}
