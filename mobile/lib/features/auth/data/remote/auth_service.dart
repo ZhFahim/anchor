@@ -1,7 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../core/network/dio_provider.dart';
-import '../../domain/user.dart';
 
 part 'auth_service.g.dart';
 
@@ -28,27 +27,26 @@ class AuthService {
     }
   }
 
-  Future<User> register(String email, String password) async {
+  Future<Map<String, dynamic>> register(String email, String password) async {
     try {
       final response = await _dio.post(
         '/api/auth/register',
         data: {'email': email, 'password': password},
       );
-      // Register returns { id, email }
-      return User.fromJson(response.data);
+      return response.data;
     } on DioException catch (e) {
       throw e.response?.data['message'] ?? 'Registration failed';
     }
   }
 
-  Future<void> changePassword(String currentPassword, String newPassword) async {
+  Future<void> changePassword(
+    String currentPassword,
+    String newPassword,
+  ) async {
     try {
       await _dio.post(
         '/api/auth/change-password',
-        data: {
-          'currentPassword': currentPassword,
-          'newPassword': newPassword,
-        },
+        data: {'currentPassword': currentPassword, 'newPassword': newPassword},
       );
     } on DioException catch (e) {
       throw e.response?.data['message'] ?? 'Failed to change password';

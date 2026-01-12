@@ -64,9 +64,11 @@ pnpm run test:e2e
 ## API Endpoints
 
 ### Auth
+- `GET /api/auth/registration-mode` - Get current registration mode (public)
 - `POST /api/auth/register` - Register a new user
 - `POST /api/auth/login` - Login
 - `GET /api/auth/me` - Get current user (requires authentication)
+- `POST /api/auth/change-password` - Change password (requires authentication)
 
 ### Notes
 - `GET /api/notes` - Get all notes (supports `?search=term` and `?tagId=id`)
@@ -93,11 +95,16 @@ pnpm run test:e2e
 
 ### Admin (requires admin privileges)
 - `GET /api/admin/stats` - Get server statistics
+- `GET /api/admin/settings/registration` - Get registration settings
+- `PATCH /api/admin/settings/registration` - Update registration mode (disabled if locked by env)
 - `GET /api/admin/users` - Get all users (supports `?skip=n` and `?take=n`)
+- `GET /api/admin/users/pending` - Get pending users awaiting approval
 - `POST /api/admin/users` - Create a new user
 - `PATCH /api/admin/users/:id` - Update a user
 - `DELETE /api/admin/users/:id` - Delete a user
 - `POST /api/admin/users/:id/reset-password` - Reset a user's password
+- `POST /api/admin/users/:id/approve` - Approve a pending user
+- `POST /api/admin/users/:id/reject` - Reject and delete a pending user
 
 ### Health
 - `GET /api/health` - Health check endpoint

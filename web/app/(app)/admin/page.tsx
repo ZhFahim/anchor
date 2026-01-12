@@ -10,9 +10,15 @@ import {
   updateUser,
   deleteUser,
   resetPassword,
+  getRegistrationSettings,
+  updateRegistrationMode,
+  getPendingUsers,
+  approveUser,
+  rejectUser,
   type AdminUser,
   type CreateUserDto,
   type UpdateUserDto,
+  type RegistrationMode,
 } from "@/features/admin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -41,7 +47,21 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreVertical, Plus, Users, FileText, Tag, AlertTriangle, Loader2 } from "lucide-react";
+import {
+  MoreVertical,
+  Plus,
+  Users,
+  FileText,
+  Tag,
+  AlertTriangle,
+  Loader2,
+  Settings,
+  Lock,
+  CheckCircle,
+  XCircle,
+  Info,
+} from "lucide-react";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -63,10 +83,59 @@ export default function AdminPage() {
     queryFn: getAdminStats,
   });
 
+  const { data: registrationSettings, isLoading: registrationSettingsLoading } = useQuery({
+    queryKey: ["admin", "settings", "registration"],
+    queryFn: getRegistrationSettings,
+  });
+
+  const { data: pendingUsers = [], isLoading: pendingUsersLoading } = useQuery({
+    queryKey: ["admin", "users", "pending"],
+    queryFn: getPendingUsers,
+  });
+
   const { data: usersData, isLoading: usersLoading } = useQuery({
     queryKey: ["admin", "users"],
     queryFn: () => getUsers(),
   });
+
+  const updateRegistrationModeMutation = useMutation({
+    mutationFn: updateRegistrationMode,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "settings"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "users", "pending"] });
+      toast.success("Registration mode updated successfully");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to update registration mode");
+    },
+  });
+
+  const approveUserMutation = useMutation({
+    mutationFn: approveUser,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "users", "pending"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
+      toast.success("User approved successfully");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to approve user");
+    },
+  });
+
+  const rejectUserMutation = useMutation({
+    mutationFn: rejectUser,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "users", "pending"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
+      toast.success("User rejected successfully");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to reject user");
+    },
+  });
+
 
   const createUserMutation = useMutation({
     mutationFn: createUser,
@@ -235,6 +304,135 @@ export default function AdminPage() {
           </Card>
         </div>
 
+        {/* Registration Settings */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Settings className="h-5 w-5" />
+                <CardTitle>Registration Settings</CardTitle>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {registrationSettingsLoading ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-4 w-4 animate-spin" />
+              </div>
+            ) : registrationSettings ? (
+              <>
+                {registrationSettings.isLocked && (
+                  <div className="flex items-start gap-2 p-3 border rounded-lg bg-muted/50">
+                    <Lock className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
+                    <p className="text-xs text-muted-foreground">
+                      Controlled by <code className="px-1 py-0.5 bg-background rounded text-[10px] font-mono">USER_SIGNUP</code> env variable. Remove it to manage from UI.
+                    </p>
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+                    <Label className="whitespace-nowrap">Registration Mode</Label>
+                    <ToggleGroup
+                      type="single"
+                      value={registrationSettings.mode}
+                      onValueChange={(value) => {
+                        if (value && !registrationSettings.isLocked) {
+                          updateRegistrationModeMutation.mutate({ mode: value as RegistrationMode });
+                        }
+                      }}
+                      disabled={registrationSettings.isLocked || updateRegistrationModeMutation.isPending}
+                      className="justify-start border rounded-md"
+                    >
+                      <ToggleGroupItem value="disabled" aria-label="Disabled">
+                        Disabled
+                      </ToggleGroupItem>
+                      <ToggleGroupItem value="enabled" aria-label="Enabled">
+                        Enabled
+                      </ToggleGroupItem>
+                      <ToggleGroupItem value="review" aria-label="Require Review">
+                        Require Review
+                      </ToggleGroupItem>
+                    </ToggleGroup>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {registrationSettings.mode === "disabled" && "Registration is disabled. Only admins can create users."}
+                    {registrationSettings.mode === "enabled" && "Users can register immediately without approval."}
+                    {registrationSettings.mode === "review" && "Users can register but require admin approval before they can log in."}
+                  </p>
+                </div>
+              </>
+            ) : null}
+          </CardContent>
+        </Card>
+
+        {/* Pending Users */}
+        {pendingUsers.length > 0 && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Pending User Approvals</CardTitle>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Users awaiting approval to access the system
+                  </p>
+                </div>
+                <Badge variant="outline" className="text-sm">
+                  {pendingUsersLoading ? "..." : pendingUsers.length} pending
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {pendingUsersLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Registered</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {pendingUsers.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell className="font-medium">{user.email}</TableCell>
+                        <TableCell>
+                          {format(new Date(user.createdAt), "MMM d, yyyy")}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              size="sm"
+                              variant="default"
+                              onClick={() => approveUserMutation.mutate(user.id)}
+                              disabled={approveUserMutation.isPending}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-1" />
+                              Approve
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => rejectUserMutation.mutate(user.id)}
+                              disabled={rejectUserMutation.isPending}
+                            >
+                              <XCircle className="h-4 w-4 mr-1" />
+                              Reject
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {/* User Management */}
         <Card>
           <CardHeader>
@@ -254,7 +452,7 @@ export default function AdminPage() {
           <CardContent>
             {usersLoading ? (
               <div className="flex items-center justify-center py-8">
-                <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" />
               </div>
             ) : (
               <Table>
@@ -262,6 +460,7 @@ export default function AdminPage() {
                   <TableRow>
                     <TableHead>Email</TableHead>
                     <TableHead>Role</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead>Notes</TableHead>
                     <TableHead>Tags</TableHead>
                     <TableHead>Created</TableHead>
@@ -277,6 +476,13 @@ export default function AdminPage() {
                           <Badge variant="default">Admin</Badge>
                         ) : (
                           <Badge variant="outline">User</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {user.status === "pending" ? (
+                          <Badge variant="secondary">Pending</Badge>
+                        ) : (
+                          <Badge variant="outline">Active</Badge>
                         )}
                       </TableCell>
                       <TableCell>{user._count?.notes || 0}</TableCell>

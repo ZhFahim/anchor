@@ -21,6 +21,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         id: true,
         email: true,
         isAdmin: true,
+        status: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -29,6 +30,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
+
+    // Reject pending users
+    if (user.status === 'pending') {
+      throw new UnauthorizedException('Account pending approval');
+    }
+
     return user;
   }
 }

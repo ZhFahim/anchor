@@ -27,6 +27,7 @@ Anchor focuses on speed, privacy, simplicity, and reliability across mobile and 
 - **Offline-First** - All edits work offline with local storage
 - **Automatic Sync** - Sync changes across devices when online
 - **Dark Mode** - Beautiful dark and light themes
+- **Admin Panel** - User management, registration control, and system statistics
 
 
 ## Screenshots
@@ -78,6 +79,7 @@ Anchor focuses on speed, privacy, simplicity, and reliability across mobile and 
    | `PG_USER` | `anchor` | Postgres username |
    | `PG_PASSWORD` | `password` | Postgres password |
    | `PG_DATABASE` | `anchor` | Database name |
+   | `USER_SIGNUP` | (not set) | Sign up mode: `disabled`, `enabled`, or `review`. If not set, admins can control it via the admin panel |
 
 3. **Start the container:**
    ```bash

@@ -19,6 +19,15 @@ import type { User } from 'src/generated/prisma/client';
 export class AuthController {
   constructor(private readonly authService: AuthService) { }
 
+  // ============================================================================
+  // Public Endpoints
+  // ============================================================================
+
+  @Get('registration-mode')
+  getRegistrationMode() {
+    return this.authService.getRegistrationMode();
+  }
+
   @Post('register')
   register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
@@ -29,6 +38,10 @@ export class AuthController {
   login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
   }
+
+  // ============================================================================
+  // Protected Endpoints
+  // ============================================================================
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
