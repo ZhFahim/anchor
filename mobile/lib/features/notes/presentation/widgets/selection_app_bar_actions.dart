@@ -5,6 +5,7 @@ import 'package:anchor/features/notes/domain/note.dart';
 import 'package:anchor/core/widgets/confirm_dialog.dart';
 import 'package:anchor/core/widgets/quill_preview.dart'
     show extractPlainTextFromQuillContent;
+import 'package:anchor/core/widgets/app_snackbar.dart';
 import '../notes_controller.dart';
 
 class SelectionAppBarActions extends ConsumerWidget {
@@ -40,22 +41,17 @@ class SelectionAppBarActions extends ConsumerWidget {
         await ref.read(notesControllerProvider.notifier).bulkArchiveNotes(ids);
         onExitSelectionMode();
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
+          AppSnackbar.showSuccess(
+            context,
+            message:
                 '${ids.length} ${ids.length == 1 ? 'note' : 'notes'} archived',
-              ),
-              behavior: SnackBarBehavior.floating,
-            ),
           );
         }
       } catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Failed to archive notes'),
-              behavior: SnackBarBehavior.floating,
-            ),
+          AppSnackbar.showError(
+            context,
+            message: 'Failed to archive notes',
           );
         }
       }
@@ -86,22 +82,17 @@ class SelectionAppBarActions extends ConsumerWidget {
         await ref.read(notesControllerProvider.notifier).bulkDeleteNotes(ids);
         onExitSelectionMode();
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
+          AppSnackbar.showSuccess(
+            context,
+            message:
                 '${ids.length} ${ids.length == 1 ? 'note' : 'notes'} deleted',
-              ),
-              behavior: SnackBarBehavior.floating,
-            ),
           );
         }
       } catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Failed to delete notes'),
-              behavior: SnackBarBehavior.floating,
-            ),
+          AppSnackbar.showError(
+            context,
+            message: 'Failed to delete notes',
           );
         }
       }
