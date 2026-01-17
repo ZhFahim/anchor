@@ -9,8 +9,25 @@ part 'auth_controller.g.dart';
 @riverpod
 class AuthController extends _$AuthController {
   @override
-  Future<User?> build() {
-    return ref.watch(authRepositoryProvider).getCurrentUser();
+  Future<User?> build() async {
+    final authRepo = ref.watch(authRepositoryProvider);
+
+    // Check if we have a token
+    final token = await authRepo.getToken();
+    if (token == null) {
+      // No token means user is not logged in
+      return null;
+    }
+
+    // Try to fetch fresh data from server first
+    try {
+      final freshUser = await authRepo.getProfile();
+      return freshUser;
+    } catch (e) {
+      // If fetch fails (network error, etc.), fall back to cached data
+      final cachedUser = await authRepo.getCurrentUser();
+      return cachedUser;
+    }
   }
 
   Future<void> login(String email, String password) async {
@@ -20,10 +37,10 @@ class AuthController extends _$AuthController {
     });
   }
 
-  Future<void> register(String email, String password) async {
+  Future<void> register(String email, String password, String name) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      await ref.read(authRepositoryProvider).register(email, password);
+      await ref.read(authRepositoryProvider).register(email, password, name);
       return null;
     });
   }
@@ -39,10 +56,15 @@ class AuthController extends _$AuthController {
     });
   }
 
-  Future<void> changePassword(String currentPassword, String newPassword) async {
+  Future<void> changePassword(
+    String currentPassword,
+    String newPassword,
+  ) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      await ref.read(authRepositoryProvider).changePassword(currentPassword, newPassword);
+      await ref
+          .read(authRepositoryProvider)
+          .changePassword(currentPassword, newPassword);
       return state.value; // Keep the current user state
     });
   }

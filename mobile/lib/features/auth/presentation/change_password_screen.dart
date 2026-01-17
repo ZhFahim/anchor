@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:anchor/core/widgets/app_snackbar.dart';
+import 'package:anchor/core/widgets/settings_card.dart';
 import 'auth_controller.dart';
 
 class ChangePasswordScreen extends ConsumerStatefulWidget {
@@ -53,30 +54,6 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
     }
   }
 
-  Widget _buildSettingsCard(BuildContext context, {required Widget child}) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.05)
-            : Colors.white.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: theme.colorScheme.onSurface.withValues(alpha: 0.06),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: child,
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -150,8 +127,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        _buildSettingsCard(
-                          context,
+                        SettingsCard(
                           child: Padding(
                             padding: const EdgeInsets.all(16),
                             child: Column(

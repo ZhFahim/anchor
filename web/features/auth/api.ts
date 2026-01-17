@@ -1,5 +1,5 @@
 import { api } from "@/lib/api/client";
-import type { AuthResponse, LoginCredentials, RegisterCredentials, ChangePasswordCredentials, User } from "./types";
+import type { AuthResponse, LoginCredentials, RegisterCredentials, ChangePasswordCredentials, UpdateProfileDto, User } from "./types";
 
 export async function login(credentials: LoginCredentials): Promise<AuthResponse> {
   return api.post("api/auth/login", { json: credentials }).json<AuthResponse>();
@@ -19,4 +19,18 @@ export async function getRegistrationMode(): Promise<{ mode: "disabled" | "enabl
 
 export async function changePassword(credentials: ChangePasswordCredentials): Promise<{ message: string }> {
   return api.post("api/auth/change-password", { json: credentials }).json<{ message: string }>();
+}
+
+export async function updateProfile(data: UpdateProfileDto): Promise<User> {
+  return api.patch("api/auth/profile", { json: data }).json<User>();
+}
+
+export async function uploadProfileImage(imageFile: File): Promise<User> {
+  const formData = new FormData();
+  formData.append("image", imageFile);
+  return api.post("api/auth/profile/image", { body: formData }).json<User>();
+}
+
+export async function removeProfileImage(): Promise<User> {
+  return api.delete("api/auth/profile/image").json<User>();
 }

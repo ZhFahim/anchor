@@ -18,6 +18,8 @@ import {
   ChevronLeft,
   LucideHash,
   Plus,
+  User,
+  UserCog,
   MoreVertical,
   Pencil,
   AlertTriangle,
@@ -37,6 +39,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import {
   Dialog,
@@ -51,6 +55,7 @@ import { useTheme } from "next-themes";
 import { useAuth } from "@/features/auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getTags, updateTag, deleteTag, type Tag as TagType } from "@/features/tags";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface SidebarProps {
   className?: string;
@@ -480,141 +485,120 @@ export function Sidebar({
 
         {/* Footer */}
         <div className="border-t border-sidebar-border p-3 space-y-2">
-          {/* User info */}
-          {user && !isCollapsed && (
-            <div className="px-3 py-2">
-              <p className="text-xs text-sidebar-foreground/50 truncate">
-                {user.email}
-              </p>
-            </div>
-          )}
-
-          {/* Admin */}
-          {user?.isAdmin && (
-            <>
-              {isCollapsed ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Link
-                      href="/admin"
-                      onClick={handleNavClick}
-                      className={cn(
-                        "flex items-center justify-center",
-                        "w-10 h-10 mx-auto rounded-xl",
-                        "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50",
-                        "transition-all duration-200"
-                      )}
-                    >
-                      <Settings className="h-4 w-4" />
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">Admin</TooltipContent>
-                </Tooltip>
-              ) : (
-                <Link
-                  href="/admin"
-                  onClick={handleNavClick}
-                  className={cn(
-                    "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200",
-                    pathname === "/admin"
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                  )}
-                >
-                  <Settings className="h-4 w-4" />
-                  Admin
-                </Link>
-              )}
-            </>
-          )}
-
           {/* Theme toggle */}
           {isCollapsed ? (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  variant="ghost"
-                  size="icon"
                   onClick={cycleTheme}
-                  className="w-full h-10 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+                  className="w-10 h-10 rounded-xl text-sidebar-foreground/70 bg-transparent
+                  hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
                 >
-                  <ThemeIcon className="h-4 w-4" />
+                  <ThemeIcon className="h-4 w-4 flex-shrink-0" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="right">{themeLabel} theme</TooltipContent>
             </Tooltip>
           ) : (
             <Button
-              variant="ghost"
-              size="sm"
               onClick={cycleTheme}
-              className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+              className="w-full h-10 justify-start gap-3 rounded-xl text-sidebar-foreground/70 bg-transparent
+              hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
             >
-              <ThemeIcon className="h-4 w-4" />
+              <ThemeIcon className="h-4 w-4 flex-shrink-0" />
               {themeLabel}
             </Button>
           )}
 
-          {/* Settings */}
-          {isCollapsed ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link
-                  href="/settings"
-                  onClick={handleNavClick}
-                  className={cn(
-                    "flex items-center justify-center",
-                    "w-10 h-10 mx-auto rounded-xl",
-                    "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50",
-                    "transition-all duration-200"
-                  )}
+          {/* User Profile */}
+          {user && (
+            <DropdownMenu>
+              {isCollapsed ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        className="w-10 h-10 rounded-xl text-sidebar-foreground/70 bg-transparent
+                        hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+                      >
+                        <Avatar className="h-8 w-8 flex-shrink-0">
+                          <AvatarImage
+                            src={user.profileImage ? user.profileImage.startsWith('http') ? user.profileImage : user.profileImage : undefined}
+                            alt={user.name}
+                          />
+                          <AvatarFallback className="text-xs">
+                            {user.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)}
+                          </AvatarFallback>
+                        </Avatar>
+                      </Button>
+                    </DropdownMenuTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">Profile</TooltipContent>
+                </Tooltip>
+              ) : (
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    className="w-full justify-start gap-3 px-3 py-2.5 h-auto rounded-xl text-sidebar-foreground/70 bg-transparent
+                    hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+                  >
+                    <Avatar className="h-8 w-8 flex-shrink-0">
+                      <AvatarImage
+                        src={user.profileImage ? user.profileImage.startsWith('http') ? user.profileImage : user.profileImage : undefined}
+                        alt={user.name}
+                      />
+                      <AvatarFallback className="text-xs">
+                        {user.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0 text-left">
+                      <p className="text-sm font-medium text-sidebar-foreground truncate">
+                        {user.name}
+                      </p>
+                      <p className="text-xs text-sidebar-foreground/50 truncate">
+                        {user.email}
+                      </p>
+                    </div>
+                  </Button>
+                </DropdownMenuTrigger>
+              )}
+              <DropdownMenuContent align="end" side="top" className="w-56">
+                {user?.isAdmin && (
+                  <>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        router.push("/admin");
+                        handleNavClick();
+                      }}
+                      className="focus:bg-sidebar-accent/50 focus:text-sidebar-foreground"
+                    >
+                      <UserCog className="h-4 w-4" />
+                      <span>Admin</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+                <DropdownMenuItem
+                  onClick={() => {
+                    router.push("/settings");
+                    handleNavClick();
+                  }}
+                  className="focus:bg-sidebar-accent/50 focus:text-sidebar-foreground"
                 >
                   <Settings className="h-4 w-4" />
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right">Settings</TooltipContent>
-            </Tooltip>
-          ) : (
-            <Link
-              href="/settings"
-              onClick={handleNavClick}
-              className={cn(
-                "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200",
-                pathname === "/settings"
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-              )}
-            >
-              <Settings className="h-4 w-4" />
-              Settings
-            </Link>
-          )}
-
-          {/* Logout */}
-          {isCollapsed ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={logout}
-                  className="w-full h-10 text-sidebar-foreground/70 hover:text-destructive hover:bg-destructive/10"
+                  <span>Settings</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => {
+                    logout();
+                  }}
+                  className="text-destructive focus:text-destructive focus:bg-destructive/10"
                 >
                   <LogOut className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right">Sign Out</TooltipContent>
-            </Tooltip>
-          ) : (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={logout}
-              className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:text-destructive hover:bg-destructive/10"
-            >
-              <LogOut className="h-4 w-4" />
-              Sign Out
-            </Button>
+                  <span>Sign Out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
 

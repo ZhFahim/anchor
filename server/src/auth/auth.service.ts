@@ -11,8 +11,11 @@ import { SettingsService } from '../settings/settings.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UserStatus } from '../generated/prisma/enums';
 import * as bcrypt from 'bcrypt';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class AuthService {
@@ -58,12 +61,15 @@ export class AuthService {
       data: {
         email: registerDto.email,
         password: hashedPassword,
+        name: registerDto.name,
         isAdmin: adminCount === 0, // First user becomes admin
         status: userStatus,
       },
       select: {
         id: true,
         email: true,
+        name: true,
+        profileImage: true,
         isAdmin: true,
         status: true,
         createdAt: true,
@@ -122,10 +128,25 @@ export class AuthService {
     // Remove password from user object
     const { password: _, ...userWithoutPassword } = user;
 
-    const payload = { email: userWithoutPassword.email, sub: userWithoutPassword.id };
+    // Fetch full user with profile fields
+    const fullUser = await this.prisma.user.findUnique({
+      where: { id: userWithoutPassword.id },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        profileImage: true,
+        isAdmin: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    const payload = { email: fullUser!.email, sub: fullUser!.id };
     return {
       access_token: this.jwtService.sign(payload),
-      user: userWithoutPassword,
+      user: fullUser,
     };
   }
 
@@ -168,5 +189,174 @@ export class AuthService {
     });
 
     return { message: 'Password changed successfully' };
+  }
+
+  async updateProfile(userId: string, updateProfileDto: UpdateProfileDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
+
+    if (!user) {
+      throw new ForbiddenException('User not found');
+    }
+
+
+    try {
+      const updatedUser = await this.prisma.user.update({
+        where: { id: userId },
+        data: { name: updateProfileDto.name },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          profileImage: true,
+          isAdmin: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      return updatedUser;
+    } catch (error) {
+      throw new BadRequestException(
+        'Failed to update profile. Please try again.',
+      );
+    }
+  }
+
+  async uploadProfileImage(userId: string, file: Express.Multer.File) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, profileImage: true },
+    });
+
+    if (!user) {
+      throw new ForbiddenException('User not found');
+    }
+
+    // Ensure uploads directory exists
+    const uploadsDir = '/data/uploads/profiles';
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    // File validation is handled at controller level with ParseFilePipe
+    // Generate unique filename
+    const timestamp = Date.now();
+    const ext = path.extname(file.originalname);
+    const filename = `${userId}-${timestamp}${ext}`;
+    const filePath = path.join(uploadsDir, filename);
+    const imagePath = `/uploads/profiles/${filename}`;
+
+    let oldImagePath: string | null = user.profileImage || null;
+    let fileSaved = false;
+
+    try {
+      // Save new file first
+      fs.writeFileSync(filePath, file.buffer);
+      fileSaved = true;
+
+      // Update database with new image path
+      const updatedUser = await this.prisma.user.update({
+        where: { id: userId },
+        data: { profileImage: imagePath },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          profileImage: true,
+          isAdmin: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      // Delete old image only after successful database update
+      if (oldImagePath && oldImagePath !== imagePath) {
+        await this.deleteProfileImage(oldImagePath);
+      }
+
+      return updatedUser;
+    } catch (error) {
+      // If database update fails, delete the newly uploaded file
+      if (fileSaved && fs.existsSync(filePath)) {
+        try {
+          fs.unlinkSync(filePath);
+        } catch (deleteError) {
+          console.error(
+            `Failed to delete newly uploaded file after DB error: ${filePath}`,
+            deleteError,
+          );
+        }
+      }
+      throw new BadRequestException(
+        'Failed to upload profile image. Please try again.',
+      );
+    }
+  }
+
+  async removeProfileImage(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, profileImage: true },
+    });
+
+    if (!user) {
+      throw new ForbiddenException('User not found');
+    }
+
+    const oldImagePath: string | null = user.profileImage || null;
+
+    try {
+      const updatedUser = await this.prisma.user.update({
+        where: { id: userId },
+        data: { profileImage: null },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          profileImage: true,
+          isAdmin: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      // Delete old image only after successful database update
+      if (oldImagePath) {
+        await this.deleteProfileImage(oldImagePath);
+      }
+
+      return updatedUser;
+    } catch (error) {
+      throw new BadRequestException(
+        'Failed to remove profile image. Please try again.',
+      );
+    }
+  }
+
+  private async deleteProfileImage(profileImagePath: string): Promise<void> {
+    if (!profileImagePath) return;
+
+    try {
+      // Remove /uploads prefix to get actual file path
+      const relativePath = profileImagePath.startsWith('/uploads/')
+        ? profileImagePath.substring('/uploads/'.length)
+        : profileImagePath;
+
+      const fullPath = path.join('/data', relativePath);
+      if (fs.existsSync(fullPath)) {
+        fs.unlinkSync(fullPath);
+      }
+    } catch (error) {
+      console.error(
+        `Failed to delete old profile image at ${profileImagePath}:`,
+        error,
+      );
+    }
   }
 }

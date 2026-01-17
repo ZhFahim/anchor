@@ -75,6 +75,7 @@ export default function AdminPage() {
   const [formData, setFormData] = useState<CreateUserDto>({
     email: "",
     password: "",
+    name: "",
   });
   const [resetPasswordResult, setResetPasswordResult] = useState<string | null>(null);
 
@@ -143,7 +144,7 @@ export default function AdminPage() {
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
       setUserDialogOpen(false);
-      setFormData({ email: "", password: "" });
+      setFormData({ email: "", password: "", name: "" });
       setIsEditing(false);
       toast.success("User created successfully");
     },
@@ -159,7 +160,7 @@ export default function AdminPage() {
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
       setUserDialogOpen(false);
       setSelectedUser(null);
-      setFormData({ email: "", password: "" });
+      setFormData({ email: "", password: "", name: "" });
       setIsEditing(false);
       toast.success("User updated successfully");
     },
@@ -197,14 +198,14 @@ export default function AdminPage() {
   const handleCreateUser = () => {
     setSelectedUser(null);
     setIsEditing(false);
-    setFormData({ email: "", password: "" });
+    setFormData({ email: "", password: "", name: "" });
     setUserDialogOpen(true);
   };
 
   const handleEditUser = (user: AdminUser) => {
     setSelectedUser(user);
     setIsEditing(true);
-    setFormData({ email: user.email, password: "" });
+    setFormData({ email: user.email, password: "", name: "" });
     setUserDialogOpen(true);
   };
 
@@ -540,6 +541,20 @@ export default function AdminPage() {
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  id="name"
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
+                  placeholder="User name"
+                  maxLength={100}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
@@ -572,7 +587,7 @@ export default function AdminPage() {
                 variant="outline"
                 onClick={() => {
                   setUserDialogOpen(false);
-                  setFormData({ email: "", password: "" });
+                  setFormData({ email: "", password: "", name: "" });
                   setIsEditing(false);
                   setSelectedUser(null);
                 }}
@@ -584,6 +599,7 @@ export default function AdminPage() {
                 disabled={
                   createUserMutation.isPending ||
                   updateUserMutation.isPending ||
+                  !formData.name ||
                   !formData.email ||
                   (!isEditing && !formData.password)
                 }

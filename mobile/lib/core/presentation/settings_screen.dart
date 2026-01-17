@@ -15,28 +15,7 @@ class SettingsScreen extends ConsumerStatefulWidget {
   ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends ConsumerState<SettingsScreen>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _animController;
-  late Animation<double> _fadeAnim;
-
-  @override
-  void initState() {
-    super.initState();
-    _animController = AnimationController(
-      duration: const Duration(milliseconds: 400),
-      vsync: this,
-    );
-    _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
-    _animController.forward();
-  }
-
-  @override
-  void dispose() {
-    _animController.dispose();
-    super.dispose();
-  }
-
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   void _showLogoutDialog() {
     showDialog(
       context: context,
@@ -98,15 +77,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
               ),
               flexibleSpace: FlexibleSpaceBar(
                 titlePadding: const EdgeInsets.only(left: 20, bottom: 16),
-                title: FadeTransition(
-                  opacity: _fadeAnim,
-                  child: Text(
-                    'Settings',
-                    style: GoogleFonts.playfairDisplay(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onSurface,
-                    ),
+                title: Text(
+                  'Settings',
+                  style: GoogleFonts.playfairDisplay(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
               ),
@@ -116,88 +92,97 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             SliverPadding(
               padding: const EdgeInsets.all(20),
               sliver: SliverToBoxAdapter(
-                child: FadeTransition(
-                  opacity: _fadeAnim,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Appearance Section
-                      _buildSectionHeader(
-                        context,
-                        'Appearance',
-                        LucideIcons.palette,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Appearance Section
+                    _buildSectionHeader(
+                      context,
+                      'Appearance',
+                      LucideIcons.palette,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildSettingsCard(
+                      context,
+                      child: Column(
+                        children: [
+                          _buildThemeOption(
+                            context,
+                            title: 'System',
+                            subtitle: 'Follow device settings',
+                            icon: LucideIcons.smartphone,
+                            isSelected: currentThemeMode == ThemeMode.system,
+                            onTap: () => ref
+                                .read(themeModeControllerProvider.notifier)
+                                .setThemeMode(ThemeMode.system),
+                          ),
+                          _buildDivider(context),
+                          _buildThemeOption(
+                            context,
+                            title: 'Light',
+                            subtitle: 'Always use light theme',
+                            icon: LucideIcons.sun,
+                            isSelected: currentThemeMode == ThemeMode.light,
+                            onTap: () => ref
+                                .read(themeModeControllerProvider.notifier)
+                                .setThemeMode(ThemeMode.light),
+                          ),
+                          _buildDivider(context),
+                          _buildThemeOption(
+                            context,
+                            title: 'Dark',
+                            subtitle: 'Always use dark theme',
+                            icon: LucideIcons.moon,
+                            isSelected: currentThemeMode == ThemeMode.dark,
+                            onTap: () => ref
+                                .read(themeModeControllerProvider.notifier)
+                                .setThemeMode(ThemeMode.dark),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 12),
-                      _buildSettingsCard(
-                        context,
-                        child: Column(
-                          children: [
-                            _buildThemeOption(
-                              context,
-                              title: 'System',
-                              subtitle: 'Follow device settings',
-                              icon: LucideIcons.smartphone,
-                              isSelected: currentThemeMode == ThemeMode.system,
-                              onTap: () => ref
-                                  .read(themeModeControllerProvider.notifier)
-                                  .setThemeMode(ThemeMode.system),
-                            ),
-                            _buildDivider(context),
-                            _buildThemeOption(
-                              context,
-                              title: 'Light',
-                              subtitle: 'Always use light theme',
-                              icon: LucideIcons.sun,
-                              isSelected: currentThemeMode == ThemeMode.light,
-                              onTap: () => ref
-                                  .read(themeModeControllerProvider.notifier)
-                                  .setThemeMode(ThemeMode.light),
-                            ),
-                            _buildDivider(context),
-                            _buildThemeOption(
-                              context,
-                              title: 'Dark',
-                              subtitle: 'Always use dark theme',
-                              icon: LucideIcons.moon,
-                              isSelected: currentThemeMode == ThemeMode.dark,
-                              onTap: () => ref
-                                  .read(themeModeControllerProvider.notifier)
-                                  .setThemeMode(ThemeMode.dark),
-                            ),
-                          ],
-                        ),
-                      ),
+                    ),
 
-                      const SizedBox(height: 32),
+                    const SizedBox(height: 32),
 
-                      // Account Section
-                      _buildSectionHeader(context, 'Account', LucideIcons.user),
-                      const SizedBox(height: 12),
-                      _buildSettingsCard(
-                        context,
-                        child: Column(
-                          children: [
-                            _buildActionItem(
-                              context,
-                              title: 'Change Password',
-                              subtitle: 'Update your account password',
-                              icon: LucideIcons.lock,
-                              onTap: () => context.push('/${AppRoutes.settings}/${AppRoutes.changePassword}'),
+                    // Account Section
+                    _buildSectionHeader(context, 'Account', LucideIcons.user),
+                    const SizedBox(height: 12),
+                    _buildSettingsCard(
+                      context,
+                      child: Column(
+                        children: [
+                          _buildActionItem(
+                            context,
+                            title: 'Edit Profile',
+                            subtitle: 'Update your name and profile image',
+                            icon: LucideIcons.user,
+                            onTap: () => context.push(
+                              '/${AppRoutes.settings}/${AppRoutes.editProfile}',
                             ),
-                            _buildDivider(context),
-                            _buildActionItem(
-                              context,
-                              title: 'Log Out',
-                              subtitle: 'Sign out of your account',
-                              icon: LucideIcons.logOut,
-                              isDestructive: true,
-                              onTap: _showLogoutDialog,
+                          ),
+                          _buildDivider(context),
+                          _buildActionItem(
+                            context,
+                            title: 'Change Password',
+                            subtitle: 'Update your account password',
+                            icon: LucideIcons.lock,
+                            onTap: () => context.push(
+                              '/${AppRoutes.settings}/${AppRoutes.changePassword}',
                             ),
-                          ],
-                        ),
+                          ),
+                          _buildDivider(context),
+                          _buildActionItem(
+                            context,
+                            title: 'Log Out',
+                            subtitle: 'Sign out of your account',
+                            icon: LucideIcons.logOut,
+                            isDestructive: true,
+                            onTap: _showLogoutDialog,
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),

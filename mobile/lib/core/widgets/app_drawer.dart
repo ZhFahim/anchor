@@ -1,10 +1,13 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import '../../features/auth/presentation/auth_controller.dart';
 import '../../features/tags/domain/tag.dart';
 import '../../features/tags/presentation/tags_controller.dart';
+import '../../core/network/server_config_provider.dart';
 import 'anchor_icon.dart';
 
 class AppDrawer extends ConsumerStatefulWidget {
@@ -14,29 +17,8 @@ class AppDrawer extends ConsumerStatefulWidget {
   ConsumerState<AppDrawer> createState() => _AppDrawerState();
 }
 
-class _AppDrawerState extends ConsumerState<AppDrawer>
-    with SingleTickerProviderStateMixin {
+class _AppDrawerState extends ConsumerState<AppDrawer> {
   bool _tagsExpanded = true;
-  late AnimationController _animController;
-  late Animation<double> _fadeAnim;
-
-  @override
-  void initState() {
-    super.initState();
-    _animController = AnimationController(
-      duration: const Duration(milliseconds: 200),
-      vsync: this,
-    );
-    _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
-    // Start animation immediately but don't block on it
-    _animController.forward();
-  }
-
-  @override
-  void dispose() {
-    _animController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,84 +29,79 @@ class _AppDrawerState extends ConsumerState<AppDrawer>
 
     return Drawer(
       backgroundColor: Colors.transparent,
-      child: FadeTransition(
-        opacity: _fadeAnim,
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: isDark
-                  ? [const Color(0xFF1C1E26), const Color(0xFF262A36)]
-                  : [const Color(0xFFF8F9FC), const Color(0xFFEEF1F8)],
-            ),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: isDark
+                ? [const Color(0xFF1C1E26), const Color(0xFF262A36)]
+                : [const Color(0xFFF8F9FC), const Color(0xFFEEF1F8)],
           ),
-          child: SafeArea(
-            child: Column(
-              children: [
-                // Header with branding
-                _buildHeader(theme, isDark),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Header with branding
+              _buildHeader(theme, isDark),
 
-                const SizedBox(height: 8),
+              const SizedBox(height: 8),
 
-                // Main navigation
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Primary Navigation
-                        _buildNavItem(
-                          icon: LucideIcons.fileText,
-                          label: 'All Notes',
-                          isSelected: selectedTagId == null,
-                          onTap: () {
-                            ref
-                                .read(selectedTagFilterProvider.notifier)
-                                .clear();
-                            Navigator.pop(context);
-                          },
-                          theme: theme,
-                        ),
+              // Main navigation
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Primary Navigation
+                      _buildNavItem(
+                        icon: LucideIcons.fileText,
+                        label: 'All Notes',
+                        isSelected: selectedTagId == null,
+                        onTap: () {
+                          ref.read(selectedTagFilterProvider.notifier).clear();
+                          Navigator.pop(context);
+                        },
+                        theme: theme,
+                      ),
 
-                        _buildNavItem(
-                          icon: LucideIcons.archive,
-                          label: 'Archive',
-                          onTap: () {
-                            Navigator.pop(context);
-                            context.push('/archive');
-                          },
-                          theme: theme,
-                        ),
+                      _buildNavItem(
+                        icon: LucideIcons.archive,
+                        label: 'Archive',
+                        onTap: () {
+                          Navigator.pop(context);
+                          context.push('/archive');
+                        },
+                        theme: theme,
+                      ),
 
-                        _buildNavItem(
-                          icon: LucideIcons.trash2,
-                          label: 'Trash',
-                          onTap: () {
-                            Navigator.pop(context);
-                            context.push('/trash');
-                          },
-                          theme: theme,
-                        ),
+                      _buildNavItem(
+                        icon: LucideIcons.trash2,
+                        label: 'Trash',
+                        onTap: () {
+                          Navigator.pop(context);
+                          context.push('/trash');
+                        },
+                        theme: theme,
+                      ),
 
-                        const SizedBox(height: 16),
+                      const SizedBox(height: 16),
 
-                        // Tags Section
-                        _buildTagsSection(
-                          theme: theme,
-                          tagsAsync: tagsAsync,
-                          selectedTagId: selectedTagId,
-                        ),
-                      ],
-                    ),
+                      // Tags Section
+                      _buildTagsSection(
+                        theme: theme,
+                        tagsAsync: tagsAsync,
+                        selectedTagId: selectedTagId,
+                      ),
+                    ],
                   ),
                 ),
+              ),
 
-                // Bottom section with settings
-                _buildBottomSection(theme, isDark),
-              ],
-            ),
+              // Bottom section with settings
+              _buildBottomSection(theme, isDark),
+            ],
           ),
         ),
       ),
@@ -380,8 +357,11 @@ class _AppDrawerState extends ConsumerState<AppDrawer>
   }
 
   Widget _buildBottomSection(ThemeData theme, bool isDark) {
+    final userAsync = ref.watch(authControllerProvider);
+    final serverUrl = ref.watch(serverUrlProvider);
+
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         border: Border(
           top: BorderSide(
@@ -389,14 +369,127 @@ class _AppDrawerState extends ConsumerState<AppDrawer>
           ),
         ),
       ),
-      child: _buildNavItem(
-        icon: LucideIcons.settings,
-        label: 'Settings',
-        onTap: () {
-          Navigator.pop(context);
-          context.push('/settings');
+      child: userAsync.when(
+        data: (user) {
+          if (user == null) {
+            return _buildNavItem(
+              icon: LucideIcons.settings,
+              label: 'Settings',
+              onTap: () {
+                Navigator.pop(context);
+                context.push('/settings');
+              },
+              theme: theme,
+            );
+          }
+
+          // Build profile image URL
+          String? profileImageUrl;
+          if (user.profileImage != null) {
+            if (user.profileImage!.startsWith('http')) {
+              profileImageUrl = user.profileImage;
+            } else {
+              final url = serverUrl;
+              if (url != null) {
+                profileImageUrl = '$url${user.profileImage}';
+              }
+            }
+          }
+
+          return Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            child: InkWell(
+              onTap: () {
+                Navigator.pop(context);
+                context.push('/settings');
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                child: Row(
+                  children: [
+                    // Profile Avatar
+                    CircleAvatar(
+                      radius: 18,
+                      backgroundColor: theme.colorScheme.surface,
+                      backgroundImage: profileImageUrl != null
+                          ? CachedNetworkImageProvider(profileImageUrl)
+                          : null,
+                      child: profileImageUrl == null
+                          ? Icon(
+                              LucideIcons.user,
+                              size: 18,
+                              color: theme.colorScheme.onSurface.withValues(
+                                alpha: 0.6,
+                              ),
+                            )
+                          : null,
+                    ),
+                    const SizedBox(width: 10),
+                    // Profile Info
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            user.name,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: theme.colorScheme.onSurface,
+                              fontSize: 13,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            user.email,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurface.withValues(
+                                alpha: 0.6,
+                              ),
+                              fontSize: 12,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Settings Icon
+                    Icon(
+                      LucideIcons.settings,
+                      size: 16,
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
         },
-        theme: theme,
+        loading: () => _buildNavItem(
+          icon: LucideIcons.settings,
+          label: 'Settings',
+          onTap: () {
+            Navigator.pop(context);
+            context.push('/settings');
+          },
+          theme: theme,
+        ),
+        error: (_, _) => _buildNavItem(
+          icon: LucideIcons.settings,
+          label: 'Settings',
+          onTap: () {
+            Navigator.pop(context);
+            context.push('/settings');
+          },
+          theme: theme,
+        ),
       ),
     );
   }

@@ -7,6 +7,7 @@ export interface AdminStats {
 export interface AdminUser {
   id: string;
   email: string;
+  name: string;
   isAdmin: boolean;
   status: "active" | "pending";
   createdAt: string;
@@ -27,6 +28,7 @@ export interface UsersListResponse {
 export interface CreateUserDto {
   email: string;
   password: string;
+  name: string;
 }
 
 export interface UpdateUserDto {

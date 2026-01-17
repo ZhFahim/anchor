@@ -56,6 +56,7 @@ export class AdminService {
         select: {
           id: true,
           email: true,
+          name: true,
           isAdmin: true,
           status: true,
           createdAt: true,
@@ -90,6 +91,7 @@ export class AdminService {
       select: {
         id: true,
         email: true,
+        name: true,
         isAdmin: true,
         status: true,
         createdAt: true,
@@ -115,11 +117,13 @@ export class AdminService {
       data: {
         email: createUserDto.email,
         password: hashedPassword,
+        name: createUserDto.name,
         isAdmin: false,
       },
       select: {
         id: true,
         email: true,
+        name: true,
         isAdmin: true,
         createdAt: true,
         updatedAt: true,
@@ -155,6 +159,7 @@ export class AdminService {
       select: {
         id: true,
         email: true,
+        name: true,
         isAdmin: true,
         createdAt: true,
         updatedAt: true,
@@ -241,6 +246,7 @@ export class AdminService {
       select: {
         id: true,
         email: true,
+        name: true,
         isAdmin: true,
         status: true,
         createdAt: true,

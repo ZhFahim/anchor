@@ -20,15 +20,17 @@ enum UserStatus {
 }
 
 model User {
-  id        String     @id @default(uuid())
-  email     String     @unique
-  password  String
-  isAdmin   Boolean    @default(false)
-  status    UserStatus @default(active)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  notes     Note[]
-  tags      Tag[]
+  id          String     @id @default(uuid())
+  email       String     @unique
+  password    String
+  name        String
+  profileImage String?
+  isAdmin     Boolean    @default(false)
+  status      UserStatus @default(active)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  notes       Note[]
+  tags        Tag[]
 }
 
 model Settings {

@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../core/network/dio_provider.dart';
@@ -27,11 +28,15 @@ class AuthService {
     }
   }
 
-  Future<Map<String, dynamic>> register(String email, String password) async {
+  Future<Map<String, dynamic>> register(
+    String email,
+    String password,
+    String name,
+  ) async {
     try {
       final response = await _dio.post(
         '/api/auth/register',
-        data: {'email': email, 'password': password},
+        data: {'email': email, 'password': password, 'name': name},
       );
       return response.data;
     } on DioException catch (e) {
@@ -50,6 +55,55 @@ class AuthService {
       );
     } on DioException catch (e) {
       throw e.response?.data['message'] ?? 'Failed to change password';
+    }
+  }
+
+  Future<Map<String, dynamic>> updateProfile({String? name}) async {
+    try {
+      final data = <String, dynamic>{};
+      if (name != null) data['name'] = name;
+
+      final response = await _dio.patch('/api/auth/profile', data: data);
+      return response.data;
+    } on DioException catch (e) {
+      throw e.response?.data['message'] ?? 'Failed to update profile';
+    }
+  }
+
+  Future<Map<String, dynamic>> uploadProfileImage(File imageFile) async {
+    try {
+      final formData = FormData.fromMap({
+        'image': await MultipartFile.fromFile(
+          imageFile.path,
+          filename: imageFile.path.split('/').last,
+        ),
+      });
+
+      final response = await _dio.post(
+        '/api/auth/profile/image',
+        data: formData,
+      );
+      return response.data;
+    } on DioException catch (e) {
+      throw e.response?.data['message'] ?? 'Failed to upload profile image';
+    }
+  }
+
+  Future<Map<String, dynamic>> removeProfileImage() async {
+    try {
+      final response = await _dio.delete('/api/auth/profile/image');
+      return response.data;
+    } on DioException catch (e) {
+      throw e.response?.data['message'] ?? 'Failed to remove profile image';
+    }
+  }
+
+  Future<Map<String, dynamic>> getProfile() async {
+    try {
+      final response = await _dio.get('/api/auth/me');
+      return response.data;
+    } on DioException catch (e) {
+      throw e.response?.data['message'] ?? 'Failed to get profile';
     }
   }
 }

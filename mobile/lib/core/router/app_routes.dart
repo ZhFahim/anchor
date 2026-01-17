@@ -11,4 +11,5 @@ class AppRoutes {
   static const archive = 'archive';
   static const settings = 'settings';
   static const changePassword = 'change-password';
+  static const editProfile = 'edit-profile';
 }

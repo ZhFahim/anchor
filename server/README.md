@@ -67,8 +67,11 @@ pnpm run test:e2e
 - `GET /api/auth/registration-mode` - Get current registration mode (public)
 - `POST /api/auth/register` - Register a new user
 - `POST /api/auth/login` - Login
-- `GET /api/auth/me` - Get current user (requires authentication)
-- `POST /api/auth/change-password` - Change password (requires authentication)
+- `GET /api/auth/me` - Get current user
+- `PATCH /api/auth/profile` - Update profile name
+- `POST /api/auth/profile/image` - Upload profile image
+- `DELETE /api/auth/profile/image` - Remove profile image
+- `POST /api/auth/change-password` - Change password
 
 ### Notes
 - `GET /api/notes` - Get all notes (supports `?search=term` and `?tagId=id`)
