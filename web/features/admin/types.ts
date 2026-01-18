@@ -33,6 +33,7 @@ export interface CreateUserDto {
 
 export interface UpdateUserDto {
   email?: string;
+  name?: string;
 }
 
 export interface ResetPasswordResponse {

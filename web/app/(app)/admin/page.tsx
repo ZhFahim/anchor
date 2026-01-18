@@ -70,6 +70,7 @@ export default function AdminPage() {
   const [userDialogOpen, setUserDialogOpen] = useState(false);
   const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false);
   const [deleteUserDialogOpen, setDeleteUserDialogOpen] = useState(false);
+  const [rejectUserDialogOpen, setRejectUserDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<CreateUserDto>({
@@ -130,6 +131,8 @@ export default function AdminPage() {
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "users", "pending"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
+      setRejectUserDialogOpen(false);
+      setSelectedUser(null);
       toast.success("User rejected successfully");
     },
     onError: (error: Error) => {
@@ -205,7 +208,7 @@ export default function AdminPage() {
   const handleEditUser = (user: AdminUser) => {
     setSelectedUser(user);
     setIsEditing(true);
-    setFormData({ email: user.email, password: "", name: "" });
+    setFormData({ email: user.email, password: "", name: user.name || "" });
     setUserDialogOpen(true);
   };
 
@@ -220,6 +223,17 @@ export default function AdminPage() {
     }
   };
 
+  const handleRejectUser = (user: AdminUser) => {
+    setSelectedUser(user);
+    setRejectUserDialogOpen(true);
+  };
+
+  const handleRejectConfirm = () => {
+    if (selectedUser) {
+      rejectUserMutation.mutate(selectedUser.id);
+    }
+  };
+
   const handleResetPassword = (user: AdminUser) => {
     setSelectedUser(user);
     setResetPasswordResult(null);
@@ -230,7 +244,7 @@ export default function AdminPage() {
     if (isEditing && selectedUser) {
       updateUserMutation.mutate({
         id: selectedUser.id,
-        data: { email: formData.email },
+        data: { email: formData.email, name: formData.name },
       });
     } else {
       if (!formData.password) {
@@ -344,14 +358,14 @@ export default function AdminPage() {
                       disabled={registrationSettings.isLocked || updateRegistrationModeMutation.isPending}
                       className="justify-start border rounded-md"
                     >
-                      <ToggleGroupItem value="disabled" aria-label="Disabled">
-                        Disabled
-                      </ToggleGroupItem>
                       <ToggleGroupItem value="enabled" aria-label="Enabled">
                         Enabled
                       </ToggleGroupItem>
                       <ToggleGroupItem value="review" aria-label="Require Review">
                         Require Review
+                      </ToggleGroupItem>
+                      <ToggleGroupItem value="disabled" aria-label="Disabled">
+                        Disabled
                       </ToggleGroupItem>
                     </ToggleGroup>
                   </div>
@@ -391,6 +405,7 @@ export default function AdminPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead>Name</TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>Registered</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
@@ -399,6 +414,7 @@ export default function AdminPage() {
                   <TableBody>
                     {pendingUsers.map((user) => (
                       <TableRow key={user.id}>
+                        <TableCell className="font-medium">{user.name}</TableCell>
                         <TableCell className="font-medium">{user.email}</TableCell>
                         <TableCell>
                           {format(new Date(user.createdAt), "MMM d, yyyy")}
@@ -417,7 +433,7 @@ export default function AdminPage() {
                             <Button
                               size="sm"
                               variant="destructive"
-                              onClick={() => rejectUserMutation.mutate(user.id)}
+                              onClick={() => handleRejectUser(user)}
                               disabled={rejectUserMutation.isPending}
                             >
                               <XCircle className="h-4 w-4 mr-1" />
@@ -459,6 +475,7 @@ export default function AdminPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Name</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Role</TableHead>
                     <TableHead>Status</TableHead>
@@ -471,6 +488,7 @@ export default function AdminPage() {
                 <TableBody>
                   {usersData?.users.map((user) => (
                     <TableRow key={user.id}>
+                      <TableCell className="font-medium">{user.name || "-"}</TableCell>
                       <TableCell className="font-medium">{user.email}</TableCell>
                       <TableCell>
                         {user.isAdmin ? (
@@ -735,6 +753,56 @@ export default function AdminPage() {
                   </>
                 ) : (
                   "Delete User"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Reject User Confirmation Dialog */}
+        <Dialog
+          open={rejectUserDialogOpen}
+          onOpenChange={setRejectUserDialogOpen}
+        >
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
+                  <XCircle className="h-5 w-5 text-destructive" />
+                </div>
+                Reject User?
+              </DialogTitle>
+              <DialogDescription className="pt-2">
+                Are you sure you want to reject the registration request for{" "}
+                <span className="font-semibold text-foreground">
+                  {selectedUser?.email}
+                </span>
+                ? This will permanently delete their account and they will need to register again.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setRejectUserDialogOpen(false);
+                  setSelectedUser(null);
+                }}
+                disabled={rejectUserMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleRejectConfirm}
+                disabled={rejectUserMutation.isPending}
+              >
+                {rejectUserMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Rejecting...
+                  </>
+                ) : (
+                  "Reject User"
                 )}
               </Button>
             </DialogFooter>
