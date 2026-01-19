@@ -1,5 +1,11 @@
 import { api } from "@/lib/api/client";
-import type { Note, CreateNoteDto, UpdateNoteDto } from "./types";
+import type {
+  CreateNoteDto,
+  Note,
+  NoteLockResponse,
+  NoteUnlockResponse,
+  UpdateNoteDto,
+} from "./types";
 
 interface NotesQueryParams {
   search?: string;
@@ -27,6 +33,18 @@ export async function createNote(data: CreateNoteDto): Promise<Note> {
 
 export async function updateNote(id: string, data: UpdateNoteDto): Promise<Note> {
   return api.patch(`api/notes/${id}`, { json: data }).json<Note>();
+}
+
+export async function lockNote(id: string): Promise<NoteLockResponse> {
+  const response = await api.post(`api/notes/${id}/lock`, { throwHttpErrors: false });
+  if (!response.ok && response.status !== 409) {
+    throw new Error("Failed to lock note");
+  }
+  return response.json<NoteLockResponse>();
+}
+
+export async function unlockNote(id: string): Promise<NoteUnlockResponse> {
+  return api.delete(`api/notes/${id}/lock`).json<NoteUnlockResponse>();
 }
 
 export async function deleteNote(id: string): Promise<void> {

@@ -1,13 +1,14 @@
 import {
-  Controller,
-  Get,
-  Post,
   Body,
-  Patch,
-  Param,
+  ConflictException,
+  Controller,
   Delete,
-  UseGuards,
+  Get,
+  Param,
+  Patch,
+  Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { NotesService } from './notes.service';
 import { CreateNoteDto } from './dto/create-note.dto';
@@ -16,11 +17,15 @@ import { SyncNotesDto } from './dto/sync-notes.dto';
 import { BulkActionDto } from './dto/bulk-action.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { NoteLockService } from './note-lock.service';
 
 @Controller('api/notes')
 @UseGuards(JwtAuthGuard)
 export class NotesController {
-  constructor(private readonly notesService: NotesService) { }
+  constructor(
+    private readonly notesService: NotesService,
+    private readonly noteLockService: NoteLockService,
+  ) {}
 
   @Post()
   create(
@@ -57,6 +62,34 @@ export class NotesController {
   @Get(':id')
   findOne(@CurrentUser('id') userId: string, @Param('id') id: string) {
     return this.notesService.findOne(userId, id);
+  }
+
+  @Post(':id/lock')
+  async lock(
+    @CurrentUser('id') userId: string,
+    @Param('id') id: string,
+  ) {
+    await this.notesService.findOne(userId, id, true);
+    const result = this.noteLockService.acquire(id, 'anchor', userId);
+    if (result.status === 'locked') {
+      throw new ConflictException({
+        message: 'Note is locked',
+        lockedBy: result.lockedBy,
+        expiresAt: result.expiresAt,
+        status: result.status,
+      });
+    }
+    return result;
+  }
+
+  @Delete(':id/lock')
+  async unlock(
+    @CurrentUser('id') userId: string,
+    @Param('id') id: string,
+  ) {
+    await this.notesService.findOne(userId, id, true);
+    this.noteLockService.release(id, 'anchor', userId);
+    return { status: 'released' };
   }
 
   @Patch(':id')

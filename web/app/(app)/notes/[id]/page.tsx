@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
+import { HTTPError } from "ky";
 import {
   getNote,
   createNote,
@@ -14,6 +15,8 @@ import {
   restoreNote,
   permanentDeleteNote,
   isStoredContentEmpty,
+  lockNote,
+  unlockNote,
   NoteBackground,
   ArchiveDialog,
   RestoreDialog,
@@ -23,7 +26,7 @@ import {
   NoteEditorHeader,
   NoteEditorContent,
 } from "@/features/notes";
-import type { CreateNoteDto, UpdateNoteDto, Note } from "@/features/notes";
+import type { CreateNoteDto, UpdateNoteDto, Note, NoteLockResponse } from "@/features/notes";
 import { toast } from "sonner";
 
 export default function NoteEditorPage() {
@@ -46,8 +49,10 @@ export default function NoteEditorPage() {
   const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
   const [permanentDeleteDialogOpen, setPermanentDeleteDialogOpen] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [lockStatus, setLockStatus] = useState<NoteLockResponse | null>(null);
 
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lockRefreshRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedRef = useRef<{
     title: string;
     content: string;
@@ -56,7 +61,6 @@ export default function NoteEditorPage() {
     background: string | null;
   } | null>(null);
 
-  // Try to get note from sessionStorage first (passed from note card)
   const [noteFromStorage, setNoteFromStorage] = useState<Note | null>(null);
 
   useEffect(() => {
@@ -66,7 +70,6 @@ export default function NoteEditorPage() {
       const stored = sessionStorage.getItem(`note-${noteId}`);
       if (stored) {
         const note = JSON.parse(stored) as Note;
-        // Clean up after reading
         sessionStorage.removeItem(`note-${noteId}`);
         setNoteFromStorage(note);
       }
@@ -75,20 +78,17 @@ export default function NoteEditorPage() {
     }
   }, [noteId, isNew]);
 
-  // Fetch existing note (only if not in sessionStorage)
   const { data: noteFromApi, isLoading, refetch: refetchNote } = useQuery({
     queryKey: ["notes", noteId],
     queryFn: () => getNote(noteId),
     enabled: !isNew && !noteFromStorage,
   });
 
-  // Use note from storage if available, otherwise use API data
   const note = isNew ? null : noteFromStorage || noteFromApi;
+  const isLockedByHomarr = lockStatus?.status === "locked" && lockStatus.lockedBy === "homarr";
 
-  // Check if note is read-only (only trashed notes are read-only)
-  const isReadOnly = note ? note.state === "trashed" : false;
+  const isReadOnly = note ? note.state === "trashed" || isLockedByHomarr : false;
 
-  // Initialize form with note data or tag from URL
   useEffect(() => {
     if (note) {
       setTitle(note.title);
@@ -106,17 +106,49 @@ export default function NoteEditorPage() {
         background: note.background || null,
       };
     } else if (isNew && tagIdFromUrl) {
-      // Initialize with tag from URL when creating a new note
       setSelectedTagIds([tagIdFromUrl]);
     }
   }, [note, isNew, tagIdFromUrl]);
 
-  // Create note mutation
+  useEffect(() => {
+    if (isNew) {
+      setLockStatus(null);
+      return;
+    }
+    if (note?.state === "trashed") {
+      setLockStatus(null);
+      return;
+    }
+
+    let isActive = true;
+
+    const requestLock = async () => {
+      try {
+        const result = await lockNote(noteId);
+        if (!isActive) return;
+        setLockStatus(result);
+      } catch (error) {
+        if (!isActive) return;
+        console.error("Failed to lock note:", error);
+      }
+    };
+
+    requestLock();
+    lockRefreshRef.current = setInterval(requestLock, 45_000);
+
+    return () => {
+      isActive = false;
+      if (lockRefreshRef.current) {
+        clearInterval(lockRefreshRef.current);
+        lockRefreshRef.current = null;
+      }
+      unlockNote(noteId).catch(() => {});
+    };
+  }, [isNew, lockNote, note?.state, noteId, unlockNote]);
+
   const createMutation = useMutation({
     mutationFn: (data: CreateNoteDto) => createNote(data),
     onSuccess: (newNote) => {
-      // Pre-populate the cache with the new note data before navigation
-      // This prevents the loading state when the component remounts with the new URL
       queryClient.setQueryData(["notes", newNote.id], newNote);
       queryClient.invalidateQueries({ queryKey: ["notes"] });
       queryClient.invalidateQueries({ queryKey: ["tags"] });
@@ -128,7 +160,6 @@ export default function NoteEditorPage() {
     },
   });
 
-  // Update note mutation
   const updateMutation = useMutation({
     mutationFn: (data: UpdateNoteDto) => updateNote(noteId, data),
     onSuccess: () => {
@@ -144,12 +175,20 @@ export default function NoteEditorPage() {
         background,
       };
     },
-    onError: () => {
+    onError: (error) => {
+      if (error instanceof HTTPError && error.response.status === 409) {
+        setLockStatus({
+          status: "locked",
+          lockedBy: "homarr",
+          expiresAt: new Date().toISOString(),
+        });
+        toast.error("Note is locked by Homarr");
+        return;
+      }
       toast.error("Failed to save note");
     },
   });
 
-  // Delete note mutation
   const deleteMutation = useMutation({
     mutationFn: () => deleteNote(noteId),
     onSuccess: () => {
@@ -163,7 +202,6 @@ export default function NoteEditorPage() {
     },
   });
 
-  // Archive note mutation
   const archiveMutation = useMutation({
     mutationFn: () => archiveNote(noteId),
     onSuccess: () => {
@@ -180,7 +218,6 @@ export default function NoteEditorPage() {
     },
   });
 
-  // Unarchive note mutation
   const unarchiveMutation = useMutation({
     mutationFn: () => unarchiveNote(noteId),
     onSuccess: async () => {
@@ -189,9 +226,7 @@ export default function NoteEditorPage() {
       queryClient.invalidateQueries({ queryKey: ["notes", noteId] });
       queryClient.invalidateQueries({ queryKey: ["tags"] });
       setIsArchived(false);
-      // Clear noteFromStorage so the query can refetch
       setNoteFromStorage(null);
-      // Refetch the note to get updated data
       await refetchNote();
       toast.success("Note unarchived");
     },
@@ -200,7 +235,6 @@ export default function NoteEditorPage() {
     },
   });
 
-  // Restore note mutation (for trashed notes)
   const restoreMutation = useMutation({
     mutationFn: () => restoreNote(noteId),
     onSuccess: async () => {
@@ -208,9 +242,7 @@ export default function NoteEditorPage() {
       queryClient.invalidateQueries({ queryKey: ["notes", "trash"] });
       queryClient.invalidateQueries({ queryKey: ["notes", noteId] });
       queryClient.invalidateQueries({ queryKey: ["tags"] });
-      // Clear noteFromStorage so the query can refetch
       setNoteFromStorage(null);
-      // Refetch the note to get updated data
       await refetchNote();
       toast.success("Note restored");
     },
@@ -219,7 +251,6 @@ export default function NoteEditorPage() {
     },
   });
 
-  // Permanent delete mutation (for trashed notes)
   const permanentDeleteMutation = useMutation({
     mutationFn: () => permanentDeleteNote(noteId),
     onSuccess: () => {
@@ -234,7 +265,6 @@ export default function NoteEditorPage() {
     },
   });
 
-  // Check for unsaved changes
   const checkUnsavedChanges = useCallback(() => {
     if (!lastSavedRef.current && isNew) {
       return title.trim() !== "" || !isStoredContentEmpty(content);
@@ -255,7 +285,6 @@ export default function NoteEditorPage() {
     setHasUnsavedChanges(checkUnsavedChanges());
   }, [checkUnsavedChanges]);
 
-  // Auto-save with debounce
   const save = useCallback(() => {
     if (isReadOnly) return;
     if (!title.trim() && isStoredContentEmpty(content)) return;
@@ -279,7 +308,6 @@ export default function NoteEditorPage() {
     }
   }, [title, content, isPinned, selectedTagIds, background, isNew, isReadOnly, createMutation, updateMutation]);
 
-  // Debounced auto-save (disabled when read-only)
   useEffect(() => {
     if (!hasUnsavedChanges || isReadOnly) return;
 
@@ -289,7 +317,7 @@ export default function NoteEditorPage() {
 
     saveTimeoutRef.current = setTimeout(() => {
       save();
-    }, 1000); // Auto-save after 1 second of inactivity
+    }, 1000);
 
     return () => {
       if (saveTimeoutRef.current) {
@@ -298,7 +326,6 @@ export default function NoteEditorPage() {
     };
   }, [hasUnsavedChanges, save, isReadOnly]);
 
-  // Save on unmount if there are changes
   useEffect(() => {
     return () => {
       if (saveTimeoutRef.current) {
@@ -318,7 +345,6 @@ export default function NoteEditorPage() {
     setIsPinned((prev) => !prev);
   };
 
-  // Only show loading if we don't have note from storage and are fetching from API
   if (isLoading && !isNew && !noteFromStorage) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -335,13 +361,11 @@ export default function NoteEditorPage() {
 
   return (
     <div className="min-h-screen flex flex-col relative">
-      {/* Background covering entire page */}
       <NoteBackground
         styleId={background}
         className="absolute inset-0 min-h-full"
       />
 
-      {/* Header */}
       <NoteEditorHeader
         isNew={isNew}
         isReadOnly={isReadOnly}
@@ -362,12 +386,16 @@ export default function NoteEditorPage() {
         permanentDeletePending={permanentDeleteMutation.isPending}
       />
 
-      {/* Read-only Banner */}
       {isReadOnly && (
-        <ReadOnlyBanner message="This note is in trash and cannot be edited. Restore it to make changes." />
+        <ReadOnlyBanner
+          message={
+            isLockedByHomarr
+              ? "This note is being edited in Homarr and is read-only here."
+              : "This note is in trash and cannot be edited. Restore it to make changes."
+          }
+        />
       )}
 
-      {/* Content */}
       <NoteEditorContent
         title={title}
         content={content}
@@ -378,7 +406,6 @@ export default function NoteEditorPage() {
         onTagsChange={setSelectedTagIds}
       />
 
-      {/* Dialogs */}
       <ArchiveDialog
         open={archiveDialogOpen}
         onOpenChange={setArchiveDialogOpen}

@@ -1,6 +1,7 @@
 import type { Tag } from "@/features/tags/types";
 
 export type NoteState = "active" | "trashed" | "deleted";
+export type NoteLockOwner = "anchor" | "homarr";
 
 export interface Note {
   id: string;
@@ -35,3 +36,12 @@ export interface UpdateNoteDto {
   tagIds?: string[];
 }
 
+export interface NoteLockResponse {
+  status: "acquired" | "locked";
+  lockedBy: NoteLockOwner;
+  expiresAt: string;
+}
+
+export interface NoteUnlockResponse {
+  status: "released";
+}
