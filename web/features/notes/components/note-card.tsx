@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import type { Note } from "@/features/notes";
 import { deltaToPreviewText } from "@/features/notes";
 import { NoteBackground } from "./backgrounds";
+import { SharedNoteIndicator } from "./shared-note-indicator";
 
 type ViewMode = "masonry" | "grid" | "list";
 
@@ -135,7 +136,7 @@ export function NoteCard({
                     </p>
                   )}
 
-                  {/* Tags and Date */}
+                  {/* Tags, Shared Indicator, and Date */}
                   <div className="flex items-center gap-3 flex-wrap">
                     {note.tags && note.tags.length > 0 && (
                       <div className="flex flex-wrap gap-1.5">
@@ -164,6 +165,7 @@ export function NoteCard({
                         )}
                       </div>
                     )}
+                    <SharedNoteIndicator note={note} />
                     <span className="text-xs text-muted-foreground font-medium">
                       {format(new Date(note.updatedAt), "MMM d, yyyy")}
                     </span>
@@ -281,9 +283,12 @@ export function NoteCard({
 
             {/* Footer */}
             <div className="flex items-center justify-between text-xs text-muted-foreground mt-auto">
-              <span className="font-medium">
-                {format(new Date(note.updatedAt), "MMM d, yyyy")}
-              </span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <SharedNoteIndicator note={note} />
+                <span className="font-medium">
+                  {format(new Date(note.updatedAt), "MMM d, yyyy")}
+                </span>
+              </div>
             </div>
           </CardContent>
         </div>

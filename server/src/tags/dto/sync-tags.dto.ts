@@ -31,4 +31,3 @@ export class SyncTagsDto {
   @IsOptional()
   changes?: TagChangeDto[];
 }
-

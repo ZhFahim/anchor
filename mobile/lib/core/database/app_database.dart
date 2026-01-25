@@ -14,7 +14,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -28,6 +28,15 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 5) {
         await m.renameColumn(notes, 'color', notes.background);
+      }
+      if (from < 6) {
+        // Add sharing columns
+        await m.addColumn(notes, notes.permission);
+        await m.addColumn(notes, notes.shareIds);
+        await m.addColumn(notes, notes.sharedById);
+        await m.addColumn(notes, notes.sharedByName);
+        await m.addColumn(notes, notes.sharedByEmail);
+        await m.addColumn(notes, notes.sharedByProfileImage);
       }
     },
   );

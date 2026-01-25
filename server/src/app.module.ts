@@ -8,6 +8,7 @@ import { TasksModule } from './tasks/tasks.module';
 import { HealthModule } from './health/health.module';
 import { AdminModule } from './admin/admin.module';
 import { SettingsModule } from './settings/settings.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { SettingsModule } from './settings/settings.module';
     HealthModule,
     AdminModule,
     SettingsModule,
+    UsersModule,
   ],
 })
-export class AppModule { }
+export class AppModule {}

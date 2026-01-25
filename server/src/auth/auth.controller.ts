@@ -26,7 +26,7 @@ import type { User } from 'src/generated/prisma/client';
 
 @Controller('api/auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) { }
+  constructor(private readonly authService: AuthService) {}
 
   @Get('registration-mode')
   getRegistrationMode() {
@@ -79,7 +79,9 @@ export class AuthController {
         fileIsRequired: true,
         validators: [
           new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }), // 5MB
-          new FileTypeValidator({ fileType: /(image\/jpeg|image\/png|image\/webp)/ }),
+          new FileTypeValidator({
+            fileType: /(image\/jpeg|image\/png|image\/webp)/,
+          }),
         ],
       }),
     )

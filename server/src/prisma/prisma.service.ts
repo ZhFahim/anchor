@@ -9,11 +9,12 @@ export class PrismaService extends PrismaClient {
       connectionString: process.env.DATABASE_URL,
     });
     super({
-      adapter, omit: {
+      adapter,
+      omit: {
         user: {
           password: true,
-        }
-      }
+        },
+      },
     });
   }
 }

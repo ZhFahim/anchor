@@ -10,7 +10,7 @@ import { SyncTagsDto } from './dto/sync-tags.dto';
 
 @Injectable()
 export class TagsService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   async create(userId: string, createTagDto: CreateTagDto) {
     // Check if tag with same name already exists for this user (not deleted)
@@ -257,5 +257,19 @@ export class TagsService {
       syncedAt: new Date().toISOString(),
     };
   }
-}
 
+  // Purge tombstones older than retention period (30 days)
+  async purgeTombstones(retentionDays = 30) {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
+
+    const result = await this.prisma.tag.deleteMany({
+      where: {
+        isDeleted: true,
+        updatedAt: { lt: cutoffDate },
+      },
+    });
+
+    return { purgedTagsCount: result.count };
+  }
+}

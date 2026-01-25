@@ -19,7 +19,7 @@ import { UpdateRegistrationModeDto } from './dto/update-registration-mode.dto';
 @Controller('api/admin')
 @UseGuards(AdminGuard)
 export class AdminController {
-  constructor(private readonly adminService: AdminService) { }
+  constructor(private readonly adminService: AdminService) {}
 
   @Get('stats')
   getStats() {
@@ -37,10 +37,7 @@ export class AdminController {
   }
 
   @Get('users')
-  findAllUsers(
-    @Query('skip') skip?: string,
-    @Query('take') take?: string,
-  ) {
+  findAllUsers(@Query('skip') skip?: string, @Query('take') take?: string) {
     return this.adminService.findAllUsers(
       skip ? parseInt(skip, 10) : 0,
       take ? parseInt(take, 10) : 50,
@@ -58,10 +55,7 @@ export class AdminController {
   }
 
   @Patch('users/:id')
-  updateUser(
-    @Param('id') id: string,
-    @Body() updateUserDto: UpdateUserDto,
-  ) {
+  updateUser(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.adminService.updateUser(id, updateUserDto);
   }
 

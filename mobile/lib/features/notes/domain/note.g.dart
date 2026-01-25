@@ -6,6 +6,22 @@ part of 'note.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
+_SharedByUser _$SharedByUserFromJson(Map<String, dynamic> json) =>
+    _SharedByUser(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      email: json['email'] as String,
+      profileImage: json['profileImage'] as String?,
+    );
+
+Map<String, dynamic> _$SharedByUserToJson(_SharedByUser instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'name': instance.name,
+      'email': instance.email,
+      'profileImage': instance.profileImage,
+    };
+
 _Note _$NoteFromJson(Map<String, dynamic> json) => _Note(
   id: json['id'] as String,
   title: json['title'] as String,
@@ -22,6 +38,15 @@ _Note _$NoteFromJson(Map<String, dynamic> json) => _Note(
   tagIds:
       (json['tagIds'] as List<dynamic>?)?.map((e) => e as String).toList() ??
       const [],
+  permission:
+      $enumDecodeNullable(_$NotePermissionEnumMap, json['permission']) ??
+      NotePermission.owner,
+  shareIds: (json['shareIds'] as List<dynamic>?)
+      ?.map((e) => e as String)
+      .toList(),
+  sharedBy: json['sharedBy'] == null
+      ? null
+      : SharedByUser.fromJson(json['sharedBy'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$NoteToJson(_Note instance) => <String, dynamic>{
@@ -34,10 +59,19 @@ Map<String, dynamic> _$NoteToJson(_Note instance) => <String, dynamic>{
   'state': _$NoteStateEnumMap[instance.state]!,
   'updatedAt': instance.updatedAt?.toIso8601String(),
   'tagIds': instance.tagIds,
+  'permission': _$NotePermissionEnumMap[instance.permission]!,
+  'shareIds': instance.shareIds,
+  'sharedBy': instance.sharedBy,
 };
 
 const _$NoteStateEnumMap = {
   NoteState.active: 'active',
   NoteState.trashed: 'trashed',
   NoteState.deleted: 'deleted',
+};
+
+const _$NotePermissionEnumMap = {
+  NotePermission.owner: 'owner',
+  NotePermission.viewer: 'viewer',
+  NotePermission.editor: 'editor',
 };

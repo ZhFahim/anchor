@@ -114,6 +114,73 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _permissionMeta = const VerificationMeta(
+    'permission',
+  );
+  @override
+  late final GeneratedColumn<String> permission = GeneratedColumn<String>(
+    'permission',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('owner'),
+  );
+  static const VerificationMeta _shareIdsMeta = const VerificationMeta(
+    'shareIds',
+  );
+  @override
+  late final GeneratedColumn<String> shareIds = GeneratedColumn<String>(
+    'share_ids',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sharedByIdMeta = const VerificationMeta(
+    'sharedById',
+  );
+  @override
+  late final GeneratedColumn<String> sharedById = GeneratedColumn<String>(
+    'shared_by_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sharedByNameMeta = const VerificationMeta(
+    'sharedByName',
+  );
+  @override
+  late final GeneratedColumn<String> sharedByName = GeneratedColumn<String>(
+    'shared_by_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sharedByEmailMeta = const VerificationMeta(
+    'sharedByEmail',
+  );
+  @override
+  late final GeneratedColumn<String> sharedByEmail = GeneratedColumn<String>(
+    'shared_by_email',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sharedByProfileImageMeta =
+      const VerificationMeta('sharedByProfileImage');
+  @override
+  late final GeneratedColumn<String> sharedByProfileImage =
+      GeneratedColumn<String>(
+        'shared_by_profile_image',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -125,6 +192,12 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
     state,
     updatedAt,
     isSynced,
+    permission,
+    shareIds,
+    sharedById,
+    sharedByName,
+    sharedByEmail,
+    sharedByProfileImage,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -193,6 +266,54 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
         isSynced.isAcceptableOrUnknown(data['is_synced']!, _isSyncedMeta),
       );
     }
+    if (data.containsKey('permission')) {
+      context.handle(
+        _permissionMeta,
+        permission.isAcceptableOrUnknown(data['permission']!, _permissionMeta),
+      );
+    }
+    if (data.containsKey('share_ids')) {
+      context.handle(
+        _shareIdsMeta,
+        shareIds.isAcceptableOrUnknown(data['share_ids']!, _shareIdsMeta),
+      );
+    }
+    if (data.containsKey('shared_by_id')) {
+      context.handle(
+        _sharedByIdMeta,
+        sharedById.isAcceptableOrUnknown(
+          data['shared_by_id']!,
+          _sharedByIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('shared_by_name')) {
+      context.handle(
+        _sharedByNameMeta,
+        sharedByName.isAcceptableOrUnknown(
+          data['shared_by_name']!,
+          _sharedByNameMeta,
+        ),
+      );
+    }
+    if (data.containsKey('shared_by_email')) {
+      context.handle(
+        _sharedByEmailMeta,
+        sharedByEmail.isAcceptableOrUnknown(
+          data['shared_by_email']!,
+          _sharedByEmailMeta,
+        ),
+      );
+    }
+    if (data.containsKey('shared_by_profile_image')) {
+      context.handle(
+        _sharedByProfileImageMeta,
+        sharedByProfileImage.isAcceptableOrUnknown(
+          data['shared_by_profile_image']!,
+          _sharedByProfileImageMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -238,6 +359,30 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
         DriftSqlType.bool,
         data['${effectivePrefix}is_synced'],
       )!,
+      permission: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}permission'],
+      )!,
+      shareIds: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}share_ids'],
+      ),
+      sharedById: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}shared_by_id'],
+      ),
+      sharedByName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}shared_by_name'],
+      ),
+      sharedByEmail: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}shared_by_email'],
+      ),
+      sharedByProfileImage: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}shared_by_profile_image'],
+      ),
     );
   }
 
@@ -257,6 +402,12 @@ class Note extends DataClass implements Insertable<Note> {
   final String state;
   final DateTime? updatedAt;
   final bool isSynced;
+  final String permission;
+  final String? shareIds;
+  final String? sharedById;
+  final String? sharedByName;
+  final String? sharedByEmail;
+  final String? sharedByProfileImage;
   const Note({
     required this.id,
     required this.title,
@@ -267,6 +418,12 @@ class Note extends DataClass implements Insertable<Note> {
     required this.state,
     this.updatedAt,
     required this.isSynced,
+    required this.permission,
+    this.shareIds,
+    this.sharedById,
+    this.sharedByName,
+    this.sharedByEmail,
+    this.sharedByProfileImage,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -286,6 +443,22 @@ class Note extends DataClass implements Insertable<Note> {
       map['updated_at'] = Variable<DateTime>(updatedAt);
     }
     map['is_synced'] = Variable<bool>(isSynced);
+    map['permission'] = Variable<String>(permission);
+    if (!nullToAbsent || shareIds != null) {
+      map['share_ids'] = Variable<String>(shareIds);
+    }
+    if (!nullToAbsent || sharedById != null) {
+      map['shared_by_id'] = Variable<String>(sharedById);
+    }
+    if (!nullToAbsent || sharedByName != null) {
+      map['shared_by_name'] = Variable<String>(sharedByName);
+    }
+    if (!nullToAbsent || sharedByEmail != null) {
+      map['shared_by_email'] = Variable<String>(sharedByEmail);
+    }
+    if (!nullToAbsent || sharedByProfileImage != null) {
+      map['shared_by_profile_image'] = Variable<String>(sharedByProfileImage);
+    }
     return map;
   }
 
@@ -306,6 +479,22 @@ class Note extends DataClass implements Insertable<Note> {
           ? const Value.absent()
           : Value(updatedAt),
       isSynced: Value(isSynced),
+      permission: Value(permission),
+      shareIds: shareIds == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shareIds),
+      sharedById: sharedById == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sharedById),
+      sharedByName: sharedByName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sharedByName),
+      sharedByEmail: sharedByEmail == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sharedByEmail),
+      sharedByProfileImage: sharedByProfileImage == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sharedByProfileImage),
     );
   }
 
@@ -324,6 +513,14 @@ class Note extends DataClass implements Insertable<Note> {
       state: serializer.fromJson<String>(json['state']),
       updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
       isSynced: serializer.fromJson<bool>(json['isSynced']),
+      permission: serializer.fromJson<String>(json['permission']),
+      shareIds: serializer.fromJson<String?>(json['shareIds']),
+      sharedById: serializer.fromJson<String?>(json['sharedById']),
+      sharedByName: serializer.fromJson<String?>(json['sharedByName']),
+      sharedByEmail: serializer.fromJson<String?>(json['sharedByEmail']),
+      sharedByProfileImage: serializer.fromJson<String?>(
+        json['sharedByProfileImage'],
+      ),
     );
   }
   @override
@@ -339,6 +536,12 @@ class Note extends DataClass implements Insertable<Note> {
       'state': serializer.toJson<String>(state),
       'updatedAt': serializer.toJson<DateTime?>(updatedAt),
       'isSynced': serializer.toJson<bool>(isSynced),
+      'permission': serializer.toJson<String>(permission),
+      'shareIds': serializer.toJson<String?>(shareIds),
+      'sharedById': serializer.toJson<String?>(sharedById),
+      'sharedByName': serializer.toJson<String?>(sharedByName),
+      'sharedByEmail': serializer.toJson<String?>(sharedByEmail),
+      'sharedByProfileImage': serializer.toJson<String?>(sharedByProfileImage),
     };
   }
 
@@ -352,6 +555,12 @@ class Note extends DataClass implements Insertable<Note> {
     String? state,
     Value<DateTime?> updatedAt = const Value.absent(),
     bool? isSynced,
+    String? permission,
+    Value<String?> shareIds = const Value.absent(),
+    Value<String?> sharedById = const Value.absent(),
+    Value<String?> sharedByName = const Value.absent(),
+    Value<String?> sharedByEmail = const Value.absent(),
+    Value<String?> sharedByProfileImage = const Value.absent(),
   }) => Note(
     id: id ?? this.id,
     title: title ?? this.title,
@@ -362,6 +571,16 @@ class Note extends DataClass implements Insertable<Note> {
     state: state ?? this.state,
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
     isSynced: isSynced ?? this.isSynced,
+    permission: permission ?? this.permission,
+    shareIds: shareIds.present ? shareIds.value : this.shareIds,
+    sharedById: sharedById.present ? sharedById.value : this.sharedById,
+    sharedByName: sharedByName.present ? sharedByName.value : this.sharedByName,
+    sharedByEmail: sharedByEmail.present
+        ? sharedByEmail.value
+        : this.sharedByEmail,
+    sharedByProfileImage: sharedByProfileImage.present
+        ? sharedByProfileImage.value
+        : this.sharedByProfileImage,
   );
   Note copyWithCompanion(NotesCompanion data) {
     return Note(
@@ -378,6 +597,22 @@ class Note extends DataClass implements Insertable<Note> {
       state: data.state.present ? data.state.value : this.state,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       isSynced: data.isSynced.present ? data.isSynced.value : this.isSynced,
+      permission: data.permission.present
+          ? data.permission.value
+          : this.permission,
+      shareIds: data.shareIds.present ? data.shareIds.value : this.shareIds,
+      sharedById: data.sharedById.present
+          ? data.sharedById.value
+          : this.sharedById,
+      sharedByName: data.sharedByName.present
+          ? data.sharedByName.value
+          : this.sharedByName,
+      sharedByEmail: data.sharedByEmail.present
+          ? data.sharedByEmail.value
+          : this.sharedByEmail,
+      sharedByProfileImage: data.sharedByProfileImage.present
+          ? data.sharedByProfileImage.value
+          : this.sharedByProfileImage,
     );
   }
 
@@ -392,7 +627,13 @@ class Note extends DataClass implements Insertable<Note> {
           ..write('background: $background, ')
           ..write('state: $state, ')
           ..write('updatedAt: $updatedAt, ')
-          ..write('isSynced: $isSynced')
+          ..write('isSynced: $isSynced, ')
+          ..write('permission: $permission, ')
+          ..write('shareIds: $shareIds, ')
+          ..write('sharedById: $sharedById, ')
+          ..write('sharedByName: $sharedByName, ')
+          ..write('sharedByEmail: $sharedByEmail, ')
+          ..write('sharedByProfileImage: $sharedByProfileImage')
           ..write(')'))
         .toString();
   }
@@ -408,6 +649,12 @@ class Note extends DataClass implements Insertable<Note> {
     state,
     updatedAt,
     isSynced,
+    permission,
+    shareIds,
+    sharedById,
+    sharedByName,
+    sharedByEmail,
+    sharedByProfileImage,
   );
   @override
   bool operator ==(Object other) =>
@@ -421,7 +668,13 @@ class Note extends DataClass implements Insertable<Note> {
           other.background == this.background &&
           other.state == this.state &&
           other.updatedAt == this.updatedAt &&
-          other.isSynced == this.isSynced);
+          other.isSynced == this.isSynced &&
+          other.permission == this.permission &&
+          other.shareIds == this.shareIds &&
+          other.sharedById == this.sharedById &&
+          other.sharedByName == this.sharedByName &&
+          other.sharedByEmail == this.sharedByEmail &&
+          other.sharedByProfileImage == this.sharedByProfileImage);
 }
 
 class NotesCompanion extends UpdateCompanion<Note> {
@@ -434,6 +687,12 @@ class NotesCompanion extends UpdateCompanion<Note> {
   final Value<String> state;
   final Value<DateTime?> updatedAt;
   final Value<bool> isSynced;
+  final Value<String> permission;
+  final Value<String?> shareIds;
+  final Value<String?> sharedById;
+  final Value<String?> sharedByName;
+  final Value<String?> sharedByEmail;
+  final Value<String?> sharedByProfileImage;
   final Value<int> rowid;
   const NotesCompanion({
     this.id = const Value.absent(),
@@ -445,6 +704,12 @@ class NotesCompanion extends UpdateCompanion<Note> {
     this.state = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.isSynced = const Value.absent(),
+    this.permission = const Value.absent(),
+    this.shareIds = const Value.absent(),
+    this.sharedById = const Value.absent(),
+    this.sharedByName = const Value.absent(),
+    this.sharedByEmail = const Value.absent(),
+    this.sharedByProfileImage = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   NotesCompanion.insert({
@@ -457,6 +722,12 @@ class NotesCompanion extends UpdateCompanion<Note> {
     this.state = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.isSynced = const Value.absent(),
+    this.permission = const Value.absent(),
+    this.shareIds = const Value.absent(),
+    this.sharedById = const Value.absent(),
+    this.sharedByName = const Value.absent(),
+    this.sharedByEmail = const Value.absent(),
+    this.sharedByProfileImage = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        title = Value(title);
@@ -470,6 +741,12 @@ class NotesCompanion extends UpdateCompanion<Note> {
     Expression<String>? state,
     Expression<DateTime>? updatedAt,
     Expression<bool>? isSynced,
+    Expression<String>? permission,
+    Expression<String>? shareIds,
+    Expression<String>? sharedById,
+    Expression<String>? sharedByName,
+    Expression<String>? sharedByEmail,
+    Expression<String>? sharedByProfileImage,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -482,6 +759,13 @@ class NotesCompanion extends UpdateCompanion<Note> {
       if (state != null) 'state': state,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (isSynced != null) 'is_synced': isSynced,
+      if (permission != null) 'permission': permission,
+      if (shareIds != null) 'share_ids': shareIds,
+      if (sharedById != null) 'shared_by_id': sharedById,
+      if (sharedByName != null) 'shared_by_name': sharedByName,
+      if (sharedByEmail != null) 'shared_by_email': sharedByEmail,
+      if (sharedByProfileImage != null)
+        'shared_by_profile_image': sharedByProfileImage,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -496,6 +780,12 @@ class NotesCompanion extends UpdateCompanion<Note> {
     Value<String>? state,
     Value<DateTime?>? updatedAt,
     Value<bool>? isSynced,
+    Value<String>? permission,
+    Value<String?>? shareIds,
+    Value<String?>? sharedById,
+    Value<String?>? sharedByName,
+    Value<String?>? sharedByEmail,
+    Value<String?>? sharedByProfileImage,
     Value<int>? rowid,
   }) {
     return NotesCompanion(
@@ -508,6 +798,12 @@ class NotesCompanion extends UpdateCompanion<Note> {
       state: state ?? this.state,
       updatedAt: updatedAt ?? this.updatedAt,
       isSynced: isSynced ?? this.isSynced,
+      permission: permission ?? this.permission,
+      shareIds: shareIds ?? this.shareIds,
+      sharedById: sharedById ?? this.sharedById,
+      sharedByName: sharedByName ?? this.sharedByName,
+      sharedByEmail: sharedByEmail ?? this.sharedByEmail,
+      sharedByProfileImage: sharedByProfileImage ?? this.sharedByProfileImage,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -542,6 +838,26 @@ class NotesCompanion extends UpdateCompanion<Note> {
     if (isSynced.present) {
       map['is_synced'] = Variable<bool>(isSynced.value);
     }
+    if (permission.present) {
+      map['permission'] = Variable<String>(permission.value);
+    }
+    if (shareIds.present) {
+      map['share_ids'] = Variable<String>(shareIds.value);
+    }
+    if (sharedById.present) {
+      map['shared_by_id'] = Variable<String>(sharedById.value);
+    }
+    if (sharedByName.present) {
+      map['shared_by_name'] = Variable<String>(sharedByName.value);
+    }
+    if (sharedByEmail.present) {
+      map['shared_by_email'] = Variable<String>(sharedByEmail.value);
+    }
+    if (sharedByProfileImage.present) {
+      map['shared_by_profile_image'] = Variable<String>(
+        sharedByProfileImage.value,
+      );
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -560,6 +876,12 @@ class NotesCompanion extends UpdateCompanion<Note> {
           ..write('state: $state, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('isSynced: $isSynced, ')
+          ..write('permission: $permission, ')
+          ..write('shareIds: $shareIds, ')
+          ..write('sharedById: $sharedById, ')
+          ..write('sharedByName: $sharedByName, ')
+          ..write('sharedByEmail: $sharedByEmail, ')
+          ..write('sharedByProfileImage: $sharedByProfileImage, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1206,6 +1528,12 @@ typedef $$NotesTableCreateCompanionBuilder =
       Value<String> state,
       Value<DateTime?> updatedAt,
       Value<bool> isSynced,
+      Value<String> permission,
+      Value<String?> shareIds,
+      Value<String?> sharedById,
+      Value<String?> sharedByName,
+      Value<String?> sharedByEmail,
+      Value<String?> sharedByProfileImage,
       Value<int> rowid,
     });
 typedef $$NotesTableUpdateCompanionBuilder =
@@ -1219,6 +1547,12 @@ typedef $$NotesTableUpdateCompanionBuilder =
       Value<String> state,
       Value<DateTime?> updatedAt,
       Value<bool> isSynced,
+      Value<String> permission,
+      Value<String?> shareIds,
+      Value<String?> sharedById,
+      Value<String?> sharedByName,
+      Value<String?> sharedByEmail,
+      Value<String?> sharedByProfileImage,
       Value<int> rowid,
     });
 
@@ -1272,6 +1606,36 @@ class $$NotesTableFilterComposer extends Composer<_$AppDatabase, $NotesTable> {
 
   ColumnFilters<bool> get isSynced => $composableBuilder(
     column: $table.isSynced,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get permission => $composableBuilder(
+    column: $table.permission,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get shareIds => $composableBuilder(
+    column: $table.shareIds,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sharedById => $composableBuilder(
+    column: $table.sharedById,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sharedByName => $composableBuilder(
+    column: $table.sharedByName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sharedByEmail => $composableBuilder(
+    column: $table.sharedByEmail,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sharedByProfileImage => $composableBuilder(
+    column: $table.sharedByProfileImage,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -1329,6 +1693,36 @@ class $$NotesTableOrderingComposer
     column: $table.isSynced,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get permission => $composableBuilder(
+    column: $table.permission,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get shareIds => $composableBuilder(
+    column: $table.shareIds,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sharedById => $composableBuilder(
+    column: $table.sharedById,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sharedByName => $composableBuilder(
+    column: $table.sharedByName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sharedByEmail => $composableBuilder(
+    column: $table.sharedByEmail,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sharedByProfileImage => $composableBuilder(
+    column: $table.sharedByProfileImage,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$NotesTableAnnotationComposer
@@ -1370,6 +1764,34 @@ class $$NotesTableAnnotationComposer
 
   GeneratedColumn<bool> get isSynced =>
       $composableBuilder(column: $table.isSynced, builder: (column) => column);
+
+  GeneratedColumn<String> get permission => $composableBuilder(
+    column: $table.permission,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get shareIds =>
+      $composableBuilder(column: $table.shareIds, builder: (column) => column);
+
+  GeneratedColumn<String> get sharedById => $composableBuilder(
+    column: $table.sharedById,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sharedByName => $composableBuilder(
+    column: $table.sharedByName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sharedByEmail => $composableBuilder(
+    column: $table.sharedByEmail,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sharedByProfileImage => $composableBuilder(
+    column: $table.sharedByProfileImage,
+    builder: (column) => column,
+  );
 }
 
 class $$NotesTableTableManager
@@ -1409,6 +1831,12 @@ class $$NotesTableTableManager
                 Value<String> state = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
                 Value<bool> isSynced = const Value.absent(),
+                Value<String> permission = const Value.absent(),
+                Value<String?> shareIds = const Value.absent(),
+                Value<String?> sharedById = const Value.absent(),
+                Value<String?> sharedByName = const Value.absent(),
+                Value<String?> sharedByEmail = const Value.absent(),
+                Value<String?> sharedByProfileImage = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => NotesCompanion(
                 id: id,
@@ -1420,6 +1848,12 @@ class $$NotesTableTableManager
                 state: state,
                 updatedAt: updatedAt,
                 isSynced: isSynced,
+                permission: permission,
+                shareIds: shareIds,
+                sharedById: sharedById,
+                sharedByName: sharedByName,
+                sharedByEmail: sharedByEmail,
+                sharedByProfileImage: sharedByProfileImage,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -1433,6 +1867,12 @@ class $$NotesTableTableManager
                 Value<String> state = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
                 Value<bool> isSynced = const Value.absent(),
+                Value<String> permission = const Value.absent(),
+                Value<String?> shareIds = const Value.absent(),
+                Value<String?> sharedById = const Value.absent(),
+                Value<String?> sharedByName = const Value.absent(),
+                Value<String?> sharedByEmail = const Value.absent(),
+                Value<String?> sharedByProfileImage = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => NotesCompanion.insert(
                 id: id,
@@ -1444,6 +1884,12 @@ class $$NotesTableTableManager
                 state: state,
                 updatedAt: updatedAt,
                 isSynced: isSynced,
+                permission: permission,
+                shareIds: shareIds,
+                sharedById: sharedById,
+                sharedByName: sharedByName,
+                sharedByEmail: sharedByEmail,
+                sharedByProfileImage: sharedByProfileImage,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

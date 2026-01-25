@@ -10,6 +10,7 @@ interface NoteEditorContentProps {
   content: string;
   selectedTagIds: string[];
   isReadOnly: boolean;
+  isTrashed?: boolean;
   onTitleChange: (title: string) => void;
   onContentChange: (content: string) => void;
   onTagsChange: (tagIds: string[]) => void;
@@ -20,6 +21,7 @@ export function NoteEditorContent({
   content,
   selectedTagIds,
   isReadOnly,
+  isTrashed = false,
   onTitleChange,
   onContentChange,
   onTagsChange,
@@ -32,7 +34,7 @@ export function NoteEditorContent({
           value={title}
           onChange={(e) => !isReadOnly && onTitleChange(e.target.value)}
           placeholder="Title"
-          disabled={isReadOnly}
+          disabled={isTrashed}
           readOnly={isReadOnly}
           className={cn(
             "!bg-transparent border-0 shadow-none rounded-none",
@@ -40,7 +42,8 @@ export function NoteEditorContent({
             "text-3xl lg:text-4xl font-bold",
             "placeholder:text-muted-foreground/40",
             "focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-0",
-            isReadOnly && "cursor-default"
+            isReadOnly && "cursor-default",
+            !isTrashed && isReadOnly && "text-foreground"
           )}
         />
 
