@@ -18,6 +18,7 @@ Anchor focuses on speed, privacy, simplicity, and reliability across mobile and 
 ## Features
 
 - **Rich Text Editor** - Create and edit notes with powerful formatting (bold, italic, underline, headings, lists, checkboxes)
+- **Note Sharing** - Share notes with other users (viewer or editor)
 - **Tags System** - Organize notes with custom tags and colors
 - **Note Backgrounds** - Customize notes with solid colors and patterns
 - **Pin Notes** - Pin important notes for quick access
@@ -26,7 +27,6 @@ Anchor focuses on speed, privacy, simplicity, and reliability across mobile and 
 - **Trash** - Soft delete notes with recovery period
 - **Offline-First** - All edits work offline with local storage
 - **Automatic Sync** - Sync changes across devices when online
-- **Dark Mode** - Beautiful dark and light themes
 - **Admin Panel** - User management, registration control, and system statistics
 
 
@@ -124,11 +124,10 @@ Download the Android mobile app.
 
 Future planned features:
 
+- OIDC authentication
 - Media attachments (images, PDFs, recordings)
-- Reminders and notifications
-- End-to-end encryption
 - Real-time collaboration
-- Multi-user shared notes
+- Reminders and notifications
 
 
 ## Tech Stack

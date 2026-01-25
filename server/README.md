@@ -87,6 +87,12 @@ pnpm run test:e2e
 - `POST /api/notes/bulk/delete` - Bulk delete notes
 - `POST /api/notes/bulk/archive` - Bulk archive notes
 
+### Note Sharing
+- `POST /api/notes/:id/shares` - Share a note with a user
+- `GET /api/notes/:id/shares` - Get all shares for a note
+- `PATCH /api/notes/:id/shares/:shareId` - Update share permission
+- `DELETE /api/notes/:id/shares/:shareId` - Revoke a share
+
 ### Tags
 - `GET /api/tags` - Get all tags
 - `POST /api/tags` - Create a tag
