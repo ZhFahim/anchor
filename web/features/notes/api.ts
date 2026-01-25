@@ -1,5 +1,12 @@
 import { api } from "@/lib/api/client";
-import type { Note, CreateNoteDto, UpdateNoteDto } from "./types";
+import type {
+  Note,
+  CreateNoteDto,
+  UpdateNoteDto,
+  NoteShare,
+  NoteSharePermission,
+  UserSearchResult,
+} from "./types";
 
 interface NotesQueryParams {
   search?: string;
@@ -63,4 +70,51 @@ export async function bulkDeleteNotes(noteIds: string[]): Promise<{ count: numbe
 
 export async function bulkArchiveNotes(noteIds: string[]): Promise<{ count: number }> {
   return api.post("api/notes/bulk/archive", { json: { noteIds } }).json<{ count: number }>();
+}
+
+// Sharing APIs
+export async function shareNote(
+  noteId: string,
+  sharedWithUserId: string,
+  permission: NoteSharePermission,
+): Promise<NoteShare> {
+  return api
+    .post(`api/notes/${noteId}/shares`, {
+      json: { sharedWithUserId, permission },
+    })
+    .json<NoteShare>();
+}
+
+export async function getNoteShares(noteId: string): Promise<NoteShare[]> {
+  return api.get(`api/notes/${noteId}/shares`).json<NoteShare[]>();
+}
+
+export async function updateNoteSharePermission(
+  noteId: string,
+  shareId: string,
+  permission: NoteSharePermission,
+): Promise<NoteShare> {
+  return api
+    .patch(`api/notes/${noteId}/shares/${shareId}`, { json: { permission } })
+    .json<NoteShare>();
+}
+
+export async function revokeShare(
+  noteId: string,
+  shareId: string,
+): Promise<{ success: boolean }> {
+  return api
+    .delete(`api/notes/${noteId}/shares/${shareId}`)
+    .json<{ success: boolean }>();
+}
+
+export async function searchUsers(query: string): Promise<UserSearchResult[]> {
+  if (!query || query.trim().length < 2) {
+    return [];
+  }
+  return api
+    .get("api/users/search", {
+      searchParams: { q: query.trim() },
+    })
+    .json<UserSearchResult[]>();
 }

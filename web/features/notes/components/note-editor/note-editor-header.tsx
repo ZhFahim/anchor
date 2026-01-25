@@ -11,6 +11,7 @@ import {
   ArchiveRestore,
   Eye,
   RotateCcw,
+  UserPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,6 +34,10 @@ interface NoteEditorHeaderProps {
   isSaving: boolean;
   hasUnsavedChanges: boolean;
   isSaved: boolean;
+  isOwner?: boolean;
+  permission?: "owner" | "viewer" | "editor";
+  isTrashed?: boolean;
+  hasShares?: boolean;
   onBack: () => void;
   onTogglePin: () => void;
   onBackgroundChange: (background: string | null) => void;
@@ -40,6 +45,7 @@ interface NoteEditorHeaderProps {
   onDeleteClick: () => void;
   onRestoreClick: () => void;
   onPermanentDeleteClick: () => void;
+  onShareClick?: () => void;
   restorePending?: boolean;
   permanentDeletePending?: boolean;
 }
@@ -53,6 +59,10 @@ export function NoteEditorHeader({
   isSaving,
   hasUnsavedChanges,
   isSaved,
+  isOwner = true,
+  permission = "owner",
+  isTrashed = false,
+  hasShares = false,
   onBack,
   onTogglePin,
   onBackgroundChange,
@@ -60,6 +70,7 @@ export function NoteEditorHeader({
   onDeleteClick,
   onRestoreClick,
   onPermanentDeleteClick,
+  onShareClick,
   restorePending = false,
   permanentDeletePending = false,
 }: NoteEditorHeaderProps) {
@@ -119,15 +130,19 @@ export function NoteEditorHeader({
             </div>
           )}
 
-          {/* Read-only indicator */}
-          {isReadOnly && (
+          {/* Read-only indicator or permission badge */}
+          {(isReadOnly || permission === "viewer") && (
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm bg-muted/80 text-muted-foreground">
               <Eye className="h-3 w-3" />
-              <span>Read-only</span>
+              <span>
+                {isReadOnly ? "Read-only" : permission === "viewer" ? "Viewer" : "Read-only"}
+              </span>
             </div>
           )}
 
-          <div className="h-6 w-px bg-border/50 mx-1" />
+          {(isTrashed || (isOwner && !isTrashed)) && (
+            <div className="h-6 w-px bg-border/50 mx-1" />
+          )}
 
           {!isReadOnly && (
             <>
@@ -146,9 +161,7 @@ export function NoteEditorHeader({
                     disabled={isReadOnly}
                     className={cn(
                       "h-9 w-9 rounded-xl transition-colors",
-                      isPinned
-                        ? "text-accent bg-accent/10 hover:bg-accent/20"
-                        : "text-muted-foreground hover:text-foreground"
+                      isPinned && "text-accent bg-accent/10"
                     )}
                   >
                     {isPinned ? (
@@ -165,9 +178,30 @@ export function NoteEditorHeader({
             </>
           )}
 
+          {!isNew && isOwner && !isTrashed && onShareClick && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onShareClick}
+                  className={cn(
+                    "h-9 w-9 rounded-xl transition-colors",
+                    hasShares && "text-primary bg-primary/10"
+                  )}
+                >
+                  <UserPlus className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                {hasShares ? "Manage shares" : "Share note"}
+              </TooltipContent>
+            </Tooltip>
+          )}
+
           {!isNew && (
             <>
-              {isReadOnly ? (
+              {isTrashed ? (
                 <>
                   {/* Restore button (only for trashed notes) */}
                   <Tooltip>
@@ -179,9 +213,7 @@ export function NoteEditorHeader({
                         disabled={restorePending}
                         className={cn(
                           "h-9 w-9 rounded-xl transition-colors",
-                          isReadOnly
-                            ? "text-primary bg-primary/10 hover:bg-primary/20"
-                            : "text-muted-foreground hover:text-foreground"
+                          "text-primary bg-primary/10"
                         )}
                       >
                         <RotateCcw className="h-4 w-4" />
@@ -212,44 +244,47 @@ export function NoteEditorHeader({
                 </>
               ) : (
                 <>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={onArchiveClick}
-                        className={cn(
-                          "h-9 w-9 rounded-xl transition-colors",
-                          isArchived
-                            ? "text-primary bg-primary/10 hover:bg-primary/20"
-                            : "text-muted-foreground hover:text-foreground"
-                        )}
-                      >
-                        {isArchived ? (
-                          <ArchiveRestore className="h-4 w-4" />
-                        ) : (
-                          <Archive className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom">
-                      {isArchived ? "Unarchive note" : "Archive note"}
-                    </TooltipContent>
-                  </Tooltip>
+                  {/* Archive and Delete only for owners */}
+                  {isOwner && (
+                    <>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={onArchiveClick}
+                            className={cn(
+                              "h-9 w-9 rounded-xl transition-colors",
+                              isArchived && "text-primary bg-primary/10"
+                            )}
+                          >
+                            {isArchived ? (
+                              <ArchiveRestore className="h-4 w-4" />
+                            ) : (
+                              <Archive className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">
+                          {isArchived ? "Unarchive note" : "Archive note"}
+                        </TooltipContent>
+                      </Tooltip>
 
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={onDeleteClick}
-                        className="h-9 w-9 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom">Move to trash</TooltipContent>
-                  </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={onDeleteClick}
+                            className="h-9 w-9 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">Move to trash</TooltipContent>
+                      </Tooltip>
+                    </>
+                  )}
                 </>
               )}
             </>

@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:anchor/features/notes/domain/note.dart';
 import 'package:anchor/core/widgets/quill_preview.dart';
+import 'package:anchor/core/network/server_config_provider.dart';
 import 'package:anchor/features/tags/presentation/tags_controller.dart';
 import 'package:anchor/features/tags/presentation/widgets/tag_chip.dart';
 import 'package:anchor/features/notes/presentation/widgets/note_background.dart';
@@ -28,6 +30,7 @@ class NoteCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tagsAsync = ref.watch(tagsControllerProvider);
+    final serverUrl = ref.watch(serverUrlProvider);
     final theme = Theme.of(context);
 
     // Resolve card color for the Material/Card background
@@ -102,13 +105,15 @@ class NoteCard extends ConsumerWidget {
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            if (!isSelectionMode && note.isPinned) ...[
-                              const SizedBox(width: 8),
-                              Icon(
-                                LucideIcons.pin,
-                                size: 16,
-                                color: theme.colorScheme.primary,
-                              ),
+                            if (!isSelectionMode) ...[
+                              if (note.isPinned) ...[
+                                const SizedBox(width: 8),
+                                Icon(
+                                  LucideIcons.pin,
+                                  size: 16,
+                                  color: theme.colorScheme.primary,
+                                ),
+                              ],
                             ],
                           ],
                         ),
@@ -121,18 +126,27 @@ class NoteCard extends ConsumerWidget {
                           const SizedBox(height: 12),
                           tagsAsync.when(
                             data: (allTags) {
-                              final noteTags = allTags
+                              // Only show tags that belong to the current user (shared notes may have tags from other users)
+                              final userNoteTags = allTags
                                   .where((t) => note.tagIds.contains(t.id))
+                                  .toList();
+
+                              // Skip if no matching tags for current user
+                              if (userNoteTags.isEmpty) {
+                                return const SizedBox.shrink();
+                              }
+
+                              final displayedTags = userNoteTags
                                   .take(3)
                                   .toList();
                               final remaining =
-                                  note.tagIds.length - noteTags.length;
+                                  userNoteTags.length - displayedTags.length;
 
                               return Wrap(
                                 spacing: 4,
                                 runSpacing: 4,
                                 children: [
-                                  ...noteTags.map(
+                                  ...displayedTags.map(
                                     (tag) => TagChip(tag: tag, selected: false),
                                   ),
                                   if (remaining > 0)
@@ -165,13 +179,29 @@ class NoteCard extends ConsumerWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            if (note.updatedAt != null)
-                              Text(
-                                DateFormat.MMMd().format(note.updatedAt!),
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: theme.hintColor,
-                                ),
-                              ),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (note.sharedBy != null) ...[
+                                  Tooltip(
+                                    message: 'Shared by ${note.sharedBy!.name}',
+                                    child: _SharedByAvatar(
+                                      sharedBy: note.sharedBy!,
+                                      serverUrl: serverUrl,
+                                      size: 20,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                ],
+                                if (note.updatedAt != null)
+                                  Text(
+                                    DateFormat.MMMd().format(note.updatedAt!),
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: theme.hintColor,
+                                    ),
+                                  ),
+                              ],
+                            ),
                             if (!note.isSynced)
                               Icon(
                                 LucideIcons.cloudOff,
@@ -186,6 +216,64 @@ class NoteCard extends ConsumerWidget {
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Avatar widget to display the profile image of the user who shared the note
+class _SharedByAvatar extends StatelessWidget {
+  final SharedByUser sharedBy;
+  final String? serverUrl;
+  final double size;
+
+  const _SharedByAvatar({
+    required this.sharedBy,
+    this.serverUrl,
+    this.size = 20,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final profileImage = sharedBy.profileImage;
+
+    if (profileImage != null && profileImage.isNotEmpty) {
+      String imageUrl = profileImage;
+      if (!imageUrl.startsWith('http') && serverUrl != null) {
+        imageUrl = '$serverUrl$imageUrl';
+      }
+      return ClipOval(
+        child: CachedNetworkImage(
+          imageUrl: imageUrl,
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          placeholder: (context, url) => _buildFallbackAvatar(theme),
+          errorWidget: (context, url, error) => _buildFallbackAvatar(theme),
+        ),
+      );
+    }
+    return _buildFallbackAvatar(theme);
+  }
+
+  Widget _buildFallbackAvatar(ThemeData theme) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: theme.colorScheme.secondary.withValues(alpha: 0.2),
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text(
+          sharedBy.name.isNotEmpty ? sharedBy.name[0].toUpperCase() : '?',
+          style: TextStyle(
+            color: theme.colorScheme.secondary,
+            fontWeight: FontWeight.w600,
+            fontSize: size * 0.5,
           ),
         ),
       ),

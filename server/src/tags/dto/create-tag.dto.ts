@@ -9,4 +9,3 @@ export class CreateTagDto {
   @IsOptional()
   color?: string;
 }
-

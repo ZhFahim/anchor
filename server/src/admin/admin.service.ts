@@ -18,7 +18,7 @@ export class AdminService {
   constructor(
     private prisma: PrismaService,
     private settingsService: SettingsService,
-  ) { }
+  ) {}
 
   async getStats() {
     const [totalUsers, totalNotes, totalTags] = await Promise.all([
@@ -209,7 +209,11 @@ export class AdminService {
     // Generate secure random password if not provided
     const password =
       newPassword ||
-      crypto.randomBytes(12).toString('base64').replace(/[+/=]/g, '').slice(0, 16);
+      crypto
+        .randomBytes(12)
+        .toString('base64')
+        .replace(/[+/=]/g, '')
+        .slice(0, 16);
 
     const hashedPassword = await bcrypt.hash(password, 10);
 

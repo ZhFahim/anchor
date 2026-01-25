@@ -19,18 +19,25 @@ enum UserStatus {
   pending
 }
 
+enum NoteSharePermission {
+  viewer
+  editor
+}
+
 model User {
-  id          String     @id @default(uuid())
-  email       String     @unique
-  password    String
-  name        String
-  profileImage String?
-  isAdmin     Boolean    @default(false)
-  status      UserStatus @default(active)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  notes       Note[]
-  tags        Tag[]
+  id                String      @id @default(uuid())
+  email             String      @unique
+  password          String
+  name              String
+  profileImage      String?
+  isAdmin           Boolean     @default(false)
+  status            UserStatus  @default(active)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  notes             Note[]
+  tags              Tag[]
+  sharedNotes       NoteShare[] @relation("SharedBy")
+  notesSharedWithMe NoteShare[] @relation("SharedWith")
 }
 
 model Settings {
@@ -42,18 +49,19 @@ model Settings {
 }
 
 model Note {
-  id         String    @id @default(uuid())
+  id         String      @id @default(uuid())
   title      String
   content    String?  
-  isPinned   Boolean   @default(false)
-  isArchived Boolean   @default(false)
+  isPinned   Boolean     @default(false)
+  isArchived Boolean     @default(false)
   background String?
-  state      NoteState @default(active)
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  state      NoteState   @default(active)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
   userId     String
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   tags       Tag[]
+  sharedWith NoteShare[]
 }
 
 model Tag {
@@ -68,4 +76,22 @@ model Tag {
   notes     Note[]
 
   @@unique([userId, name])
+}
+
+model NoteShare {
+  id              String         @id @default(uuid())
+  noteId          String
+  note            Note           @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  sharedWithUserId String
+  sharedWithUser  User           @relation("SharedWith", fields: [sharedWithUserId], references: [id], onDelete: Cascade)
+  permission      NoteSharePermission
+  sharedByUserId  String
+  sharedByUser    User           @relation("SharedBy", fields: [sharedByUserId], references: [id], onDelete: Cascade)
+  isDeleted       Boolean        @default(false)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@unique([noteId, sharedWithUserId])
+  @@index([noteId])
+  @@index([sharedWithUserId])
 }

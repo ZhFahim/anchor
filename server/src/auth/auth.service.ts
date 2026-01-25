@@ -23,7 +23,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private settingsService: SettingsService,
-  ) { }
+  ) {}
 
   async getRegistrationMode() {
     return {
@@ -177,7 +177,9 @@ export class AuthService {
     );
 
     if (isSamePassword) {
-      throw new BadRequestException('New password must be different from current password');
+      throw new BadRequestException(
+        'New password must be different from current password',
+      );
     }
 
     // Hash and update password
@@ -200,7 +202,6 @@ export class AuthService {
     if (!user) {
       throw new ForbiddenException('User not found');
     }
-
 
     try {
       const updatedUser = await this.prisma.user.update({
@@ -250,7 +251,7 @@ export class AuthService {
     const filePath = path.join(uploadsDir, filename);
     const imagePath = `/uploads/profiles/${filename}`;
 
-    let oldImagePath: string | null = user.profileImage || null;
+    const oldImagePath: string | null = user.profileImage || null;
     let fileSaved = false;
 
     try {

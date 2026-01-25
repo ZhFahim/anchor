@@ -6,7 +6,10 @@ export type RegistrationMode = 'disabled' | 'enabled' | 'review';
 
 @Injectable()
 export class SettingsService {
-  constructor(private prisma: PrismaService, private configService: ConfigService) { }
+  constructor(
+    private prisma: PrismaService,
+    private configService: ConfigService,
+  ) {}
 
   /**
    * Get the current registration mode.
@@ -49,7 +52,8 @@ export class SettingsService {
     source: 'env' | 'database' | 'default';
   }> {
     const envMode = this.configService.get<string>('USER_SIGNUP');
-    const isLocked = !!envMode && ['disabled', 'enabled', 'review'].includes(envMode);
+    const isLocked =
+      !!envMode && ['disabled', 'enabled', 'review'].includes(envMode);
 
     if (isLocked) {
       return {

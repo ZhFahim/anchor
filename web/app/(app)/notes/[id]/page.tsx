@@ -22,6 +22,7 @@ import {
   ReadOnlyBanner,
   NoteEditorHeader,
   NoteEditorContent,
+  ShareDialog,
 } from "@/features/notes";
 import type { CreateNoteDto, UpdateNoteDto, Note } from "@/features/notes";
 import { toast } from "sonner";
@@ -45,6 +46,7 @@ export default function NoteEditorPage() {
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
   const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
   const [permanentDeleteDialogOpen, setPermanentDeleteDialogOpen] = useState(false);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -85,8 +87,15 @@ export default function NoteEditorPage() {
   // Use note from storage if available, otherwise use API data
   const note = isNew ? null : noteFromStorage || noteFromApi;
 
-  // Check if note is read-only (only trashed notes are read-only)
-  const isReadOnly = note ? note.state === "trashed" : false;
+  // Check permissions
+  const isOwner = note ? note.permission === "owner" : true;
+  const isViewer = note ? note.permission === "viewer" : false;
+  const isEditor = note ? note.permission === "editor" : false;
+
+  // Check if note is read-only (trashed notes or viewers are read-only)
+  const isReadOnly = note
+    ? note.state === "trashed" || isViewer
+    : false;
 
   // Initialize form with note data or tag from URL
   useEffect(() => {
@@ -351,6 +360,10 @@ export default function NoteEditorPage() {
         isSaving={isSaving}
         hasUnsavedChanges={hasUnsavedChanges}
         isSaved={isSaved}
+        isOwner={isOwner}
+        permission={note?.permission || "owner"}
+        isTrashed={note?.state === "trashed"}
+        hasShares={(note?.shareIds?.length ?? 0) > 0}
         onBack={handleBack}
         onTogglePin={togglePin}
         onBackgroundChange={setBackground}
@@ -358,13 +371,20 @@ export default function NoteEditorPage() {
         onDeleteClick={() => setDeleteDialogOpen(true)}
         onRestoreClick={() => setRestoreDialogOpen(true)}
         onPermanentDeleteClick={() => setPermanentDeleteDialogOpen(true)}
+        onShareClick={!isNew ? () => setShareDialogOpen(true) : undefined}
         restorePending={restoreMutation.isPending}
         permanentDeletePending={permanentDeleteMutation.isPending}
       />
 
       {/* Read-only Banner */}
       {isReadOnly && (
-        <ReadOnlyBanner message="This note is in trash and cannot be edited. Restore it to make changes." />
+        <ReadOnlyBanner
+          message={
+            note?.state === "trashed"
+              ? "This note is in trash and cannot be edited. Restore it to make changes."
+              : "You have viewer access. Only the owner can edit this note."
+          }
+        />
       )}
 
       {/* Content */}
@@ -373,6 +393,7 @@ export default function NoteEditorPage() {
         content={content}
         selectedTagIds={selectedTagIds}
         isReadOnly={isReadOnly}
+        isTrashed={note?.state === "trashed"}
         onTitleChange={setTitle}
         onContentChange={setContent}
         onTagsChange={setSelectedTagIds}
@@ -413,6 +434,14 @@ export default function NoteEditorPage() {
         }}
         isPending={deleteMutation.isPending}
       />
+
+      {!isNew && (
+        <ShareDialog
+          open={shareDialogOpen}
+          onOpenChange={setShareDialogOpen}
+          noteId={noteId}
+        />
+      )}
 
       <PermanentDeleteDialog
         open={permanentDeleteDialogOpen}

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -45,19 +46,6 @@ class NotesRepository {
     query.where(_db.notes.isArchived.equals(false));
 
     if (tagId != null) {
-      // If filtering by tag, we first need to find note IDs that have this tag
-      // Then fetch those notes with ALL their tags
-      // This is slightly complex to do in one pure join if we want ALL tags for the filtered notes
-      // Simpler approach: Filter the join, but this limits the tags we get back to just the filtered one
-      // Correct approach with Drift: Use subquery or separate filter logic
-
-      // For now, to keep it simple and fast:
-      // 1. Join is already set up
-      // 2. Add where clause on the joined table
-      // 3. BUT this will filter out other tags for the same note in the result set if we are not careful
-      // The standard pattern for "Filter by Tag but get all Tags" is:
-      // Filter on Note ID where Note ID in (SELECT noteId FROM noteTags WHERE tagId = ?)
-
       query.where(
         _db.notes.id.isInQuery(
           _db.selectOnly(_db.noteTags)
@@ -106,7 +94,8 @@ class NotesRepository {
   }
 
   // Watch trashed notes for Trash screen
-  Stream<List<domain.Note>> watchTrashedNotes() {
+  // Only show notes owned by the current user (not shared notes that were trashed by others)
+  Stream<List<domain.Note>> watchTrashedNotes() async* {
     final query =
         _db.select(_db.notes).join([
             drift.leftOuterJoin(
@@ -122,12 +111,17 @@ class NotesRepository {
             ),
           ]);
 
-    return query.watch().map((rows) {
+    await for (final rows in query.watch()) {
       final noteMap = <String, domain.Note>{};
 
       for (final row in rows) {
         final note = row.readTable(_db.notes);
         final tagId = row.readTableOrNull(_db.noteTags)?.tagId;
+
+        // Skip shared notes that are trashed (only show owned notes)
+        if (note.permission != 'owner') {
+          continue;
+        }
 
         if (!noteMap.containsKey(note.id)) {
           noteMap[note.id] = _mapToDomain(note, []);
@@ -143,8 +137,8 @@ class NotesRepository {
         }
       }
 
-      return noteMap.values.toList();
-    });
+      yield noteMap.values.toList();
+    }
   }
 
   // Watch archived notes for Archive screen
@@ -382,10 +376,22 @@ class NotesRepository {
       final serverChanges = (data['serverChanges'] as List)
           .map((e) => domain.Note.fromJson(e as Map<String, dynamic>))
           .toList();
+      final revokedNoteIds =
+          (data['revokedSharedNoteIds'] as List?)?.cast<String>() ?? [];
       final syncedAt = data['syncedAt'] as String;
 
       // 4. Process server changes with conflict resolution
       await _db.transaction(() async {
+        // First handle revocations - delete these notes
+        for (final revokedId in revokedNoteIds) {
+          await (_db.delete(
+            _db.noteTags,
+          )..where((tbl) => tbl.noteId.equals(revokedId))).go();
+          await (_db.delete(
+            _db.notes,
+          )..where((tbl) => tbl.id.equals(revokedId))).go();
+        }
+
         for (final serverNote in serverChanges) {
           // If server note is deleted (tombstone), remove it locally
           if (serverNote.isDeleted) {
@@ -432,6 +438,14 @@ class NotesRepository {
                   background: drift.Value(serverNote.background),
                   state: drift.Value(serverNote.state.name),
                   updatedAt: drift.Value(serverNote.updatedAt),
+                  permission: drift.Value(serverNote.permission.name),
+                  shareIds: drift.Value(jsonEncode(serverNote.shareIds ?? [])),
+                  sharedById: drift.Value(serverNote.sharedBy?.id),
+                  sharedByName: drift.Value(serverNote.sharedBy?.name),
+                  sharedByEmail: drift.Value(serverNote.sharedBy?.email),
+                  sharedByProfileImage: drift.Value(
+                    serverNote.sharedBy?.profileImage,
+                  ),
                   isSynced: const drift.Value(true),
                 ),
               );
@@ -489,6 +503,18 @@ class NotesRepository {
       state: domain.NoteState.fromString(row.state),
       updatedAt: row.updatedAt,
       tagIds: tagIds,
+      permission: domain.NotePermission.fromString(row.permission),
+      shareIds: row.shareIds?.isNotEmpty == true
+          ? List<String>.from(jsonDecode(row.shareIds!))
+          : [],
+      sharedBy: row.sharedById != null
+          ? domain.SharedByUser(
+              id: row.sharedById!,
+              name: row.sharedByName ?? '',
+              email: row.sharedByEmail ?? '',
+              profileImage: row.sharedByProfileImage,
+            )
+          : null,
       isSynced: row.isSynced,
     );
   }
@@ -503,6 +529,12 @@ class NotesRepository {
       background: note.background,
       state: note.state.name,
       updatedAt: note.updatedAt,
+      permission: note.permission.name,
+      shareIds: jsonEncode(note.shareIds ?? []),
+      sharedById: note.sharedBy?.id,
+      sharedByName: note.sharedBy?.name,
+      sharedByEmail: note.sharedBy?.email,
+      sharedByProfileImage: note.sharedBy?.profileImage,
       isSynced: isSynced,
     );
   }

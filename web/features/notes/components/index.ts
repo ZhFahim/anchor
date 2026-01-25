@@ -15,3 +15,5 @@ export {
   NoteEditorContent,
 } from "./note-editor";
 export { ViewSettings } from "./view-settings";
+export { ShareDialog } from "./share-dialog";
+export { SharedNoteIndicator } from "./shared-note-indicator";

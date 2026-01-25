@@ -9,18 +9,18 @@ import {
   UseGuards,
   Query,
 } from '@nestjs/common';
-import { NotesService } from './notes.service';
-import { CreateNoteDto } from './dto/create-note.dto';
-import { UpdateNoteDto } from './dto/update-note.dto';
-import { SyncNotesDto } from './dto/sync-notes.dto';
-import { BulkActionDto } from './dto/bulk-action.dto';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { NotesService } from '../services/notes.service';
+import { CreateNoteDto } from '../dto/create-note.dto';
+import { UpdateNoteDto } from '../dto/update-note.dto';
+import { SyncNotesDto } from '../dto/sync-notes.dto';
+import { BulkActionDto } from '../dto/bulk-action.dto';
+import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 
 @Controller('api/notes')
 @UseGuards(JwtAuthGuard)
 export class NotesController {
-  constructor(private readonly notesService: NotesService) { }
+  constructor(private readonly notesService: NotesService) {}
 
   @Post()
   create(
@@ -79,10 +79,7 @@ export class NotesController {
   }
 
   @Delete(':id/permanent')
-  permanentDelete(
-    @CurrentUser('id') userId: string,
-    @Param('id') id: string,
-  ) {
+  permanentDelete(@CurrentUser('id') userId: string, @Param('id') id: string) {
     return this.notesService.permanentDelete(userId, id);
   }
 

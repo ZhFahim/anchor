@@ -3,13 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:uuid/uuid.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:anchor/features/notes/domain/note.dart';
 import 'package:anchor/core/widgets/confirm_dialog.dart';
 import 'package:anchor/core/widgets/app_snackbar.dart';
 import 'package:anchor/core/widgets/rich_text_editor.dart';
+import 'package:anchor/core/network/server_config_provider.dart';
 import 'package:anchor/features/tags/presentation/widgets/tag_selector.dart';
 import 'package:anchor/features/notes/presentation/widgets/note_background.dart';
 import 'package:anchor/features/notes/presentation/widgets/note_background_picker.dart';
+import 'package:anchor/features/notes/presentation/widgets/share_note_sheet.dart';
 import '../data/repository/notes_repository.dart';
 
 class NoteEditScreen extends ConsumerStatefulWidget {
@@ -49,8 +52,8 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
       _selectedTagIds = List.from(widget.note!.tagIds);
       _selectedBackground = widget.note!.background;
       _isLoaded = true;
-      // Trashed notes are read-only
-      if (widget.note!.isTrashed) {
+      // Trashed notes or viewer notes are read-only
+      if (widget.note!.isTrashed || !widget.note!.canEdit) {
         _isEditing = false;
       }
     } else if (widget.noteId != null) {
@@ -66,8 +69,8 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
   }
 
   void _startEditing() {
-    // Don't allow editing if note is trashed
-    if (_existingNote?.isTrashed == true) {
+    // Don't allow editing if note is trashed or user is viewer
+    if (_existingNote?.isTrashed == true || !(_existingNote?.canEdit ?? true)) {
       return;
     }
     setState(() {
@@ -89,8 +92,8 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
         _selectedTagIds = List.from(note.tagIds);
         _selectedBackground = note.background;
         _isLoaded = true;
-        // Trashed notes are read-only
-        if (note.isTrashed) {
+        // Trashed notes or viewer notes are read-only
+        if (note.isTrashed || !note.canEdit) {
           _isEditing = false;
         }
       });
@@ -190,6 +193,39 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
     );
   }
 
+  void _showShareSheet() {
+    // Only allow sharing for existing, non-trashed notes, and owners only
+    if (_isNew ||
+        _existingNote?.isTrashed == true ||
+        !(_existingNote?.isOwner ?? true)) {
+      return;
+    }
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) =>
+          ShareNoteSheet(noteId: widget.noteId ?? _existingNote!.id),
+    ).then((_) {
+      // Reload note to update share count after sheet closes
+      if (widget.noteId != null || _existingNote != null) {
+        _reloadNoteShareInfo();
+      }
+    });
+  }
+
+  Future<void> _reloadNoteShareInfo() async {
+    final noteId = widget.noteId ?? _existingNote?.id;
+    if (noteId == null) return;
+
+    final note = await ref.read(notesRepositoryProvider).getNote(noteId);
+    if (note != null && mounted) {
+      setState(() {
+        _existingNote = note;
+      });
+    }
+  }
+
   @override
   void dispose() {
     _titleController.dispose();
@@ -197,8 +233,8 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
   }
 
   Future<void> _saveNote() async {
-    // Don't save if note is trashed (read-only)
-    if (_existingNote?.isTrashed == true) {
+    // Don't save if note is trashed or user can't edit
+    if (_existingNote?.isTrashed == true || !(_existingNote?.canEdit ?? true)) {
       return;
     }
 
@@ -384,7 +420,10 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final serverUrl = ref.watch(serverUrlProvider);
     final isTrashed = _existingNote?.isTrashed ?? false;
+    final isViewer = _existingNote?.permission == NotePermission.viewer;
+    final isReadOnly = isTrashed || isViewer;
 
     return PopScope(
       onPopInvokedWithResult: (didPop, result) async {
@@ -418,61 +457,140 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
                   tooltip: 'Delete Forever',
                 ),
               ] else ...[
-                // Normal editing controls for non-trashed notes
-                IconButton(
-                  icon: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Icon(
-                        LucideIcons.pin,
-                        color: _isPinned
-                            ? theme.colorScheme.primary
-                            : theme.colorScheme.onSurface,
+                // Shared by indicator for shared notes
+                if (_existingNote?.sharedBy != null)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.secondaryContainer,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _SharedByAvatar(
+                              sharedBy: _existingNote!.sharedBy!,
+                              serverUrl: serverUrl,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Shared by ${_existingNote!.sharedBy!.name}',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: theme.colorScheme.onSecondaryContainer,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      if (_isPinned)
-                        Positioned(
-                          right: -2,
-                          top: -2,
-                          child: Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.tertiary,
-                              shape: BoxShape.circle,
+                    ),
+                  ),
+                // Background and Pin - shown for non-read-only (owners and editors)
+                if (!isReadOnly) ...[
+                  IconButton(
+                    icon: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Icon(
+                          LucideIcons.pin,
+                          color: _isPinned
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.onSurface,
+                        ),
+                        if (_isPinned)
+                          Positioned(
+                            right: -2,
+                            top: -2,
+                            child: Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.tertiary,
+                                shape: BoxShape.circle,
+                              ),
                             ),
                           ),
-                        ),
-                    ],
+                      ],
+                    ),
+                    onPressed: _isLoaded && !isTrashed ? _togglePinned : null,
+                    tooltip: _isPinned ? 'Unpin Note' : 'Pin Note',
                   ),
-                  onPressed: _isLoaded && !isTrashed ? _togglePinned : null,
-                  tooltip: _isPinned ? 'Unpin Note' : 'Pin Note',
-                ),
-                IconButton(
-                  icon: const Icon(LucideIcons.palette),
-                  onPressed: !isTrashed ? _showColorPicker : null,
-                  tooltip: 'Change Background',
-                ),
-                IconButton(
-                  icon: Icon(
-                    _isArchived
-                        ? LucideIcons.archiveRestore
-                        : LucideIcons.archive,
+                  IconButton(
+                    icon: const Icon(LucideIcons.palette),
+                    onPressed: !isTrashed ? _showColorPicker : null,
+                    tooltip: 'Change Background',
                   ),
-                  onPressed: _isLoaded && !_isNew && !isTrashed
-                      ? _toggleArchived
-                      : null,
-                  tooltip: _isArchived ? 'Unarchive Note' : 'Archive Note',
-                ),
-                IconButton(
-                  icon: const Icon(LucideIcons.trash2),
-                  onPressed: !isTrashed ? _deleteNote : null,
-                  tooltip: 'Delete Note',
-                ),
+                ],
+                // Share, Archive, Delete - only for owners
+                if (_existingNote?.isOwner ?? true) ...[
+                  IconButton(
+                    icon: Icon(
+                      _isArchived
+                          ? LucideIcons.archiveRestore
+                          : LucideIcons.archive,
+                    ),
+                    onPressed: _isLoaded && !_isNew && !isTrashed
+                        ? _toggleArchived
+                        : null,
+                    tooltip: _isArchived ? 'Unarchive Note' : 'Archive Note',
+                  ),
+                  IconButton(
+                    icon: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        const Icon(LucideIcons.userPlus),
+                        // Badge showing share count
+                        if (_existingNote?.hasShares ?? false)
+                          Positioned(
+                            right: -4,
+                            top: -8,
+                            child: Container(
+                              padding: const EdgeInsets.all(3),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primary,
+                                shape: BoxShape.circle,
+                              ),
+                              constraints: const BoxConstraints(
+                                minWidth: 14,
+                                minHeight: 14,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '${_existingNote!.shareIds!.length}',
+                                  style: TextStyle(
+                                    color: theme.colorScheme.onPrimary,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    onPressed: _isLoaded && !_isNew && !isTrashed
+                        ? _showShareSheet
+                        : null,
+                    tooltip: 'Share Note',
+                  ),
+                  IconButton(
+                    icon: const Icon(LucideIcons.trash2),
+                    onPressed: !isTrashed ? _deleteNote : null,
+                    tooltip: 'Delete Note',
+                  ),
+                ],
               ],
               const SizedBox(width: 8),
             ],
           ),
-          floatingActionButton: !_isEditing && !isTrashed
+          floatingActionButton: !_isEditing && !isReadOnly
               ? FloatingActionButton(
                   onPressed: _startEditing,
                   tooltip: 'Edit Note',
@@ -485,8 +603,8 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
               color: Colors.transparent,
               child: Column(
                 children: [
-                  // Read-only banner for trashed notes
-                  if (isTrashed)
+                  // Read-only banner for trashed or viewer notes
+                  if (isReadOnly)
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(
@@ -504,7 +622,9 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'This note is in trash and cannot be edited. Restore it to make changes.',
+                              isTrashed
+                                  ? 'This note is in trash and cannot be edited. Restore it to make changes.'
+                                  : 'You have viewer access. Only the owner can edit this note.',
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: theme.colorScheme.onSurfaceVariant,
                               ),
@@ -517,13 +637,13 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: TextField(
                       controller: _titleController,
-                      readOnly: !_isEditing || isTrashed,
+                      readOnly: !_isEditing || isReadOnly,
                       style: theme.textTheme.displaySmall?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: theme.colorScheme.onSurface,
                       ),
                       decoration: InputDecoration(
-                        hintText: _isEditing && !isTrashed ? 'Title' : null,
+                        hintText: _isEditing && !isReadOnly ? 'Title' : null,
                         hintStyle: TextStyle(
                           color: theme.colorScheme.onSurface.withValues(
                             alpha: 0.3,
@@ -541,9 +661,9 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
                   if (_isEditing || _selectedTagIds.isNotEmpty)
                     TagSelector(
                       selectedTagIds: _selectedTagIds,
-                      readOnly: !_isEditing || isTrashed,
+                      readOnly: !_isEditing || isReadOnly,
                       onTagsChanged: (tagIds) {
-                        if (!isTrashed) {
+                        if (!isReadOnly) {
                           setState(() {
                             _selectedTagIds = tagIds;
                           });
@@ -556,8 +676,8 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
                             key: _editorKey,
                             initialContent: _initialContent,
                             hintText: 'Start typing...',
-                            showToolbar: _isEditing && !isTrashed,
-                            readOnly: !_isEditing || isTrashed,
+                            showToolbar: _isEditing && !isReadOnly,
+                            readOnly: !_isEditing || isReadOnly,
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 24,
                               vertical: 16,
@@ -568,6 +688,64 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
                 ],
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Avatar widget to display the profile image of the user who shared the note
+class _SharedByAvatar extends StatelessWidget {
+  final SharedByUser sharedBy;
+  final String? serverUrl;
+  final double size;
+
+  const _SharedByAvatar({
+    required this.sharedBy,
+    this.serverUrl,
+    this.size = 20,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final profileImage = sharedBy.profileImage;
+
+    if (profileImage != null && profileImage.isNotEmpty) {
+      String imageUrl = profileImage;
+      if (!imageUrl.startsWith('http') && serverUrl != null) {
+        imageUrl = '$serverUrl$imageUrl';
+      }
+      return ClipOval(
+        child: CachedNetworkImage(
+          imageUrl: imageUrl,
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          placeholder: (context, url) => _buildFallbackAvatar(theme),
+          errorWidget: (context, url, error) => _buildFallbackAvatar(theme),
+        ),
+      );
+    }
+    return _buildFallbackAvatar(theme);
+  }
+
+  Widget _buildFallbackAvatar(ThemeData theme) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: theme.colorScheme.onSecondaryContainer.withValues(alpha: 0.2),
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text(
+          sharedBy.name.isNotEmpty ? sharedBy.name[0].toUpperCase() : '?',
+          style: TextStyle(
+            color: theme.colorScheme.onSecondaryContainer,
+            fontWeight: FontWeight.w600,
+            fontSize: size * 0.5,
           ),
         ),
       ),
