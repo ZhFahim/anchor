@@ -26,6 +26,7 @@ class NoteEditScreen extends ConsumerStatefulWidget {
 
 class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
   final _titleController = TextEditingController();
+  final _titleFocusNode = FocusNode();
   final _editorKey = GlobalKey<RichTextEditorState>();
   bool _isNew = true;
   bool _isDeleted = false;
@@ -66,16 +67,34 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
       _isPinned = false;
       _isLoaded = true;
     }
+
+    // Listen to title focus changes
+    _titleFocusNode.addListener(_onTitleFocusChanged);
   }
 
-  void _startEditing() {
-    // Don't allow editing if note is trashed or user is viewer
-    if (_existingNote?.isTrashed == true || !(_existingNote?.canEdit ?? true)) {
-      return;
+  void _onTitleFocusChanged() {
+    _updateEditingState();
+  }
+
+  void _onEditorEditingChanged(bool isEditing) {
+    _updateEditingState();
+  }
+
+  void _updateEditingState() {
+    final isReadOnly =
+        _existingNote?.isTrashed == true ||
+        (_existingNote?.permission == NotePermission.viewer);
+    final titleEditing = _titleFocusNode.hasFocus;
+    final editorEditing = _editorKey.currentState?.isEditing ?? false;
+    final newEditingState = isReadOnly
+        ? false
+        : (titleEditing || editorEditing);
+
+    if (_isEditing != newEditingState) {
+      setState(() {
+        _isEditing = newEditingState;
+      });
     }
-    setState(() {
-      _isEditing = true;
-    });
   }
 
   Future<void> _loadNote() async {
@@ -227,8 +246,11 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
   }
 
   @override
+  @override
   void dispose() {
     _titleController.dispose();
+    _titleFocusNode.removeListener(_onTitleFocusChanged);
+    _titleFocusNode.dispose();
     super.dispose();
   }
 
@@ -590,13 +612,6 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
               const SizedBox(width: 8),
             ],
           ),
-          floatingActionButton: !_isEditing && !isReadOnly
-              ? FloatingActionButton(
-                  onPressed: _startEditing,
-                  tooltip: 'Edit Note',
-                  child: const Icon(LucideIcons.pencil),
-                )
-              : null,
           body: Hero(
             tag: 'note_${widget.noteId ?? 'new'}',
             child: Material(
@@ -635,30 +650,41 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
                     ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: TextField(
-                      controller: _titleController,
-                      readOnly: !_isEditing || isReadOnly,
-                      style: theme.textTheme.displaySmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: _isEditing && !isReadOnly ? 'Title' : null,
-                        hintStyle: TextStyle(
-                          color: theme.colorScheme.onSurface.withValues(
-                            alpha: 0.3,
+                    child: GestureDetector(
+                      onTap: !isReadOnly
+                          ? () {
+                              if (!_titleFocusNode.hasFocus) {
+                                _titleFocusNode.requestFocus();
+                              }
+                            }
+                          : null,
+                      child: TextField(
+                        controller: _titleController,
+                        focusNode: _titleFocusNode,
+                        readOnly: isReadOnly,
+                        style: theme.textTheme.displaySmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: _isEditing && !isReadOnly ? 'Title' : null,
+                          hintStyle: TextStyle(
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.3,
+                            ),
                           ),
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 16,
+                          ),
+                          filled: false,
                         ),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(
-                          vertical: 16,
-                        ),
-                        filled: false,
+                        textCapitalization: TextCapitalization.sentences,
+                        showCursor: _isEditing && !isReadOnly,
                       ),
-                      textCapitalization: TextCapitalization.sentences,
                     ),
                   ),
-                  if (_isEditing || _selectedTagIds.isNotEmpty)
+                  if ((_isEditing && !isReadOnly) || _selectedTagIds.isNotEmpty)
                     TagSelector(
                       selectedTagIds: _selectedTagIds,
                       readOnly: !_isEditing || isReadOnly,
@@ -677,7 +703,8 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
                             initialContent: _initialContent,
                             hintText: 'Start typing...',
                             showToolbar: _isEditing && !isReadOnly,
-                            readOnly: !_isEditing || isReadOnly,
+                            canEdit: !isReadOnly,
+                            onEditingChanged: _onEditorEditingChanged,
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 24,
                               vertical: 16,

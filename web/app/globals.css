@@ -318,6 +318,14 @@
   text-decoration-color: var(--muted-foreground);
 }
 
+/* Quill Bullet List Styling */
+.anchor-quill .ql-editor li[data-list="bullet"] {
+  padding-left: 16px !important;
+}
+
+.anchor-quill .ql-editor li[data-list="ordered"] {
+  padding-left: 24px !important;
+}
 
 /* ===== Masonry Grid Layout ===== */
 .masonry-grid {

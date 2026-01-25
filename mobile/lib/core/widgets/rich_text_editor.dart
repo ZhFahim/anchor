@@ -15,14 +15,18 @@ class RichTextEditor extends StatefulWidget {
   /// Callback when content changes. Returns JSON Delta string.
   final ValueChanged<String>? onChanged;
 
+  /// Callback when editing state changes (focus gained/lost).
+  final ValueChanged<bool>? onEditingChanged;
+
   /// Hint text shown when editor is empty.
   final String hintText;
 
-  /// Whether the editor is read-only.
-  final bool readOnly;
-
   /// Whether to show the toolbar.
   final bool showToolbar;
+
+  /// Whether the editor can be edited (tap-to-edit enabled).
+  /// If false, the editor will remain in view-only mode.
+  final bool canEdit;
 
   /// Focus node for the editor.
   final FocusNode? focusNode;
@@ -34,9 +38,10 @@ class RichTextEditor extends StatefulWidget {
     super.key,
     this.initialContent,
     this.onChanged,
+    this.onEditingChanged,
     this.hintText = 'Start typing...',
-    this.readOnly = false,
     this.showToolbar = true,
+    this.canEdit = true,
     this.focusNode,
     this.contentPadding = const EdgeInsets.symmetric(vertical: 16),
   });
@@ -49,6 +54,7 @@ class RichTextEditorState extends State<RichTextEditor> {
   late QuillController _controller;
   late FocusNode _focusNode;
   bool _isInternalFocusNode = false;
+  bool _isEditing = false;
 
   // Track formatting state for dynamic toolbar
   bool _isBold = false;
@@ -68,7 +74,7 @@ class RichTextEditorState extends State<RichTextEditor> {
   void initState() {
     super.initState();
     _controller = _createController(widget.initialContent);
-    _controller.readOnly = widget.readOnly;
+    _controller.readOnly = !widget.canEdit;
     _controller.addListener(_onTextChanged);
     _controller.addListener(_updateFormattingState);
 
@@ -78,13 +84,42 @@ class RichTextEditorState extends State<RichTextEditor> {
       _focusNode = FocusNode();
       _isInternalFocusNode = true;
     }
+
+    // Listen to focus changes to track editing state
+    _focusNode.addListener(_onFocusChanged);
+  }
+
+  void _onFocusChanged() {
+    final wasEditing = _isEditing;
+    final hasFocus = _focusNode.hasFocus;
+
+    // If in read-only mode and focus is gained, hide keyboard immediately
+    if (!widget.canEdit && hasFocus) {
+      SystemChannels.textInput.invokeMethod('TextInput.hide');
+      // Don't set editing state for read-only mode
+      setState(() {
+        _isEditing = false;
+      });
+    } else {
+      setState(() {
+        _isEditing = hasFocus;
+      });
+    }
+
+    // Notify parent of editing state change (only for editable mode)
+    if (wasEditing != _isEditing &&
+        widget.canEdit &&
+        widget.onEditingChanged != null) {
+      widget.onEditingChanged!(_isEditing);
+    }
   }
 
   @override
   void didUpdateWidget(covariant RichTextEditor oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.readOnly != widget.readOnly) {
-      _controller.readOnly = widget.readOnly;
+    // Update read-only state if canEdit changed
+    if (oldWidget.canEdit != widget.canEdit) {
+      _controller.readOnly = !widget.canEdit;
     }
   }
 
@@ -167,6 +202,9 @@ class RichTextEditorState extends State<RichTextEditor> {
     return text.isEmpty;
   }
 
+  /// Whether the editor is currently being edited (has focus).
+  bool get isEditing => _isEditing;
+
   /// Sets new content from JSON Delta string.
   void setContent(String? content) {
     _controller.removeListener(_onTextChanged);
@@ -180,6 +218,7 @@ class RichTextEditorState extends State<RichTextEditor> {
   void dispose() {
     _controller.removeListener(_onTextChanged);
     _controller.removeListener(_updateFormattingState);
+    _focusNode.removeListener(_onFocusChanged);
     _controller.dispose();
     if (_isInternalFocusNode) {
       _focusNode.dispose();
@@ -194,22 +233,33 @@ class RichTextEditorState extends State<RichTextEditor> {
     return Column(
       children: [
         Expanded(
-          child: QuillEditor.basic(
-            controller: _controller,
-            focusNode: widget.readOnly ? null : _focusNode,
-            config: QuillEditorConfig(
-              placeholder: widget.readOnly ? null : widget.hintText,
-              padding: widget.contentPadding,
-              autoFocus: false,
-              expands: true,
-              scrollable: true,
-              showCursor: !widget.readOnly,
-              enableInteractiveSelection: !widget.readOnly,
-              customStyles: _getCustomStyles(context),
+          child: GestureDetector(
+            onTap: widget.canEdit
+                ? () {
+                    if (!_focusNode.hasFocus) {
+                      _focusNode.requestFocus();
+                    }
+                  }
+                : null,
+            behavior: HitTestBehavior.opaque,
+            child: QuillEditor.basic(
+              controller: _controller,
+              focusNode: _focusNode,
+              config: QuillEditorConfig(
+                placeholder: widget.hintText,
+                padding: widget.contentPadding,
+                autoFocus: false,
+                expands: true,
+                scrollable: true,
+                showCursor: _isEditing && widget.canEdit,
+                enableInteractiveSelection: true,
+                customStyles: _getCustomStyles(context),
+              ),
             ),
           ),
         ),
-        if (widget.showToolbar && !widget.readOnly) _buildCustomToolbar(theme),
+        if (widget.showToolbar && _isEditing && widget.canEdit)
+          _buildCustomToolbar(theme),
       ],
     );
   }
@@ -624,12 +674,31 @@ class RichTextEditorState extends State<RichTextEditor> {
         null,
       ),
       lists: DefaultListBlockStyle(
-        baseStyle,
+        baseStyle.copyWith(height: 1.2),
         const HorizontalSpacing(0, 0),
-        const VerticalSpacing(0, 8),
-        const VerticalSpacing(0, 0),
+        const VerticalSpacing(0, 12),
+        const VerticalSpacing(8, 0),
         null,
         null,
+        indentWidthBuilder: (block, context, count, widthBuilder) {
+          final attrs = block.style.attributes;
+          final listAttr = attrs[Attribute.list.key];
+          final isOrdered = listAttr?.value == 'ordered';
+          final isBullet = listAttr?.value == 'bullet';
+
+          if (attrs.containsKey(Attribute.blockQuote.key)) {
+            return HorizontalSpacing(16, 0);
+          }
+
+          if (isOrdered) {
+            final base = widthBuilder(16, count);
+            return HorizontalSpacing(base, 0);
+          }
+          if (isBullet) {
+            return HorizontalSpacing(24, 0);
+          }
+          return HorizontalSpacing(36, 0);
+        },
       ),
       quote: DefaultTextBlockStyle(
         baseStyle.copyWith(
