@@ -118,3 +118,16 @@ export async function searchUsers(query: string): Promise<UserSearchResult[]> {
     })
     .json<UserSearchResult[]>();
 }
+
+// Import API
+export interface ImportNoteDto extends CreateNoteDto {
+  labels?: string[];
+}
+
+export async function importNotes(
+  notes: ImportNoteDto[]
+): Promise<{ imported: number; tagsCreated: number }> {
+  return api
+    .post("api/notes/import", { json: { notes } })
+    .json<{ imported: number; tagsCreated: number }>();
+}

@@ -14,6 +14,7 @@ import { CreateNoteDto } from '../dto/create-note.dto';
 import { UpdateNoteDto } from '../dto/update-note.dto';
 import { SyncNotesDto } from '../dto/sync-notes.dto';
 import { BulkActionDto } from '../dto/bulk-action.dto';
+import { ImportNotesDto } from '../dto/import-notes.dto';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 
@@ -33,6 +34,14 @@ export class NotesController {
   @Post('sync')
   sync(@CurrentUser('id') userId: string, @Body() syncDto: SyncNotesDto) {
     return this.notesService.sync(userId, syncDto);
+  }
+
+  @Post('import')
+  import(
+    @CurrentUser('id') userId: string,
+    @Body() importNotesDto: ImportNotesDto,
+  ) {
+    return this.notesService.importNotes(userId, importNotesDto.notes);
   }
 
   @Get()
