@@ -457,4 +457,89 @@ export class NotesService {
       syncedAt: new Date().toISOString(),
     };
   }
+
+  /**
+   * Import multiple notes at once (e.g., from Google Keep export)
+   * Automatically creates tags from labels if they don't exist
+   */
+  async importNotes(
+    userId: string,
+    notes: Array<CreateNoteDto & { labels?: string[] }>,
+  ) {
+    // Collect all unique labels from notes
+    const allLabels = new Set<string>();
+    for (const note of notes) {
+      if (note.labels) {
+        for (const label of note.labels) {
+          allLabels.add(label);
+        }
+      }
+    }
+
+    // Get existing tags for this user
+    const existingTags = await this.prisma.tag.findMany({
+      where: {
+        userId,
+        name: { in: Array.from(allLabels) },
+        isDeleted: false,
+      },
+    });
+
+    const existingTagNames = new Set(existingTags.map((t) => t.name));
+    const tagNameToId = new Map(existingTags.map((t) => [t.name, t.id]));
+
+    // Create missing tags
+    const labelsToCreate = Array.from(allLabels).filter(
+      (label) => !existingTagNames.has(label),
+    );
+
+    if (labelsToCreate.length > 0) {
+      const createdTags = await this.prisma.$transaction(
+        labelsToCreate.map((name) =>
+          this.prisma.tag.create({
+            data: { name, userId },
+          }),
+        ),
+      );
+
+      // Add newly created tags to the map
+      for (const tag of createdTags) {
+        tagNameToId.set(tag.name, tag.id);
+      }
+    }
+
+    // Create notes with their tags
+    const createdNotes = await this.prisma.$transaction(
+      notes.map((note) => {
+        const { tagIds, labels, ...noteData } = note;
+
+        // Combine explicit tagIds with labels converted to tag IDs
+        const labelTagIds = (labels || [])
+          .map((label) => tagNameToId.get(label))
+          .filter((id): id is string => id !== undefined);
+
+        const allTagIds = [...new Set([...(tagIds || []), ...labelTagIds])];
+
+        return this.prisma.note.create({
+          data: {
+            ...noteData,
+            state: NoteState.active,
+            userId,
+            tags: allTagIds.length
+              ? {
+                connect: allTagIds.map((id) => ({ id })),
+              }
+              : undefined,
+          },
+          include: NOTE_INCLUDE_TAGS,
+        });
+      }),
+    );
+
+    return {
+      imported: createdNotes.length,
+      tagsCreated: labelsToCreate.length,
+      notes: createdNotes.map((note) => transformNote(note, userId)),
+    };
+  }
 }

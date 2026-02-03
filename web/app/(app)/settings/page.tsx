@@ -1,17 +1,39 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Lock, Loader2, Eye, EyeOff, User, Upload, X } from "lucide-react";
+import {
+  Lock,
+  Loader2,
+  Eye,
+  EyeOff,
+  User,
+  Upload,
+  X,
+  FileUp,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { changePassword, updateProfile, uploadProfileImage, removeProfileImage, getMe } from "@/features/auth/api";
+import {
+  changePassword,
+  updateProfile,
+  uploadProfileImage,
+  removeProfileImage,
+  getMe,
+} from "@/features/auth/api";
 import { useAuthStore } from "@/features/auth/store";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { ImportDialog } from "@/features/notes/components/dialogs";
 
 export default function SettingsPage() {
   const { user, setUser } = useAuthStore();
@@ -21,10 +43,13 @@ export default function SettingsPage() {
   // Profile state
   const [name, setName] = useState(user?.name ?? "");
   const [profileImagePreview, setProfileImagePreview] = useState<string | null>(
-    user?.profileImage || null
+    user?.profileImage || null,
   );
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [shouldRemoveImage, setShouldRemoveImage] = useState(false);
+
+  // Import dialog state
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
 
   // Sync profile image preview when local state changes
   useEffect(() => {
@@ -47,9 +72,11 @@ export default function SettingsPage() {
   const [currentPasswordError, setCurrentPasswordError] = useState("");
   const [newPasswordError, setNewPasswordError] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
-  const [isCurrentPasswordVisible, setIsCurrentPasswordVisible] = useState(false);
+  const [isCurrentPasswordVisible, setIsCurrentPasswordVisible] =
+    useState(false);
   const [isNewPasswordVisible, setIsNewPasswordVisible] = useState(false);
-  const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
+  const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] =
+    useState(false);
 
   const updateProfileMutation = useMutation({
     mutationFn: async (data: { name?: string | null }) => {
@@ -149,7 +176,9 @@ export default function SettingsPage() {
     // Update name only if it changed and is not empty
     const trimmedName = name.trim();
     if (trimmedName !== (user?.name || "")) {
-      promises.push(updateProfileMutation.mutateAsync({ name: trimmedName || null }));
+      promises.push(
+        updateProfileMutation.mutateAsync({ name: trimmedName || null }),
+      );
     }
 
     // Upload image if selected (takes precedence over removal)
@@ -185,8 +214,10 @@ export default function SettingsPage() {
       const errorMessage = error.message || "Failed to change password";
 
       // Map API errors to appropriate fields
-      if (errorMessage.toLowerCase().includes("current password") ||
-        errorMessage.toLowerCase().includes("incorrect")) {
+      if (
+        errorMessage.toLowerCase().includes("current password") ||
+        errorMessage.toLowerCase().includes("incorrect")
+      ) {
         setCurrentPasswordError(errorMessage);
         setNewPasswordError("");
         setConfirmPasswordError("");
@@ -225,7 +256,9 @@ export default function SettingsPage() {
     });
   };
 
-  const handleCurrentPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCurrentPasswordChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     setCurrentPassword(e.target.value);
     if (currentPasswordError) {
       setCurrentPasswordError("");
@@ -248,7 +281,9 @@ export default function SettingsPage() {
     }
   };
 
-  const handleConfirmPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleConfirmPasswordChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     setConfirmPassword(e.target.value);
     if (confirmPasswordError) {
       setConfirmPasswordError("");
@@ -258,7 +293,11 @@ export default function SettingsPage() {
   const handleConfirmPasswordBlur = () => {
     if (confirmPassword && confirmPassword.length < 8) {
       setConfirmPasswordError("Password must be at least 8 characters");
-    } else if (confirmPassword && newPassword && confirmPassword !== newPassword) {
+    } else if (
+      confirmPassword &&
+      newPassword &&
+      confirmPassword !== newPassword
+    ) {
       setConfirmPasswordError("Passwords do not match");
     }
   };
@@ -297,8 +336,13 @@ export default function SettingsPage() {
               <Label>Profile Image</Label>
               <div className="flex items-center gap-4">
                 <Avatar className="h-20 w-20">
-                  <AvatarImage src={profileImagePreview || undefined} alt={user?.name ?? user?.email ?? ""} />
-                  <AvatarFallback className="text-lg">{getInitials()}</AvatarFallback>
+                  <AvatarImage
+                    src={profileImagePreview || undefined}
+                    alt={user?.name ?? user?.email ?? ""}
+                  />
+                  <AvatarFallback className="text-lg">
+                    {getInitials()}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col gap-2">
                   <input
@@ -358,9 +402,15 @@ export default function SettingsPage() {
             <Button
               type="submit"
               className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
-              disabled={updateProfileMutation.isPending || uploadImageMutation.isPending || removeImageMutation.isPending}
+              disabled={
+                updateProfileMutation.isPending ||
+                uploadImageMutation.isPending ||
+                removeImageMutation.isPending
+              }
             >
-              {updateProfileMutation.isPending || uploadImageMutation.isPending || removeImageMutation.isPending ? (
+              {updateProfileMutation.isPending ||
+              uploadImageMutation.isPending ||
+              removeImageMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Saving...
@@ -395,7 +445,8 @@ export default function SettingsPage() {
                   onChange={handleCurrentPasswordChange}
                   className={cn(
                     "pl-10 pr-10 h-12 bg-background/50",
-                    currentPasswordError && "border-destructive focus:border-destructive focus:ring-destructive/20"
+                    currentPasswordError &&
+                      "border-destructive focus:border-destructive focus:ring-destructive/20",
                   )}
                   aria-invalid={!!currentPasswordError}
                   required
@@ -403,7 +454,9 @@ export default function SettingsPage() {
                 {currentPassword && (
                   <button
                     type="button"
-                    onClick={() => setIsCurrentPasswordVisible(!isCurrentPasswordVisible)}
+                    onClick={() =>
+                      setIsCurrentPasswordVisible(!isCurrentPasswordVisible)
+                    }
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                   >
                     {isCurrentPasswordVisible ? (
@@ -433,7 +486,8 @@ export default function SettingsPage() {
                   onBlur={handleNewPasswordBlur}
                   className={cn(
                     "pl-10 pr-10 h-12 bg-background/50",
-                    newPasswordError && "border-destructive focus:border-destructive focus:ring-destructive/20"
+                    newPasswordError &&
+                      "border-destructive focus:border-destructive focus:ring-destructive/20",
                   )}
                   aria-invalid={!!newPasswordError}
                   required
@@ -441,7 +495,9 @@ export default function SettingsPage() {
                 {newPassword && (
                   <button
                     type="button"
-                    onClick={() => setIsNewPasswordVisible(!isNewPasswordVisible)}
+                    onClick={() =>
+                      setIsNewPasswordVisible(!isNewPasswordVisible)
+                    }
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                   >
                     {isNewPasswordVisible ? (
@@ -475,7 +531,8 @@ export default function SettingsPage() {
                   onBlur={handleConfirmPasswordBlur}
                   className={cn(
                     "pl-10 pr-10 h-12 bg-background/50",
-                    confirmPasswordError && "border-destructive focus:border-destructive focus:ring-destructive/20"
+                    confirmPasswordError &&
+                      "border-destructive focus:border-destructive focus:ring-destructive/20",
                   )}
                   aria-invalid={!!confirmPasswordError}
                   required
@@ -483,7 +540,9 @@ export default function SettingsPage() {
                 {confirmPassword && (
                   <button
                     type="button"
-                    onClick={() => setIsConfirmPasswordVisible(!isConfirmPasswordVisible)}
+                    onClick={() =>
+                      setIsConfirmPasswordVisible(!isConfirmPasswordVisible)
+                    }
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                   >
                     {isConfirmPasswordVisible ? (
@@ -517,6 +576,60 @@ export default function SettingsPage() {
           </form>
         </CardContent>
       </Card>
+
+      {/* Import Notes Card */}
+      <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileUp className="h-5 w-5 text-primary" />
+            Import Notes
+          </CardTitle>
+          <CardDescription>
+            Import your notes from other services like Google Keep
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              You can import notes from Google Keep by uploading a Google
+              Takeout export. To export your notes from Google Keep:
+            </p>
+            <ol className="text-sm text-muted-foreground list-decimal list-inside space-y-1">
+              <li>
+                Go to{" "}
+                <a
+                  href="https://takeout.google.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  Google Takeout
+                </a>
+              </li>
+              <li>
+                Click &quot;Deselect all&quot; and then select only
+                &quot;Keep&quot;
+              </li>
+              <li>Click &quot;Next step&quot; and &quot;Create export&quot;</li>
+              <li>Download the ZIP file when ready</li>
+            </ol>
+            <Button
+              variant="outline"
+              className="w-full h-12"
+              onClick={() => setImportDialogOpen(true)}
+            >
+              <FileUp className="mr-2 h-4 w-4" />
+              Import from Google Keep
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Import Dialog */}
+      <ImportDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+      />
     </div>
   );
 }
