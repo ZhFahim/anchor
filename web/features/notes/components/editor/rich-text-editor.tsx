@@ -1,17 +1,23 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useMemo, useRef, useState } from "react";
-import type { QuillDelta } from "@/features/notes";
-import { parseStoredContent, stringifyDelta } from "@/features/notes";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { QuillDelta, QuillInstance } from "@/features/notes";
+import {
+  parseStoredContent,
+  stringifyDelta,
+  didChangeChecklistItemState,
+  getToggledLinePosition,
+  createChecklistMoveDelta,
+  QUILL_FORMATS,
+  QUILL_MODULES,
+} from "@/features/notes";
+import { usePreferencesStore } from "@/features/preferences";
 import { QuillToolbar } from "./quill-toolbar";
 
+// Dynamic import for SSR compatibility
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false }) as any;
-
-// Quill instance type - react-quill-new doesn't export proper types
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type QuillInstance = any;
 
 interface RichTextEditorProps {
   value: string;
@@ -28,46 +34,115 @@ export function RichTextEditor({
   className,
   readOnly = false,
 }: RichTextEditorProps) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- ReactQuill ref type
   const quillRef = useRef<any>(null);
-  // Store quill instance in ref to avoid re-renders that cause focus issues
   const quillInstanceRef = useRef<QuillInstance | null>(null);
-  // Track focus state to enable/disable toolbar event subscriptions
   const [isFocused, setIsFocused] = useState(false);
-  // Counter to force toolbar updates during typing/selection changes
   const [toolbarUpdateKey, setToolbarUpdateKey] = useState(0);
+  const reorderTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const deltaValue: QuillDelta = useMemo(() => parseStoredContent(value), [value]);
+  // Editor preferences
+  const sortChecklistItems = usePreferencesStore(
+    (state) => state.editor.sortChecklistItems,
+  );
 
-  // Get quill instance from ref - callable by toolbar
+  const deltaValue: QuillDelta = parseStoredContent(value);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (reorderTimeoutRef.current) {
+        clearTimeout(reorderTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Get quill instance - callable by toolbar
   const getQuillInstance = useCallback(() => quillInstanceRef.current, []);
 
-  const modules = useMemo(
-    () => ({
-      toolbar: false,
-      history: {
-        delay: 1000,
-        maxStack: 200,
-        userOnly: true,
-      },
-    }),
-    [],
+  // Handle editor content changes
+  const handleChange = useCallback(
+    (
+      _html: string,
+      changeDelta: unknown,
+      source: "user" | "api" | "silent" | string,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- react-quill editor type
+      editor: any,
+    ) => {
+      // Ignore non-user changes (hydration, API updates)
+      if (source !== "user" || readOnly) return;
+
+      const currentDelta = editor.getContents() as QuillDelta;
+      const currentStr = stringifyDelta(currentDelta);
+
+      // Handle checklist reordering if enabled
+      if (
+        sortChecklistItems &&
+        didChangeChecklistItemState(changeDelta as QuillDelta)
+      ) {
+        // Clear any pending reorder
+        if (reorderTimeoutRef.current) {
+          clearTimeout(reorderTimeoutRef.current);
+        }
+
+        // Get the position of the toggled line from the change delta
+        const togglePosition = getToggledLinePosition(changeDelta as QuillDelta);
+
+        if (togglePosition >= 0) {
+          // Schedule reorder after Quill settles
+          reorderTimeoutRef.current = setTimeout(() => {
+            const quill = quillRef.current?.getEditor?.() as QuillInstance | null;
+            if (!quill) return;
+
+            const latestDelta = quill.getContents();
+            const moveDelta = createChecklistMoveDelta(togglePosition, latestDelta);
+
+            if (moveDelta) {
+              // Use updateContents to preserve undo history as single operation
+              quill.updateContents(moveDelta, "user");
+
+              // Update parent with new content
+              const newDelta = quill.getContents();
+              onChange(stringifyDelta(newDelta));
+              setToolbarUpdateKey((k) => k + 1);
+            }
+          }, 50);
+        }
+
+        // Notify parent of immediate change
+        onChange(currentStr);
+        setToolbarUpdateKey((k) => k + 1);
+        return;
+      }
+
+      // Normal change
+      onChange(currentStr);
+      setToolbarUpdateKey((k) => k + 1);
+    },
+    [onChange, readOnly, sortChecklistItems],
   );
 
-  const formats = useMemo(
-    () => [
-      "bold",
-      "italic",
-      "underline",
-      "strike",
-      "header",
-      "list", // ordered, bullet, checked/unchecked
-      "blockquote",
-      "code-block",
-      "link",
-    ],
-    [],
-  );
+  // Handle selection changes for toolbar state
+  const handleSelectionChange = useCallback(() => {
+    if (isFocused) {
+      setToolbarUpdateKey((k) => k + 1);
+    }
+  }, [isFocused]);
+
+  // Handle editor focus
+  const handleFocus = useCallback(() => {
+    if (readOnly) return;
+    const quill = quillRef.current?.getEditor?.() as QuillInstance | null;
+    if (quill) {
+      quillInstanceRef.current = quill;
+      setIsFocused(true);
+    }
+  }, [readOnly]);
+
+  // Handle editor blur
+  const handleBlur = useCallback(() => {
+    setIsFocused(false);
+  }, []);
 
   return (
     <div className={className}>
@@ -82,46 +157,15 @@ export function RichTextEditor({
         <ReactQuill
           ref={quillRef}
           theme="snow"
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          value={deltaValue as any}
-          onChange={(
-            _html: string,
-            _delta: unknown,
-            source: "user" | "api" | "silent" | string,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            editor: any,
-          ) => {
-            // Prevent initial hydration/normalization from triggering autosave.
-            if (source !== "user") return;
-            if (readOnly) return;
-
-            // Always store canonical JSON as { ops: [...] }
-            const next = stringifyDelta(editor.getContents());
-            onChange(next);
-            // Trigger toolbar update for format changes during typing
-            setToolbarUpdateKey((k) => k + 1);
-          }}
-          onChangeSelection={() => {
-            // Trigger toolbar update when selection changes (for format state)
-            if (isFocused) {
-              setToolbarUpdateKey((k) => k + 1);
-            }
-          }}
-          modules={modules}
-          formats={formats}
+          value={deltaValue}
+          onChange={handleChange}
+          onChangeSelection={handleSelectionChange}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          modules={QUILL_MODULES}
+          formats={QUILL_FORMATS}
           placeholder={placeholder}
           readOnly={readOnly}
-          onFocus={() => {
-            if (readOnly) return;
-            const q = quillRef.current?.getEditor?.();
-            if (q) {
-              quillInstanceRef.current = q;
-              setIsFocused(true);
-            }
-          }}
-          onBlur={() => {
-            setIsFocused(false);
-          }}
         />
       </div>
     </div>

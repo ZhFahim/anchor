@@ -8,6 +8,7 @@ import 'package:anchor/features/notes/domain/note.dart';
 import 'package:anchor/core/widgets/confirm_dialog.dart';
 import 'package:anchor/core/widgets/app_snackbar.dart';
 import 'package:anchor/core/widgets/rich_text_editor.dart';
+import 'package:anchor/core/editor/editor_preferences_provider.dart';
 import 'package:anchor/core/network/server_config_provider.dart';
 import 'package:anchor/features/tags/presentation/widgets/tag_selector.dart';
 import 'package:anchor/features/notes/presentation/widgets/note_background.dart';
@@ -705,6 +706,9 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
                             showToolbar: _isEditing && !isReadOnly,
                             canEdit: !isReadOnly,
                             onEditingChanged: _onEditorEditingChanged,
+                            sortChecklistItems: ref
+                                .watch(editorPreferencesControllerProvider)
+                                .sortChecklistItems,
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 24,
                               vertical: 16,

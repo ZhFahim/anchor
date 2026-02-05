@@ -282,7 +282,7 @@ packages:
     source: hosted
     version: "1.0.0+8.4.0"
   dart_quill_delta:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: dart_quill_delta
       sha256: bddb0b2948bd5b5a328f1651764486d162c59a8ccffd4c63e8b2c5e44be1dac4
@@ -495,7 +495,7 @@ packages:
     source: hosted
     version: "6.0.0"
   flutter_localizations:
-    dependency: transitive
+    dependency: "direct main"
     description: flutter
     source: sdk
     version: "0.0.0"

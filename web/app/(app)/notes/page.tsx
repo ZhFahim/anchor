@@ -34,6 +34,7 @@ import { BulkDeleteDialog, BulkArchiveDialog, ViewSettings } from "@/features/no
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import Link from "next/link";
+import { usePreferencesStore } from "@/features/preferences";
 
 const masonryBreakpoints = {
   default: 4,
@@ -44,59 +45,22 @@ const masonryBreakpoints = {
   640: 1,
 };
 
-type ViewMode = "masonry" | "grid" | "list";
-type SortBy = "updatedAt" | "createdAt" | "title";
-type SortOrder = "asc" | "desc";
-
 export default function NotesPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const tagIdParam = searchParams.get("tagId");
   const [searchQuery, setSearchQuery] = useState("");
-  const [viewMode, setViewMode] = useState<ViewMode>(() => {
-    if (typeof window === "undefined") return "masonry";
-    const saved = localStorage.getItem("notes-view-mode") as ViewMode | null;
-    if (saved && ["masonry", "grid", "list"].includes(saved)) {
-      return saved;
-    }
-    return "masonry";
-  });
-  const [sortBy, setSortBy] = useState<SortBy>(() => {
-    if (typeof window === "undefined") return "updatedAt";
-    const saved = localStorage.getItem("notes-sort-by") as SortBy | null;
-    if (saved && ["updatedAt", "createdAt", "title"].includes(saved)) {
-      return saved;
-    }
-    return "updatedAt";
-  });
-  const [sortOrder, setSortOrder] = useState<SortOrder>(() => {
-    if (typeof window === "undefined") return "desc";
-    const saved = localStorage.getItem("notes-sort-order") as SortOrder | null;
-    if (saved && ["asc", "desc"].includes(saved)) {
-      return saved;
-    }
-    return "desc";
-  });
+  const { notes: notesPrefs, setNotesPreference } = usePreferencesStore();
+  const { viewMode, sortBy, sortOrder } = notesPrefs;
+  const setViewMode = (value: typeof viewMode) => setNotesPreference("viewMode", value);
+  const setSortBy = (value: typeof sortBy) => setNotesPreference("sortBy", value);
+  const setSortOrder = (value: typeof sortOrder) => setNotesPreference("sortOrder", value);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedNoteIds, setSelectedNoteIds] = useState<Set<string>>(new Set());
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
   const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(null);
-
-  // Save view mode preference
-  useEffect(() => {
-    localStorage.setItem("notes-view-mode", viewMode);
-  }, [viewMode]);
-
-  // Save sort preferences
-  useEffect(() => {
-    localStorage.setItem("notes-sort-by", sortBy);
-  }, [sortBy]);
-
-  useEffect(() => {
-    localStorage.setItem("notes-sort-order", sortOrder);
-  }, [sortOrder]);
 
   // Clear selection when exiting selection mode
   useEffect(() => {

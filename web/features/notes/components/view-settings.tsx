@@ -20,10 +20,7 @@ import {
 } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-
-type ViewMode = "masonry" | "grid" | "list";
-type SortBy = "updatedAt" | "createdAt" | "title";
-type SortOrder = "asc" | "desc";
+import { ViewMode, SortBy, SortOrder } from "@/features/preferences";
 
 interface ViewSettingsProps {
   viewMode: ViewMode;

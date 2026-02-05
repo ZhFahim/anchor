@@ -30,30 +30,27 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-
-// Quill instance type - react-quill-new doesn't export proper types
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type QuillInstance = any;
+import type { QuillInstance } from "@/features/notes";
+import { LIST_FORMATS } from "@/features/notes";
 
 function toggleInlineFormat(quill: QuillInstance, key: string) {
-  const current = quill.getFormat?.() ?? {};
+  const current = quill.getFormat() ?? {};
   quill.format(key, !current[key], "user");
 }
 
 function toggleHeader(quill: QuillInstance, level: 1 | 2 | 3) {
-  const current = quill.getFormat?.() ?? {};
+  const current = quill.getFormat() ?? {};
   quill.format("header", current.header === level ? false : level, "user");
 }
 
 function toggleList(quill: QuillInstance, value: "ordered" | "bullet" | "unchecked") {
-  const current = quill.getFormat?.() ?? {};
-
-  // Quill uses list values: 'ordered', 'bullet', 'checked', 'unchecked'
+  const current = quill.getFormat() ?? {};
   const currentList = current.list as string | undefined;
 
-  if (value === "unchecked") {
-    const isChecklist = currentList === "checked" || currentList === "unchecked";
-    quill.format("list", isChecklist ? false : "unchecked", "user");
+  if (value === LIST_FORMATS.UNCHECKED) {
+    const isChecklist =
+      currentList === LIST_FORMATS.CHECKED || currentList === LIST_FORMATS.UNCHECKED;
+    quill.format("list", isChecklist ? false : LIST_FORMATS.UNCHECKED, "user");
     return;
   }
 
@@ -61,8 +58,8 @@ function toggleList(quill: QuillInstance, value: "ordered" | "bullet" | "uncheck
 }
 
 function toggleBlock(quill: QuillInstance, key: "blockquote" | "code-block") {
-  const current = quill.getFormat?.() ?? {};
-  quill.format(key, current[key] ? false : true, "user");
+  const current = quill.getFormat() ?? {};
+  quill.format(key, !current[key], "user");
 }
 
 interface QuillToolbarProps {
@@ -72,8 +69,7 @@ interface QuillToolbarProps {
 }
 
 export function QuillToolbar({ getQuill, isFocused, updateKey }: QuillToolbarProps) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [format, setFormat] = useState<Record<string, any>>({});
+  const [format, setFormat] = useState<Record<string, unknown>>({});
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
 
@@ -86,7 +82,6 @@ export function QuillToolbar({ getQuill, isFocused, updateKey }: QuillToolbarPro
   useEffect(() => {
     const quill = getQuill();
     if (!quill || !isFocused) {
-      // Reset format state when editor loses focus or quill not available
       if (!isFocused) {
         setFormat({});
         setCanUndo(false);
@@ -95,9 +90,8 @@ export function QuillToolbar({ getQuill, isFocused, updateKey }: QuillToolbarPro
       return;
     }
 
-    setFormat(quill.getFormat?.() ?? {});
+    setFormat(quill.getFormat() ?? {});
     const hist = quill.history;
-    // Quill history stacks are arrays (best-effort; internal API)
     setCanUndo(Boolean(hist?.stack?.undo?.length));
     setCanRedo(Boolean(hist?.stack?.redo?.length));
   }, [getQuill, isFocused, updateKey]);
@@ -111,9 +105,10 @@ export function QuillToolbar({ getQuill, isFocused, updateKey }: QuillToolbarPro
   }, [format.header]);
 
   const listValue = (format.list as string | undefined) ?? "";
-  const isChecklist = listValue === "checked" || listValue === "unchecked";
-  const isOrdered = listValue === "ordered";
-  const isBullet = listValue === "bullet";
+  const isChecklist =
+    listValue === LIST_FORMATS.CHECKED || listValue === LIST_FORMATS.UNCHECKED;
+  const isOrdered = listValue === LIST_FORMATS.ORDERED;
+  const isBullet = listValue === LIST_FORMATS.BULLET;
 
   const isBold = Boolean(format.bold);
   const isItalic = Boolean(format.italic);
@@ -132,11 +127,8 @@ export function QuillToolbar({ getQuill, isFocused, updateKey }: QuillToolbarPro
 
   const openLinkDialog = () => {
     if (!quill) return;
-    const sel = quill.getSelection?.();
-    const text =
-      sel && sel.length
-        ? quill.getText?.(sel.index, sel.length) ?? ""
-        : "";
+    const sel = quill.getSelection();
+    const text = sel && sel.length ? quill.getText(sel.index, sel.length) ?? "" : "";
     setLinkText(text);
     setLinkUrl("");
     setLinkDialogOpen(true);
@@ -147,7 +139,7 @@ export function QuillToolbar({ getQuill, isFocused, updateKey }: QuillToolbarPro
     const url = linkUrl.trim();
     if (!url) return;
 
-    const sel = quill.getSelection?.(true);
+    const sel = quill.getSelection(true);
     if (!sel) return;
 
     if (sel.length === 0) {

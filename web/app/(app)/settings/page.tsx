@@ -1,20 +1,23 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Lock, Loader2, Eye, EyeOff, User, Upload, X } from "lucide-react";
+import { Lock, Loader2, Eye, EyeOff, User, Upload, X, ListChecks } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { changePassword, updateProfile, uploadProfileImage, removeProfileImage, getMe } from "@/features/auth/api";
 import { useAuthStore } from "@/features/auth/store";
+import { usePreferencesStore } from "@/features/preferences";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 export default function SettingsPage() {
   const { user, setUser } = useAuthStore();
+  const { editor: editorPrefs, setEditorPreference } = usePreferencesStore();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -370,6 +373,36 @@ export default function SettingsPage() {
               )}
             </Button>
           </form>
+        </CardContent>
+      </Card>
+
+      {/* Editor Settings Section */}
+      <Card className="border-0 shadow-xl bg-card/80 backdrop-blur-sm mb-6">
+        <CardHeader className="space-y-1 pb-4">
+          <CardTitle className="text-2xl">Editor</CardTitle>
+          <CardDescription>
+            Customize how the note editor behaves
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Sort checklist items */}
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Label htmlFor="move-checked" className="text-base font-medium">
+                Sort checklist items
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                Automatically move checked checklist items to the bottom of the list
+              </p>
+            </div>
+            <Switch
+              id="move-checked"
+              checked={editorPrefs.sortChecklistItems}
+              onCheckedChange={(checked) =>
+                setEditorPreference("sortChecklistItems", checked)
+              }
+            />
+          </div>
         </CardContent>
       </Card>
 

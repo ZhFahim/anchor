@@ -99,7 +99,7 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
 
     return PopScope(
       canPop: !isSelectionMode,
-      onPopInvoked: (didPop) {
+      onPopInvokedWithResult: (didPop, result) {
         if (!didPop && isSelectionMode) {
           _exitSelectionMode();
         }

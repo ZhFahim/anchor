@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import '../editor/editor_preferences_provider.dart';
 import '../theme/theme_mode_provider.dart';
 import '../widgets/confirm_dialog.dart';
 import '../../features/auth/presentation/auth_controller.dart';
@@ -39,6 +41,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final currentThemeMode = ref.watch(themeModeControllerProvider);
+    final editorPrefs = ref.watch(editorPreferencesControllerProvider);
 
     return Scaffold(
       body: Container(
@@ -139,6 +142,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 .setThemeMode(ThemeMode.dark),
                           ),
                         ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    // Editor Section
+                    _buildSectionHeader(context, 'Editor', LucideIcons.edit3),
+                    const SizedBox(height: 12),
+                    _buildSettingsCard(
+                      context,
+                      child: _buildSwitchItem(
+                        context,
+                        title: 'Sort checklist items',
+                        subtitle:
+                            'Automatically move checked checklist items to the bottom',
+                        icon: LucideIcons.listChecks,
+                        value: editorPrefs.sortChecklistItems,
+                        onChanged: (value) => ref
+                            .read(editorPreferencesControllerProvider.notifier)
+                            .setSortChecklistItems(value),
                       ),
                     ),
 
@@ -412,6 +435,64 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       child: Divider(
         height: 1,
         color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.06),
+      ),
+    );
+  }
+
+  Widget _buildSwitchItem(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, size: 20, color: theme.colorScheme.primary),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch.adaptive(
+            value: value,
+            onChanged: (newValue) {
+              HapticFeedback.selectionClick();
+              onChanged(newValue);
+            },
+            activeTrackColor: theme.colorScheme.primary,
+            activeThumbColor: theme.colorScheme.onPrimary,
+          ),
+        ],
       ),
     );
   }
