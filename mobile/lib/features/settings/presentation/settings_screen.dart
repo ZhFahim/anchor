@@ -4,11 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import '../editor/editor_preferences_provider.dart';
-import '../theme/theme_mode_provider.dart';
-import '../widgets/confirm_dialog.dart';
-import '../../features/auth/presentation/auth_controller.dart';
-import '../router/app_routes.dart';
+import '../../../core/widgets/confirm_dialog.dart';
+import '../../../core/router/app_routes.dart';
+import '../../auth/presentation/auth_controller.dart';
+import 'controllers/editor_preferences_controller.dart';
+import 'controllers/theme_preferences_controller.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});

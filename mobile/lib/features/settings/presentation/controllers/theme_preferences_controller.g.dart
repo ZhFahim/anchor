@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'theme_mode_provider.dart';
+part of 'theme_preferences_controller.dart';
 
 // **************************************************************************
 // RiverpodGenerator
@@ -42,7 +42,7 @@ final class ThemeModeControllerProvider
 }
 
 String _$themeModeControllerHash() =>
-    r'8595af325ee4021dd516f502a8971bb1f72444ee';
+    r'937eac58f63ac7c9b8dcbfdd2db88da343030169';
 
 abstract class _$ThemeModeController extends $Notifier<ThemeMode> {
   ThemeMode build();

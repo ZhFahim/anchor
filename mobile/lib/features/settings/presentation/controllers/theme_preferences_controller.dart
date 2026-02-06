@@ -1,16 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../app_initializer.dart' as app_init;
+import '../../../../core/app_initializer.dart' as app_init;
+import 'editor_preferences_controller.dart';
 
-part 'theme_mode_provider.g.dart';
-
-const _themeModeKey = 'theme_mode';
+part 'theme_preferences_controller.g.dart';
 
 @Riverpod(keepAlive: true)
 class ThemeModeController extends _$ThemeModeController {
-  final _storage = const FlutterSecureStorage();
-
   @override
   ThemeMode build() {
     // Use the theme loaded before app started (no flash)
@@ -19,6 +15,7 @@ class ThemeModeController extends _$ThemeModeController {
 
   Future<void> setThemeMode(ThemeMode mode) async {
     state = mode;
-    await _storage.write(key: _themeModeKey, value: mode.name);
+    final repository = ref.read(preferencesRepositoryProvider);
+    await repository.setThemeMode(mode.name);
   }
 }

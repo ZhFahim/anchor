@@ -8,7 +8,7 @@ import 'package:anchor/features/notes/domain/note.dart';
 import 'package:anchor/core/widgets/confirm_dialog.dart';
 import 'package:anchor/core/widgets/app_snackbar.dart';
 import 'package:anchor/core/widgets/rich_text_editor.dart';
-import 'package:anchor/core/editor/editor_preferences_provider.dart';
+import 'package:anchor/features/settings/presentation/controllers/editor_preferences_controller.dart';
 import 'package:anchor/core/network/server_config_provider.dart';
 import 'package:anchor/features/tags/presentation/widgets/tag_selector.dart';
 import 'package:anchor/features/notes/presentation/widgets/note_background.dart';

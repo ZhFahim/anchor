@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'editor_preferences_provider.dart';
+part of 'editor_preferences_controller.dart';
 
 // **************************************************************************
 // RiverpodGenerator
@@ -8,6 +8,54 @@ part of 'editor_preferences_provider.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
+
+@ProviderFor(preferencesRepository)
+const preferencesRepositoryProvider = PreferencesRepositoryProvider._();
+
+final class PreferencesRepositoryProvider
+    extends
+        $FunctionalProvider<
+          PreferencesRepository,
+          PreferencesRepository,
+          PreferencesRepository
+        >
+    with $Provider<PreferencesRepository> {
+  const PreferencesRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'preferencesRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$preferencesRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<PreferencesRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  PreferencesRepository create(Ref ref) {
+    return preferencesRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(PreferencesRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<PreferencesRepository>(value),
+    );
+  }
+}
+
+String _$preferencesRepositoryHash() =>
+    r'a73cb8cd55a748279c39e0f4a35ab888fae1e30b';
 
 @ProviderFor(EditorPreferencesController)
 const editorPreferencesControllerProvider =
@@ -43,7 +91,7 @@ final class EditorPreferencesControllerProvider
 }
 
 String _$editorPreferencesControllerHash() =>
-    r'2338330babe264fc9992e4ee0467314a11cf849c';
+    r'2b741bd5cb59aef4d836e033248b6a132b1df8dc';
 
 abstract class _$EditorPreferencesController
     extends $Notifier<EditorPreferences> {

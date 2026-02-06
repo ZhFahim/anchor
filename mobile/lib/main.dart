@@ -6,7 +6,7 @@ import 'core/app_initializer.dart';
 import 'core/network/connectivity_provider.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
-import 'core/theme/theme_mode_provider.dart';
+import 'features/settings/presentation/controllers/theme_preferences_controller.dart';
 
 void main() async {
   await initializeApp();
