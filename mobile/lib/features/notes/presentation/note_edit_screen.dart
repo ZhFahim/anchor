@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -25,7 +26,8 @@ class NoteEditScreen extends ConsumerStatefulWidget {
   ConsumerState<NoteEditScreen> createState() => _NoteEditScreenState();
 }
 
-class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
+class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
+    with WidgetsBindingObserver {
   final _titleController = TextEditingController();
   final _titleFocusNode = FocusNode();
   final _editorKey = GlobalKey<RichTextEditorState>();
@@ -40,9 +42,20 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
   List<String> _selectedTagIds = [];
   String? _selectedBackground;
 
+  // Auto-save state
+  Timer? _autoSaveTimer;
+  bool _hasUnsavedChanges = false;
+  String? _lastSavedTitle;
+  String? _lastSavedContent;
+  Set<String>? _lastSavedTagIds;
+  String? _lastSavedBackground;
+  bool? _lastSavedPinned;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+
     if (widget.note != null) {
       // Note passed directly
       _isNew = false;
@@ -58,6 +71,8 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
       if (widget.note!.isTrashed || !widget.note!.canEdit) {
         _isEditing = false;
       }
+      // Initialize last saved state
+      _initializeLastSavedState(widget.note!);
     } else if (widget.noteId != null) {
       // Fallback: fetch from repository if only ID is provided
       _isNew = false;
@@ -69,8 +84,17 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
       _isLoaded = true;
     }
 
-    // Listen to title focus changes
+    // Listen to title and content changes for auto-save
     _titleFocusNode.addListener(_onTitleFocusChanged);
+    _titleController.addListener(_onContentChanged);
+  }
+
+  void _initializeLastSavedState(Note note) {
+    _lastSavedTitle = note.title;
+    _lastSavedContent = note.content;
+    _lastSavedTagIds = note.tagIds.toSet();
+    _lastSavedBackground = note.background;
+    _lastSavedPinned = note.isPinned;
   }
 
   void _onTitleFocusChanged() {
@@ -117,6 +141,97 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
           _isEditing = false;
         }
       });
+      _initializeLastSavedState(note);
+    }
+  }
+
+  void _onContentChanged() {
+    final hasChanges = _checkForChanges();
+
+    if (hasChanges != _hasUnsavedChanges) {
+      setState(() {
+        _hasUnsavedChanges = hasChanges;
+      });
+    }
+
+    if (hasChanges) {
+      _resetAutoSaveTimer();
+    }
+  }
+
+  bool _checkForChanges() {
+    final currentTitle = _titleController.text.trim();
+    final editorState = _editorKey.currentState;
+    final currentContent = editorState?.getContent() ?? '';
+    final currentTagIds = _selectedTagIds.toSet();
+
+    // For new notes, check if anything is non-empty
+    if (_isNew) {
+      final plainText = editorState?.getPlainText() ?? '';
+      return currentTitle.isNotEmpty ||
+          plainText.isNotEmpty ||
+          _isPinned ||
+          _selectedBackground != null ||
+          currentTagIds.isNotEmpty;
+    }
+
+    // For existing notes, compare with last saved state
+    // Normalize empty title to 'Untitled' for comparison
+    final normalizedCurrentTitle = currentTitle.isNotEmpty
+        ? currentTitle
+        : 'Untitled';
+    final normalizedLastSavedTitle = _lastSavedTitle ?? 'Untitled';
+
+    return normalizedCurrentTitle != normalizedLastSavedTitle ||
+        currentContent != (_lastSavedContent ?? '') ||
+        !_setEquals(currentTagIds, _lastSavedTagIds ?? {}) ||
+        _selectedBackground != _lastSavedBackground ||
+        _isPinned != (_lastSavedPinned ?? false);
+  }
+
+  bool _setEquals(Set<String> a, Set<String> b) {
+    if (a.length != b.length) return false;
+    return a.difference(b).isEmpty;
+  }
+
+  void _resetAutoSaveTimer() {
+    _autoSaveTimer?.cancel();
+    _autoSaveTimer = Timer(const Duration(seconds: 2), () {
+      _autoSave();
+    });
+  }
+
+  Future<void> _autoSave() async {
+    if (!_hasUnsavedChanges) return;
+
+    await _saveNote();
+
+    // Update last saved state (track actual saved title, which is 'Untitled' if empty)
+    final title = _titleController.text.trim();
+    _lastSavedTitle = title.isNotEmpty ? title : 'Untitled';
+    final editorState = _editorKey.currentState;
+    _lastSavedContent = editorState?.getContent() ?? '';
+    _lastSavedTagIds = _selectedTagIds.toSet();
+    _lastSavedBackground = _selectedBackground;
+    _lastSavedPinned = _isPinned;
+
+    if (mounted) {
+      setState(() {
+        _hasUnsavedChanges = false;
+      });
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    // Save when app goes to background or is paused
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      if (_hasUnsavedChanges) {
+        _autoSave();
+      }
     }
   }
 
@@ -128,7 +243,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
     setState(() {
       _isPinned = !_isPinned;
     });
-    await _saveNote();
+    _onContentChanged(); // Trigger change detection and auto-save
   }
 
   Future<void> _toggleArchived() async {
@@ -207,7 +322,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
           setState(() {
             _selectedBackground = color;
           });
-          _saveNote();
+          _onContentChanged(); // Trigger change detection and auto-save
         },
       ),
     );
@@ -247,8 +362,10 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
   }
 
   @override
-  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _autoSaveTimer?.cancel();
+    _titleController.removeListener(_onContentChanged);
     _titleController.dispose();
     _titleFocusNode.removeListener(_onTitleFocusChanged);
     _titleFocusNode.dispose();
@@ -294,9 +411,12 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
         });
       }
     } else if (_existingNote != null) {
+      // Ensure empty titles become 'Untitled'
+      final actualTitle = title.isNotEmpty ? title : 'Untitled';
+
       // Check if anything changed
       final tagsChanged = !_listEquals(_existingNote!.tagIds, _selectedTagIds);
-      if (_existingNote!.title == title &&
+      if (_existingNote!.title == actualTitle &&
           _existingNote!.content == content &&
           _existingNote!.isPinned == _isPinned &&
           _existingNote!.background == _selectedBackground &&
@@ -305,7 +425,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
       }
 
       final updatedNote = _existingNote!.copyWith(
-        title: title,
+        title: actualTitle,
         content: content,
         isPinned: _isPinned,
         isArchived: _isArchived,
@@ -450,8 +570,13 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
 
     return PopScope(
       onPopInvokedWithResult: (didPop, result) async {
-        if (didPop && !_isDeleted && _isEditing) {
-          await _saveNote();
+        if (didPop && !_isDeleted) {
+          // Cancel auto-save timer
+          _autoSaveTimer?.cancel();
+          // Final save if there are unsaved changes
+          if (_hasUnsavedChanges || _isEditing) {
+            await _saveNote();
+          }
         }
       },
       child: NoteBackground(
@@ -694,6 +819,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
                           setState(() {
                             _selectedTagIds = tagIds;
                           });
+                          _onContentChanged(); // Trigger change detection and auto-save
                         }
                       },
                     ),
@@ -706,6 +832,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen> {
                             showToolbar: _isEditing && !isReadOnly,
                             canEdit: !isReadOnly,
                             onEditingChanged: _onEditorEditingChanged,
+                            onChanged: (_) => _onContentChanged(),
                             sortChecklistItems: ref
                                 .watch(editorPreferencesControllerProvider)
                                 .sortChecklistItems,

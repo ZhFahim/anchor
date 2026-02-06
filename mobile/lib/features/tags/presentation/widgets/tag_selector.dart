@@ -398,7 +398,7 @@ class _TagPickerSheetState extends ConsumerState<TagPickerSheet> {
                                       ? LucideIcons.x
                                       : LucideIcons.check,
                                   size: 14,
-                                  color: Colors.white,
+                                  color: theme.colorScheme.onPrimary,
                                 ),
                               ),
                               onPressed: _errorMessage != null
