@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import type { Note } from "@/features/notes";
-import { deltaToPreviewText } from "@/features/notes";
+import { QuillPreview } from "@/features/notes";
 import { NoteBackground } from "./backgrounds";
 import { SharedNoteIndicator } from "./shared-note-indicator";
 
@@ -62,13 +62,8 @@ export function NoteCard({
     onSelectChange?.(note.id, false, false);
   };
 
-  // Extract plain text preview from content (assuming Delta JSON or plain text)
-  const getContentPreview = (content: string | null | undefined): string => {
-    if (!content) return "";
-    return deltaToPreviewText(content, viewMode === "list" ? 150 : 200);
-  };
-
-  const preview = getContentPreview(note.content);
+  const previewMaxLines =
+    viewMode === "list" ? 2 : viewMode === "grid" ? 4 : 6;
 
   // Calculate stagger delay (max 500ms for first 10 items)
   const staggerDelay = Math.min(index * 50, 500);
@@ -130,11 +125,11 @@ export function NoteCard({
                   </h3>
 
                   {/* Content Preview */}
-                  {preview && (
-                    <p className="text-sm text-muted-foreground line-clamp-2 mb-2 leading-relaxed whitespace-pre-line">
-                      {preview}
-                    </p>
-                  )}
+                  <QuillPreview
+                    content={note.content}
+                    maxLines={previewMaxLines}
+                    className="mb-2"
+                  />
 
                   {/* Tags, Shared Indicator, and Date */}
                   <div className="flex items-center gap-3 flex-wrap">
@@ -241,16 +236,14 @@ export function NoteCard({
             </h3>
 
             {/* Content Preview */}
-            {preview && (
-              <p
-                className={cn(
-                  "text-sm text-muted-foreground mb-3 leading-relaxed whitespace-pre-line",
-                  viewMode === "grid" ? "line-clamp-4 flex-1" : "line-clamp-6"
-                )}
-              >
-                {preview}
-              </p>
-            )}
+            <QuillPreview
+              content={note.content}
+              maxLines={previewMaxLines}
+              className={cn(
+                "mb-3",
+                viewMode === "grid" && "flex-1 min-h-0",
+              )}
+            />
 
             {/* Tags */}
             {note.tags && note.tags.length > 0 && (

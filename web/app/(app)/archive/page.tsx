@@ -6,6 +6,7 @@ import {
   getArchivedNotes,
   unarchiveNote,
   deltaToFullPlainText,
+  QuillPreview,
   NoteBackground,
   ArchiveDialog,
 } from "@/features/notes";
@@ -229,11 +230,11 @@ function ArchiveNoteCard({
           </h3>
 
           {/* Content Preview */}
-          {note.content && (
-            <p className="text-sm text-muted-foreground mb-3 leading-relaxed whitespace-pre-line line-clamp-6">
-              {deltaToFullPlainText(note.content)}
-            </p>
-          )}
+          <QuillPreview
+            content={note.content}
+            maxLines={6}
+            className="mb-3"
+          />
 
           {/* Tags */}
           {note.tags && note.tags.length > 0 && (

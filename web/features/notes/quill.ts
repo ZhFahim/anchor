@@ -228,6 +228,47 @@ function deltaToLines(ops: QuillOp[]): DeltaLine[] {
   return lines;
 }
 
+/**
+ * Plain text of a line (content ops only, no newline).
+ */
+function getLineText(line: DeltaLine): string {
+  return line.contentOps
+    .map((op) => (typeof op.insert === "string" ? op.insert : ""))
+    .join("");
+}
+
+export type PreviewLine = {
+  text: string;
+  listType: "checked" | "unchecked" | "ordered" | "bullet" | null;
+};
+
+/**
+ * Parse delta into preview lines with list type for rendering checklists, bullets, and numbers.
+ * Returns up to maxLines non-empty lines.
+ */
+export function deltaToPreviewLines(
+  content: string | null | undefined,
+  maxLines = 6,
+): PreviewLine[] {
+  const delta = parseStoredContent(content);
+  const lines = deltaToLines(delta.ops);
+  return lines
+    .map((line) => {
+      const text = getLineText(line);
+      const list = line.newlineOp.attributes?.list;
+      const listType =
+        list === "checked" ||
+        list === "unchecked" ||
+        list === "ordered" ||
+        list === "bullet"
+          ? (list as PreviewLine["listType"])
+          : null;
+      return { text, listType };
+    })
+    .filter((l) => l.text.trim().length > 0)
+    .slice(0, maxLines);
+}
+
 // ============================================================================
 // Checklist Reordering
 // ============================================================================
