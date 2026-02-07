@@ -344,10 +344,9 @@ export default function NoteEditorPage() {
 
   return (
     <div className="min-h-screen flex flex-col relative">
-      {/* Background covering entire page */}
       <NoteBackground
         styleId={background}
-        className="absolute inset-0 min-h-full"
+        className="fixed inset-0 z-0"
       />
 
       {/* Header */}

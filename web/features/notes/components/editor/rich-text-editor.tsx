@@ -147,11 +147,13 @@ export function RichTextEditor({
   return (
     <div className={className}>
       {!readOnly && (
-        <QuillToolbar
-          getQuill={getQuillInstance}
-          isFocused={isFocused}
-          updateKey={toolbarUpdateKey}
-        />
+        <div className="sticky top-16 z-30 -mx-4 px-4 py-1.5 -mt-1.5 lg:-mx-6 lg:px-6 rounded-2xl backdrop-blur-sm bg-white/5 dark:bg-white/5">
+          <QuillToolbar
+            getQuill={getQuillInstance}
+            isFocused={isFocused}
+            updateKey={toolbarUpdateKey}
+          />
+        </div>
       )}
       <div className="anchor-quill">
         <ReactQuill

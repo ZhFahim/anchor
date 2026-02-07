@@ -117,12 +117,12 @@ export function QuillToolbar({ getQuill, isFocused, updateKey }: QuillToolbarPro
   const isQuote = Boolean(format.blockquote);
   const isCode = Boolean(format["code-block"]);
 
-  const groupClass = "flex items-center gap-1 rounded-xl bg-muted/50 p-1 shrink-0";
-  const dividerClass = "mx-2 h-6 w-px bg-border/60 shrink-0";
+  const groupClass = "flex items-center gap-0.5 rounded-full p-0.5 shrink-0";
+  const dividerClass = "mx-1.5 h-4 w-px bg-border/40 shrink-0";
   const btnClass = (active?: boolean) =>
     cn(
-      "h-9 w-9 rounded-lg p-0 shrink-0",
-      active ? "bg-accent/10 text-accent hover:bg-accent/15" : "text-muted-foreground hover:text-foreground",
+      "h-8 w-8 rounded-full p-0 shrink-0 transition-colors duration-100",
+      active ? "bg-muted/60 text-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted/30",
     );
 
   const openLinkDialog = () => {
@@ -156,7 +156,7 @@ export function QuillToolbar({ getQuill, isFocused, updateKey }: QuillToolbarPro
 
   return (
     <>
-      <div className="mb-3 flex items-center overflow-x-auto scrollbar-none pb-1 -mx-4 px-4 lg:mx-0 lg:px-0 lg:overflow-visible lg:flex-wrap">
+      <div className="flex items-center overflow-x-auto scrollbar-none -mx-4 px-4 lg:mx-0 lg:px-0 lg:overflow-visible lg:flex-wrap gap-0.5">
         <div className={groupClass}>
           <Button
             type="button"
