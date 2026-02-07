@@ -66,6 +66,7 @@ dependencies:
   connectivity_plus: ^7.0.0
   image_picker: ^1.1.2
   cached_network_image: ^3.4.1
+  package_info_plus: ^8.1.3
   
   # Rich Text Editor
   flutter_quill: ^11.5.0

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Lock, Loader2, Eye, EyeOff, User, Upload, X, ListChecks } from "lucide-react";
+import { Lock, Loader2, Eye, EyeOff, User, Upload, X, ListChecks, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +14,7 @@ import { usePreferencesStore } from "@/features/preferences";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import packageJson from "../../../package.json";
 
 export default function SettingsPage() {
   const { user, setUser } = useAuthStore();
@@ -407,7 +408,7 @@ export default function SettingsPage() {
       </Card>
 
       {/* Change Password Section */}
-      <Card className="border-0 shadow-xl bg-card/80 backdrop-blur-sm">
+      <Card className="border-0 shadow-xl bg-card/80 backdrop-blur-sm mb-6">
         <CardHeader className="space-y-1 pb-4">
           <CardTitle className="text-2xl">Change Password</CardTitle>
           <CardDescription>
@@ -550,6 +551,16 @@ export default function SettingsPage() {
           </form>
         </CardContent>
       </Card>
+
+      {/* About Section */}
+      <div>
+        <div className="flex flex-col items-center gap-1.5 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <Info className="h-3.5 w-3.5" />
+            <span>Version {packageJson.version}</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

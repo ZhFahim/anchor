@@ -4,9 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../../../core/widgets/confirm_dialog.dart';
 import '../../../core/router/app_routes.dart';
+import '../../../core/network/server_config_provider.dart';
 import '../../auth/presentation/auth_controller.dart';
+import '../data/server_info_provider.dart';
 import 'controllers/editor_preferences_controller.dart';
 import 'controllers/theme_preferences_controller.dart';
 
@@ -18,6 +21,21 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  String _appVersion = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAppVersion();
+  }
+
+  Future<void> _loadAppVersion() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    setState(() {
+      _appVersion = packageInfo.version;
+    });
+  }
+
   void _showLogoutDialog() {
     showDialog(
       context: context,
@@ -42,6 +60,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final isDark = theme.brightness == Brightness.dark;
     final currentThemeMode = ref.watch(themeModeControllerProvider);
     final editorPrefs = ref.watch(editorPreferencesControllerProvider);
+    final serverUrl = ref.watch(serverUrlProvider);
+    final serverInfoAsync = ref.watch(serverInfoProvider);
 
     return Scaffold(
       body: Container(
@@ -205,6 +225,132 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ],
                       ),
                     ),
+
+                    const SizedBox(height: 32),
+
+                    // About Section
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                LucideIcons.info,
+                                size: 12,
+                                color: theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.4,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'App v${_appVersion.isNotEmpty ? _appVersion : '...'}',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: theme.colorScheme.onSurface.withValues(
+                                    alpha: 0.5,
+                                  ),
+                                  fontFamily: 'monospace',
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (serverUrl != null) ...[
+                            const SizedBox(height: 6),
+                            serverInfoAsync.when(
+                              data: (serverInfo) => Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    LucideIcons.package,
+                                    size: 12,
+                                    color: theme.colorScheme.onSurface
+                                        .withValues(alpha: 0.4),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Server v${serverInfo?.version ?? 'Unknown'}',
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: theme.colorScheme.onSurface
+                                          .withValues(alpha: 0.5),
+                                      fontFamily: 'monospace',
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              loading: () => Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    LucideIcons.package,
+                                    size: 12,
+                                    color: theme.colorScheme.onSurface
+                                        .withValues(alpha: 0.4),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Server v...',
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: theme.colorScheme.onSurface
+                                          .withValues(alpha: 0.5),
+                                      fontFamily: 'monospace',
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              error: (_, __) => Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    LucideIcons.package,
+                                    size: 12,
+                                    color: theme.colorScheme.onSurface
+                                        .withValues(alpha: 0.4),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Server v—',
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: theme.colorScheme.onSurface
+                                          .withValues(alpha: 0.5),
+                                      fontFamily: 'monospace',
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  LucideIcons.server,
+                                  size: 12,
+                                  color: theme.colorScheme.onSurface.withValues(
+                                    alpha: 0.4,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Flexible(
+                                  child: Text(
+                                    'Connected to $serverUrl',
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: theme.colorScheme.onSurface
+                                          .withValues(alpha: 0.5),
+                                      fontFamily: 'monospace',
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
                   ],
                 ),
               ),
