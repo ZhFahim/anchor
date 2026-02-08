@@ -14,6 +14,7 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UserStatus } from '../generated/prisma/enums';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -23,7 +24,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private settingsService: SettingsService,
-  ) {}
+  ) { }
 
   async getRegistrationMode() {
     return {
@@ -79,9 +80,9 @@ export class AuthService {
 
     // Only return token if user is active (not pending)
     if (user.status === UserStatus.active) {
-      const payload = { email: user.email, sub: user.id };
+      const tokens = await this.generateTokenPair(user.id, user.email);
       return {
-        access_token: this.jwtService.sign(payload),
+        ...tokens,
         user,
       };
     }
@@ -100,8 +101,12 @@ export class AuthService {
         id: true,
         email: true,
         password: true,
+        name: true,
+        profileImage: true,
         isAdmin: true,
         status: true,
+        createdAt: true,
+        updatedAt: true,
       },
     });
 
@@ -128,26 +133,50 @@ export class AuthService {
     // Remove password from user object
     const { password: _, ...userWithoutPassword } = user;
 
-    // Fetch full user with profile fields
-    const fullUser = await this.prisma.user.findUnique({
-      where: { id: userWithoutPassword.id },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        profileImage: true,
-        isAdmin: true,
-        status: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+    const tokens = await this.generateTokenPair(user.id, user.email);
+    return {
+      ...tokens,
+      user: userWithoutPassword,
+    };
+  }
+
+  async refreshTokens(refreshToken: string) {
+    // Find the refresh token in database
+    const storedToken = await this.prisma.refreshToken.findUnique({
+      where: { token: refreshToken },
+      include: { user: true },
     });
 
-    const payload = { email: fullUser!.email, sub: fullUser!.id };
-    return {
-      access_token: this.jwtService.sign(payload),
-      user: fullUser,
-    };
+    if (!storedToken) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    // Check if token has expired
+    if (storedToken.expiresAt < new Date()) {
+      // Delete expired token
+      await this.prisma.refreshToken.delete({
+        where: { id: storedToken.id },
+      });
+      throw new UnauthorizedException('Refresh token has expired');
+    }
+
+    // Check if user is still active
+    if (storedToken.user.status === UserStatus.pending) {
+      throw new UnauthorizedException('Account pending approval');
+    }
+
+    // Revoke the old refresh token (token rotation)
+    await this.prisma.refreshToken.delete({
+      where: { id: storedToken.id },
+    });
+
+    // Generate new token pair
+    const tokens = await this.generateTokenPair(
+      storedToken.user.id,
+      storedToken.user.email,
+    );
+
+    return tokens;
   }
 
   async changePassword(userId: string, changePasswordDto: ChangePasswordDto) {
@@ -359,5 +388,37 @@ export class AuthService {
         error,
       );
     }
+  }
+
+  // Generate a secure random refresh token
+  private generateRefreshTokenString(): string {
+    return crypto.randomBytes(64).toString('hex');
+  }
+
+  // Generate both access and refresh tokens
+  private async generateTokenPair(userId: string, email: string) {
+    const payload = { email, sub: userId };
+
+    // Generate access token (short-lived)
+    const accessToken = this.jwtService.sign(payload);
+
+    // Generate refresh token (long-lived)
+    const refreshTokenString = this.generateRefreshTokenString();
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 30); // 30 days
+
+    // Store refresh token in database
+    await this.prisma.refreshToken.create({
+      data: {
+        token: refreshTokenString,
+        userId,
+        expiresAt,
+      },
+    });
+
+    return {
+      access_token: accessToken,
+      refresh_token: refreshTokenString,
+    };
   }
 }

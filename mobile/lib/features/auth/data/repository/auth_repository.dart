@@ -44,10 +44,12 @@ class AuthRepository {
   Future<User> login(String email, String password) async {
     final data = await _authService.login(email, password);
     final token = data['access_token'] as String;
+    final refreshToken = data['refresh_token'] as String;
     final userJson = data['user'] as Map<String, dynamic>;
     final user = User.fromJson(userJson);
 
     await _storage.write(key: 'access_token', value: token);
+    await _storage.write(key: 'refresh_token', value: refreshToken);
     await _storage.write(key: 'user_id', value: userJson['id']);
     await _storage.write(key: 'user_email', value: userJson['email']);
     await _saveUser(user);
@@ -59,10 +61,12 @@ class AuthRepository {
 
     if (data.containsKey('access_token') && data['access_token'] != null) {
       final token = data['access_token'] as String;
+      final refreshToken = data['refresh_token'] as String;
       final userJson = data['user'] as Map<String, dynamic>;
       final user = User.fromJson(userJson);
 
       await _storage.write(key: 'access_token', value: token);
+      await _storage.write(key: 'refresh_token', value: refreshToken);
       await _storage.write(key: 'user_id', value: userJson['id']);
       await _storage.write(key: 'user_email', value: userJson['email']);
       await _saveUser(user);
@@ -71,6 +75,7 @@ class AuthRepository {
 
   Future<void> logout() async {
     await _storage.delete(key: 'access_token');
+    await _storage.delete(key: 'refresh_token');
     await _storage.delete(key: 'user_id');
     await _storage.delete(key: 'user_email');
     await _storage.delete(key: 'user_data');
@@ -78,6 +83,10 @@ class AuthRepository {
 
   Future<String?> getToken() {
     return _storage.read(key: 'access_token');
+  }
+
+  Future<String?> getRefreshToken() {
+    return _storage.read(key: 'refresh_token');
   }
 
   Future<User?> getCurrentUser() async {

@@ -14,7 +14,7 @@ import { SettingsModule } from '../settings/settings.module';
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: '7d' },
+        signOptions: { expiresIn: '15s' },
       }),
       inject: [ConfigService],
     }),
@@ -24,4 +24,4 @@ import { SettingsModule } from '../settings/settings.module';
   providers: [AuthService, JwtStrategy],
   exports: [AuthService],
 })
-export class AuthModule {}
+export class AuthModule { }

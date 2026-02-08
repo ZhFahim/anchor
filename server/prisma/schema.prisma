@@ -25,19 +25,20 @@ enum NoteSharePermission {
 }
 
 model User {
-  id                String      @id @default(uuid())
-  email             String      @unique
+  id                String         @id @default(uuid())
+  email             String         @unique
   password          String
   name              String
   profileImage      String?
-  isAdmin           Boolean     @default(false)
-  status            UserStatus  @default(active)
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
+  isAdmin           Boolean        @default(false)
+  status            UserStatus     @default(active)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
   notes             Note[]
   tags              Tag[]
-  sharedNotes       NoteShare[] @relation("SharedBy")
-  notesSharedWithMe NoteShare[] @relation("SharedWith")
+  sharedNotes       NoteShare[]    @relation("SharedBy")
+  notesSharedWithMe NoteShare[]    @relation("SharedWith")
+  refreshTokens     RefreshToken[]
 }
 
 model Settings {
@@ -94,4 +95,16 @@ model NoteShare {
   @@unique([noteId, sharedWithUserId])
   @@index([noteId])
   @@index([sharedWithUserId])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([token])
 }

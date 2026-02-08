@@ -6,6 +6,9 @@ import 'server_config_provider.dart';
 
 part 'dio_provider.g.dart';
 
+// Global flag to prevent multiple simultaneous refresh attempts
+bool _isRefreshing = false;
+
 @riverpod
 Dio dio(Ref ref) {
   final serverUrl = ref.watch(serverUrlProvider);
@@ -23,7 +26,7 @@ Dio dio(Ref ref) {
     'Accept': 'application/json',
   };
 
-  // Add Authorization Interceptor
+  // Add Authorization Interceptor with token refresh
   const storage = FlutterSecureStorage();
   dio.interceptors.add(
     InterceptorsWrapper(
@@ -34,7 +37,110 @@ Dio dio(Ref ref) {
         }
         return handler.next(options);
       },
-      onError: (DioException e, handler) {
+      onError: (DioException e, handler) async {
+        // Handle 401 errors with token refresh
+        if (e.response?.statusCode == 401) {
+          // Don't try to refresh if we're already on the refresh endpoint
+          if (e.requestOptions.path.contains('/api/auth/refresh')) {
+            // Refresh endpoint failed, clear tokens
+            await storage.deleteAll();
+            return handler.reject(e);
+          }
+
+          // Attempt token refresh
+          if (!_isRefreshing) {
+            _isRefreshing = true;
+
+            try {
+              final refreshToken = await storage.read(key: 'refresh_token');
+
+              if (refreshToken == null) {
+                // No refresh token available, clear storage and reject
+                await storage.deleteAll();
+                _isRefreshing = false;
+                return handler.reject(e);
+              }
+
+              // Create a separate Dio instance to avoid interceptor recursion
+              final refreshDio = Dio();
+              if (serverUrl != null && serverUrl.isNotEmpty) {
+                refreshDio.options.baseUrl = serverUrl;
+              }
+              refreshDio.options.headers = {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+              };
+
+              // Call refresh endpoint
+              final response = await refreshDio.post(
+                '/api/auth/refresh',
+                data: {'refresh_token': refreshToken},
+              );
+
+              final newAccessToken = response.data['access_token'] as String;
+              final newRefreshToken = response.data['refresh_token'] as String;
+
+              // Store new tokens
+              await storage.write(key: 'access_token', value: newAccessToken);
+              await storage.write(key: 'refresh_token', value: newRefreshToken);
+
+              _isRefreshing = false;
+
+              // Retry the original request with new token
+              final opts = Options(
+                method: e.requestOptions.method,
+                headers: {
+                  ...e.requestOptions.headers,
+                  'Authorization': 'Bearer $newAccessToken',
+                },
+              );
+
+              final retryResponse = await dio.request(
+                e.requestOptions.path,
+                options: opts,
+                data: e.requestOptions.data,
+                queryParameters: e.requestOptions.queryParameters,
+              );
+
+              return handler.resolve(retryResponse);
+            } catch (refreshError) {
+              // Refresh failed, clear tokens and force logout
+              _isRefreshing = false;
+              await storage.deleteAll();
+              return handler.reject(e);
+            }
+          } else {
+            // Already refreshing, wait a bit and retry
+            await Future.delayed(const Duration(milliseconds: 100));
+
+            // Check if tokens were updated
+            final newToken = await storage.read(key: 'access_token');
+            if (newToken != null) {
+              // Retry with new token
+              final opts = Options(
+                method: e.requestOptions.method,
+                headers: {
+                  ...e.requestOptions.headers,
+                  'Authorization': 'Bearer $newToken',
+                },
+              );
+
+              try {
+                final retryResponse = await dio.request(
+                  e.requestOptions.path,
+                  options: opts,
+                  data: e.requestOptions.data,
+                  queryParameters: e.requestOptions.queryParameters,
+                );
+                return handler.resolve(retryResponse);
+              } catch (_) {
+                // Retry failed, reject with original error
+                return handler.reject(e);
+              }
+            }
+          }
+        }
+
         // Transform DioException into user-friendly error
         final transformedError = _transformError(e);
         return handler.next(transformedError);

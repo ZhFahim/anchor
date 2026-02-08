@@ -67,6 +67,7 @@ pnpm run test:e2e
 - `GET /api/auth/registration-mode` - Get current registration mode (public)
 - `POST /api/auth/register` - Register a new user
 - `POST /api/auth/login` - Login
+- `POST /api/auth/refresh` - Refresh access token using refresh token
 - `GET /api/auth/me` - Get current user
 - `PATCH /api/auth/profile` - Update profile name
 - `POST /api/auth/profile/image` - Upload profile image

@@ -53,8 +53,8 @@ export function useAuth() {
   const loginMutation = useMutation({
     mutationFn: (credentials: LoginCredentials) => loginApi(credentials),
     onSuccess: (data) => {
-      if (data.access_token) {
-        setAuth(data.user, data.access_token);
+      if (data.access_token && data.refresh_token) {
+        setAuth(data.user, data.access_token, data.refresh_token);
         toast.success("Welcome back!");
         router.push("/");
       }
@@ -67,9 +67,9 @@ export function useAuth() {
   const registerMutation = useMutation({
     mutationFn: (credentials: RegisterCredentials) => registerApi(credentials),
     onSuccess: (data) => {
-      if (data.access_token) {
+      if (data.access_token && data.refresh_token) {
         // User is active, log them in
-        setAuth(data.user, data.access_token);
+        setAuth(data.user, data.access_token, data.refresh_token);
         toast.success("Account created successfully!");
         router.push("/");
       } else {

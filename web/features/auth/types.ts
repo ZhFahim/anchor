@@ -10,8 +10,14 @@ export interface User {
 
 export interface AuthResponse {
   access_token?: string;
+  refresh_token?: string;
   user: User;
   message?: string;
+}
+
+export interface RefreshTokenResponse {
+  access_token: string;
+  refresh_token: string;
 }
 
 export interface LoginCredentials {
