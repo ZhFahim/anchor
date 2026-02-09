@@ -24,6 +24,7 @@ export interface Note {
   isPinned: boolean;
   isArchived: boolean;
   background?: string | null;
+  position?: number | null;
   state: NoteState;
   createdAt: string;
   updatedAt: string;
@@ -62,6 +63,11 @@ export interface UpdateNoteDto {
   isPinned?: boolean;
   isArchived?: boolean;
   background?: string | null;
+  position?: number | null;
   tagIds?: string[];
+}
+
+export interface ReorderNotesDto {
+  positions: Array<{ id: string; position: number }>;
 }
 

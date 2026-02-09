@@ -6,6 +6,7 @@ import {
   ValidateNested,
   IsDateString,
   IsEnum,
+  IsInt,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -46,6 +47,10 @@ export class SyncNoteDto {
   @IsString({ each: true })
   @IsOptional()
   tagIds?: string[];
+
+  @IsInt()
+  @IsOptional()
+  position?: number | null;
 
   @IsDateString()
   updatedAt: string;

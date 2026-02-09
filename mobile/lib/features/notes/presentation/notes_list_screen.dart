@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
@@ -11,6 +13,7 @@ import 'package:anchor/features/notes/presentation/widgets/note_card.dart';
 import 'package:anchor/features/notes/presentation/widgets/selection_app_bar_actions.dart';
 import 'package:anchor/features/notes/presentation/widgets/empty_states.dart';
 import 'package:anchor/features/notes/domain/note.dart';
+import '../data/repository/notes_repository.dart';
 import 'notes_controller.dart';
 import 'notes_view_options.dart';
 import 'widgets/view_options_sheet.dart';
@@ -24,6 +27,7 @@ class NotesListScreen extends ConsumerStatefulWidget {
 
 class _NotesListScreenState extends ConsumerState<NotesListScreen> {
   final _searchController = TextEditingController();
+  Timer? _dragTimer;
 
   @override
   void initState() {
@@ -37,8 +41,27 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
 
   @override
   void dispose() {
+    _dragTimer?.cancel();
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _startDragTimer() {
+    _dragTimer?.cancel();
+    _dragTimer = Timer(const Duration(seconds: 2), () {
+      HapticFeedback.heavyImpact();
+      ref.read(reorderModeProvider.notifier).setEnabled(true);
+      // Auto-switch sort to manual
+      ref.read(notesViewOptionsProvider.notifier).setSortOption(SortOption.manual);
+    });
+  }
+
+  void _cancelDragTimer() {
+    _dragTimer?.cancel();
+  }
+
+  void _exitReorderMode() {
+    ref.read(reorderModeProvider.notifier).setEnabled(false);
   }
 
   void _exitSelectionMode() {
@@ -56,23 +79,36 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
     bool isSelectionMode,
     Set<String> selectedNoteIds,
   ) {
-    return NoteCard(
-      note: note,
-      isSelectionMode: isSelectionMode,
-      isSelected: selectedNoteIds.contains(note.id),
-      onLongPress: () {
+    return GestureDetector(
+      onLongPressStart: (_) {
         if (!isSelectionMode) {
-          ref.read(selectionModeProvider.notifier).setEnabled(true);
+          _startDragTimer();
         }
-        ref.read(selectedNoteIdsProvider.notifier).toggle(note.id);
       },
-      onTap: () {
-        if (isSelectionMode) {
+      onLongPressEnd: (_) {
+        _cancelDragTimer();
+      },
+      onLongPressCancel: () {
+        _cancelDragTimer();
+      },
+      child: NoteCard(
+        note: note,
+        isSelectionMode: isSelectionMode,
+        isSelected: selectedNoteIds.contains(note.id),
+        onLongPress: () {
+          if (!isSelectionMode) {
+            ref.read(selectionModeProvider.notifier).setEnabled(true);
+          }
           ref.read(selectedNoteIdsProvider.notifier).toggle(note.id);
-        } else {
-          context.go('/note/${note.id}', extra: note);
-        }
-      },
+        },
+        onTap: () {
+          if (isSelectionMode) {
+            ref.read(selectedNoteIdsProvider.notifier).toggle(note.id);
+          } else {
+            context.go('/note/${note.id}', extra: note);
+          }
+        },
+      ),
     );
   }
 
@@ -85,6 +121,7 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
     final isSyncing = ref.watch(syncingStateProvider);
     final isSelectionMode = ref.watch(selectionModeProvider);
     final selectedNoteIds = ref.watch(selectedNoteIdsProvider);
+    final isReorderMode = ref.watch(reorderModeProvider);
     final viewOptionsAsync = ref.watch(notesViewOptionsProvider);
     final viewOptions = viewOptionsAsync.value;
     final theme = Theme.of(context);
@@ -98,9 +135,11 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
     }
 
     return PopScope(
-      canPop: !isSelectionMode,
+      canPop: !isSelectionMode && !isReorderMode,
       onPopInvokedWithResult: (didPop, result) {
-        if (!didPop && isSelectionMode) {
+        if (!didPop && isReorderMode) {
+          _exitReorderMode();
+        } else if (!didPop && isSelectionMode) {
           _exitSelectionMode();
         }
       },
@@ -134,10 +173,16 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                   ),
                   floating: true,
                   pinned: true,
-                  expandedHeight: isSelectionMode ? 56 : 80,
+                  expandedHeight: (isSelectionMode || isReorderMode) ? 56 : 80,
                   toolbarHeight: 56,
                   scrolledUnderElevation: 0,
-                  leading: isSelectionMode
+                  leading: isReorderMode
+                      ? IconButton(
+                          icon: const Icon(LucideIcons.x),
+                          onPressed: _exitReorderMode,
+                          tooltip: 'Cancel',
+                        )
+                      : isSelectionMode
                       ? IconButton(
                           icon: const Icon(LucideIcons.x),
                           onPressed: _exitSelectionMode,
@@ -150,7 +195,7 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                             tooltip: 'Menu',
                           ),
                         ),
-                  flexibleSpace: isSelectionMode
+                  flexibleSpace: (isSelectionMode || isReorderMode)
                       ? null
                       : FlexibleSpaceBar(
                           titlePadding: const EdgeInsets.only(
@@ -166,7 +211,15 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                             ),
                           ),
                         ),
-                  title: isSelectionMode
+                  title: isReorderMode
+                      ? Text(
+                          'Reorder Notes',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: theme.colorScheme.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        )
+                      : isSelectionMode
                       ? Text(
                           selectedNoteIds.isEmpty
                               ? 'Select notes'
@@ -178,7 +231,18 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                         )
                       : null,
                   actions: [
-                    if (isSelectionMode)
+                    if (isReorderMode)
+                      TextButton(
+                        onPressed: _exitReorderMode,
+                        child: Text(
+                          'Done',
+                          style: TextStyle(
+                            color: theme.colorScheme.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      )
+                    else if (isSelectionMode)
                       SelectionAppBarActions(
                         selectedNoteIds: selectedNoteIds,
                         onExitSelectionMode: _exitSelectionMode,
@@ -309,9 +373,71 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                             b.title.toLowerCase(),
                           );
                           break;
+                        case SortOption.manual:
+                          final aPos = a.position ?? 999999999;
+                          final bPos = b.position ?? 999999999;
+                          compare = aPos.compareTo(bPos);
+                          break;
                       }
-                      return viewOptions.isAscending ? compare : -compare;
+                      return viewOptions.isAscending || viewOptions.sortOption == SortOption.manual
+                          ? compare
+                          : -compare;
                     });
+
+                    // In reorder mode, use ReorderableListView
+                    if (isReorderMode) {
+                      return SliverPadding(
+                        padding: const EdgeInsets.all(16),
+                        sliver: SliverReorderableList(
+                          itemBuilder: (context, index) {
+                            final note = filteredNotes[index];
+                            return ReorderableDragStartListener(
+                              key: ValueKey(note.id),
+                              index: index,
+                              child: Padding(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      LucideIcons.gripVertical,
+                                      color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: NoteCard(
+                                        note: note,
+                                        isSelectionMode: false,
+                                        isSelected: false,
+                                        onTap: () {},
+                                        onLongPress: () {},
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                          itemCount: filteredNotes.length,
+                          onReorder: (oldIndex, newIndex) {
+                            if (oldIndex < newIndex) {
+                              newIndex -= 1;
+                            }
+                            // Calculate new positions with 1000-gap
+                            final reordered = List<Note>.from(filteredNotes);
+                            final item = reordered.removeAt(oldIndex);
+                            reordered.insert(newIndex, item);
+
+                            final positions = <MapEntry<String, int>>[];
+                            for (var i = 0; i < reordered.length; i++) {
+                              positions.add(MapEntry(reordered[i].id, (i + 1) * 1000));
+                            }
+
+                            ref.read(notesRepositoryProvider).reorderNotes(positions);
+                          },
+                        ),
+                      );
+                    }
 
                     return SliverPadding(
                       padding: const EdgeInsets.all(16),
@@ -357,7 +483,7 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
             ),
           ),
         ),
-        floatingActionButton: isSelectionMode
+        floatingActionButton: (isSelectionMode || isReorderMode)
             ? null
             : FloatingActionButton.extended(
                 onPressed: () => context.go('/note/new'),

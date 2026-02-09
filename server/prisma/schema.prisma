@@ -52,10 +52,11 @@ model Settings {
 model Note {
   id         String      @id @default(uuid())
   title      String
-  content    String?  
+  content    String?
   isPinned   Boolean     @default(false)
   isArchived Boolean     @default(false)
   background String?
+  position   Int?
   state      NoteState   @default(active)
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt

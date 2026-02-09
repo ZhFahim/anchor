@@ -8,6 +8,7 @@ import {
   Settings2,
   Calendar,
   FileText,
+  GripVertical,
   ArrowUp,
   ArrowDown,
   Check,
@@ -41,6 +42,7 @@ const sortOptions: { value: SortBy; label: string; icon: React.ComponentType<{ c
   { value: "updatedAt", label: "Last Modified", icon: Calendar },
   { value: "createdAt", label: "Date Created", icon: Calendar },
   { value: "title", label: "Title", icon: FileText },
+  { value: "manual", label: "Manual", icon: GripVertical },
 ];
 
 export function ViewSettings({
@@ -101,7 +103,7 @@ export function ViewSettings({
                         <Check className="h-3 w-3 text-primary" />
                       )}
                     </button>
-                    {isSelected && (
+                    {isSelected && option.value !== "manual" && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();

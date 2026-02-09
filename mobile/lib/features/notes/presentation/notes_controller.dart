@@ -133,6 +133,17 @@ class TrashController extends _$TrashController {
   }
 }
 
+/// Provider to track reorder mode state
+@riverpod
+class ReorderMode extends _$ReorderMode {
+  @override
+  bool build() => false;
+
+  void setEnabled(bool enabled) {
+    state = enabled;
+  }
+}
+
 @riverpod
 class ArchiveController extends _$ArchiveController {
   @override

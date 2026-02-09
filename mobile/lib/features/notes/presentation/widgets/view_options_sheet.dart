@@ -160,42 +160,49 @@ class ViewOptionsSheet extends ConsumerWidget {
                     isSelected: settings.sortOption == SortOption.title,
                     onTap: () => notifier.setSortOption(SortOption.title),
                   ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Order Section
-            _SectionHeader(title: 'Order'),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _ViewOptionCard(
-                      icon: isDateSort
-                          ? LucideIcons.arrowUp
-                          : LucideIcons.arrowDownAZ,
-                      label: isDateSort ? 'Oldest first' : 'A to Z',
-                      isSelected: settings.isAscending,
-                      onTap: () => notifier.setSortDirection(true),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _ViewOptionCard(
-                      icon: isDateSort
-                          ? LucideIcons.arrowDown
-                          : LucideIcons.arrowUpAZ,
-                      label: isDateSort ? 'Newest first' : 'Z to A',
-                      isSelected: !settings.isAscending,
-                      onTap: () => notifier.setSortDirection(false),
-                    ),
+                  const SizedBox(height: 8),
+                  _SortOptionTile(
+                    title: 'Manual',
+                    isSelected: settings.sortOption == SortOption.manual,
+                    onTap: () => notifier.setSortOption(SortOption.manual),
                   ),
                 ],
               ),
             ),
+
+            // Order Section - hidden when manual sort is selected
+            if (settings.sortOption != SortOption.manual) ...[
+              const SizedBox(height: 24),
+              _SectionHeader(title: 'Order'),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _ViewOptionCard(
+                        icon: isDateSort
+                            ? LucideIcons.arrowUp
+                            : LucideIcons.arrowDownAZ,
+                        label: isDateSort ? 'Oldest first' : 'A to Z',
+                        isSelected: settings.isAscending,
+                        onTap: () => notifier.setSortDirection(true),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _ViewOptionCard(
+                        icon: isDateSort
+                            ? LucideIcons.arrowDown
+                            : LucideIcons.arrowUpAZ,
+                        label: isDateSort ? 'Newest first' : 'Z to A',
+                        isSelected: !settings.isAscending,
+                        onTap: () => notifier.setSortDirection(false),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
 
             const SizedBox(height: 24),
           ],

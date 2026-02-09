@@ -61,6 +61,10 @@ class NotesRepository {
         mode: drift.OrderingMode.desc,
       ),
       drift.OrderingTerm(
+        expression: _db.notes.position,
+        mode: drift.OrderingMode.asc,
+      ),
+      drift.OrderingTerm(
         expression: _db.notes.updatedAt,
         mode: drift.OrderingMode.desc,
       ),
@@ -360,6 +364,7 @@ class NotesRepository {
           'isPinned': note.isPinned,
           'isArchived': note.isArchived,
           'background': note.background,
+          'position': note.position,
           'state': note.state.name,
           'tagIds': note.tagIds,
           'updatedAt': note.updatedAt?.toIso8601String(),
@@ -436,6 +441,7 @@ class NotesRepository {
                   isPinned: drift.Value(serverNote.isPinned),
                   isArchived: drift.Value(serverNote.isArchived),
                   background: drift.Value(serverNote.background),
+                  position: drift.Value(serverNote.position),
                   state: drift.Value(serverNote.state.name),
                   updatedAt: drift.Value(serverNote.updatedAt),
                   permission: drift.Value(serverNote.permission.name),
@@ -483,6 +489,21 @@ class NotesRepository {
     }
   }
 
+  // Reorder notes - updates positions locally and triggers sync
+  Future<void> reorderNotes(List<MapEntry<String, int>> positions) async {
+    await _db.transaction(() async {
+      for (final entry in positions) {
+        await (_db.update(_db.notes)..where((tbl) => tbl.id.equals(entry.key)))
+            .write(NotesCompanion(
+          position: drift.Value(entry.value),
+          isSynced: const drift.Value(false),
+        ));
+      }
+    });
+
+    sync();
+  }
+
   // Clear all local data
   Future<void> clearAll() async {
     // Clear all notes from DB
@@ -500,6 +521,7 @@ class NotesRepository {
       isPinned: row.isPinned,
       isArchived: row.isArchived,
       background: row.background,
+      position: row.position,
       state: domain.NoteState.fromString(row.state),
       updatedAt: row.updatedAt,
       tagIds: tagIds,
@@ -527,6 +549,7 @@ class NotesRepository {
       isPinned: note.isPinned,
       isArchived: note.isArchived,
       background: note.background,
+      position: note.position,
       state: note.state.name,
       updatedAt: note.updatedAt,
       permission: note.permission.name,

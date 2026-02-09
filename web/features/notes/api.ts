@@ -3,6 +3,7 @@ import type {
   Note,
   CreateNoteDto,
   UpdateNoteDto,
+  ReorderNotesDto,
   NoteShare,
   NoteSharePermission,
   UserSearchResult,
@@ -70,6 +71,10 @@ export async function bulkDeleteNotes(noteIds: string[]): Promise<{ count: numbe
 
 export async function bulkArchiveNotes(noteIds: string[]): Promise<{ count: number }> {
   return api.post("api/notes/bulk/archive", { json: { noteIds } }).json<{ count: number }>();
+}
+
+export async function reorderNotes(data: ReorderNotesDto): Promise<{ success: boolean }> {
+  return api.post("api/notes/reorder", { json: data }).json<{ success: boolean }>();
 }
 
 // Sharing APIs
