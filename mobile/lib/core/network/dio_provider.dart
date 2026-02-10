@@ -42,8 +42,6 @@ Dio dio(Ref ref) {
         if (e.response?.statusCode == 401) {
           // Don't try to refresh if we're already on the refresh endpoint
           if (e.requestOptions.path.contains('/api/auth/refresh')) {
-            // Refresh endpoint failed, clear tokens
-            await storage.deleteAll();
             return handler.reject(e);
           }
 
@@ -55,8 +53,6 @@ Dio dio(Ref ref) {
               final refreshToken = await storage.read(key: 'refresh_token');
 
               if (refreshToken == null) {
-                // No refresh token available, clear storage and reject
-                await storage.deleteAll();
                 _isRefreshing = false;
                 return handler.reject(e);
               }
@@ -104,9 +100,7 @@ Dio dio(Ref ref) {
 
               return handler.resolve(retryResponse);
             } catch (refreshError) {
-              // Refresh failed, clear tokens and force logout
               _isRefreshing = false;
-              await storage.deleteAll();
               return handler.reject(e);
             }
           } else {
