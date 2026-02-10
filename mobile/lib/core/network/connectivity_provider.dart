@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../providers/active_user_id_provider.dart';
 import '../../features/notes/data/repository/notes_repository.dart';
 import '../../features/tags/data/repository/tags_repository.dart';
 
@@ -52,6 +53,10 @@ class SyncManager extends _$SyncManager {
   }
 
   Future<void> _triggerSync() async {
+    // Don't sync if no user is logged in
+    final userId = ref.read(activeUserIdProvider);
+    if (userId == null) return;
+
     if (state) return; // Already syncing
     state = true;
     try {

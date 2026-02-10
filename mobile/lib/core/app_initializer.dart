@@ -8,6 +8,10 @@ const _storage = FlutterSecureStorage();
 /// This is set by [initializeApp] and read by the theme provider
 ThemeMode initialThemeMode = ThemeMode.system;
 
+/// Holds the initial user ID loaded before the app starts
+/// This is set by [initializeApp] and read by [ActiveUserId] provider
+String? initialUserId;
+
 /// Load app initialization data before the app starts
 /// This prevents theme flash and other initialization issues
 Future<void> initializeApp() async {
@@ -21,4 +25,7 @@ Future<void> initializeApp() async {
       orElse: () => ThemeMode.system,
     );
   }
+
+  // Load saved user ID for per-user database selection
+  initialUserId = await _storage.read(key: 'user_id');
 }

@@ -7,12 +7,11 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:drift/drift.dart' as drift;
 import '../../../../core/database/app_database.dart';
 import '../../../../core/network/dio_provider.dart';
+import '../../../../core/providers/active_user_id_provider.dart';
 import '../../domain/note.dart' as domain;
 import '../../../tags/data/repository/tags_repository.dart';
 
 part 'notes_repository.g.dart';
-
-const _lastSyncKey = 'last_synced_at';
 
 @riverpod
 NotesRepository notesRepository(Ref ref) {
@@ -20,7 +19,8 @@ NotesRepository notesRepository(Ref ref) {
   final dio = ref.watch(dioProvider);
   const storage = FlutterSecureStorage();
   final tagsRepo = ref.watch(tagsRepositoryProvider);
-  return NotesRepository(db, dio, storage, tagsRepo);
+  final userId = ref.watch(activeUserIdProvider)!;
+  return NotesRepository(db, dio, storage, tagsRepo, userId);
 }
 
 class NotesRepository {
@@ -28,8 +28,11 @@ class NotesRepository {
   final Dio _dio;
   final FlutterSecureStorage _storage;
   final TagsRepository _tagsRepo;
+  final String _userId;
 
-  NotesRepository(this._db, this._dio, this._storage, this._tagsRepo);
+  NotesRepository(this._db, this._dio, this._storage, this._tagsRepo, this._userId);
+
+  String get _lastSyncKey => 'last_synced_at_$_userId';
 
   // Watch only active notes
   // Uses a left outer join to fetch notes and their tags in a single query
@@ -481,15 +484,6 @@ class NotesRepository {
     } catch (e) {
       // Sync failed, will retry later
     }
-  }
-
-  // Clear all local data
-  Future<void> clearAll() async {
-    // Clear all notes from DB
-    await _db.delete(_db.notes).go();
-    await _db.delete(_db.noteTags).go();
-    // Clear sync timestamp
-    await _storage.delete(key: _lastSyncKey);
   }
 
   domain.Note _mapToDomain(Note row, List<String> tagIds) {

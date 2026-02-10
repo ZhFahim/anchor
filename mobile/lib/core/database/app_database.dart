@@ -6,12 +6,13 @@ import 'package:path/path.dart' as path;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../features/notes/data/local/notes_table.dart';
 import '../../features/tags/data/local/tags_table.dart';
+import '../providers/active_user_id_provider.dart';
 
 part 'app_database.g.dart';
 
 @DriftDatabase(tables: [Notes, Tags, NoteTags])
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : super(_openConnection());
+  AppDatabase(String userId) : super(_openConnection(userId));
 
   @override
   int get schemaVersion => 6;
@@ -42,15 +43,30 @@ class AppDatabase extends _$AppDatabase {
   );
 }
 
-LazyDatabase _openConnection() {
+LazyDatabase _openConnection(String userId) {
   return LazyDatabase(() async {
     final dbFolder = await getApplicationDocumentsDirectory();
-    final file = File(path.join(dbFolder.path, 'db.sqlite'));
-    return NativeDatabase.createInBackground(file);
+    final userDbFile = File(path.join(dbFolder.path, 'db_$userId.sqlite'));
+
+    // One-time migration: rename legacy db.sqlite for current user
+    if (!userDbFile.existsSync()) {
+      final legacyFile = File(path.join(dbFolder.path, 'db.sqlite'));
+      if (legacyFile.existsSync()) {
+        await legacyFile.rename(userDbFile.path);
+      }
+    }
+
+    return NativeDatabase.createInBackground(userDbFile);
   });
 }
 
 @riverpod
 AppDatabase appDatabase(Ref ref) {
-  return AppDatabase();
+  final userId = ref.watch(activeUserIdProvider);
+  if (userId == null) {
+    throw StateError('No active user - database unavailable');
+  }
+  final db = AppDatabase(userId);
+  ref.onDispose(() => db.close());
+  return db;
 }

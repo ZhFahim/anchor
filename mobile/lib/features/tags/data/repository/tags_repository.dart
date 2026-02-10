@@ -7,26 +7,29 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:drift/drift.dart' as drift;
 import '../../../../core/database/app_database.dart';
 import '../../../../core/network/dio_provider.dart';
+import '../../../../core/providers/active_user_id_provider.dart';
 import '../../domain/tag.dart' as domain;
 
 part 'tags_repository.g.dart';
-
-const _lastTagSyncKey = 'last_tags_synced_at';
 
 @riverpod
 TagsRepository tagsRepository(Ref ref) {
   final db = ref.watch(appDatabaseProvider);
   final dio = ref.watch(dioProvider);
   const storage = FlutterSecureStorage();
-  return TagsRepository(db, dio, storage);
+  final userId = ref.watch(activeUserIdProvider)!;
+  return TagsRepository(db, dio, storage, userId);
 }
 
 class TagsRepository {
   final AppDatabase _db;
   final Dio _dio;
   final FlutterSecureStorage _storage;
+  final String _userId;
 
-  TagsRepository(this._db, this._dio, this._storage);
+  TagsRepository(this._db, this._dio, this._storage, this._userId);
+
+  String get _lastTagSyncKey => 'last_tags_synced_at_$_userId';
 
   // Watch all tags (excluding deleted) with note counts
   // This watches both tags and noteTags tables so counts update in realtime
@@ -321,13 +324,6 @@ class TagsRepository {
       debugPrint('Tags sync failed: $e');
       // Sync failed, will retry later
     }
-  }
-
-  // Clear all local data
-  Future<void> clearAll() async {
-    await _db.delete(_db.tags).go();
-    await _db.delete(_db.noteTags).go();
-    await _storage.delete(key: _lastTagSyncKey);
   }
 
   domain.Tag _mapToDomain(Tag row, {int noteCount = 0}) {

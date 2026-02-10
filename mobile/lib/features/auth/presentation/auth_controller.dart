@@ -1,6 +1,5 @@
-import 'package:anchor/features/notes/data/repository/notes_repository.dart';
-import 'package:anchor/features/tags/data/repository/tags_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../../../core/providers/active_user_id_provider.dart';
 import '../domain/user.dart';
 import '../data/repository/auth_repository.dart';
 
@@ -22,10 +21,15 @@ class AuthController extends _$AuthController {
     // Try to fetch fresh data from server first
     try {
       final freshUser = await authRepo.getProfile();
+      // Ensure activeUserId is set (covers app restart scenario)
+      ref.read(activeUserIdProvider.notifier).set(freshUser.id);
       return freshUser;
     } catch (e) {
       // If fetch fails (network error, etc.), fall back to cached data
       final cachedUser = await authRepo.getCurrentUser();
+      if (cachedUser != null) {
+        ref.read(activeUserIdProvider.notifier).set(cachedUser.id);
+      }
       return cachedUser;
     }
   }
@@ -33,7 +37,12 @@ class AuthController extends _$AuthController {
   Future<void> login(String email, String password) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      return await ref.read(authRepositoryProvider).login(email, password);
+      final user = await ref
+          .read(authRepositoryProvider)
+          .login(email, password);
+      // Set activeUserId so the per-user database is opened
+      ref.read(activeUserIdProvider.notifier).set(user.id);
+      return user;
     });
   }
 
@@ -49,9 +58,9 @@ class AuthController extends _$AuthController {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       await ref.read(authRepositoryProvider).logout();
-      // Clear local data
-      await ref.read(notesRepositoryProvider).clearAll();
-      await ref.read(tagsRepositoryProvider).clearAll();
+      // Clear activeUserId - this closes the DB via provider invalidation
+      // Data stays safe in the per-user database file
+      ref.read(activeUserIdProvider.notifier).set(null);
       return null;
     });
   }
