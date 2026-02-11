@@ -1,7 +1,7 @@
 FROM node:24-alpine
 
 # Install pnpm and curl
-RUN corepack enable && corepack prepare pnpm@latest --activate && \
+RUN corepack enable && corepack prepare pnpm@10.17.1 --activate && \
   apk add --no-cache curl
 
 WORKDIR /app
@@ -12,8 +12,10 @@ COPY package.json pnpm-lock.yaml ./
 # Install all dependencies
 RUN pnpm install --frozen-lockfile
 
-# Source code will be mounted as a volume
-# No COPY or build step needed for development
+# Copy prisma files and generate client (downloads engine binaries during build)
+COPY prisma.config.ts ./
+COPY prisma ./prisma
+RUN pnpm prisma generate
 
 EXPOSE 3001
 

@@ -327,6 +327,28 @@
   padding-left: 24px !important;
 }
 
+/* ===== Nested List Indentation ===== */
+.anchor-quill .ql-editor li.ql-indent-1[data-list="checked"],
+.anchor-quill .ql-editor li.ql-indent-1[data-list="unchecked"],
+.anchor-quill .ql-editor li.ql-indent-1[data-list="bullet"],
+.anchor-quill .ql-editor li.ql-indent-1[data-list="ordered"] {
+  margin-left: 24px;
+}
+
+.anchor-quill .ql-editor li.ql-indent-2[data-list="checked"],
+.anchor-quill .ql-editor li.ql-indent-2[data-list="unchecked"],
+.anchor-quill .ql-editor li.ql-indent-2[data-list="bullet"],
+.anchor-quill .ql-editor li.ql-indent-2[data-list="ordered"] {
+  margin-left: 48px;
+}
+
+.anchor-quill .ql-editor li.ql-indent-3[data-list="checked"],
+.anchor-quill .ql-editor li.ql-indent-3[data-list="unchecked"],
+.anchor-quill .ql-editor li.ql-indent-3[data-list="bullet"],
+.anchor-quill .ql-editor li.ql-indent-3[data-list="ordered"] {
+  margin-left: 72px;
+}
+
 /* ===== Masonry Grid Layout ===== */
 .masonry-grid {
   display: flex;

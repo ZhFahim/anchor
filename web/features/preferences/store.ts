@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 export type ViewMode = "masonry" | "grid" | "list";
-export type SortBy = "updatedAt" | "createdAt" | "title";
+export type SortBy = "updatedAt" | "createdAt" | "title" | "manual";
 export type SortOrder = "asc" | "desc";
 
 export interface UIPreferences {

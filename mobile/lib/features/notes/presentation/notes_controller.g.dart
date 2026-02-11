@@ -326,6 +326,64 @@ abstract class _$TrashController extends $StreamNotifier<List<Note>> {
   }
 }
 
+/// Provider to track reorder mode state
+
+@ProviderFor(ReorderMode)
+const reorderModeProvider = ReorderModeProvider._();
+
+/// Provider to track reorder mode state
+final class ReorderModeProvider extends $NotifierProvider<ReorderMode, bool> {
+  /// Provider to track reorder mode state
+  const ReorderModeProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'reorderModeProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$reorderModeHash();
+
+  @$internal
+  @override
+  ReorderMode create() => ReorderMode();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(bool value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<bool>(value),
+    );
+  }
+}
+
+String _$reorderModeHash() => r'16466554d78a1e2c9c8c1dda8ad3c012600d492b';
+
+/// Provider to track reorder mode state
+
+abstract class _$ReorderMode extends $Notifier<bool> {
+  bool build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final created = build();
+    final ref = this.ref as $Ref<bool, bool>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<bool, bool>,
+              bool,
+              Object?,
+              Object?
+            >;
+    element.handleValue(ref, created);
+  }
+}
+
 @ProviderFor(ArchiveController)
 const archiveControllerProvider = ArchiveControllerProvider._();
 

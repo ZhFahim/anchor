@@ -1,4 +1,5 @@
 export { NoteCard } from "./note-card";
+export { SortableNoteCard } from "./sortable-note-card";
 export { QuillPreview } from "./quill-preview";
 export { NoteBackground, NoteBackgroundPicker } from "./backgrounds";
 export { RichTextEditor, QuillToolbar } from "./editor";

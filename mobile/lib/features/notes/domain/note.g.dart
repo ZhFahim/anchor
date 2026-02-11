@@ -29,6 +29,7 @@ _Note _$NoteFromJson(Map<String, dynamic> json) => _Note(
   isPinned: json['isPinned'] as bool? ?? false,
   isArchived: json['isArchived'] as bool? ?? false,
   background: json['background'] as String?,
+  position: (json['position'] as num?)?.toInt(),
   state:
       $enumDecodeNullable(_$NoteStateEnumMap, json['state']) ??
       NoteState.active,
@@ -56,6 +57,7 @@ Map<String, dynamic> _$NoteToJson(_Note instance) => <String, dynamic>{
   'isPinned': instance.isPinned,
   'isArchived': instance.isArchived,
   'background': instance.background,
+  'position': instance.position,
   'state': _$NoteStateEnumMap[instance.state]!,
   'updatedAt': instance.updatedAt?.toIso8601String(),
   'tagIds': instance.tagIds,

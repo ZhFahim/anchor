@@ -26,10 +26,12 @@ export function QuillPreview({
         const text = line.text.trim();
         if (!text) return null;
 
+        const indentStyle = line.indent > 0 ? { marginLeft: line.indent * 16 } : undefined;
+
         if (line.listType === "checked" || line.listType === "unchecked") {
           const checked = line.listType === "checked";
           return (
-            <div key={i} className="flex items-start gap-2">
+            <div key={i} className="flex items-start gap-2" style={indentStyle}>
               <span className="mt-0.5 flex-shrink-0 text-muted-foreground">
                 {checked ? (
                   <CheckSquare className="h-4 w-4 text-primary" />
@@ -52,7 +54,7 @@ export function QuillPreview({
         if (line.listType === "ordered") {
           orderedIndex += 1;
           return (
-            <div key={i} className="flex items-start gap-2">
+            <div key={i} className="flex items-start gap-2" style={indentStyle}>
               <span className="w-3 text-center flex-shrink-0 text-sm text-muted-foreground">
                 {orderedIndex}.
               </span>
@@ -66,7 +68,7 @@ export function QuillPreview({
         if (line.listType === "bullet") {
           orderedIndex = 0;
           return (
-            <div key={i} className="flex items-start gap-2">
+            <div key={i} className="flex items-start gap-2" style={indentStyle}>
               <span className="w-3 text-center flex-shrink-0 text-sm text-muted-foreground">
                 •
               </span>

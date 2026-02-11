@@ -48,6 +48,7 @@ export const QUILL_FORMATS = [
   "strike",
   "header",
   "list", // ordered, bullet, checked/unchecked
+  "indent",
   "blockquote",
   "code-block",
   "link",
@@ -56,6 +57,8 @@ export const QUILL_FORMATS = [
 /**
  * Quill modules configuration.
  */
+const MAX_INDENT = 3;
+
 export const QUILL_MODULES = {
   toolbar: false,
   history: {
@@ -63,7 +66,22 @@ export const QUILL_MODULES = {
     maxStack: 200,
     userOnly: true,
   },
-} as const;
+  keyboard: {
+    bindings: {
+      // Block Tab when indent is already at max depth
+      "indent cap": {
+        key: "Tab",
+        format: ["list"],
+        handler(this: { quill: QuillInstance }) {
+          const fmt = this.quill.getFormat();
+          const indent = typeof fmt.indent === "number" ? fmt.indent : 0;
+          if (indent >= MAX_INDENT) return false; // block
+          return true; // let Quill handle normally
+        },
+      },
+    },
+  },
+};
 
 /**
  * List format values used by Quill.
@@ -240,6 +258,7 @@ function getLineText(line: DeltaLine): string {
 export type PreviewLine = {
   text: string;
   listType: "checked" | "unchecked" | "ordered" | "bullet" | null;
+  indent: number;
 };
 
 /**
@@ -263,7 +282,9 @@ export function deltaToPreviewLines(
         list === "bullet"
           ? (list as PreviewLine["listType"])
           : null;
-      return { text, listType };
+      const rawIndent = line.newlineOp.attributes?.indent;
+      const indent = typeof rawIndent === "number" ? rawIndent : 0;
+      return { text, listType, indent };
     })
     .filter((l) => l.text.trim().length > 0)
     .slice(0, maxLines);
@@ -334,9 +355,55 @@ export function getToggledLinePosition(changeDelta: QuillDelta): number {
 }
 
 /**
+ * Get the indent level of a line (0 if not indented).
+ */
+function getLineIndent(line: DeltaLine): number {
+  const indent = line.newlineOp.attributes?.indent;
+  return typeof indent === "number" ? indent : 0;
+}
+
+/**
+ * Collect the indices of a subtree: the line at startIndex plus all
+ * immediately following lines with a strictly greater indent level.
+ */
+function getSubtreeIndices(lines: DeltaLine[], startIndex: number): number[] {
+  const indices = [startIndex];
+  const baseIndent = getLineIndent(lines[startIndex]);
+  for (let i = startIndex + 1; i < lines.length; i++) {
+    if (!isChecklistLine(lines[i])) break;
+    if (getLineIndent(lines[i]) <= baseIndent) break;
+    indices.push(i);
+  }
+  return indices;
+}
+
+/**
+ * Get the total character length of a set of lines.
+ */
+function getLinesLength(lines: DeltaLine[], indices: number[]): number {
+  let total = 0;
+  for (const idx of indices) {
+    total += getLineLength(lines[idx]);
+  }
+  return total;
+}
+
+/**
+ * Get the ops for a set of lines (content + newline for each).
+ */
+function getLinesOps(lines: DeltaLine[], indices: number[]): QuillOp[] {
+  const ops: QuillOp[] = [];
+  for (const idx of indices) {
+    ops.push(...lines[idx].contentOps, lines[idx].newlineOp);
+  }
+  return ops;
+}
+
+/**
  * Create a delta for `updateContents` that moves a toggled checklist item
- * to its correct position. This preserves undo history as a single operation.
- * 
+ * (and its nested children) to its correct position among siblings.
+ * This preserves undo history as a single operation.
+ *
  * @param togglePosition - Position where the checkbox was toggled (from change delta)
  * @param currentDelta - Current document content
  * @returns A delta to pass to updateContents, or null if no move needed
@@ -353,80 +420,137 @@ export function createChecklistMoveDelta(
   const toggledLine = lines[lineIndex];
   if (!isChecklistLine(toggledLine)) return null;
 
-  // Find the checklist group boundaries
+  const toggledIndent = getLineIndent(toggledLine);
+
+  // Find the checklist group boundaries at the toggled line's indent level.
+  // Walk up/down only among lines that are at the same indent or deeper (children).
+  // A sibling is a checklist line at toggledIndent whose preceding lines at
+  // lower indent are still checklist lines (i.e. same contiguous group).
   let groupStart = lineIndex;
-  while (groupStart > 0 && isChecklistLine(lines[groupStart - 1])) {
+  while (groupStart > 0) {
+    const prev = lines[groupStart - 1];
+    if (!isChecklistLine(prev)) break;
+    if (getLineIndent(prev) < toggledIndent) break;
     groupStart--;
   }
 
   let groupEnd = lineIndex;
-  while (groupEnd < lines.length - 1 && isChecklistLine(lines[groupEnd + 1])) {
-    groupEnd++;
+  {
+    // Include our own subtree first
+    const subtree = getSubtreeIndices(lines, lineIndex);
+    groupEnd = subtree[subtree.length - 1];
+  }
+  // Then continue scanning for more siblings and their subtrees
+  let scan = groupEnd + 1;
+  while (scan < lines.length) {
+    if (!isChecklistLine(lines[scan])) break;
+    const ind = getLineIndent(lines[scan]);
+    if (ind < toggledIndent) break;
+    if (ind === toggledIndent) {
+      // Another sibling — include it and its subtree
+      const sibSubtree = getSubtreeIndices(lines, scan);
+      groupEnd = sibSubtree[sibSubtree.length - 1];
+      scan = groupEnd + 1;
+    } else {
+      // Deeper child of a sibling
+      scan++;
+      groupEnd = scan - 1;
+    }
+  }
+  // Also scan backwards from groupStart to find siblings before us
+  scan = groupStart - 1;
+  while (scan >= 0) {
+    if (!isChecklistLine(lines[scan])) break;
+    const ind = getLineIndent(lines[scan]);
+    if (ind < toggledIndent) break;
+    groupStart = scan;
+    scan--;
   }
 
-  const isChecked = isCheckedLine(toggledLine);
-  const lineStart = getLineStartPosition(lines, lineIndex);
-  const lineLength = getLineLength(toggledLine);
-  const lineOps: QuillOp[] = [...toggledLine.contentOps, toggledLine.newlineOp];
+  // Collect sibling subtrees within [groupStart..groupEnd]
+  type Subtree = { startIndex: number; indices: number[] };
+  const siblings: Subtree[] = [];
+  let i = groupStart;
+  while (i <= groupEnd) {
+    if (getLineIndent(lines[i]) === toggledIndent && isChecklistLine(lines[i])) {
+      const indices = getSubtreeIndices(lines, i);
+      siblings.push({ startIndex: i, indices });
+      i = indices[indices.length - 1] + 1;
+    } else {
+      i++;
+    }
+  }
 
-  let targetIndex: number;
+  // Find our subtree in the siblings list
+  const mySubIdx = siblings.findIndex((s) => s.startIndex === lineIndex);
+  if (mySubIdx === -1) return null;
+
+  const isChecked = isCheckedLine(toggledLine);
+  const mySubtree = siblings[mySubIdx];
+
+  let targetSibIdx: number;
 
   if (isChecked) {
-    // Checked: move to end of checklist group
-    if (lineIndex === groupEnd) return null; // Already at end
-    targetIndex = groupEnd;
+    // Move to end of siblings
+    if (mySubIdx === siblings.length - 1) return null; // Already at end
+    targetSibIdx = siblings.length; // insert after last
   } else {
-    // Unchecked: move to start of checked items
-    let firstCheckedIndex = -1;
-    for (let i = groupStart; i <= groupEnd; i++) {
-      if (isCheckedLine(lines[i])) {
-        firstCheckedIndex = i;
+    // Move before the first checked sibling
+    let firstCheckedSibIdx = -1;
+    for (let s = 0; s < siblings.length; s++) {
+      if (isCheckedLine(lines[siblings[s].startIndex])) {
+        firstCheckedSibIdx = s;
         break;
       }
     }
-    if (firstCheckedIndex === -1 || lineIndex < firstCheckedIndex) {
-      return null; // No checked items or already before them
+    if (firstCheckedSibIdx === -1 || mySubIdx < firstCheckedSibIdx) {
+      return null; // No checked siblings or already before them
     }
-    targetIndex = firstCheckedIndex;
+    targetSibIdx = firstCheckedSibIdx;
+  }
+
+  // Calculate source position and length
+  const sourceStart = getLineStartPosition(lines, mySubtree.indices[0]);
+  const sourceLength = getLinesLength(lines, mySubtree.indices);
+  const sourceOps = getLinesOps(lines, mySubtree.indices);
+
+  // Calculate target position
+  let targetPos: number;
+  if (isChecked) {
+    // Insert after the last sibling's subtree
+    const lastSib = siblings[siblings.length - 1];
+    const lastIdx = lastSib.indices[lastSib.indices.length - 1];
+    targetPos = getLineStartPosition(lines, lastIdx) + getLineLength(lines[lastIdx]);
+  } else {
+    // Insert before the first checked sibling
+    targetPos = getLineStartPosition(lines, siblings[targetSibIdx].indices[0]);
   }
 
   // Build the move delta
   const ops: QuillOp[] = [];
 
-  if (lineIndex < targetIndex) {
+  if (sourceStart < targetPos) {
     // Moving down: delete source, then insert at target (adjusted)
-    const targetStart = getLineStartPosition(lines, targetIndex) + getLineLength(lines[targetIndex]);
-
-    // Retain to source start
-    if (lineStart > 0) {
-      ops.push({ retain: lineStart });
+    if (sourceStart > 0) {
+      ops.push({ retain: sourceStart });
     }
-    // Delete the line
-    ops.push({ delete: lineLength });
-    // Retain to target position (adjusted for deletion)
-    const retainToTarget = targetStart - lineLength - lineStart;
+    ops.push({ delete: sourceLength });
+    const retainToTarget = targetPos - sourceLength - sourceStart;
     if (retainToTarget > 0) {
       ops.push({ retain: retainToTarget });
     }
-    // Insert the line
-    ops.push(...lineOps);
+    ops.push(...sourceOps);
   } else {
     // Moving up: insert at target, then delete source (adjusted)
-    const targetStart = getLineStartPosition(lines, targetIndex);
-
-    // Retain to target position
-    if (targetStart > 0) {
-      ops.push({ retain: targetStart });
+    if (targetPos > 0) {
+      ops.push({ retain: targetPos });
     }
-    // Insert the line
-    ops.push(...lineOps);
-    // Retain to source position (adjusted for insertion)
-    const retainToSource = lineStart - targetStart;
+    ops.push(...sourceOps);
+    const retainToSource = sourceStart - targetPos;
     if (retainToSource > 0) {
       ops.push({ retain: retainToSource });
     }
-    // Delete the original line
-    ops.push({ delete: lineLength });
+    ops.push({ delete: sourceLength });
   }
 
   return { ops };

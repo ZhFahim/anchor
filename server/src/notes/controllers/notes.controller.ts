@@ -13,6 +13,7 @@ import { NotesService } from '../services/notes.service';
 import { CreateNoteDto } from '../dto/create-note.dto';
 import { UpdateNoteDto } from '../dto/update-note.dto';
 import { SyncNotesDto } from '../dto/sync-notes.dto';
+import { ReorderNotesDto } from '../dto/reorder-notes.dto';
 import { BulkActionDto } from '../dto/bulk-action.dto';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
@@ -33,6 +34,14 @@ export class NotesController {
   @Post('sync')
   sync(@CurrentUser('id') userId: string, @Body() syncDto: SyncNotesDto) {
     return this.notesService.sync(userId, syncDto);
+  }
+
+  @Post('reorder')
+  reorder(
+    @CurrentUser('id') userId: string,
+    @Body() reorderDto: ReorderNotesDto,
+  ) {
+    return this.notesService.reorder(userId, reorderDto);
   }
 
   @Get()

@@ -59,6 +59,7 @@ abstract class Note with _$Note {
     @Default(false) bool isPinned,
     @Default(false) bool isArchived,
     String? background,
+    int? position,
     @Default(NoteState.active) NoteState state,
     DateTime? updatedAt,
     @Default([]) List<String> tagIds,

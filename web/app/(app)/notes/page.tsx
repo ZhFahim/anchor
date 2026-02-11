@@ -1,9 +1,24 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import Masonry from "react-masonry-css";
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+  type DragStartEvent,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  rectSortingStrategy,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
 import {
   Sparkles,
   Search,
@@ -22,11 +37,12 @@ import {
   deltaToFullPlainText,
   bulkDeleteNotes,
   bulkArchiveNotes,
-  useSelectionMode
+  reorderNotes,
+  useSelectionMode,
 } from "@/features/notes";
 import { getTags } from "@/features/tags";
 import { Header } from "@/components/layout";
-import { NoteCard } from "@/features/notes";
+import { NoteCard, SortableNoteCard } from "@/features/notes";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -35,15 +51,8 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import Link from "next/link";
 import { usePreferencesStore } from "@/features/preferences";
-
-const masonryBreakpoints = {
-  default: 4,
-  1536: 4,
-  1280: 3,
-  1024: 3,
-  768: 2,
-  640: 1,
-};
+import { calculateNewPositions } from "@/features/notes/utils/position-calculator";
+import type { Note } from "@/features/notes";
 
 export default function NotesPage() {
   const router = useRouter();
@@ -118,9 +127,15 @@ export default function NotesPage() {
   const pinnedNotes = filteredNotes.filter((note) => note.isPinned);
   const unpinnedNotes = filteredNotes.filter((note) => !note.isPinned);
 
-  // Sort pinned and unpinned separately
-  const sortedPinnedNotes = useMemo(() => {
-    return [...pinnedNotes].sort((a, b) => {
+  // Sort function shared between pinned and unpinned
+  const sortNotes = useCallback((notesToSort: typeof filteredNotes) => {
+    return [...notesToSort].sort((a, b) => {
+      if (sortBy === "manual") {
+        // Sort by position ascending, nulls last
+        const aPos = a.position ?? Number.MAX_SAFE_INTEGER;
+        const bPos = b.position ?? Number.MAX_SAFE_INTEGER;
+        return aPos - bPos;
+      }
       let comparison = 0;
       if (sortBy === "title") {
         comparison = a.title.localeCompare(b.title);
@@ -131,21 +146,11 @@ export default function NotesPage() {
       }
       return sortOrder === "asc" ? comparison : -comparison;
     });
-  }, [pinnedNotes, sortBy, sortOrder]);
+  }, [sortBy, sortOrder]);
 
-  const sortedUnpinnedNotes = useMemo(() => {
-    return [...unpinnedNotes].sort((a, b) => {
-      let comparison = 0;
-      if (sortBy === "title") {
-        comparison = a.title.localeCompare(b.title);
-      } else if (sortBy === "updatedAt") {
-        comparison = new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
-      } else if (sortBy === "createdAt") {
-        comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-      }
-      return sortOrder === "asc" ? comparison : -comparison;
-    });
-  }, [unpinnedNotes, sortBy, sortOrder]);
+  // Sort pinned and unpinned separately
+  const sortedPinnedNotes = useMemo(() => sortNotes(pinnedNotes), [pinnedNotes, sortNotes]);
+  const sortedUnpinnedNotes = useMemo(() => sortNotes(unpinnedNotes), [unpinnedNotes, sortNotes]);
 
   // Get selected tag
   const selectedTag = tagIdParam
@@ -241,87 +246,127 @@ export default function NotesPage() {
   });
 
 
-  const renderNotesGrid = (notesToRender: typeof filteredNotes, startIndex = 0) => {
-    if (viewMode === "list") {
-      return (
-        <div className="space-y-2">
-          {notesToRender.map((note, index) => {
-            const globalIndex = startIndex + index;
-            return (
-              <NoteCard
-                key={note.id}
-                note={note}
-                index={globalIndex}
-                viewMode="list"
-                isSelectionMode={isSelectionMode}
-                isSelected={selectedNoteIds.has(note.id)}
-                onSelectChange={(noteId, ctrlOrCmd, shift) => {
-                  handleNoteSelect(noteId, globalIndex, ctrlOrCmd, shift);
-                  if (!isSelectionMode && (ctrlOrCmd || shift)) {
-                    setIsSelectionMode(true);
-                  }
-                }}
-              />
-            );
-          })}
-        </div>
-      );
+  // Drag-and-drop setup
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    })
+  );
+
+  const activeDragNote = useMemo(() => {
+    if (!activeDragId) return null;
+    return filteredNotes.find((n) => n.id === activeDragId) ?? null;
+  }, [activeDragId, filteredNotes]);
+
+  const handleDragStart = (event: DragStartEvent) => {
+    console.log("[DND] Drag started:", event.active.id);
+    setActiveDragId(event.active.id as string);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    console.log("[DND] Drag ended:", event.active.id, "over:", event.over?.id);
+    setActiveDragId(null);
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const activeId = active.id as string;
+    const overId = over.id as string;
+
+    // Determine which section the dragged note belongs to
+    const isPinnedDrag = sortedPinnedNotes.some((n) => n.id === activeId);
+    const section = isPinnedDrag ? sortedPinnedNotes : sortedUnpinnedNotes;
+
+    const fromIndex = section.findIndex((n) => n.id === activeId);
+    const toIndex = section.findIndex((n) => n.id === overId);
+
+    if (fromIndex === -1 || toIndex === -1) return;
+
+    // Calculate new positions
+    const newPositions = calculateNewPositions(section, fromIndex, toIndex);
+
+    // Auto-switch sort to manual
+    if (sortBy !== "manual") {
+      setSortBy("manual");
     }
 
-    if (viewMode === "grid") {
-      return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {notesToRender.map((note, index) => {
-            const globalIndex = startIndex + index;
-            return (
-              <NoteCard
-                key={note.id}
-                note={note}
-                index={globalIndex}
-                viewMode="grid"
-                isSelectionMode={isSelectionMode}
-                isSelected={selectedNoteIds.has(note.id)}
-                onSelectChange={(noteId, ctrlOrCmd, shift) => {
-                  handleNoteSelect(noteId, globalIndex, ctrlOrCmd, shift);
-                  if (!isSelectionMode && (ctrlOrCmd || shift)) {
-                    setIsSelectionMode(true);
-                  }
-                }}
-              />
-            );
-          })}
-        </div>
-      );
-    }
+    // Optimistically update the React Query cache
+    queryClient.setQueryData<Note[]>(["notes", tagIdParam], (old) => {
+      if (!old) return old;
+      return old.map((note) => {
+        const newPos = newPositions.find((p) => p.id === note.id);
+        return newPos ? { ...note, position: newPos.position } : note;
+      });
+    });
 
-    // Masonry view
+    // Call the API
+    reorderNotes({ positions: newPositions }).catch(() => {
+      // Revert on error
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      toast.error("Failed to reorder notes");
+    });
+  };
+
+  // Drag is enabled unless in selection mode
+  const isDragEnabled = !isSelectionMode;
+
+  const renderNoteItem = (note: typeof filteredNotes[0], globalIndex: number, currentViewMode: typeof viewMode) => {
+    const CardComponent = isDragEnabled ? SortableNoteCard : NoteCard;
     return (
-      <Masonry
-        breakpointCols={masonryBreakpoints}
-        className="masonry-grid"
-        columnClassName="masonry-grid-column"
-      >
-        {notesToRender.map((note, index) => {
-          const globalIndex = startIndex + index;
-          return (
-            <NoteCard
-              key={note.id}
-              note={note}
-              index={globalIndex}
-              viewMode="masonry"
-              isSelectionMode={isSelectionMode}
-              isSelected={selectedNoteIds.has(note.id)}
-              onSelectChange={(noteId, ctrlOrCmd, shift) => {
-                handleNoteSelect(noteId, globalIndex, ctrlOrCmd, shift);
-                if (!isSelectionMode && (ctrlOrCmd || shift)) {
-                  setIsSelectionMode(true);
-                }
-              }}
-            />
-          );
-        })}
-      </Masonry>
+      <CardComponent
+        key={note.id}
+        note={note}
+        index={globalIndex}
+        viewMode={currentViewMode}
+        isSelectionMode={isSelectionMode}
+        isSelected={selectedNoteIds.has(note.id)}
+        onSelectChange={(noteId, ctrlOrCmd, shift) => {
+          handleNoteSelect(noteId, globalIndex, ctrlOrCmd, shift);
+          if (!isSelectionMode && (ctrlOrCmd || shift)) {
+            setIsSelectionMode(true);
+          }
+        }}
+      />
     );
+  };
+
+  const renderNotesGrid = (notesToRender: typeof filteredNotes, startIndex = 0) => {
+    const sortingStrategy = viewMode === "list" ? verticalListSortingStrategy : rectSortingStrategy;
+    const noteIds = notesToRender.map((n) => n.id);
+
+    if (viewMode === "list") {
+      const content = (
+        <div className="space-y-2">
+          {notesToRender.map((note, index) => renderNoteItem(note, startIndex + index, "list"))}
+        </div>
+      );
+
+      if (isDragEnabled) {
+        return (
+          <SortableContext items={noteIds} strategy={sortingStrategy}>
+            {content}
+          </SortableContext>
+        );
+      }
+      return content;
+    }
+
+    // Grid and masonry both use the same grid layout with SortableContext
+    const content = (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {notesToRender.map((note, index) => renderNoteItem(note, startIndex + index, "grid"))}
+      </div>
+    );
+
+    if (isDragEnabled) {
+      return (
+        <SortableContext items={noteIds} strategy={rectSortingStrategy}>
+          {content}
+        </SortableContext>
+      );
+    }
+    return content;
   };
 
   return (
@@ -544,44 +589,62 @@ export default function NotesPage() {
               )}
             </div>
           ) : (
-            <div className="max-w-7xl mx-auto space-y-10">
-              {/* Pinned Notes */}
-              {sortedPinnedNotes.length > 0 && (
-                <section className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
-                    <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/30 border border-border/40">
-                      <Pin className="h-3 w-3" />
-                      <span>Pinned</span>
-                      <span className="text-muted-foreground/60">
-                        ({sortedPinnedNotes.length})
-                      </span>
-                    </h2>
-                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
-                  </div>
-                  {renderNotesGrid(sortedPinnedNotes, 0)}
-                </section>
-              )}
-
-              {/* Other Notes */}
-              {sortedUnpinnedNotes.length > 0 && (
-                <section className="space-y-4">
-                  {sortedPinnedNotes.length > 0 && (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+            >
+              <div className="max-w-7xl mx-auto space-y-10">
+                {/* Pinned Notes */}
+                {sortedPinnedNotes.length > 0 && (
+                  <section className="space-y-4">
                     <div className="flex items-center gap-3">
                       <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
                       <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/30 border border-border/40">
-                        <span>All Notes</span>
+                        <Pin className="h-3 w-3" />
+                        <span>Pinned</span>
                         <span className="text-muted-foreground/60">
-                          ({sortedUnpinnedNotes.length})
+                          ({sortedPinnedNotes.length})
                         </span>
                       </h2>
                       <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
                     </div>
-                  )}
-                  {renderNotesGrid(sortedUnpinnedNotes, sortedPinnedNotes.length)}
-                </section>
-              )}
-            </div>
+                    {renderNotesGrid(sortedPinnedNotes, 0)}
+                  </section>
+                )}
+
+                {/* Other Notes */}
+                {sortedUnpinnedNotes.length > 0 && (
+                  <section className="space-y-4">
+                    {sortedPinnedNotes.length > 0 && (
+                      <div className="flex items-center gap-3">
+                        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
+                        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/30 border border-border/40">
+                          <span>All Notes</span>
+                          <span className="text-muted-foreground/60">
+                            ({sortedUnpinnedNotes.length})
+                          </span>
+                        </h2>
+                        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
+                      </div>
+                    )}
+                    {renderNotesGrid(sortedUnpinnedNotes, sortedPinnedNotes.length)}
+                  </section>
+                )}
+              </div>
+
+              <DragOverlay>
+                {activeDragNote ? (
+                  <div className="opacity-90 pointer-events-none">
+                    <NoteCard
+                      note={activeDragNote}
+                      viewMode={viewMode === "list" ? "list" : "grid"}
+                    />
+                  </div>
+                ) : null}
+              </DragOverlay>
+            </DndContext>
           )}
         </div>
       </div>

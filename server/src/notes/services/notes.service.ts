@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreateNoteDto } from '../dto/create-note.dto';
 import { UpdateNoteDto } from '../dto/update-note.dto';
 import { SyncNotesDto } from '../dto/sync-notes.dto';
+import { ReorderNotesDto } from '../dto/reorder-notes.dto';
 import { NoteState, NoteSharePermission } from 'src/generated/prisma/enums';
 import { NoteAccessService } from './note-access.service';
 import { transformNote } from '../utils/note-transformer.util';
@@ -89,7 +90,11 @@ export class NotesService {
         ...NOTE_INCLUDE_TAGS,
         ...NOTE_INCLUDE_SHARES,
       },
-      orderBy: [{ isPinned: 'desc' }, { updatedAt: 'desc' }],
+      orderBy: [
+        { isPinned: 'desc' },
+        { position: { sort: 'asc', nulls: 'last' } },
+        { updatedAt: 'desc' },
+      ],
     });
 
     return notes.map((note) => transformNote(note, userId));
@@ -305,6 +310,36 @@ export class NotesService {
     return { count: noteIds.length };
   }
 
+  async reorder(userId: string, reorderDto: ReorderNotesDto) {
+    const noteIds = reorderDto.positions.map((p) => p.id);
+
+    // Verify all notes belong to user
+    const notes = await this.prisma.note.findMany({
+      where: {
+        id: { in: noteIds },
+        userId,
+      },
+    });
+
+    if (notes.length !== noteIds.length) {
+      throw new NotFoundException(
+        'One or more notes not found or you do not have permission',
+      );
+    }
+
+    // Batch update positions in a transaction
+    await this.prisma.$transaction(
+      reorderDto.positions.map((p) =>
+        this.prisma.note.update({
+          where: { id: p.id },
+          data: { position: p.position },
+        }),
+      ),
+    );
+
+    return { success: true };
+  }
+
   // Sync endpoint - handles bi-directional sync with conflict resolution
   async sync(userId: string, syncDto: SyncNotesDto) {
     const { lastSyncedAt, changes } = syncDto;
@@ -328,6 +363,7 @@ export class NotesService {
             isPinned: change.isPinned ?? false,
             isArchived: change.isArchived ?? false,
             background: change.background,
+            position: change.position,
             state: (change.state as NoteState) ?? NoteState.active,
             userId,
             tags: change.tagIds?.length
@@ -363,6 +399,7 @@ export class NotesService {
             content: change.content,
             isPinned: change.isPinned,
             background: change.background,
+            position: change.position,
           };
 
           // Only owner can update state and isArchived

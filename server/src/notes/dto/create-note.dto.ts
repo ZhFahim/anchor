@@ -4,6 +4,7 @@ import {
   IsString,
   IsNotEmpty,
   IsArray,
+  IsInt,
 } from 'class-validator';
 
 export class CreateNoteDto {
@@ -26,6 +27,10 @@ export class CreateNoteDto {
   @IsString()
   @IsOptional()
   background?: string;
+
+  @IsInt()
+  @IsOptional()
+  position?: number;
 
   @IsArray()
   @IsString({ each: true })

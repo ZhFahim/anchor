@@ -4,7 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 enum ViewType { grid, list }
 
-enum SortOption { dateModified, title }
+enum SortOption { dateModified, title, manual }
 
 class NotesViewOptions {
   final ViewType viewType;
@@ -51,7 +51,9 @@ class NotesViewOptionsNotifier extends AsyncNotifier<NotesViewOptions> {
 
       final sortOption = sortOptionStr == 'title'
           ? SortOption.title
-          : SortOption.dateModified;
+          : sortOptionStr == 'manual'
+              ? SortOption.manual
+              : SortOption.dateModified;
 
       final isAscending = isAscendingStr == 'true';
 
@@ -75,7 +77,9 @@ class NotesViewOptionsNotifier extends AsyncNotifier<NotesViewOptions> {
         key: _keySortOption,
         value: options.sortOption == SortOption.title
             ? 'title'
-            : 'dateModified',
+            : options.sortOption == SortOption.manual
+                ? 'manual'
+                : 'dateModified',
       );
       await _storage.write(
         key: _keyIsAscending,

@@ -1,7 +1,7 @@
 FROM node:24-alpine
 
 # Install pnpm and curl
-RUN corepack enable && corepack prepare pnpm@latest --activate && \
+RUN corepack enable && corepack prepare pnpm@10.17.1 --activate && \
   apk add --no-cache curl
 
 WORKDIR /app

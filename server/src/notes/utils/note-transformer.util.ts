@@ -17,6 +17,7 @@ export interface TransformedNote {
   isPinned: boolean;
   isArchived: boolean;
   background: string | null;
+  position: number | null;
   state: string;
   updatedAt: string;
   createdAt: string;
@@ -35,6 +36,7 @@ interface NoteWithIncludes {
   isPinned: boolean;
   isArchived: boolean;
   background: string | null;
+  position: number | null;
   state: string;
   createdAt: Date;
   updatedAt: Date;

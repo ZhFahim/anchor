@@ -12,6 +12,8 @@ import {
   List,
   ListOrdered,
   ListChecks,
+  IndentIncrease,
+  IndentDecrease,
   Quote,
   Code,
   Undo2,
@@ -62,6 +64,24 @@ function toggleBlock(quill: QuillInstance, key: "blockquote" | "code-block") {
   quill.format(key, !current[key], "user");
 }
 
+const MAX_INDENT = 3;
+
+function indentLine(quill: QuillInstance) {
+  const current = quill.getFormat() ?? {};
+  const indent = typeof current.indent === "number" ? current.indent : 0;
+  if (indent < MAX_INDENT) {
+    quill.format("indent", indent + 1, "user");
+  }
+}
+
+function outdentLine(quill: QuillInstance) {
+  const current = quill.getFormat() ?? {};
+  const indent = typeof current.indent === "number" ? current.indent : 0;
+  if (indent > 0) {
+    quill.format("indent", indent - 1 || false, "user");
+  }
+}
+
 interface QuillToolbarProps {
   getQuill: () => QuillInstance | null;
   isFocused: boolean;
@@ -109,6 +129,8 @@ export function QuillToolbar({ getQuill, isFocused, updateKey }: QuillToolbarPro
     listValue === LIST_FORMATS.CHECKED || listValue === LIST_FORMATS.UNCHECKED;
   const isOrdered = listValue === LIST_FORMATS.ORDERED;
   const isBullet = listValue === LIST_FORMATS.BULLET;
+  const isList = isChecklist || isOrdered || isBullet;
+  const indentLevel = typeof format.indent === "number" ? format.indent : 0;
 
   const isBold = Boolean(format.bold);
   const isItalic = Boolean(format.italic);
@@ -292,6 +314,31 @@ export function QuillToolbar({ getQuill, isFocused, updateKey }: QuillToolbarPro
             onClick={() => quill && toggleList(quill, "bullet")}
           >
             <List className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className={dividerClass} />
+
+        <div className={groupClass}>
+          <Button
+            type="button"
+            variant="ghost"
+            className={btnClass(false)}
+            disabled={!quill || !isList || indentLevel >= MAX_INDENT}
+            title="Indent"
+            onClick={() => quill && indentLine(quill)}
+          >
+            <IndentIncrease className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            className={btnClass(false)}
+            disabled={!quill || !isList || indentLevel <= 0}
+            title="Outdent"
+            onClick={() => quill && outdentLine(quill)}
+          >
+            <IndentDecrease className="h-4 w-4" />
           </Button>
         </div>
 

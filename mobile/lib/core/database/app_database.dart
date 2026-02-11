@@ -15,7 +15,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(String userId) : super(_openConnection(userId));
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -38,6 +38,9 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(notes, notes.sharedByName);
         await m.addColumn(notes, notes.sharedByEmail);
         await m.addColumn(notes, notes.sharedByProfileImage);
+      }
+      if (from < 7) {
+        await m.addColumn(notes, notes.position);
       }
     },
   );
