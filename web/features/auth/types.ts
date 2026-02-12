@@ -20,6 +20,10 @@ export interface RefreshTokenResponse {
   refresh_token: string;
 }
 
+export interface ApiTokenResponse {
+  apiToken: string;
+}
+
 export interface LoginCredentials {
   email: string;
   password: string;

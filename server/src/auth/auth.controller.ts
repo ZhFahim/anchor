@@ -58,6 +58,19 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('api-token')
+  getApiToken(@CurrentUser() user: User) {
+    return this.authService.getApiToken(user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @Post('api-token/regenerate')
+  regenerateApiToken(@CurrentUser() user: User) {
+    return this.authService.regenerateApiToken(user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @Post('change-password')
   changePassword(

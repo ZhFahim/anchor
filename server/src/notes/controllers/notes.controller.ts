@@ -14,11 +14,11 @@ import { CreateNoteDto } from '../dto/create-note.dto';
 import { UpdateNoteDto } from '../dto/update-note.dto';
 import { SyncNotesDto } from '../dto/sync-notes.dto';
 import { BulkActionDto } from '../dto/bulk-action.dto';
-import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { NotesAuthGuard } from '../../auth/notes-auth.guard';
 
 @Controller('api/notes')
-@UseGuards(JwtAuthGuard)
+@UseGuards(NotesAuthGuard)
 export class NotesController {
   constructor(private readonly notesService: NotesService) {}
 
@@ -40,8 +40,9 @@ export class NotesController {
     @CurrentUser('id') userId: string,
     @Query('search') search?: string,
     @Query('tagId') tagId?: string,
+    @Query('limit') limit?: string,
   ) {
-    return this.notesService.findAll(userId, search, tagId);
+    return this.notesService.findAll(userId, search, tagId, parseLimit(limit));
   }
 
   @Get('trash')
@@ -99,3 +100,12 @@ export class NotesController {
     return this.notesService.bulkArchive(userId, bulkActionDto.noteIds);
   }
 }
+
+const parseLimit = (limit?: string) => {
+  if (!limit) {
+    return undefined;
+  }
+
+  const parsed = Number.parseInt(limit, 10);
+  return Number.isNaN(parsed) ? undefined : parsed;
+};

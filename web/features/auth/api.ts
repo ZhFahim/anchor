@@ -1,5 +1,13 @@
 import { api } from "@/lib/api/client";
-import type { AuthResponse, LoginCredentials, RegisterCredentials, ChangePasswordCredentials, UpdateProfileDto, User } from "./types";
+import type {
+  ApiTokenResponse,
+  AuthResponse,
+  LoginCredentials,
+  RegisterCredentials,
+  ChangePasswordCredentials,
+  UpdateProfileDto,
+  User
+} from "./types";
 
 export async function login(credentials: LoginCredentials): Promise<AuthResponse> {
   return api.post("api/auth/login", { json: credentials }).json<AuthResponse>();
@@ -33,4 +41,12 @@ export async function uploadProfileImage(imageFile: File): Promise<User> {
 
 export async function removeProfileImage(): Promise<User> {
   return api.delete("api/auth/profile/image").json<User>();
+}
+
+export async function getApiToken(): Promise<ApiTokenResponse> {
+  return api.get("api/auth/api-token").json<ApiTokenResponse>();
+}
+
+export async function regenerateApiToken(): Promise<ApiTokenResponse> {
+  return api.post("api/auth/api-token/regenerate").json<ApiTokenResponse>();
 }

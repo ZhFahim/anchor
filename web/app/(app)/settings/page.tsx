@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Lock, Loader2, Eye, EyeOff, User, Upload, X, ListChecks, Info } from "lucide-react";
+import { Lock, Loader2, Eye, EyeOff, User, Upload, X, ListChecks, Info, KeyRound, Copy, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { changePassword, updateProfile, uploadProfileImage, removeProfileImage, getMe } from "@/features/auth/api";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { changePassword, updateProfile, uploadProfileImage, removeProfileImage, getApiToken, regenerateApiToken } from "@/features/auth/api";
 import { useAuthStore } from "@/features/auth/store";
 import { usePreferencesStore } from "@/features/preferences";
 import { toast } from "sonner";
@@ -54,6 +54,17 @@ export default function SettingsPage() {
   const [isCurrentPasswordVisible, setIsCurrentPasswordVisible] = useState(false);
   const [isNewPasswordVisible, setIsNewPasswordVisible] = useState(false);
   const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
+  const [isApiTokenVisible, setIsApiTokenVisible] = useState(false);
+
+  const {
+    data: apiTokenResponse,
+    isLoading: apiTokenLoading,
+    isError: apiTokenError,
+  } = useQuery({
+    queryKey: ["api-token"],
+    queryFn: getApiToken,
+    staleTime: 5 * 60 * 1000,
+  });
 
   const updateProfileMutation = useMutation({
     mutationFn: async (data: { name?: string | null }) => {
@@ -267,6 +278,33 @@ export default function SettingsPage() {
     }
   };
 
+  const regenerateApiTokenMutation = useMutation({
+    mutationFn: regenerateApiToken,
+    onSuccess: (response) => {
+      queryClient.setQueryData(["api-token"], response);
+      setIsApiTokenVisible(true);
+      toast.success("API token regenerated successfully");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to regenerate API token");
+    },
+  });
+
+  const handleCopyApiToken = async () => {
+    const apiToken = apiTokenResponse?.apiToken;
+    if (!apiToken) {
+      toast.error("API token is not available");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(apiToken);
+      toast.success("API token copied to clipboard");
+    } catch {
+      toast.error("Failed to copy API token");
+    }
+  };
+
   const getInitials = () => {
     if (user?.name) {
       return user.name
@@ -404,6 +442,91 @@ export default function SettingsPage() {
               }
             />
           </div>
+        </CardContent>
+      </Card>
+
+      {/* API Token Section */}
+      <Card className="border-0 shadow-xl bg-card/80 backdrop-blur-sm mb-6">
+        <CardHeader className="space-y-1 pb-4">
+          <CardTitle className="text-2xl">API Token</CardTitle>
+          <CardDescription>
+            Use this token to authenticate external clients such as Homarr
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {apiTokenLoading ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading API token...
+            </div>
+          ) : apiTokenError || !apiTokenResponse?.apiToken ? (
+            <p className="text-sm text-destructive">
+              Failed to load API token. Try refreshing the page.
+            </p>
+          ) : (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="apiToken">Token</Label>
+                <div className="relative">
+                  <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="apiToken"
+                    value={
+                      isApiTokenVisible
+                        ? apiTokenResponse.apiToken
+                        : maskToken(apiTokenResponse.apiToken)
+                    }
+                    readOnly
+                    className="pl-10 pr-24 h-12 bg-background/50 font-mono text-xs"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setIsApiTokenVisible((prev) => !prev)}
+                    className="absolute right-10 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    title={isApiTokenVisible ? "Hide token" : "Show token"}
+                  >
+                    {isApiTokenVisible ? (
+                      <EyeOff className="h-4 w-4 opacity-40" />
+                    ) : (
+                      <Eye className="h-4 w-4 opacity-40" />
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCopyApiToken}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    title="Copy token"
+                  >
+                    <Copy className="h-4 w-4 opacity-40" />
+                  </button>
+                </div>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs text-muted-foreground">
+                  Regenerating will invalidate your current token immediately.
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => regenerateApiTokenMutation.mutate()}
+                  disabled={regenerateApiTokenMutation.isPending}
+                  className="flex items-center gap-2"
+                >
+                  {regenerateApiTokenMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Regenerating...
+                    </>
+                  ) : (
+                    <>
+                      <RotateCw className="h-4 w-4" />
+                      Regenerate
+                    </>
+                  )}
+                </Button>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 
@@ -564,3 +687,15 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+const maskToken = (token: string) => {
+  if (!token) {
+    return "";
+  }
+
+  if (token.length <= 8) {
+    return "•".repeat(token.length);
+  }
+
+  return `${token.slice(0, 4)}${"•".repeat(token.length - 8)}${token.slice(-4)}`;
+};
