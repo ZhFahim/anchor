@@ -5,6 +5,8 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './jwt.strategy';
+import { TokenResolverService } from './token-resolver.service';
+import { AuthGuard } from './auth.guard';
 import { SettingsModule } from '../settings/settings.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { OidcService } from './oidc/oidc.service';
@@ -32,12 +34,14 @@ import { OidcUserService } from './oidc/oidc-user.service';
   providers: [
     AuthService,
     JwtStrategy,
+    TokenResolverService,
+    AuthGuard,
     OidcService,
     OidcConfigService,
     OidcClientService,
     OidcStateService,
     OidcUserService,
   ],
-  exports: [AuthService, OidcConfigService],
+  exports: [AuthService, OidcConfigService, JwtModule, TokenResolverService, AuthGuard],
 })
-export class AuthModule {}
+export class AuthModule { }

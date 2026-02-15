@@ -1,13 +1,14 @@
 import { api } from "@/lib/api/client";
 import type {
+  ApiTokenResponse,
   AuthResponse,
   LoginCredentials,
   RegisterCredentials,
   ChangePasswordCredentials,
   UpdateProfileDto,
-  User,
   OidcConfig,
   OidcExchangeResponse,
+  User
 } from "./types";
 
 export async function login(credentials: LoginCredentials): Promise<AuthResponse> {
@@ -42,6 +43,18 @@ export async function uploadProfileImage(imageFile: File): Promise<User> {
 
 export async function removeProfileImage(): Promise<User> {
   return api.delete("api/auth/profile/image").json<User>();
+}
+
+export async function getApiToken(): Promise<ApiTokenResponse> {
+  return api.get("api/auth/api-token").json<ApiTokenResponse>();
+}
+
+export async function regenerateApiToken(): Promise<ApiTokenResponse> {
+  return api.post("api/auth/api-token/regenerate").json<ApiTokenResponse>();
+}
+
+export async function revokeApiToken(): Promise<ApiTokenResponse> {
+  return api.delete("api/auth/api-token").json<ApiTokenResponse>();
 }
 
 export async function getOidcConfig(): Promise<OidcConfig> {
