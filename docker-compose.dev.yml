@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: anchor
     volumes:
-      - postgres_data_dev:/var/lib/postgresql/data
+      - postgres_data_dev:/var/lib/postgresql
     ports:
       - "5432:5432"
     healthcheck:
@@ -27,6 +27,8 @@ services:
         condition: service_healthy
     ports:
       - "3001:3001"
+    env_file:
+      - .env
     environment:
       - NODE_ENV=development
       - PORT=3001
@@ -35,6 +37,7 @@ services:
     volumes:
       - ./server:/app
       - /app/node_modules
+      - app_data_dev:/data
     # Runs migrations and starts the app in watch mode
     command: /bin/sh -c "pnpm prisma generate && pnpm prisma migrate deploy && pnpm run start:dev"
 
@@ -57,4 +60,5 @@ services:
       - /app/.next
 
 volumes:
+  app_data_dev:
   postgres_data_dev:

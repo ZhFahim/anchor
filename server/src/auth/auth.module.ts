@@ -6,6 +6,13 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './jwt.strategy';
 import { SettingsModule } from '../settings/settings.module';
+import { PrismaModule } from '../prisma/prisma.module';
+import { OidcService } from './oidc/oidc.service';
+import { OidcController } from './oidc/oidc.controller';
+import { OidcConfigService } from './oidc/oidc-config.service';
+import { OidcClientService } from './oidc/oidc-client.service';
+import { OidcStateService } from './oidc/oidc-state.service';
+import { OidcUserService } from './oidc/oidc-user.service';
 
 @Module({
   imports: [
@@ -19,9 +26,18 @@ import { SettingsModule } from '../settings/settings.module';
       inject: [ConfigService],
     }),
     SettingsModule,
+    PrismaModule,
   ],
-  controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
-  exports: [AuthService],
+  controllers: [AuthController, OidcController],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    OidcService,
+    OidcConfigService,
+    OidcClientService,
+    OidcStateService,
+    OidcUserService,
+  ],
+  exports: [AuthService, OidcConfigService],
 })
-export class AuthModule { }
+export class AuthModule {}

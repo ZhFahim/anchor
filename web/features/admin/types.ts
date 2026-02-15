@@ -10,6 +10,7 @@ export interface AdminUser {
   name: string;
   isAdmin: boolean;
   status: "active" | "pending";
+  authMethod?: "oidc" | "local";
   createdAt: string;
   updatedAt: string;
   _count?: {
@@ -51,4 +52,25 @@ export interface RegistrationSettings {
 
 export interface UpdateRegistrationModeDto {
   mode: RegistrationMode;
+}
+
+export interface OidcSettings {
+  enabled: boolean;
+  providerName: string;
+  issuerUrl?: string;
+  clientId?: string;
+  hasClientSecret: boolean;
+  disableInternalAuth: boolean;
+  isLocked: boolean;
+  source: "env" | "database" | "default";
+}
+
+export interface UpdateOidcSettingsDto {
+  enabled?: boolean;
+  providerName?: string;
+  issuerUrl?: string;
+  clientId?: string;
+  clientSecret?: string;
+  clearClientSecret?: boolean;
+  disableInternalAuth?: boolean;
 }

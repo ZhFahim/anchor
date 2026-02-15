@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AdminGuard } from "@/features/admin";
 import {
@@ -15,13 +15,17 @@ import {
   getPendingUsers,
   approveUser,
   rejectUser,
+  getOidcSettings,
+  updateOidcSettings,
   type AdminUser,
   type CreateUserDto,
   type UpdateUserDto,
   type RegistrationMode,
+  type UpdateOidcSettingsDto,
 } from "@/features/admin";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import {
   Table,
   TableBody,
@@ -55,11 +59,12 @@ import {
   Tag,
   AlertTriangle,
   Loader2,
-  Settings,
   Lock,
   CheckCircle,
   XCircle,
-  Info,
+  UserPlus,
+  KeyRound,
+  Clock,
 } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { toast } from "sonner";
@@ -79,6 +84,8 @@ export default function AdminPage() {
     name: "",
   });
   const [resetPasswordResult, setResetPasswordResult] = useState<string | null>(null);
+  const [oidcFormData, setOidcFormData] = useState<UpdateOidcSettingsDto | null>(null);
+  const [oidcClearSecretRequested, setOidcClearSecretRequested] = useState(false);
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["admin", "stats"],
@@ -89,6 +96,26 @@ export default function AdminPage() {
     queryKey: ["admin", "settings", "registration"],
     queryFn: getRegistrationSettings,
   });
+
+  const { data: oidcSettings, isLoading: oidcSettingsLoading } = useQuery({
+    queryKey: ["admin", "settings", "oidc"],
+    queryFn: getOidcSettings,
+  });
+
+  // Initialize form data when settings are loaded
+  useEffect(() => {
+    if (oidcSettings) {
+      setOidcFormData({
+        enabled: oidcSettings.enabled,
+        providerName: oidcSettings.providerName,
+        issuerUrl: oidcSettings.issuerUrl || "",
+        clientId: oidcSettings.clientId || "",
+        clientSecret: oidcSettings.hasClientSecret ? "" : "",
+        disableInternalAuth: oidcSettings.disableInternalAuth,
+      });
+      setOidcClearSecretRequested(false);
+    }
+  }, [oidcSettings]);
 
   const { data: pendingUsers = [], isLoading: pendingUsersLoading } = useQuery({
     queryKey: ["admin", "users", "pending"],
@@ -111,6 +138,55 @@ export default function AdminPage() {
       toast.error(error.message || "Failed to update registration mode");
     },
   });
+
+  const updateOidcSettingsMutation = useMutation({
+    mutationFn: updateOidcSettings,
+    onSuccess: () => {
+      setOidcClearSecretRequested(false);
+      queryClient.invalidateQueries({ queryKey: ["admin", "settings", "oidc"] });
+      queryClient.invalidateQueries({ queryKey: ["oidc-config"] });
+      toast.success("OIDC settings updated successfully");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to update OIDC settings");
+    },
+  });
+
+  const oidcFormHasChanges =
+    !!oidcSettings &&
+    !!oidcFormData &&
+    !oidcSettings.isLocked &&
+    (oidcFormData.enabled !== oidcSettings.enabled ||
+      (oidcFormData.providerName ?? "") !== (oidcSettings.providerName ?? "") ||
+      (oidcFormData.issuerUrl ?? "") !== (oidcSettings.issuerUrl ?? "") ||
+      (oidcFormData.clientId ?? "") !== (oidcSettings.clientId ?? "") ||
+      (oidcFormData.disableInternalAuth ?? false) !== oidcSettings.disableInternalAuth ||
+      oidcClearSecretRequested ||
+      (!!oidcFormData.clientSecret && oidcFormData.clientSecret.trim() !== ""));
+
+  const handleSaveOidcSettings = () => {
+    if (!oidcFormData) return;
+
+    // Validate required fields when enabling
+    if (oidcFormData.enabled) {
+      if (!oidcFormData.issuerUrl?.trim() || !oidcFormData.clientId?.trim()) {
+        toast.error("Issuer URL and Client ID are required when OIDC is enabled");
+        return;
+      }
+    }
+
+    const settingsToSave: UpdateOidcSettingsDto = { ...oidcFormData };
+
+    if (oidcClearSecretRequested) {
+      settingsToSave.clearClientSecret = true;
+      delete settingsToSave.clientSecret;
+    } else if (oidcSettings?.hasClientSecret && (!oidcFormData.clientSecret || oidcFormData.clientSecret.trim() === "")) {
+      // Leave existing secret unchanged
+      delete settingsToSave.clientSecret;
+    }
+
+    updateOidcSettingsMutation.mutate(settingsToSave);
+  };
 
   const approveUserMutation = useMutation({
     mutationFn: approveUser,
@@ -322,31 +398,36 @@ export default function AdminPage() {
         {/* Registration Settings */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Settings className="h-5 w-5" />
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border bg-muted/50">
+                <UserPlus className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <div>
                 <CardTitle>Registration Settings</CardTitle>
+                <CardDescription className="mt-1">
+                  Control who can create accounts and whether approval is required.
+                </CardDescription>
               </div>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
             {registrationSettingsLoading ? (
-              <div className="flex items-center justify-center py-4">
-                <Loader2 className="h-4 w-4 animate-spin" />
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
             ) : registrationSettings ? (
               <>
                 {registrationSettings.isLocked && (
                   <div className="flex items-start gap-2 p-3 border rounded-lg bg-muted/50">
                     <Lock className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
-                    <p className="text-xs text-muted-foreground">
-                      Controlled by <code className="px-1 py-0.5 bg-background rounded text-[10px] font-mono">USER_SIGNUP</code> env variable. Remove it to manage from UI.
+                    <p className="text-sm text-muted-foreground">
+                      Controlled by <code className="px-1 py-0.5 bg-background rounded text-xs font-mono">USER_SIGNUP</code> env variable. Remove it to manage from UI.
                     </p>
                   </div>
                 )}
-                <div className="space-y-2">
-                  <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
-                    <Label className="whitespace-nowrap">Registration Mode</Label>
+                <div className="space-y-3">
+                  <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-4">
+                    <Label className="w-36 shrink-0">Registration Mode</Label>
                     <ToggleGroup
                       type="single"
                       value={registrationSettings.mode}
@@ -356,7 +437,7 @@ export default function AdminPage() {
                         }
                       }}
                       disabled={registrationSettings.isLocked || updateRegistrationModeMutation.isPending}
-                      className="justify-start border rounded-md"
+                      className="justify-start rounded-md border"
                     >
                       <ToggleGroupItem value="enabled" aria-label="Enabled">
                         Enabled
@@ -380,18 +461,221 @@ export default function AdminPage() {
           </CardContent>
         </Card>
 
+        {/* OIDC Settings */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border bg-muted/50">
+                  <KeyRound className="h-5 w-5 text-muted-foreground" />
+                </div>
+                <div>
+                  <CardTitle>OIDC Authentication</CardTitle>
+                  <CardDescription className="mt-1">
+                    Allow users to sign in with your OIDC provider.
+                  </CardDescription>
+                </div>
+              </div>
+              {oidcSettings && (
+                <Switch
+                  id="oidc-enabled"
+                  checked={oidcFormData?.enabled ?? false}
+                  onCheckedChange={(checked) => {
+                    if (!oidcSettings.isLocked && oidcFormData) {
+                      setOidcFormData({ ...oidcFormData, enabled: checked });
+                    }
+                  }}
+                  disabled={oidcSettings.isLocked || updateOidcSettingsMutation.isPending}
+                />
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {oidcSettingsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : oidcSettings ? (
+              <>
+                {oidcSettings.isLocked && (
+                  <div className="flex items-start gap-2 p-3 border rounded-lg bg-muted/50">
+                    <Lock className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
+                    <p className="text-sm text-muted-foreground">
+                      Controlled by <code className="px-1 py-0.5 bg-background rounded text-xs font-mono">OIDC_ISSUER_URL</code> and <code className="px-1 py-0.5 bg-background rounded text-xs font-mono">OIDC_CLIENT_ID</code> env variables. Remove them to manage from UI.
+                    </p>
+                  </div>
+                )}
+
+                {oidcFormData?.enabled && (
+                  <>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2 sm:col-span-2">
+                        <Label htmlFor="oidc-provider-name">Provider name</Label>
+                        <Input
+                          id="oidc-provider-name"
+                          value={oidcFormData?.providerName || ""}
+                          onChange={(e) => {
+                            if (!oidcSettings.isLocked && oidcFormData) {
+                              setOidcFormData({ ...oidcFormData, providerName: e.target.value });
+                            }
+                          }}
+                          disabled={oidcSettings.isLocked || updateOidcSettingsMutation.isPending}
+                          placeholder="e.g. Pocket ID, Authelia"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Shown on the login button: &quot;Login with {oidcFormData?.providerName || "Provider"}&quot;
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="oidc-issuer-url">
+                          Issuer URL <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          id="oidc-issuer-url"
+                          value={oidcFormData?.issuerUrl || ""}
+                          onChange={(e) => {
+                            if (!oidcSettings.isLocked && oidcFormData) {
+                              setOidcFormData({ ...oidcFormData, issuerUrl: e.target.value });
+                            }
+                          }}
+                          disabled={oidcSettings.isLocked || updateOidcSettingsMutation.isPending}
+                          placeholder="https://auth.example.com"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="oidc-client-id">
+                          Client ID <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          id="oidc-client-id"
+                          value={oidcFormData?.clientId || ""}
+                          onChange={(e) => {
+                            if (!oidcSettings.isLocked && oidcFormData) {
+                              setOidcFormData({ ...oidcFormData, clientId: e.target.value });
+                            }
+                          }}
+                          disabled={oidcSettings.isLocked || updateOidcSettingsMutation.isPending}
+                          placeholder="your-client-id"
+                        />
+                      </div>
+                      <div className="space-y-2 sm:col-span-2">
+                        <Label htmlFor="oidc-client-secret">Client secret (optional)</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            id="oidc-client-secret"
+                            type="password"
+                            autoComplete="off"
+                            value={oidcClearSecretRequested ? "" : (oidcFormData?.clientSecret ?? "")}
+                            onChange={(e) => {
+                              if (!oidcSettings.isLocked && oidcFormData) {
+                                setOidcClearSecretRequested(false);
+                                setOidcFormData({ ...oidcFormData, clientSecret: e.target.value });
+                              }
+                            }}
+                            disabled={oidcSettings.isLocked || updateOidcSettingsMutation.isPending}
+                            placeholder={
+                              oidcSettings?.hasClientSecret && !oidcClearSecretRequested
+                                ? "••••••••••••"
+                                : "Leave empty for public client (PKCE)"
+                            }
+                            className="flex-1"
+                          />
+                          {oidcSettings?.hasClientSecret && !oidcSettings.isLocked && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setOidcClearSecretRequested(true)}
+                              disabled={updateOidcSettingsMutation.isPending || oidcClearSecretRequested}
+                            >
+                              Clear secret
+                            </Button>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          The Anchor mobile app requires a public client (no client secret). If users sign in from the app using OIDC, leave this empty or clear the secret and set Anchor as a public client in your OIDC provider.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="oidc-disable-internal-auth" className="text-sm font-medium">
+                          OIDC-only mode
+                        </Label>
+                        <p className="text-sm text-muted-foreground">
+                          Hide local username/password login
+                        </p>
+                      </div>
+                      <Switch
+                        id="oidc-disable-internal-auth"
+                        checked={oidcFormData?.disableInternalAuth ?? false}
+                        onCheckedChange={(checked) => {
+                          if (!oidcSettings.isLocked && oidcFormData) {
+                            setOidcFormData({ ...oidcFormData, disableInternalAuth: checked });
+                          }
+                        }}
+                        disabled={oidcSettings.isLocked || updateOidcSettingsMutation.isPending}
+                      />
+                    </div>
+
+                    <div className="rounded-lg border bg-muted/30 p-4">
+                      <p className="text-sm font-medium mb-1">Callback URL</p>
+                      <code className="text-xs break-all rounded bg-background px-2 py-1 block">
+                        {typeof window !== "undefined"
+                          ? `${window.location.origin}/api/auth/oidc/callback`
+                          : "/api/auth/oidc/callback"}
+                      </code>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Add this URL in your OIDC provider as the redirect/callback URL.
+                      </p>
+                    </div>
+                  </>
+                )}
+
+                {oidcFormHasChanges && (
+                  <div className="flex justify-end pt-2">
+                    <Button
+                      onClick={handleSaveOidcSettings}
+                      disabled={
+                        updateOidcSettingsMutation.isPending ||
+                        !oidcFormData ||
+                        (oidcFormData.enabled && (!oidcFormData.issuerUrl?.trim() || !oidcFormData.clientId?.trim()))
+                      }
+                    >
+                      {updateOidcSettingsMutation.isPending ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Saving…
+                        </>
+                      ) : (
+                        "Save OIDC settings"
+                      )}
+                    </Button>
+                  </div>
+                )}
+              </>
+            ) : null}
+          </CardContent>
+        </Card>
+
         {/* Pending Users */}
         {pendingUsers.length > 0 && (
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Pending User Approvals</CardTitle>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Users awaiting approval to access the system
-                  </p>
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border bg-muted/50">
+                    <Clock className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <CardTitle>Pending User Approvals</CardTitle>
+                    <CardDescription className="mt-1">
+                      Users awaiting approval to access the system
+                    </CardDescription>
+                  </div>
                 </div>
-                <Badge variant="outline" className="text-sm">
+                <Badge variant="outline" className="shrink-0 text-sm">
                   {pendingUsersLoading ? "..." : pendingUsers.length} pending
                 </Badge>
               </div>
@@ -399,7 +683,7 @@ export default function AdminPage() {
             <CardContent>
               {pendingUsersLoading ? (
                 <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
               ) : (
                 <Table>
@@ -407,6 +691,7 @@ export default function AdminPage() {
                     <TableRow>
                       <TableHead>Name</TableHead>
                       <TableHead>Email</TableHead>
+                      <TableHead className="text-center">Auth</TableHead>
                       <TableHead>Registered</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -416,6 +701,11 @@ export default function AdminPage() {
                       <TableRow key={user.id}>
                         <TableCell className="font-medium">{user.name}</TableCell>
                         <TableCell className="font-medium">{user.email}</TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant={user.authMethod === "oidc" ? "secondary" : "outline"} className="font-normal">
+                            {user.authMethod === "oidc" ? "OIDC" : "Local"}
+                          </Badge>
+                        </TableCell>
                         <TableCell>
                           {format(new Date(user.createdAt), "MMM d, yyyy")}
                         </TableCell>
@@ -453,14 +743,19 @@ export default function AdminPage() {
         {/* User Management */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Users</CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Manage all users in the system
-                </p>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border bg-muted/50">
+                  <Users className="h-5 w-5 text-muted-foreground" />
+                </div>
+                <div>
+                  <CardTitle>Users</CardTitle>
+                  <CardDescription className="mt-1">
+                    Manage all users in the system
+                  </CardDescription>
+                </div>
               </div>
-              <Button onClick={handleCreateUser}>
+              <Button onClick={handleCreateUser} size="sm">
                 <Plus className="h-4 w-4" />
                 Create User
               </Button>
@@ -469,7 +764,7 @@ export default function AdminPage() {
           <CardContent>
             {usersLoading ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
             ) : (
               <Table>
@@ -477,10 +772,11 @@ export default function AdminPage() {
                   <TableRow>
                     <TableHead>Name</TableHead>
                     <TableHead>Email</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Notes</TableHead>
-                    <TableHead>Tags</TableHead>
+                    <TableHead className="text-center">Role</TableHead>
+                    <TableHead className="text-center">Auth</TableHead>
+                    <TableHead className="text-center">Status</TableHead>
+                    <TableHead className="text-center">Notes</TableHead>
+                    <TableHead className="text-center">Tags</TableHead>
                     <TableHead>Created</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -490,22 +786,27 @@ export default function AdminPage() {
                     <TableRow key={user.id}>
                       <TableCell className="font-medium">{user.name || "-"}</TableCell>
                       <TableCell className="font-medium">{user.email}</TableCell>
-                      <TableCell>
+                      <TableCell className="text-center">
                         {user.isAdmin ? (
                           <Badge variant="default">Admin</Badge>
                         ) : (
                           <Badge variant="outline">User</Badge>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant={user.authMethod === "oidc" ? "secondary" : "outline"} className="font-normal">
+                          {user.authMethod === "oidc" ? "OIDC" : "Local"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-center">
                         {user.status === "pending" ? (
                           <Badge variant="secondary">Pending</Badge>
                         ) : (
                           <Badge variant="outline">Active</Badge>
                         )}
                       </TableCell>
-                      <TableCell>{user._count?.notes || 0}</TableCell>
-                      <TableCell>{user._count?.tags || 0}</TableCell>
+                      <TableCell className="text-center">{user._count?.notes || 0}</TableCell>
+                      <TableCell className="text-center">{user._count?.tags || 0}</TableCell>
                       <TableCell>
                         {format(new Date(user.createdAt), "MMM d, yyyy")}
                       </TableCell>

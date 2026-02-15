@@ -1,5 +1,14 @@
 import { api } from "@/lib/api/client";
-import type { AuthResponse, LoginCredentials, RegisterCredentials, ChangePasswordCredentials, UpdateProfileDto, User } from "./types";
+import type {
+  AuthResponse,
+  LoginCredentials,
+  RegisterCredentials,
+  ChangePasswordCredentials,
+  UpdateProfileDto,
+  User,
+  OidcConfig,
+  OidcExchangeResponse,
+} from "./types";
 
 export async function login(credentials: LoginCredentials): Promise<AuthResponse> {
   return api.post("api/auth/login", { json: credentials }).json<AuthResponse>();
@@ -33,4 +42,14 @@ export async function uploadProfileImage(imageFile: File): Promise<User> {
 
 export async function removeProfileImage(): Promise<User> {
   return api.delete("api/auth/profile/image").json<User>();
+}
+
+export async function getOidcConfig(): Promise<OidcConfig> {
+  return api.get("api/auth/oidc/config").json<OidcConfig>();
+}
+
+export async function exchangeOidcCode(code: string): Promise<OidcExchangeResponse> {
+  return api
+    .post("api/auth/oidc/exchange", { json: { code } })
+    .json<OidcExchangeResponse>();
 }

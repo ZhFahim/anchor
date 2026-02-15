@@ -39,3 +39,18 @@ export interface ChangePasswordCredentials {
 export interface UpdateProfileDto {
   name?: string | null;
 }
+
+export interface OidcConfig {
+  enabled: boolean;
+  providerName: string;
+  issuerUrl?: string;
+  clientId?: string;
+  disableInternalAuth: boolean;
+}
+
+export interface OidcExchangeResponse {
+  access_token: string;
+  refresh_token: string;
+  user: User;
+  redirectUrl: string;
+}

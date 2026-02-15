@@ -4,6 +4,7 @@ import {
   ConflictException,
   BadRequestException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
@@ -20,6 +21,8 @@ import * as path from 'path';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
@@ -80,7 +83,7 @@ export class AuthService {
 
     // Only return token if user is active (not pending)
     if (user.status === UserStatus.active) {
-      const tokens = await this.generateTokenPair(user.id, user.email);
+      const tokens = await this.createTokenPair(user.id, user.email);
       return {
         ...tokens,
         user,
@@ -114,6 +117,13 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    // OIDC users don't have passwords - they must use OIDC login
+    if (!user.password) {
+      throw new UnauthorizedException(
+        'This account uses OIDC authentication. Please use the OIDC login option.',
+      );
+    }
+
     const isPasswordValid = await bcrypt.compare(
       loginDto.password,
       user.password,
@@ -133,7 +143,7 @@ export class AuthService {
     // Remove password from user object
     const { password: _, ...userWithoutPassword } = user;
 
-    const tokens = await this.generateTokenPair(user.id, user.email);
+    const tokens = await this.createTokenPair(user.id, user.email);
     return {
       ...tokens,
       user: userWithoutPassword,
@@ -171,7 +181,7 @@ export class AuthService {
     });
 
     // Generate new token pair
-    const tokens = await this.generateTokenPair(
+    const tokens = await this.createTokenPair(
       storedToken.user.id,
       storedToken.user.email,
     );
@@ -187,6 +197,13 @@ export class AuthService {
 
     if (!user) {
       throw new ForbiddenException('User not found');
+    }
+
+    // OIDC users don't have passwords
+    if (!user.password) {
+      throw new BadRequestException(
+        'Password change is not available for OIDC-authenticated users. Please change your password through your identity provider.',
+      );
     }
 
     // Verify current password
@@ -316,10 +333,7 @@ export class AuthService {
         try {
           fs.unlinkSync(filePath);
         } catch (deleteError) {
-          console.error(
-            `Failed to delete newly uploaded file after DB error: ${filePath}`,
-            deleteError,
-          );
+          this.logger.error(`Failed to delete newly uploaded file after DB error: ${filePath}`);
         }
       }
       throw new BadRequestException(
@@ -383,10 +397,7 @@ export class AuthService {
         fs.unlinkSync(fullPath);
       }
     } catch (error) {
-      console.error(
-        `Failed to delete old profile image at ${profileImagePath}:`,
-        error,
-      );
+      this.logger.error(`Failed to delete old profile image at ${profileImagePath}`);
     }
   }
 
@@ -395,8 +406,11 @@ export class AuthService {
     return crypto.randomBytes(64).toString('hex');
   }
 
-  // Generate both access and refresh tokens
-  private async generateTokenPair(userId: string, email: string) {
+  /**
+   * Create access and refresh token pair for a user.
+   * Used by login, register, and OIDC flows.
+   */
+  async createTokenPair(userId: string, email: string) {
     const payload = { email, sub: userId };
 
     // Generate access token (short-lived)

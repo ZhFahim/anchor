@@ -7,7 +7,6 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { ShareNoteDto } from '../dto/share-note.dto';
 import { UpdateNoteSharePermissionDto } from '../dto/update-share-permission.dto';
 import { NoteAccessService } from './note-access.service';
-import { UsersService } from '../../users/users.service';
 import {
   SHARED_WITH_USER_SELECT,
   ERROR_MESSAGES,
@@ -18,7 +17,6 @@ export class NoteSharesService {
   constructor(
     private prisma: PrismaService,
     private noteAccessService: NoteAccessService,
-    private usersService: UsersService,
   ) { }
 
   async shareNote(ownerId: string, noteId: string, shareNoteDto: ShareNoteDto) {
@@ -179,23 +177,5 @@ export class NoteSharesService {
     });
 
     return { success: true };
-  }
-
-  async revokeAllShares(noteId: string, ownerId: string) {
-    await this.noteAccessService.verifyNoteOwnership(ownerId, noteId);
-
-    const result = await this.prisma.noteShare.updateMany({
-      where: {
-        noteId,
-        isDeleted: false,
-      },
-      data: { isDeleted: true },
-    });
-
-    return { count: result.count };
-  }
-
-  async getUsersForSharing(searchQuery: string, currentUserId: string) {
-    return this.usersService.searchUsers(searchQuery, currentUserId);
   }
 }

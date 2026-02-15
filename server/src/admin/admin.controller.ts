@@ -15,6 +15,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { UpdateRegistrationModeDto } from './dto/update-registration-mode.dto';
+import { UpdateOidcSettingsDto } from './dto/update-oidc-settings.dto';
 
 @Controller('api/admin')
 @UseGuards(AdminGuard)
@@ -80,5 +81,15 @@ export class AdminController {
   @Post('users/:id/reject')
   rejectUser(@Param('id') id: string) {
     return this.adminService.rejectUser(id);
+  }
+
+  @Get('settings/oidc')
+  getOidcSettings() {
+    return this.adminService.getOidcSettings();
+  }
+
+  @Patch('settings/oidc')
+  updateOidcSettings(@Body() dto: UpdateOidcSettingsDto) {
+    return this.adminService.updateOidcSettings(dto);
   }
 }

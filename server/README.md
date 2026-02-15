@@ -74,6 +74,11 @@ pnpm run test:e2e
 - `DELETE /api/auth/profile/image` - Remove profile image
 - `POST /api/auth/change-password` - Change password
 
+### OIDC Authentication
+- `GET /api/auth/oidc/config` - Get OIDC configuration (public)
+- `GET /api/auth/oidc/initiate` - Initiate OIDC login flow (redirects to provider)
+- `GET /api/auth/oidc/callback` - OIDC callback (handles provider redirect)
+
 ### Notes
 - `GET /api/notes` - Get all notes (supports `?search=term` and `?tagId=id`)
 - `GET /api/notes/trash` - Get all trashed notes
@@ -107,6 +112,8 @@ pnpm run test:e2e
 - `GET /api/admin/stats` - Get server statistics
 - `GET /api/admin/settings/registration` - Get registration settings
 - `PATCH /api/admin/settings/registration` - Update registration mode (disabled if locked by env)
+- `GET /api/admin/settings/oidc` - Get OIDC settings
+- `PATCH /api/admin/settings/oidc` - Update OIDC settings (disabled if locked by env)
 - `GET /api/admin/users` - Get all users (supports `?skip=n` and `?take=n`)
 - `GET /api/admin/users/pending` - Get pending users awaiting approval
 - `POST /api/admin/users` - Create a new user

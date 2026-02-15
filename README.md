@@ -18,6 +18,7 @@ Anchor focuses on speed, privacy, simplicity, and reliability across mobile and 
 ## Features
 
 - **Rich Text Editor** - Create and edit notes with powerful formatting (bold, italic, underline, headings, lists, checkboxes)
+- **Offline First** - All edits work offline with local database
 - **Note Sharing** - Share notes with other users (viewer or editor)
 - **Tags System** - Organize notes with custom tags and colors
 - **Note Backgrounds** - Customize notes with solid colors and patterns
@@ -25,7 +26,6 @@ Anchor focuses on speed, privacy, simplicity, and reliability across mobile and 
 - **Archive Notes** - Archive notes for later reference
 - **Search** - Search notes locally by title or content
 - **Trash** - Soft delete notes with recovery period
-- **Offline-First** - All edits work offline with local storage
 - **Automatic Sync** - Sync changes across devices when online
 - **Admin Panel** - User management, registration control, and system statistics
 
@@ -71,15 +71,22 @@ Anchor focuses on speed, privacy, simplicity, and reliability across mobile and 
    Add environment variables to the `environment` section. Most users can skip this step - defaults work out of the box.
 
    Available options:
-   | Variable | Default | Description |
-   |----------|---------|-------------|
-   | `JWT_SECRET` | (auto-generated) | Auth token secret (persisted in `/data`) |
-   | `PG_HOST` | (empty) | External Postgres host (leave empty for embedded) |
-   | `PG_PORT` | `5432` | Postgres port |
-   | `PG_USER` | `anchor` | Postgres username |
-   | `PG_PASSWORD` | `password` | Postgres password |
-   | `PG_DATABASE` | `anchor` | Database name |
-   | `USER_SIGNUP` | (not set) | Sign up mode: `disabled`, `enabled`, or `review`. If not set, admins can control it via the admin panel |
+   | Variable | Required | Default | Description |
+   |----------|----------|---------|-------------|
+   | `APP_URL` | No | `http://localhost:3000` | Base URL where Anchor is served |
+   | `JWT_SECRET` | No | (auto-generated) | Auth token secret |
+   | `PG_HOST` | No | (empty) | External Postgres host (leave empty for embedded) |
+   | `PG_PORT` | No | `5432` | Postgres port |
+   | `PG_USER` | No | `anchor` | Postgres username |
+   | `PG_PASSWORD` | No | `password` | Postgres password |
+   | `PG_DATABASE` | No | `anchor` | Database name |
+   | `USER_SIGNUP` | No | (not set) | Sign up mode: `disabled`, `enabled`, or `review`. If not set, admins can control it via the admin panel |
+   | `OIDC_ENABLED` | No | `false` | Enable OIDC authentication |
+   | `OIDC_PROVIDER_NAME` | No | `"OIDC Provider"` | Display name for the login button |
+   | `OIDC_ISSUER_URL` | When OIDC enabled | — | Base URL of your OIDC provider |
+   | `OIDC_CLIENT_ID` | When OIDC enabled | — | OIDC client ID |
+   | `OIDC_CLIENT_SECRET` | No | — | OIDC client secret. Omit for public client (PKCE) |
+   | `DISABLE_INTERNAL_AUTH` | No | `false` | Hide local login form when OIDC is enabled (OIDC only mode) |
 
 3. **Start the container:**
    ```bash
@@ -120,11 +127,65 @@ Download the Android mobile app.
    - **Architecture-specific APKs** - Smaller file sizes for specific CPU architectures
 
 
+## OIDC Authentication
+
+Anchor supports OpenID Connect (OIDC) authentication for simplified credential management and streamlined multi-user deployments.
+
+### Features
+
+- Support for standard OIDC providers (Pocket ID, Authelia, Authentik, Keycloak, etc.)
+- Configuration via environment variables or admin settings UI
+- OIDC only mode: disable local username/password login
+- Support for public OIDC clients (PKCE, no client secret required)
+- Auto create users on first login (if user signup is not disabled)
+- Auto link existing users by email
+
+### Configuration
+
+#### Mobile app and Public client
+
+If you want to use OIDC in mobile app, configure Anchor as a **Public client** (PKCE, no client secret) in your OIDC provider.
+
+#### Required Callback URL
+
+When configuring your OIDC provider, use the following callback/redirect URL:
+
+```
+{APP_URL}/api/auth/oidc/callback
+```
+
+For example, if your Anchor instance is at `https://notes.example.com`, the callback URL would be:
+```
+https://notes.example.com/api/auth/oidc/callback
+```
+
+#### Environment Variables
+
+Configure OIDC via environment variables in your `docker-compose.yml`. Pocket ID example:
+
+```yaml
+services:
+  anchor:
+    image: ghcr.io/zhfahim/anchor:latest
+    environment:
+      - OIDC_ENABLED=true
+      - OIDC_PROVIDER_NAME=Pocket ID
+      - OIDC_ISSUER_URL=https://pocketid.example.com
+      - OIDC_CLIENT_ID=your-client-id
+      - OIDC_CLIENT_SECRET=your-client-secret  # Optional for public clients
+      - DISABLE_INTERNAL_AUTH=false
+      - APP_URL=https://notes.example.com
+```
+
+#### Admin UI Configuration
+
+Alternatively, configure OIDC via the admin panel (Settings → OIDC Authentication Settings) if environment variables are not set.
+
+
 ## Roadmap
 
 Future planned features:
 
-- OIDC authentication
 - Media attachments (images, PDFs, recordings)
 - Real-time collaboration
 - Reminders and notifications
