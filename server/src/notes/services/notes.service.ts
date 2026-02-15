@@ -39,7 +39,14 @@ export class NotesService {
     return transformNote(note, userId);
   }
 
-  async findAll(userId: string, search?: string, tagId?: string) {
+  async findAll(
+    userId: string,
+    search?: string,
+    tagId?: string,
+    limit?: number,
+  ) {
+    const normalizedLimit = clampLimit(limit);
+
     const notes = await this.prisma.note.findMany({
       where: {
         AND: [
@@ -90,6 +97,7 @@ export class NotesService {
         ...NOTE_INCLUDE_SHARES,
       },
       orderBy: [{ isPinned: 'desc' }, { updatedAt: 'desc' }],
+      take: normalizedLimit,
     });
 
     return notes.map((note) => transformNote(note, userId));
@@ -458,3 +466,12 @@ export class NotesService {
     };
   }
 }
+
+const clampLimit = (limit?: number) => {
+  if (typeof limit !== 'number' || Number.isNaN(limit)) {
+    return undefined;
+  }
+
+  const normalized = Math.trunc(limit);
+  return Math.min(Math.max(normalized, 1), 200);
+};

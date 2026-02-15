@@ -5,9 +5,10 @@ import { NoteSharesService } from './services/note-shares.service';
 import { NoteSharesController } from './controllers/note-shares.controller';
 import { NoteAccessService } from './services/note-access.service';
 import { UsersModule } from '../users/users.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [UsersModule],
+  imports: [UsersModule, AuthModule],
   controllers: [NotesController, NoteSharesController],
   providers: [NotesService, NoteSharesService, NoteAccessService],
   exports: [NotesService, NoteSharesService, NoteAccessService],

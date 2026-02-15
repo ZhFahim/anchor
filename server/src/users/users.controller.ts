@@ -1,12 +1,12 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { UsersService } from './users.service';
 
 @Controller('api/users')
-@UseGuards(JwtAuthGuard)
+@UseGuards(AuthGuard)
 export class UsersController {
-  constructor(private usersService: UsersService) {}
+  constructor(private usersService: UsersService) { }
 
   @Get('search')
   searchUsers(

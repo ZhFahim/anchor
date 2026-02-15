@@ -17,6 +17,7 @@ import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
+import { generateApiToken } from './utils/generate-api-token';
 
 @Injectable()
 export class AuthService {
@@ -177,6 +178,68 @@ export class AuthService {
     );
 
     return tokens;
+  }
+
+  async getApiToken(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, status: true, apiToken: true },
+    });
+
+    if (!user) {
+      throw new ForbiddenException('User not found');
+    }
+
+    if (user.status !== UserStatus.active) {
+      throw new ForbiddenException('Account pending approval');
+    }
+
+    return { apiToken: user.apiToken };
+  }
+
+  async revokeApiToken(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, status: true },
+    });
+
+    if (!user) {
+      throw new ForbiddenException('User not found');
+    }
+
+    if (user.status !== UserStatus.active) {
+      throw new ForbiddenException('Account pending approval');
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { apiToken: null },
+    });
+
+    return { apiToken: null };
+  }
+
+  async regenerateApiToken(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, status: true },
+    });
+
+    if (!user) {
+      throw new ForbiddenException('User not found');
+    }
+
+    if (user.status !== UserStatus.active) {
+      throw new ForbiddenException('Account pending approval');
+    }
+
+    const apiToken = await this.generateUniqueApiToken();
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { apiToken },
+    });
+
+    return { apiToken };
   }
 
   async changePassword(userId: string, changePasswordDto: ChangePasswordDto) {
@@ -393,6 +456,25 @@ export class AuthService {
   // Generate a secure random refresh token
   private generateRefreshTokenString(): string {
     return crypto.randomBytes(64).toString('hex');
+  }
+
+  private async generateUniqueApiToken(): Promise<string> {
+    // Retry a few times to avoid edge-case collisions on the unique column.
+    for (let i = 0; i < 5; i++) {
+      const candidate = generateApiToken();
+      const existingUser = await this.prisma.user.findUnique({
+        where: { apiToken: candidate },
+        select: { id: true },
+      });
+
+      if (!existingUser) {
+        return candidate;
+      }
+    }
+
+    throw new BadRequestException(
+      'Failed to generate API token. Please try again.',
+    );
   }
 
   // Generate both access and refresh tokens

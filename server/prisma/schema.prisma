@@ -30,6 +30,7 @@ model User {
   password          String
   name              String
   profileImage      String?
+  apiToken          String?        @unique
   isAdmin           Boolean        @default(false)
   status            UserStatus     @default(active)
   createdAt         DateTime       @default(now())
