@@ -12,10 +12,10 @@ import { NoteSharesService } from '../services/note-shares.service';
 import { ShareNoteDto } from '../dto/share-note.dto';
 import { UpdateNoteSharePermissionDto } from '../dto/update-share-permission.dto';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
-import { NotesAuthGuard } from '../../auth/notes-auth.guard';
+import { AuthGuard } from '../../auth/auth.guard';
 
 @Controller('api/notes')
-@UseGuards(NotesAuthGuard)
+@UseGuards(AuthGuard)
 export class NoteSharesController {
   constructor(private readonly noteSharesService: NoteSharesService) { }
 

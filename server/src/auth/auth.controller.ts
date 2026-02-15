@@ -27,7 +27,7 @@ import type { User } from 'src/generated/prisma/client';
 
 @Controller('api/auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) { }
 
   @Get('registration-mode')
   getRegistrationMode() {
@@ -61,6 +61,12 @@ export class AuthController {
   @Get('api-token')
   getApiToken(@CurrentUser() user: User) {
     return this.authService.getApiToken(user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('api-token')
+  revokeApiToken(@CurrentUser() user: User) {
+    return this.authService.revokeApiToken(user.id);
   }
 
   @UseGuards(JwtAuthGuard)

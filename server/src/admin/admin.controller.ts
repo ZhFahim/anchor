@@ -19,7 +19,7 @@ import { UpdateRegistrationModeDto } from './dto/update-registration-mode.dto';
 @Controller('api/admin')
 @UseGuards(AdminGuard)
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(private readonly adminService: AdminService) { }
 
   @Get('stats')
   getStats() {

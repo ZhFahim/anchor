@@ -21,7 +21,7 @@ export interface RefreshTokenResponse {
 }
 
 export interface ApiTokenResponse {
-  apiToken: string;
+  apiToken: string | null;
 }
 
 export interface LoginCredentials {

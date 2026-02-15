@@ -5,6 +5,8 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './jwt.strategy';
+import { TokenResolverService } from './token-resolver.service';
+import { AuthGuard } from './auth.guard';
 import { SettingsModule } from '../settings/settings.module';
 
 @Module({
@@ -21,7 +23,7 @@ import { SettingsModule } from '../settings/settings.module';
     SettingsModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
-  exports: [AuthService, JwtModule],
+  providers: [AuthService, JwtStrategy, TokenResolverService, AuthGuard],
+  exports: [AuthService, JwtModule, TokenResolverService, AuthGuard],
 })
-export class AuthModule {}
+export class AuthModule { }

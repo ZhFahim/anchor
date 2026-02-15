@@ -194,17 +194,29 @@ export class AuthService {
       throw new ForbiddenException('Account pending approval');
     }
 
-    if (user.apiToken) {
-      return { apiToken: user.apiToken };
-    }
+    return { apiToken: user.apiToken };
+  }
 
-    const apiToken = await this.generateUniqueApiToken();
-    await this.prisma.user.update({
+  async revokeApiToken(userId: string) {
+    const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      data: { apiToken },
+      select: { id: true, status: true },
     });
 
-    return { apiToken };
+    if (!user) {
+      throw new ForbiddenException('User not found');
+    }
+
+    if (user.status !== UserStatus.active) {
+      throw new ForbiddenException('Account pending approval');
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { apiToken: null },
+    });
+
+    return { apiToken: null };
   }
 
   async regenerateApiToken(userId: string) {

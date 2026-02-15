@@ -15,12 +15,12 @@ import { UpdateNoteDto } from '../dto/update-note.dto';
 import { SyncNotesDto } from '../dto/sync-notes.dto';
 import { BulkActionDto } from '../dto/bulk-action.dto';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
-import { NotesAuthGuard } from '../../auth/notes-auth.guard';
+import { AuthGuard } from '../../auth/auth.guard';
 
 @Controller('api/notes')
-@UseGuards(NotesAuthGuard)
+@UseGuards(AuthGuard)
 export class NotesController {
-  constructor(private readonly notesService: NotesService) {}
+  constructor(private readonly notesService: NotesService) { }
 
   @Post()
   create(

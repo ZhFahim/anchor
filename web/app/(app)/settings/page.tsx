@@ -1,18 +1,19 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Lock, Loader2, Eye, EyeOff, User, Upload, X, ListChecks, Info, KeyRound, Copy, RotateCw } from "lucide-react";
+import { Lock, Loader2, Eye, EyeOff, User, Upload, X, ListChecks, Info, KeyRound, Copy, RotateCw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { changePassword, updateProfile, uploadProfileImage, removeProfileImage, getApiToken, regenerateApiToken } from "@/features/auth/api";
+import { changePassword, updateProfile, uploadProfileImage, removeProfileImage, getApiToken, regenerateApiToken, revokeApiToken } from "@/features/auth/api";
 import { useAuthStore } from "@/features/auth/store";
 import { usePreferencesStore } from "@/features/preferences";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import packageJson from "../../../package.json";
 
@@ -55,6 +56,8 @@ export default function SettingsPage() {
   const [isNewPasswordVisible, setIsNewPasswordVisible] = useState(false);
   const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
   const [isApiTokenVisible, setIsApiTokenVisible] = useState(false);
+  const [regenerateDialogOpen, setRegenerateDialogOpen] = useState(false);
+  const [revokeDialogOpen, setRevokeDialogOpen] = useState(false);
 
   const {
     data: apiTokenResponse,
@@ -283,10 +286,24 @@ export default function SettingsPage() {
     onSuccess: (response) => {
       queryClient.setQueryData(["api-token"], response);
       setIsApiTokenVisible(true);
+      setRegenerateDialogOpen(false);
       toast.success("API token regenerated successfully");
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to regenerate API token");
+    },
+  });
+
+  const revokeApiTokenMutation = useMutation({
+    mutationFn: revokeApiToken,
+    onSuccess: (response) => {
+      queryClient.setQueryData(["api-token"], response);
+      setIsApiTokenVisible(false);
+      setRevokeDialogOpen(false);
+      toast.success("API token revoked successfully");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to revoke API token");
     },
   });
 
@@ -326,7 +343,7 @@ export default function SettingsPage() {
 
       {/* Profile Section */}
       <Card className="border-0 shadow-xl bg-card/80 backdrop-blur-sm mb-6">
-        <CardHeader className="space-y-1 pb-4">
+        <CardHeader className="space-y-1">
           <CardTitle className="text-2xl">Profile</CardTitle>
           <CardDescription>
             Update your profile information and image
@@ -417,7 +434,7 @@ export default function SettingsPage() {
 
       {/* Editor Settings Section */}
       <Card className="border-0 shadow-xl bg-card/80 backdrop-blur-sm mb-6">
-        <CardHeader className="space-y-1 pb-4">
+        <CardHeader className="space-y-1">
           <CardTitle className="text-2xl">Editor</CardTitle>
           <CardDescription>
             Customize how the note editor behaves
@@ -447,7 +464,7 @@ export default function SettingsPage() {
 
       {/* API Token Section */}
       <Card className="border-0 shadow-xl bg-card/80 backdrop-blur-sm mb-6">
-        <CardHeader className="space-y-1 pb-4">
+        <CardHeader className="space-y-1">
           <CardTitle className="text-2xl">API Token</CardTitle>
           <CardDescription>
             Use this token to authenticate external clients such as Homarr
@@ -459,10 +476,35 @@ export default function SettingsPage() {
               <Loader2 className="h-4 w-4 animate-spin" />
               Loading API token...
             </div>
-          ) : apiTokenError || !apiTokenResponse?.apiToken ? (
+          ) : apiTokenError ? (
             <p className="text-sm text-destructive">
               Failed to load API token. Try refreshing the page.
             </p>
+          ) : apiTokenResponse?.apiToken === null || apiTokenResponse?.apiToken === undefined ? (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                No API token. Generate one to allow external services to access your notes.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => regenerateApiTokenMutation.mutate()}
+                disabled={regenerateApiTokenMutation.isPending}
+                className="flex items-center gap-2"
+              >
+                {regenerateApiTokenMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <KeyRound className="h-4 w-4" />
+                    Generate API Token
+                  </>
+                )}
+              </Button>
+            </div>
           ) : (
             <>
               <div className="space-y-2">
@@ -501,38 +543,65 @@ export default function SettingsPage() {
                   </button>
                 </div>
               </div>
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
                 <p className="text-xs text-muted-foreground">
-                  Regenerating will invalidate your current token immediately.
+                  Regenerating will invalidate your current token immediately. Revoking disables external access.
                 </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => regenerateApiTokenMutation.mutate()}
-                  disabled={regenerateApiTokenMutation.isPending}
-                  className="flex items-center gap-2"
-                >
-                  {regenerateApiTokenMutation.isPending ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Regenerating...
-                    </>
-                  ) : (
-                    <>
-                      <RotateCw className="h-4 w-4" />
-                      Regenerate
-                    </>
-                  )}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setRegenerateDialogOpen(true)}
+                    disabled={regenerateApiTokenMutation.isPending || revokeApiTokenMutation.isPending}
+                    className="flex items-center gap-2"
+                  >
+                    <RotateCw className="h-4 w-4" />
+                    Regenerate
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setRevokeDialogOpen(true)}
+                    disabled={regenerateApiTokenMutation.isPending || revokeApiTokenMutation.isPending}
+                    className="flex items-center gap-2 text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Revoke
+                  </Button>
+                </div>
               </div>
             </>
           )}
         </CardContent>
       </Card>
 
+      {/* Regenerate API Token Confirmation */}
+      <ConfirmationDialog
+        open={regenerateDialogOpen}
+        onOpenChange={setRegenerateDialogOpen}
+        onConfirm={() => regenerateApiTokenMutation.mutate()}
+        title="Regenerate API Token?"
+        description="This will invalidate your current token immediately. External services using it will stop working until you configure them with the new token."
+        confirmLabel="Regenerate"
+        variant="default"
+        isPending={regenerateApiTokenMutation.isPending}
+      />
+
+      {/* Revoke API Token Confirmation */}
+      <ConfirmationDialog
+        open={revokeDialogOpen}
+        onOpenChange={setRevokeDialogOpen}
+        onConfirm={() => revokeApiTokenMutation.mutate()}
+        title="Revoke API Token?"
+        description="This will disable external access to your notes. You can generate a new token anytime if you need to re-enable it."
+        confirmLabel="Revoke"
+        variant="destructive"
+        isPending={revokeApiTokenMutation.isPending}
+      />
+
       {/* Change Password Section */}
       <Card className="border-0 shadow-xl bg-card/80 backdrop-blur-sm mb-6">
-        <CardHeader className="space-y-1 pb-4">
+        <CardHeader className="space-y-1">
           <CardTitle className="text-2xl">Change Password</CardTitle>
           <CardDescription>
             Update your password to keep your account secure

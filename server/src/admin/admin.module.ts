@@ -9,4 +9,4 @@ import { SettingsModule } from '../settings/settings.module';
   controllers: [AdminController],
   providers: [AdminService],
 })
-export class AdminModule {}
+export class AdminModule { }
