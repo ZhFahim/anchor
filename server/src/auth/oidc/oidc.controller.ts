@@ -107,4 +107,15 @@ export class OidcController {
     }
     return this.oidcService.exchangeCode(code);
   }
+
+  /**
+   * Exchange mobile IdP access token for app tokens
+   */
+  @Post('exchange/mobile')
+  async exchangeMobile(@Body('access_token') accessToken: string | undefined) {
+    if (!accessToken || typeof accessToken !== 'string') {
+      throw new BadRequestException('Missing or invalid access_token');
+    }
+    return this.oidcService.exchangeMobileToken(accessToken);
+  }
 }

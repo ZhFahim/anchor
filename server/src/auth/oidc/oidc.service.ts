@@ -180,6 +180,49 @@ export class OidcService {
   }
 
   /**
+   * Exchange mobile IdP access token for app tokens.
+   */
+  async exchangeMobileToken(accessToken: string): Promise<OidcAuthResult> {
+    const userinfo = await this.oidcClientService.fetchUserInfo(accessToken);
+    if (!userinfo) {
+      throw new UnauthorizedException(
+        'Invalid or expired OIDC token. Please sign in again.',
+      );
+    }
+
+    const emptyTokenResponse = {
+      claims: () => ({}),
+    } as unknown as TokenEndpointResponse;
+    const claims = this.extractUserClaims(emptyTokenResponse, userinfo);
+
+    const user = await this.oidcUserService.findOrCreateUser(claims);
+
+    if (user.status === UserStatus.pending) {
+      throw new UnauthorizedException(
+        'Account pending approval. Please wait for an administrator to approve your account.',
+      );
+    }
+
+    const tokens = await this.authService.createTokenPair(user.id, user.email);
+
+    return {
+      access_token: tokens.access_token,
+      refresh_token: tokens.refresh_token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        profileImage: user.profileImage,
+        isAdmin: user.isAdmin,
+        status: user.status,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      },
+      redirectUrl: '/',
+    };
+  }
+
+  /**
    * Extract user claims from OIDC token response and userinfo.
    */
   private extractUserClaims(

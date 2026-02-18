@@ -54,6 +54,19 @@ class AuthController extends _$AuthController {
     });
   }
 
+  Future<void> loginWithOidc() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      final user = await ref.read(authRepositoryProvider).loginWithOidc();
+      if (user == null) {
+        // User cancelled the OIDC flow; stay on login (state = AsyncData(null))
+        return null;
+      }
+      ref.read(activeUserIdProvider.notifier).set(user.id);
+      return user;
+    });
+  }
+
   Future<void> logout() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {

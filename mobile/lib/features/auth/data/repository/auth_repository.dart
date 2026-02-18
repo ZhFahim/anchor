@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter_appauth/flutter_appauth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../../constants/auth_constants.dart';
 import '../../domain/user.dart';
 import '../remote/auth_service.dart';
 
@@ -139,6 +141,61 @@ class AuthRepository {
   Future<User> getProfile() async {
     final data = await _authService.getProfile();
     final user = User.fromJson(data);
+    await _saveUser(user);
+    return user;
+  }
+
+  /// Sign in with OIDC. Returns null if user cancelled.
+  Future<User?> loginWithOidc() async {
+    final config = await _authService.getOidcConfig();
+    if (!config.enabled ||
+        config.issuerUrl == null ||
+        config.clientId == null ||
+        config.issuerUrl!.isEmpty ||
+        config.clientId!.isEmpty) {
+      throw Exception('OIDC is not enabled or not configured');
+    }
+
+    final appAuth = FlutterAppAuth();
+    final request = AuthorizationTokenRequest(
+      config.clientId!,
+      oidcRedirectUri,
+      issuer: config.issuerUrl,
+      scopes: ['openid', 'email', 'profile'],
+    );
+
+    AuthorizationTokenResponse? result;
+    try {
+      result = await appAuth.authorizeAndExchangeCode(request);
+    } on FlutterAppAuthUserCancelledException {
+      return null;
+    } on FlutterAppAuthPlatformException catch (e) {
+      final d = e.platformErrorDetails;
+      final msg = (d.errorDescription ?? e.message ?? d.error ?? e.code)
+          .toString()
+          .trim();
+      throw Exception(msg.isEmpty ? 'Sign-in failed' : msg);
+    } catch (e) {
+      final s = e
+          .toString()
+          .replaceFirst(RegExp(r'^Exception:?\s*'), '')
+          .trim();
+      final line = s.split('\n').first.trim();
+      throw Exception(line.isNotEmpty ? line : 'Sign-in failed');
+    }
+    final idpAccessToken = result.accessToken;
+    if (idpAccessToken == null || idpAccessToken.isEmpty) {
+      return null;
+    }
+
+    final data = await _authService.exchangeOidcMobileToken(idpAccessToken);
+    final token = data['access_token'] as String;
+    final refreshToken = data['refresh_token'] as String;
+    final userJson = data['user'] as Map<String, dynamic>;
+    final user = User.fromJson(userJson);
+
+    await _storage.write(key: 'access_token', value: token);
+    await _storage.write(key: 'refresh_token', value: refreshToken);
     await _saveUser(user);
     return user;
   }

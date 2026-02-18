@@ -13,26 +13,27 @@ export class OidcConfigService {
   ) { }
 
   /**
+   * Check if OIDC is locked by environment variables.
+   */
+  private isLockedByEnv(): boolean {
+    const oidcEnabled = this.configService.get<string>('OIDC_ENABLED');
+    const issuerUrl = this.configService.get<string>('OIDC_ISSUER_URL');
+    const clientId = this.configService.get<string>('OIDC_CLIENT_ID');
+    return oidcEnabled !== undefined && !!issuerUrl && !!clientId;
+  }
+
+  /**
    * Get OIDC configuration.
-   * Priority: env vars > DB settings > defaults
    */
   async getConfig(): Promise<OidcConfig> {
-    // Fetch all OIDC settings from database in a single query
-    const dbSettings = await this.getDbSettings([
-      'oidc_enabled',
-      'oidc_provider_name',
-      'oidc_issuer_url',
-      'oidc_client_id',
-      'oidc_client_secret',
-      'oidc_disable_internal_auth',
-    ]);
-
-    // Check enabled: env var > DB > default false
-    let enabled = this.getBooleanEnv('OIDC_ENABLED', undefined);
-    if (enabled === undefined) {
-      const dbEnabled = dbSettings.get('oidc_enabled');
-      enabled = dbEnabled ? dbEnabled.toLowerCase() === 'true' : false;
+    if (this.isLockedByEnv()) {
+      return this.getConfigFromEnv();
     }
+    return this.getConfigFromDb();
+  }
+
+  private getConfigFromEnv(): OidcConfig {
+    const enabled = this.getBooleanEnv('OIDC_ENABLED', false) ?? false;
 
     if (!enabled) {
       return {
@@ -42,46 +43,60 @@ export class OidcConfigService {
       };
     }
 
-    // Get from env vars first, fallback to DB, then defaults
-    const issuerUrl =
-      this.configService.get<string>('OIDC_ISSUER_URL') ||
-      dbSettings.get('oidc_issuer_url') ||
-      undefined;
-
-    const clientId =
-      this.configService.get<string>('OIDC_CLIENT_ID') ||
-      dbSettings.get('oidc_client_id') ||
-      undefined;
-
-    const clientSecret =
-      this.configService.get<string>('OIDC_CLIENT_SECRET') !== undefined
-        ? this.configService.get<string>('OIDC_CLIENT_SECRET')
-        : dbSettings.get('oidc_client_secret') || undefined;
-
+    const issuerUrl = this.configService.get<string>('OIDC_ISSUER_URL')!;
+    const clientId = this.configService.get<string>('OIDC_CLIENT_ID')!;
+    const clientSecret = this.configService.get<string>('OIDC_CLIENT_SECRET');
     const providerName =
-      this.configService.get<string>('OIDC_PROVIDER_NAME') ||
-      dbSettings.get('oidc_provider_name') ||
-      'OIDC Provider';
+      this.configService.get<string>('OIDC_PROVIDER_NAME') || 'OIDC Provider';
+    const disableInternalAuth =
+      this.getBooleanEnv('DISABLE_INTERNAL_AUTH', false) ?? false;
 
-    let disableInternalAuth = this.getBooleanEnv(
-      'DISABLE_INTERNAL_AUTH',
-      undefined,
-    );
-    if (disableInternalAuth === undefined) {
-      const dbDisableInternalAuth = dbSettings.get(
-        'oidc_disable_internal_auth',
-      );
-      disableInternalAuth = dbDisableInternalAuth
-        ? dbDisableInternalAuth.toLowerCase() === 'true'
-        : false;
+    return {
+      enabled: true,
+      providerName,
+      issuerUrl,
+      clientId,
+      clientSecret,
+      disableInternalAuth,
+    };
+  }
+
+  private async getConfigFromDb(): Promise<OidcConfig> {
+    const dbSettings = await this.getDbSettings([
+      'oidc_enabled',
+      'oidc_provider_name',
+      'oidc_issuer_url',
+      'oidc_client_id',
+      'oidc_client_secret',
+      'oidc_disable_internal_auth',
+    ]);
+
+    const enabled =
+      dbSettings.get('oidc_enabled')?.toLowerCase() === 'true' || false;
+
+    if (!enabled) {
+      return {
+        enabled: false,
+        providerName: 'OIDC Provider',
+        disableInternalAuth: false,
+      };
     }
 
-    // Validate required fields
+    const issuerUrl = dbSettings.get('oidc_issuer_url');
+    const clientId = dbSettings.get('oidc_client_id');
+
     if (!issuerUrl || !clientId) {
       this.logger.warn(
-        'OIDC is enabled but missing required configuration (issuer URL or client ID)',
+        'OIDC is enabled in database but missing issuer URL or client ID',
       );
     }
+
+    const providerName =
+      dbSettings.get('oidc_provider_name') || 'OIDC Provider';
+    const clientSecret = dbSettings.get('oidc_client_secret');
+    const disableInternalAuth =
+      dbSettings.get('oidc_disable_internal_auth')?.toLowerCase() === 'true' ||
+      false;
 
     return {
       enabled: true,
@@ -143,9 +158,7 @@ export class OidcConfigService {
     source: 'env' | 'database' | 'default';
   }> {
     const config = await this.getConfig();
-    const hasEnvVars =
-      !!this.configService.get<string>('OIDC_ISSUER_URL') ||
-      !!this.configService.get<string>('OIDC_CLIENT_ID');
+    const locked = this.isLockedByEnv();
 
     return {
       enabled: config.enabled,
@@ -154,13 +167,13 @@ export class OidcConfigService {
       clientId: config.clientId,
       hasClientSecret: !!config.clientSecret,
       disableInternalAuth: config.disableInternalAuth,
-      isLocked: hasEnvVars,
-      source: hasEnvVars ? 'env' : 'database',
+      isLocked: locked,
+      source: locked ? 'env' : 'database',
     };
   }
 
   /**
-   * Set OIDC settings (only if not locked by env)
+   * Set OIDC settings (only if not locked by env mode)
    */
   async setOidcSettings(settings: {
     enabled?: boolean;
@@ -170,13 +183,9 @@ export class OidcConfigService {
     clientSecret?: string;
     disableInternalAuth?: boolean;
   }): Promise<void> {
-    // Check if locked by env vars
-    if (
-      this.configService.get<string>('OIDC_ISSUER_URL') ||
-      this.configService.get<string>('OIDC_CLIENT_ID')
-    ) {
+    if (this.isLockedByEnv()) {
       throw new Error(
-        'OIDC settings are locked by environment variables. Remove OIDC_ISSUER_URL and OIDC_CLIENT_ID to manage from UI.',
+        'OIDC settings are locked by environment variables. Remove OIDC_ENABLED, OIDC_ISSUER_URL and OIDC_CLIENT_ID to manage from UI.',
       );
     }
 

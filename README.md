@@ -28,6 +28,7 @@ Anchor focuses on speed, privacy, simplicity, and reliability across mobile and 
 - **Trash** - Soft delete notes with recovery period
 - **Automatic Sync** - Sync changes across devices when online
 - **Admin Panel** - User management, registration control, and system statistics
+- **OIDC Authentication** - Sign in with OpenID Connect providers (Pocket ID, Authelia, Keycloak, etc.)
 
 
 ## Screenshots
@@ -81,12 +82,12 @@ Anchor focuses on speed, privacy, simplicity, and reliability across mobile and 
    | `PG_PASSWORD` | No | `password` | Postgres password |
    | `PG_DATABASE` | No | `anchor` | Database name |
    | `USER_SIGNUP` | No | (not set) | Sign up mode: `disabled`, `enabled`, or `review`. If not set, admins can control it via the admin panel |
-   | `OIDC_ENABLED` | No | `false` | Enable OIDC authentication |
+   | `OIDC_ENABLED` | No | — | Enable OIDC authentication |
    | `OIDC_PROVIDER_NAME` | No | `"OIDC Provider"` | Display name for the login button |
    | `OIDC_ISSUER_URL` | When OIDC enabled | — | Base URL of your OIDC provider |
    | `OIDC_CLIENT_ID` | When OIDC enabled | — | OIDC client ID |
    | `OIDC_CLIENT_SECRET` | No | — | OIDC client secret. Omit for public client (PKCE) |
-   | `DISABLE_INTERNAL_AUTH` | No | `false` | Hide local login form when OIDC is enabled (OIDC only mode) |
+   | `DISABLE_INTERNAL_AUTH` | No | `false` | Hide local login form when OIDC is enabled (OIDC-only mode) |
 
 3. **Start the container:**
    ```bash
@@ -144,11 +145,15 @@ Anchor supports OpenID Connect (OIDC) authentication for simplified credential m
 
 #### Mobile app and Public client
 
-If you want to use OIDC in mobile app, configure Anchor as a **Public client** (PKCE, no client secret) in your OIDC provider.
+If you want to use OIDC in the mobile app, configure Anchor as a **Public client** (PKCE, no client secret) in your OIDC provider. Add this redirect URI in your OIDC provider:
 
-#### Required Callback URL
+```
+anchor://oidc/callback
+```
 
-When configuring your OIDC provider, use the following callback/redirect URL:
+#### Required Callback URL (Web)
+
+When configuring your OIDC provider for web login, add this callback/redirect URL:
 
 ```
 {APP_URL}/api/auth/oidc/callback
@@ -179,7 +184,7 @@ services:
 
 #### Admin UI Configuration
 
-Alternatively, configure OIDC via the admin panel (Settings → OIDC Authentication Settings) if environment variables are not set.
+Alternatively, configure OIDC via the admin panel (Settings → OIDC Authentication) when the three env vars are not all set.
 
 
 ## Roadmap
@@ -214,6 +219,13 @@ Future planned features:
    git commit -m "Describe your change"
    ```
 6. Push and create a Pull Request
+
+
+## Support
+
+If you find Anchor useful, consider supporting its development:
+
+[![Buy me a coffee](https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=☕&slug=zahid&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff)](https://www.buymeacoffee.com/zahid)
 
 
 ## License

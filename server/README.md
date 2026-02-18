@@ -78,6 +78,8 @@ pnpm run test:e2e
 - `GET /api/auth/oidc/config` - Get OIDC configuration (public)
 - `GET /api/auth/oidc/initiate` - Initiate OIDC login flow (redirects to provider)
 - `GET /api/auth/oidc/callback` - OIDC callback (handles provider redirect)
+- `POST /api/auth/oidc/exchange` - Exchange one-time code for tokens (web)
+- `POST /api/auth/oidc/exchange/mobile` - Exchange IdP access token for app tokens (mobile)
 
 ### Notes
 - `GET /api/notes` - Get all notes (supports `?search=term` and `?tagId=id`)

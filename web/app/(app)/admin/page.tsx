@@ -501,7 +501,7 @@ export default function AdminPage() {
                   <div className="flex items-start gap-2 p-3 border rounded-lg bg-muted/50">
                     <Lock className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
                     <p className="text-sm text-muted-foreground">
-                      Controlled by <code className="px-1 py-0.5 bg-background rounded text-xs font-mono">OIDC_ISSUER_URL</code> and <code className="px-1 py-0.5 bg-background rounded text-xs font-mono">OIDC_CLIENT_ID</code> env variables. Remove them to manage from UI.
+                      Controlled by <code className="px-1 py-0.5 bg-background rounded text-xs font-mono">OIDC_ENABLED</code>, <code className="px-1 py-0.5 bg-background rounded text-xs font-mono">OIDC_ISSUER_URL</code> and <code className="px-1 py-0.5 bg-background rounded text-xs font-mono">OIDC_CLIENT_ID</code> env variables. Remove them to manage from UI.
                     </p>
                   </div>
                 )}
@@ -593,7 +593,7 @@ export default function AdminPage() {
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          The Anchor mobile app requires a public client (no client secret). If users sign in from the app using OIDC, leave this empty or clear the secret and set Anchor as a public client in your OIDC provider.
+                          The Anchor mobile app requires a public client (no client secret). If users sign in from the app using OIDC, leave this empty and set Anchor as a public client in your OIDC provider.
                         </p>
                       </div>
                     </div>

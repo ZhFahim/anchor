@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:anchor/core/network/server_config_provider.dart';
 import 'package:anchor/core/widgets/app_snackbar.dart';
+import 'package:anchor/features/auth/presentation/providers/oidc_config_provider.dart';
 import 'auth_controller.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -35,19 +36,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  Future<void> _loginWithOidc() async {
+    await ref.read(authControllerProvider.notifier).loginWithOidc();
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(authControllerProvider);
+    final oidcConfigAsync = ref.watch(oidcConfigProvider);
     final isLoading = state.isLoading;
 
     ref.listen(authControllerProvider, (previous, next) {
-      if (next.hasError) {
+      if (next.hasError && previous?.isLoading == true) {
         AppSnackbar.showError(context, message: next.error.toString());
       }
-      // Navigation is handled by the router redirect logic
     });
 
     final serverUrl = ref.watch(serverUrlProvider);
+    final oidcConfig = oidcConfigAsync.hasValue ? oidcConfigAsync.value : null;
+    final oidcConfigLoading = oidcConfigAsync.isLoading;
+    final showLocalLogin =
+        oidcConfig == null || !oidcConfig.disableInternalAuth;
 
     return Scaffold(
       body: Center(
@@ -84,96 +93,149 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 40),
-                  TextFormField(
-                    controller: _emailController,
-                    autofillHints: const [AutofillHints.email],
-                    textInputAction: TextInputAction.next,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: InputDecoration(
-                      labelText: 'Email',
-                      prefixIcon: const Icon(LucideIcons.mail),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
+                  // OIDC Login button
+                  if (oidcConfigLoading)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(24),
+                        child: SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
+                    )
+                  else if (oidcConfig?.enabled == true) ...[
+                    FilledButton.icon(
+                      onPressed: isLoading ? null : _loginWithOidc,
+                      icon: const Icon(LucideIcons.logIn, size: 20),
+                      label: Text('Login with ${oidcConfig!.providerName}'),
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
                       ),
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter email';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _passwordController,
-                    onChanged: (_) => setState(() {}),
-                    autofillHints: const [AutofillHints.password],
-                    textInputAction: TextInputAction.done,
-                    onFieldSubmitted: (_) => _login(),
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      prefixIcon: const Icon(LucideIcons.lock),
-                      suffixIcon: _passwordController.text.isEmpty
-                          ? null
-                          : IconButton(
-                              icon: Icon(
-                                _isPasswordVisible
-                                    ? LucideIcons.eyeOff
-                                    : LucideIcons.eye,
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurface
-                                    .withValues(alpha: 0.4),
+                    if (showLocalLogin) ...[
+                      const SizedBox(height: 16),
+                      const _OrDivider(),
+                      const SizedBox(height: 16),
+                    ],
+                  ],
+                  if (showLocalLogin) ...[
+                    TextFormField(
+                      controller: _emailController,
+                      autofillHints: const [AutofillHints.email],
+                      textInputAction: TextInputAction.next,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: InputDecoration(
+                        labelText: 'Email',
+                        prefixIcon: const Icon(LucideIcons.mail),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter email';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _passwordController,
+                      onChanged: (_) => setState(() {}),
+                      autofillHints: const [AutofillHints.password],
+                      textInputAction: TextInputAction.done,
+                      onFieldSubmitted: (_) => _login(),
+                      decoration: InputDecoration(
+                        labelText: 'Password',
+                        prefixIcon: const Icon(LucideIcons.lock),
+                        suffixIcon: _passwordController.text.isEmpty
+                            ? null
+                            : IconButton(
+                                icon: Icon(
+                                  _isPasswordVisible
+                                      ? LucideIcons.eyeOff
+                                      : LucideIcons.eye,
+                                  color: Theme.of(context).colorScheme.onSurface
+                                      .withValues(alpha: 0.4),
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _isPasswordVisible = !_isPasswordVisible;
+                                  });
+                                },
                               ),
-                              onPressed: () {
-                                setState(() {
-                                  _isPasswordVisible = !_isPasswordVisible;
-                                });
-                              },
-                            ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                       ),
+                      obscureText: !_isPasswordVisible,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter password';
+                        }
+                        return null;
+                      },
                     ),
-                    obscureText: !_isPasswordVisible,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter password';
-                      }
-                      return null;
-                    },
-                  ),
-                const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: isLoading ? null : _login,
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                    const SizedBox(height: 24),
+                    FilledButton(
+                      onPressed: isLoading ? null : _login,
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text('Sign In'),
                     ),
-                  ),
-                  child: isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text('Sign In'),
-                ),
-                const SizedBox(height: 16),
-                TextButton(
-                  onPressed: () => context.push(AppRoutes.register),
-                  child: const Text('Create an account'),
-                ),
-              ],
+                    const SizedBox(height: 16),
+                    TextButton(
+                      onPressed: () => context.push(AppRoutes.register),
+                      child: const Text('Create an account'),
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
         ),
-        ),
       ),
+    );
+  }
+}
+
+class _OrDivider extends StatelessWidget {
+  const _OrDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        const Expanded(child: Divider()),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            'Or continue with',
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: Theme.of(context).hintColor),
+          ),
+        ),
+        const Expanded(child: Divider()),
+      ],
     );
   }
 }

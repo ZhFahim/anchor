@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../core/network/dio_provider.dart';
+import '../../domain/oidc_config.dart';
 
 part 'auth_service.g.dart';
 
@@ -104,6 +105,29 @@ class AuthService {
       return response.data;
     } on DioException catch (e) {
       throw e.response?.data['message'] ?? 'Failed to get profile';
+    }
+  }
+
+  Future<OidcConfig> getOidcConfig() async {
+    try {
+      final response = await _dio.get('/api/auth/oidc/config');
+      return OidcConfig.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw e.response?.data['message'] ?? 'Failed to load sign-in options';
+    }
+  }
+
+  Future<Map<String, dynamic>> exchangeOidcMobileToken(
+    String accessToken,
+  ) async {
+    try {
+      final response = await _dio.post(
+        '/api/auth/oidc/exchange/mobile',
+        data: {'access_token': accessToken},
+      );
+      return response.data;
+    } on DioException catch (e) {
+      throw e.response?.data['message'] ?? 'Failed to complete sign-in';
     }
   }
 }
