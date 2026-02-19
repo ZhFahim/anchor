@@ -76,6 +76,10 @@ class AuthRepository {
   }
 
   Future<void> logout() async {
+    final refreshToken = await _storage.read(key: 'refresh_token');
+    if (refreshToken != null) {
+      await _authService.revokeRefreshToken(refreshToken);
+    }
     await _storage.delete(key: 'access_token');
     await _storage.delete(key: 'refresh_token');
     await _storage.delete(key: 'user_id');

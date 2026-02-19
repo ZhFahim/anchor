@@ -20,6 +20,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { generateApiToken } from './utils/generate-api-token';
 
+const REFRESH_TOKEN_VALIDITY_DAYS = 90;
+
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
@@ -188,6 +190,17 @@ export class AuthService {
     );
 
     return tokens;
+  }
+
+  async revokeRefreshToken(refreshToken?: string): Promise<void> {
+    if (!refreshToken) return;
+    try {
+      await this.prisma.refreshToken.deleteMany({
+        where: { token: refreshToken },
+      });
+    } catch {
+      // Silently ignore - don't leak whether token existed
+    }
   }
 
   async getApiToken(userId: string) {
@@ -501,7 +514,7 @@ export class AuthService {
     // Generate refresh token (long-lived)
     const refreshTokenString = this.generateRefreshTokenString();
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 30); // 30 days
+    expiresAt.setDate(expiresAt.getDate() + REFRESH_TOKEN_VALIDITY_DAYS);
 
     // Store refresh token in database
     await this.prisma.refreshToken.create({

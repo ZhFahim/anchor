@@ -118,6 +118,16 @@ class AuthService {
     }
   }
 
+  /// Revoke refresh token on server.
+  Future<void> revokeRefreshToken(String? refreshToken) async {
+    if (refreshToken == null || refreshToken.isEmpty) return;
+    try {
+      await _dio.post('/api/auth/logout', data: {'refreshToken': refreshToken});
+    } on Exception {
+      // Ignore - ensure local logout always completes
+    }
+  }
+
   Future<Map<String, dynamic>> exchangeOidcMobileToken(
     String accessToken,
   ) async {

@@ -3,8 +3,8 @@
 import { useCallback, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useAuthStore, hasAccessToken } from "../store";
-import { login as loginApi, register as registerApi, getMe } from "../api";
+import { useAuthStore, hasAccessToken, getRefreshToken } from "../store";
+import { login as loginApi, register as registerApi, getMe, revokeRefreshToken } from "../api";
 import type { LoginCredentials, RegisterCredentials } from "../types";
 import { toast } from "sonner";
 
@@ -83,7 +83,12 @@ export function useAuth() {
     },
   });
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    try {
+      await revokeRefreshToken(getRefreshToken());
+    } catch {
+      // Ignore - ensure local logout always completes
+    }
     clearAuth();
     router.push("/login");
   }, [clearAuth, router]);

@@ -66,3 +66,8 @@ export async function exchangeOidcCode(code: string): Promise<OidcExchangeRespon
     .post("api/auth/oidc/exchange", { json: { code } })
     .json<OidcExchangeResponse>();
 }
+
+export async function revokeRefreshToken(refreshToken?: string | null): Promise<void> {
+  if (!refreshToken) return;
+  return api.post("api/auth/logout", { json: { refreshToken } }).json<void>();
+}

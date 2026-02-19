@@ -68,6 +68,7 @@ pnpm run test:e2e
 - `POST /api/auth/register` - Register a new user
 - `POST /api/auth/login` - Login
 - `POST /api/auth/refresh` - Refresh access token using refresh token
+- `POST /api/auth/logout` - Revoke refresh token
 - `GET /api/auth/me` - Get current user
 - `PATCH /api/auth/profile` - Update profile name
 - `POST /api/auth/profile/image` - Upload profile image
