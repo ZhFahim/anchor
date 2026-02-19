@@ -112,8 +112,9 @@ class AuthService {
     try {
       final response = await _dio.get('/api/auth/oidc/config');
       return OidcConfig.fromJson(response.data as Map<String, dynamic>);
-    } on DioException catch (e) {
-      throw e.response?.data['message'] ?? 'Failed to load sign-in options';
+    } on DioException catch (_) {
+      // Server may not have OIDC (old version)
+      return const OidcConfig();
     }
   }
 
