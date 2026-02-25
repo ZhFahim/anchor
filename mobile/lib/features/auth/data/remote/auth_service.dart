@@ -118,6 +118,16 @@ class AuthService {
     }
   }
 
+  Future<String> getRegistrationMode() async {
+    try {
+      final response = await _dio.get('/api/auth/registration-mode');
+      final data = response.data as Map<String, dynamic>;
+      return data['mode'] as String? ?? 'enabled';
+    } on DioException catch (_) {
+      return 'enabled';
+    }
+  }
+
   /// Revoke refresh token on server.
   Future<void> revokeRefreshToken(String? refreshToken) async {
     if (refreshToken == null || refreshToken.isEmpty) return;

@@ -6,6 +6,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:anchor/core/network/server_config_provider.dart';
 import 'package:anchor/core/widgets/app_snackbar.dart';
 import 'package:anchor/features/auth/presentation/providers/oidc_config_provider.dart';
+import 'package:anchor/features/auth/presentation/providers/registration_mode_provider.dart';
 import 'auth_controller.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -44,6 +45,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(authControllerProvider);
     final oidcConfigAsync = ref.watch(oidcConfigProvider);
+    final registrationModeAsync = ref.watch(registrationModeProvider);
     final isLoading = state.isLoading;
 
     ref.listen(authControllerProvider, (previous, next) {
@@ -57,6 +59,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final oidcConfigLoading = oidcConfigAsync.isLoading;
     final showLocalLogin =
         oidcConfig == null || !oidcConfig.disableInternalAuth;
+    final signupDisabled =
+        registrationModeAsync.hasValue &&
+        registrationModeAsync.value == 'disabled';
 
     return Scaffold(
       body: Center(
@@ -201,11 +206,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             )
                           : const Text('Sign In'),
                     ),
-                    const SizedBox(height: 16),
-                    TextButton(
-                      onPressed: () => context.push(AppRoutes.register),
-                      child: const Text('Create an account'),
-                    ),
+                    if (!signupDisabled) ...[
+                      const SizedBox(height: 16),
+                      TextButton(
+                        onPressed: () => context.push(AppRoutes.register),
+                        child: const Text('Create an account'),
+                      ),
+                    ],
                   ],
                 ],
               ),
