@@ -1,14 +1,8 @@
-import {
-  Injectable,
-  Logger,
-  ConflictException,
-  ForbiddenException,
-} from '@nestjs/common';
+import { Injectable, Logger, ConflictException } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { SettingsService } from '../../settings/settings.service';
 import { UserStatus } from '../../generated/prisma/enums';
 import type { OidcUserClaims } from './oidc.types';
 import {
@@ -22,17 +16,13 @@ import {
 export class OidcUserService {
   private readonly logger = new Logger(OidcUserService.name);
 
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly settingsService: SettingsService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   /**
    * Find or create user based on OIDC claims.
    * Automatically links accounts when email matches (no existing OIDC link).
    */
   async findOrCreateUser(claims: OidcUserClaims) {
-    const registrationMode = await this.settingsService.getRegistrationMode();
     try {
       return await this.prisma.$transaction(
         async (tx) => {
@@ -42,9 +32,9 @@ export class OidcUserService {
           });
           if (existingBySubject) {
             const updateData: { name?: string; profileImage?: string | null } =
-              {
-                name: claims.name,
-              };
+            {
+              name: claims.name,
+            };
             const profileImage = await this.resolveProfileImage(
               claims.picture,
               existingBySubject.id,
@@ -106,14 +96,7 @@ export class OidcUserService {
             });
           }
 
-          if (registrationMode === 'disabled') {
-            throw new ForbiddenException('Registration is disabled');
-          }
-          const status =
-            registrationMode === 'review'
-              ? UserStatus.pending
-              : UserStatus.active;
-          return this.createUserInTx(tx, claims, status);
+          return this.createUserInTx(tx, claims, UserStatus.active);
         },
         { timeout: 10000 },
       );
