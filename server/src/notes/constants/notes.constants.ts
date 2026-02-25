@@ -26,6 +26,19 @@ export const NOTE_INCLUDE_TAGS = {
   },
 } as const;
 
+// Include attachment count and image previews for notes
+export const NOTE_INCLUDE_ATTACHMENT_COUNT = {
+  _count: {
+    select: { attachments: true },
+  },
+  attachments: {
+    where: { type: 'image' },
+    select: { id: true },
+    orderBy: { position: 'asc' as const },
+    take: 4,
+  },
+} as const;
+
 // Include shares for notes (used in queries, filtered during transformation)
 export const NOTE_INCLUDE_SHARES = {
   sharedWith: {
@@ -42,6 +55,21 @@ export const NOTE_INCLUDE_SHARES = {
     },
   },
 } as const;
+
+// Attachment constants
+export const ATTACHMENT_MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+
+export const ATTACHMENT_ALLOWED_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'audio/mpeg',
+  'audio/wav',
+  'audio/mp4',
+  'audio/ogg',
+  'audio/x-m4a',
+]);
 
 // Error messages
 export const ERROR_MESSAGES = {

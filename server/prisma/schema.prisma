@@ -24,23 +24,29 @@ enum NoteSharePermission {
   editor
 }
 
+enum AttachmentType {
+  image
+  audio
+}
+
 model User {
-  id                 String           @id @default(uuid())
-  email              String           @unique
-  password           String?
-  name               String
-  profileImage       String?
-  apiToken           String?          @unique
-  isAdmin            Boolean          @default(false)
-  status             UserStatus       @default(active)
-  oidcSubject        String?          @unique
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
-  notes              Note[]
-  tags               Tag[]
-  sharedNotes        NoteShare[]      @relation("SharedBy")
-  notesSharedWithMe  NoteShare[]      @relation("SharedWith")
-  refreshTokens      RefreshToken[]
+  id                   String           @id @default(uuid())
+  email                String           @unique
+  password             String?
+  name                 String
+  profileImage         String?
+  apiToken             String?          @unique
+  isAdmin              Boolean          @default(false)
+  status               UserStatus       @default(active)
+  oidcSubject          String?          @unique
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  notes                Note[]
+  tags                 Tag[]
+  sharedNotes          NoteShare[]      @relation("SharedBy")
+  notesSharedWithMe    NoteShare[]      @relation("SharedWith")
+  refreshTokens        RefreshToken[]
+  uploadedAttachments  NoteAttachment[]
 }
 
 model Settings {
@@ -52,19 +58,20 @@ model Settings {
 }
 
 model Note {
-  id         String      @id @default(uuid())
-  title      String
-  content    String?  
-  isPinned   Boolean     @default(false)
-  isArchived Boolean     @default(false)
-  background String?
-  state      NoteState   @default(active)
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-  userId     String
-  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tags       Tag[]
-  sharedWith NoteShare[]
+  id          String      @id @default(uuid())
+  title       String
+  content     String?  
+  isPinned    Boolean     @default(false)
+  isArchived  Boolean     @default(false)
+  background  String?
+  state       NoteState   @default(active)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tags        Tag[]
+  sharedWith  NoteShare[]
+  attachments NoteAttachment[]
 }
 
 model Tag {
@@ -109,4 +116,23 @@ model RefreshToken {
 
   @@index([userId])
   @@index([token])
+}
+
+model NoteAttachment {
+  id               String         @id @default(uuid())
+  noteId           String
+  uploadedByUserId String
+  type             AttachmentType
+  originalFilename String
+  storedFilename   String
+  mimeType         String
+  fileSize         Int
+  position         Int            @default(0)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  note             Note           @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  uploadedByUser   User           @relation(fields: [uploadedByUserId], references: [id], onDelete: Cascade)
+
+  @@index([noteId])
+  @@index([uploadedByUserId])
 }

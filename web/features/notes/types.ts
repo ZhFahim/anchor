@@ -4,6 +4,19 @@ export type NoteState = "active" | "trashed" | "deleted";
 export type NoteSharePermission = "viewer" | "editor";
 export type NotePermission = "owner" | NoteSharePermission;
 
+export type AttachmentType = 'image' | 'audio';
+
+export interface NoteAttachment {
+  id: string;
+  noteId: string;
+  type: AttachmentType;
+  originalFilename: string;
+  mimeType: string;
+  fileSize: number;
+  position: number;
+  createdAt: string;
+}
+
 export interface NoteShare {
   id: string;
   sharedWithUser: {
@@ -38,6 +51,8 @@ export interface Note {
     email: string;
     profileImage?: string | null;
   };
+  attachmentCount?: number;
+  imagePreviewIds?: string[];
 }
 
 export interface UserSearchResult {
