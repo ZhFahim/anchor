@@ -147,7 +147,7 @@ export class AdminService {
     return user;
   }
 
-  async updateUser(id: string, updateUserDto: UpdateUserDto) {
+  async updateUser(id: string, updateUserDto: UpdateUserDto, currentUserId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id },
     });
@@ -167,9 +167,27 @@ export class AdminService {
       }
     }
 
+    // Demotion safety: cannot remove admin status from current user or the last admin
+    if (updateUserDto.isAdmin === false) {
+      if (id === currentUserId) {
+        throw new BadRequestException('Cannot change your own admin status');
+      }
+      const adminCount = await this.prisma.user.count({
+        where: { isAdmin: true },
+      });
+      if (adminCount === 1) {
+        throw new BadRequestException('Cannot remove admin status from the last admin user');
+      }
+    }
+
+    const data: Partial<UpdateUserDto> = {};
+    if (updateUserDto.email !== undefined) data.email = updateUserDto.email;
+    if (updateUserDto.name !== undefined) data.name = updateUserDto.name;
+    if (updateUserDto.isAdmin !== undefined) data.isAdmin = updateUserDto.isAdmin;
+
     const updatedUser = await this.prisma.user.update({
       where: { id },
-      data: updateUserDto,
+      data,
       select: {
         id: true,
         email: true,
