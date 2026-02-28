@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAuth, useOidcConfig, useOidcLogin, useOidcCallback } from "@/features/auth";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth, useOidcConfig, useOidcLogin, useOidcCallback, getRegistrationMode } from "@/features/auth";
 import { getSafeRedirectUrl } from "@/features/auth/utils/redirect";
 
 export default function LoginPage() {
@@ -20,6 +21,10 @@ export default function LoginPage() {
   const { data: oidcConfig, isLoading: oidcConfigLoading, error: oidcConfigError } = useOidcConfig();
   const { initiate: initiateOidcLogin } = useOidcLogin();
   const { isProcessing: isOidcCallbackProcessing } = useOidcCallback();
+  const { data: registrationMode, isLoading: registrationModeLoading } = useQuery({
+    queryKey: ["registration-mode"],
+    queryFn: getRegistrationMode,
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,7 +38,7 @@ export default function LoginPage() {
   };
 
   const showLocalLogin = !oidcConfig?.disableInternalAuth;
-  const isLoading = oidcConfigLoading || isOidcCallbackProcessing;
+  const isLoading = oidcConfigLoading || isOidcCallbackProcessing || registrationModeLoading;
 
   return (
     <Card className="border-0 shadow-xl bg-card/80 backdrop-blur-sm overflow-hidden">
@@ -148,7 +153,7 @@ export default function LoginPage() {
               )}
 
               {/* Registration Link */}
-              {showLocalLogin && (
+              {showLocalLogin && registrationMode?.mode !== "disabled" && (
                 <div className="mt-6 text-center">
                   <p className="text-sm text-muted-foreground">
                     Don&apos;t have an account?{" "}
@@ -168,4 +173,3 @@ export default function LoginPage() {
     </Card>
   );
 }
-

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AdminGuard } from "@/features/admin";
+import { useAuth } from "@/features/auth";
 import {
   getAdminStats,
   getUsers,
@@ -72,13 +73,14 @@ import { format } from "date-fns";
 
 export default function AdminPage() {
   const queryClient = useQueryClient();
+  const { user: currentUser } = useAuth();
   const [userDialogOpen, setUserDialogOpen] = useState(false);
   const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false);
   const [deleteUserDialogOpen, setDeleteUserDialogOpen] = useState(false);
   const [rejectUserDialogOpen, setRejectUserDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState<CreateUserDto>({
+  const [formData, setFormData] = useState<CreateUserDto & { isAdmin?: boolean }>({
     email: "",
     password: "",
     name: "",
@@ -284,7 +286,12 @@ export default function AdminPage() {
   const handleEditUser = (user: AdminUser) => {
     setSelectedUser(user);
     setIsEditing(true);
-    setFormData({ email: user.email, password: "", name: user.name || "" });
+    setFormData({
+      email: user.email,
+      password: "",
+      name: user.name || "",
+      isAdmin: user.isAdmin,
+    });
     setUserDialogOpen(true);
   };
 
@@ -320,7 +327,11 @@ export default function AdminPage() {
     if (isEditing && selectedUser) {
       updateUserMutation.mutate({
         id: selectedUser.id,
-        data: { email: formData.email, name: formData.name },
+        data: {
+          email: formData.email,
+          name: formData.name,
+          isAdmin: formData.isAdmin,
+        },
       });
     } else {
       if (!formData.password) {
@@ -897,6 +908,26 @@ export default function AdminPage() {
                     }
                     placeholder="Minimum 8 characters"
                     minLength={8}
+                  />
+                </div>
+              )}
+              {isEditing && (
+                <div className="flex items-center justify-between space-x-2 rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="admin-role">Admin</Label>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedUser?.id === currentUser?.id
+                        ? "You cannot change your own admin status."
+                        : "Admin users can manage other users and settings."}
+                    </p>
+                  </div>
+                  <Switch
+                    id="admin-role"
+                    checked={formData.isAdmin ?? false}
+                    onCheckedChange={(checked) =>
+                      setFormData({ ...formData, isAdmin: checked })
+                    }
+                    disabled={selectedUser?.id === currentUser?.id}
                   />
                 </div>
               )}

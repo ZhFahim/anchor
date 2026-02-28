@@ -35,6 +35,7 @@ export interface CreateUserDto {
 export interface UpdateUserDto {
   email?: string;
   name?: string;
+  isAdmin?: boolean;
 }
 
 export interface ResetPasswordResponse {
