@@ -9,6 +9,7 @@ A modern, feature-rich note-taking web application built with Next.js, React, an
 - **Note Backgrounds** - Customize notes with solid colors and patterns
 - **Pin Notes** - Pin important notes for quick access
 - **Archive Notes** - Archive notes for later reference
+- **Attachments** - Attach images and audio to notes with drag & drop
 - **Search** - Quickly find notes by title or content
 - **Trash** - Soft delete notes with 30-day recovery period
 - **Dark Mode** - Beautiful dark and light themes
@@ -101,9 +102,11 @@ web/
 │   │   ├── types.ts         # TypeScript types
 │   │   └── store.ts         # Zustand store
 │   ├── notes/               # Notes feature
-│   │   ├── components/      # NoteCard, RichTextEditor, etc.
+│   │   ├── components/      # NoteCard, RichTextEditor, attachments, etc.
+│   │   ├── hooks/           # useAttachmentBlob, useSelectionMode
 │   │   ├── backgrounds/     # Background data & utils
 │   │   ├── api.ts
+│   │   ├── constants.ts    # Accepted MIME types, validation
 │   │   ├── types.ts
 │   │   └── quill.ts         # Editor utilities
 │   └── tags/                # Tags feature

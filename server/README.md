@@ -96,6 +96,13 @@ pnpm run test:e2e
 - `POST /api/notes/bulk/delete` - Bulk delete notes
 - `POST /api/notes/bulk/archive` - Bulk archive notes
 
+### Note Attachments
+- `POST /api/notes/:noteId/attachments` - Upload an attachment (multipart/form-data)
+- `GET /api/notes/:noteId/attachments` - List all attachments for a note
+- `GET /api/notes/:noteId/attachments/:id` - Get attachment file (stream)
+- `DELETE /api/notes/:noteId/attachments/:id` - Delete an attachment
+- `PATCH /api/notes/:noteId/attachments/reorder` - Reorder attachments (body: `{ orderedIds: string[] }`)
+
 ### Note Sharing
 - `POST /api/notes/:id/shares` - Share a note with a user
 - `GET /api/notes/:id/shares` - Get all shares for a note

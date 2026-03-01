@@ -21,6 +21,7 @@ Anchor focuses on speed, privacy, simplicity, and reliability across mobile and 
 - **Offline First** - All edits work offline with local database
 - **Note Sharing** - Share notes with other users (viewer or editor)
 - **Tags System** - Organize notes with custom tags and colors
+- **Attachments** - Attach images and audio to notes
 - **Note Backgrounds** - Customize notes with solid colors and patterns
 - **Pin Notes** - Pin important notes for quick access
 - **Archive Notes** - Archive notes for later reference
@@ -191,9 +192,8 @@ Alternatively, configure OIDC via the admin panel (Settings → OIDC Authenticat
 
 Future planned features:
 
-- Media attachments (images, PDFs, recordings)
-- Real-time collaboration
 - Reminders and notifications
+- Real-time collaboration
 
 
 ## Tech Stack

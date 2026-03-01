@@ -25,6 +25,8 @@ export interface TransformedNote {
   permission: NotePermission;
   shareIds?: string[];
   sharedBy?: SharedByUser;
+  attachmentCount?: number;
+  imagePreviewIds?: string[];
 }
 
 // Input type for notes from Prisma with includes
@@ -46,6 +48,8 @@ interface NoteWithIncludes {
     permission: NoteSharePermission;
     sharedByUser: SharedByUser;
   }>;
+  _count?: { attachments?: number };
+  attachments?: Array<{ id: string }>;
 }
 
 // Convert Date to ISO string
@@ -59,7 +63,7 @@ export function transformNote(
   note: NoteWithIncludes,
   userId: string,
 ): TransformedNote {
-  const { tags, sharedWith, ...rest } = note;
+  const { tags, sharedWith, _count, attachments, ...rest } = note;
 
   // Determine if user is owner or shared user
   const isOwner = note.userId === userId;
@@ -87,6 +91,8 @@ export function transformNote(
     createdAt: toISOString(rest.createdAt),
     updatedAt: toISOString(rest.updatedAt),
     permission,
+    attachmentCount: _count?.attachments ?? 0,
+    imagePreviewIds: attachments?.map((a) => a.id) ?? [],
   };
 
   // Add shareIds for owners

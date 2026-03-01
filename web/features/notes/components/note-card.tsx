@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { Pin } from "lucide-react";
+import { Pin, Paperclip } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -11,6 +11,7 @@ import type { Note } from "@/features/notes";
 import { QuillPreview } from "@/features/notes";
 import { NoteBackground } from "./backgrounds";
 import { SharedNoteIndicator } from "./shared-note-indicator";
+import { NoteCardImages, ListImageThumbnail } from "./note-card-images";
 
 type ViewMode = "masonry" | "grid" | "list";
 
@@ -161,11 +162,27 @@ export function NoteCard({
                       </div>
                     )}
                     <SharedNoteIndicator note={note} />
+                    {/* Only show paperclip count if no image previews */}
+                    {(note.attachmentCount ?? 0) > 0 && (!note.imagePreviewIds || note.imagePreviewIds.length === 0) && (
+                      <div className="flex items-center gap-1 text-muted-foreground">
+                        <Paperclip className="h-3 w-3" />
+                        <span>{note.attachmentCount}</span>
+                      </div>
+                    )}
                     <span className="text-xs text-muted-foreground font-medium">
                       {format(new Date(note.updatedAt), "MMM d, yyyy")}
                     </span>
                   </div>
                 </div>
+
+                {/* Image thumbnail for list view */}
+                {note.imagePreviewIds && note.imagePreviewIds.length > 0 && (
+                  <ListImageThumbnail
+                    noteId={note.id}
+                    attachmentId={note.imagePreviewIds[0]}
+                    count={note.attachmentCount ?? 0}
+                  />
+                )}
               </div>
             </CardContent>
           </div>
@@ -225,6 +242,15 @@ export function NoteCard({
               </div>
             )}
 
+            {/* Image previews */}
+            {note.imagePreviewIds && note.imagePreviewIds.length > 0 && (
+              <NoteCardImages
+                noteId={note.id}
+                imageIds={note.imagePreviewIds}
+                totalAttachments={note.attachmentCount ?? 0}
+              />
+            )}
+
             {/* Title */}
             <h3
               className={cn(
@@ -278,6 +304,12 @@ export function NoteCard({
             <div className="flex items-center justify-between text-xs text-muted-foreground mt-auto">
               <div className="flex items-center gap-2 flex-wrap">
                 <SharedNoteIndicator note={note} />
+                {(note.attachmentCount ?? 0) > 0 && (
+                  <div className="flex items-center gap-1 text-muted-foreground">
+                    <Paperclip className="h-3 w-3" />
+                    <span>{note.attachmentCount}</span>
+                  </div>
+                )}
                 <span className="font-medium">
                   {format(new Date(note.updatedAt), "MMM d, yyyy")}
                 </span>

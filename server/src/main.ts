@@ -11,15 +11,20 @@ async function bootstrap() {
   app.use(helmet());
   app.enableCors(); // Allow mobile/web to connect
 
-  // Create uploads directory if it doesn't exist
+  // Create uploads directories if they don't exist
   const uploadsDir = '/data/uploads/profiles';
   if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
   }
 
-  // Serve static files from /data/uploads
-  app.useStaticAssets('/data/uploads', {
-    prefix: '/uploads',
+  const attachmentsDir = '/data/uploads/attachments';
+  if (!fs.existsSync(attachmentsDir)) {
+    fs.mkdirSync(attachmentsDir, { recursive: true });
+  }
+
+  // Serve profile images only
+  app.useStaticAssets('/data/uploads/profiles', {
+    prefix: '/uploads/profiles',
   });
 
   app.useGlobalPipes(

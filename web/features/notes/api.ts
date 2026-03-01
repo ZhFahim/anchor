@@ -6,6 +6,7 @@ import type {
   NoteShare,
   NoteSharePermission,
   UserSearchResult,
+  NoteAttachment,
 } from "./types";
 
 interface NotesQueryParams {
@@ -117,4 +118,33 @@ export async function searchUsers(query: string): Promise<UserSearchResult[]> {
       searchParams: { q: query.trim() },
     })
     .json<UserSearchResult[]>();
+}
+
+export async function uploadAttachment(
+  noteId: string,
+  file: File,
+): Promise<NoteAttachment> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  return api
+    .post(`api/notes/${noteId}/attachments`, { body: formData })
+    .json<NoteAttachment>();
+}
+
+export async function getNoteAttachments(noteId: string): Promise<NoteAttachment[]> {
+  return api.get(`api/notes/${noteId}/attachments`).json<NoteAttachment[]>();
+}
+
+export async function fetchAttachmentBlob(noteId: string, attachmentId: string): Promise<Blob> {
+  const response = await api.get(`api/notes/${noteId}/attachments/${attachmentId}`);
+  return response.blob();
+}
+
+export async function deleteAttachment(noteId: string, attachmentId: string): Promise<{ success: boolean }> {
+  return api.delete(`api/notes/${noteId}/attachments/${attachmentId}`).json<{ success: boolean }>();
+}
+
+export async function reorderAttachments(noteId: string, orderedIds: string[]): Promise<NoteAttachment[]> {
+  return api.patch(`api/notes/${noteId}/attachments/reorder`, { json: { orderedIds } }).json<NoteAttachment[]>();
 }
