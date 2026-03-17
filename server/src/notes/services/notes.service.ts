@@ -232,6 +232,23 @@ export class NotesService {
     return notes.map((note) => transformNote(note, userId));
   }
 
+  // Auto-delete notes that have been in trash for longer than retention period
+  // Transitions trashed → deleted (tombstone) so sync clients can learn about the deletion
+  async autoDeleteExpiredTrash(retentionDays = 30) {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
+
+    const result = await this.prisma.note.updateMany({
+      where: {
+        state: NoteState.trashed,
+        updatedAt: { lt: cutoffDate },
+      },
+      data: { state: NoteState.deleted },
+    });
+
+    return { convertedCount: result.count };
+  }
+
   // Purge tombstones older than retention period (30 days)
   async purgeTombstones(retentionDays = 30) {
     const cutoffDate = new Date();

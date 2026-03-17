@@ -36,17 +36,21 @@ export class TasksService {
     }
   }
 
-  // Run daily at 3:00 AM to purge tombstones older than 30 days
+  // Run daily at 3:00 AM to clean up trash and purge old tombstones
   @Cron(CronExpression.EVERY_DAY_AT_3AM)
-  async handleTombstonePurge() {
-    this.logger.log('Starting scheduled tombstone purge...');
+  async handleTrashCleanup() {
+    this.logger.log('Starting scheduled trash cleanup...');
 
     try {
+      // First: auto-delete notes that have been in trash for more than 30 days
+      const trashResult = await this.notesService.autoDeleteExpiredTrash(30);
+
+      // Then: purge tombstones older than 30 days
       const notesResult = await this.notesService.purgeTombstones(30);
       const tagsResult = await this.tagsService.purgeTombstones(30);
 
       this.logger.log(
-        `Tombstone purge completed. Purged ${notesResult.purgedNotesCount} notes, ${notesResult.purgedSharesCount} shares, and ${tagsResult.purgedTagsCount} tags.`,
+        `Tombstone purge completed. Converted ${trashResult.convertedCount} trashed notes to tombstones. Purged ${notesResult.purgedNotesCount} notes, ${notesResult.purgedSharesCount} shares, and ${tagsResult.purgedTagsCount} tags.`,
       );
     } catch (error) {
       this.logger.error('Tombstone purge failed:', error);
