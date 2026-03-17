@@ -793,7 +793,7 @@ class _UserTile extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (trailing != null) trailing!,
+                ?trailing,
               ],
             ),
           ),

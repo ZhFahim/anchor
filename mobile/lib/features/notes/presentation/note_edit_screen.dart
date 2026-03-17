@@ -15,6 +15,11 @@ import 'package:anchor/features/tags/presentation/widgets/tag_selector.dart';
 import 'package:anchor/features/notes/presentation/widgets/note_background.dart';
 import 'package:anchor/features/notes/presentation/widgets/note_background_picker.dart';
 import 'package:anchor/features/notes/presentation/widgets/share_note_sheet.dart';
+import 'package:anchor/features/notes/presentation/widgets/note_attachments_gallery.dart';
+import 'package:anchor/features/notes/presentation/widgets/note_audio_recorder_sheet.dart';
+import 'package:anchor/features/notes/presentation/widgets/note_options_sheet.dart';
+import 'package:anchor/features/notes/data/repository/note_attachments_repository.dart';
+import 'package:anchor/core/providers/active_user_id_provider.dart';
 import '../data/repository/notes_repository.dart';
 
 class NoteEditScreen extends ConsumerStatefulWidget {
@@ -42,6 +47,12 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
   List<String> _selectedTagIds = [];
   String? _selectedBackground;
 
+  bool get _isReadOnly {
+    final isActive =
+        _existingNote == null || (_existingNote?.isActive ?? false);
+    return !isActive || _existingNote?.permission == NotePermission.viewer;
+  }
+
   // Auto-save state
   Timer? _autoSaveTimer;
   bool _hasUnsavedChanges = false;
@@ -67,8 +78,8 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
       _selectedTagIds = List.from(widget.note!.tagIds);
       _selectedBackground = widget.note!.background;
       _isLoaded = true;
-      // Trashed notes or viewer notes are read-only
-      if (widget.note!.isTrashed || !widget.note!.canEdit) {
+      // Non-active notes or viewer notes are read-only
+      if (!widget.note!.isActive || !widget.note!.canEdit) {
         _isEditing = false;
       }
       // Initialize last saved state
@@ -85,7 +96,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
     }
 
     // Listen to title and content changes for auto-save
-    _titleFocusNode.addListener(_onTitleFocusChanged);
+    _titleFocusNode.addListener(_updateEditingState);
     _titleController.addListener(_onContentChanged);
   }
 
@@ -97,21 +108,10 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
     _lastSavedPinned = note.isPinned;
   }
 
-  void _onTitleFocusChanged() {
-    _updateEditingState();
-  }
-
-  void _onEditorEditingChanged(bool isEditing) {
-    _updateEditingState();
-  }
-
   void _updateEditingState() {
-    final isReadOnly =
-        _existingNote?.isTrashed == true ||
-        (_existingNote?.permission == NotePermission.viewer);
     final titleEditing = _titleFocusNode.hasFocus;
     final editorEditing = _editorKey.currentState?.isEditing ?? false;
-    final newEditingState = isReadOnly
+    final newEditingState = _isReadOnly
         ? false
         : (titleEditing || editorEditing);
 
@@ -136,8 +136,8 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
         _selectedTagIds = List.from(note.tagIds);
         _selectedBackground = note.background;
         _isLoaded = true;
-        // Trashed notes or viewer notes are read-only
-        if (note.isTrashed || !note.canEdit) {
+        // Non-active notes or viewer notes are read-only
+        if (!note.isActive || !note.canEdit) {
           _isEditing = false;
         }
       });
@@ -236,8 +236,8 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
   }
 
   Future<void> _togglePinned() async {
-    // Don't allow pinning if note is trashed
-    if (_existingNote?.isTrashed == true) {
+    // Don't allow pinning if note is not active
+    if (_existingNote?.isActive != true) {
       return;
     }
     setState(() {
@@ -308,8 +308,8 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
   }
 
   void _showColorPicker() {
-    // Don't allow changing background if note is trashed
-    if (_existingNote?.isTrashed == true) {
+    // Don't allow changing background if note is not active
+    if (_existingNote?.isActive != true) {
       return;
     }
     showModalBottomSheet(
@@ -329,9 +329,9 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
   }
 
   void _showShareSheet() {
-    // Only allow sharing for existing, non-trashed notes, and owners only
+    // Only allow sharing for existing, active notes, and owners only
     if (_isNew ||
-        _existingNote?.isTrashed == true ||
+        _existingNote?.isActive != true ||
         !(_existingNote?.isOwner ?? true)) {
       return;
     }
@@ -347,6 +347,48 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
         _reloadNoteShareInfo();
       }
     });
+  }
+
+  void _showAttachmentSheet() {
+    final noteId = widget.noteId ?? _existingNote?.id;
+    if (noteId == null) return;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => NoteAttachmentSheet(
+        onFileSelected: (filePath, mimeType, filename) async {
+          try {
+            final repo = ref.read(noteAttachmentsRepositoryProvider);
+            await repo.addAttachment(noteId, filePath, mimeType, filename);
+            if (!context.mounted) return;
+            AppSnackbar.showSuccess(context, message: 'Attachment added');
+          } catch (_) {
+            if (!context.mounted) return;
+            AppSnackbar.showError(context, message: 'Failed to add attachment');
+          }
+        },
+      ),
+    );
+  }
+
+  void _showOptionsSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => NoteOptionsSheet(
+        isReadOnly: _isReadOnly,
+        isNew: _isNew,
+        isOwner: _existingNote?.isOwner ?? true,
+        isArchived: _isArchived,
+        onBackgroundTap: _showColorPicker,
+        onAttachmentTap: _showAttachmentSheet,
+        onArchiveTap: _toggleArchived,
+        onDeleteTap: _deleteNote,
+      ),
+    );
   }
 
   Future<void> _reloadNoteShareInfo() async {
@@ -367,14 +409,17 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
     _autoSaveTimer?.cancel();
     _titleController.removeListener(_onContentChanged);
     _titleController.dispose();
-    _titleFocusNode.removeListener(_onTitleFocusChanged);
+    _titleFocusNode.removeListener(_updateEditingState);
     _titleFocusNode.dispose();
     super.dispose();
   }
 
   Future<void> _saveNote() async {
-    // Don't save if note is trashed or user can't edit
-    if (_existingNote?.isTrashed == true || !(_existingNote?.canEdit ?? true)) {
+    // Don't save if note is not active or user can't edit.
+    // New notes (_existingNote == null) are always treated as active/editable.
+    final isActive =
+        _existingNote == null || (_existingNote?.isActive ?? false);
+    if (!isActive || !(_existingNote?.canEdit ?? true)) {
       return;
     }
 
@@ -443,15 +488,8 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
     }
   }
 
-  bool _listEquals(List<String> a, List<String> b) {
-    if (a.length != b.length) return false;
-    final sortedA = List<String>.from(a)..sort();
-    final sortedB = List<String>.from(b)..sort();
-    for (int i = 0; i < sortedA.length; i++) {
-      if (sortedA[i] != sortedB[i]) return false;
-    }
-    return true;
-  }
+  bool _listEquals(List<String> a, List<String> b) =>
+      _setEquals(a.toSet(), b.toSet());
 
   Future<void> _deleteNote() async {
     if (_isNew) {
@@ -560,20 +598,207 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
     }
   }
 
+  Widget _buildSharedByBadge(ThemeData theme, String? serverUrl) {
+    final sharedBy = _existingNote!.sharedBy!;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.secondaryContainer,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _SharedByAvatar(
+                sharedBy: sharedBy,
+                serverUrl: serverUrl,
+                size: 20,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Shared by ${sharedBy.name}',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSecondaryContainer,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPinButton(ThemeData theme) {
+    return IconButton(
+      icon: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Icon(
+            LucideIcons.pin,
+            color: _isPinned
+                ? theme.colorScheme.primary
+                : theme.colorScheme.onSurface,
+          ),
+          if (_isPinned)
+            Positioned(
+              right: -2,
+              top: -2,
+              child: Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.tertiary,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+        ],
+      ),
+      onPressed: _isLoaded ? _togglePinned : null,
+      tooltip: _isPinned ? 'Unpin Note' : 'Pin Note',
+    );
+  }
+
+  Widget _buildShareButton(ThemeData theme) {
+    return IconButton(
+      icon: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          const Icon(LucideIcons.userPlus),
+          if (_existingNote?.hasShares ?? false)
+            Positioned(
+              right: -4,
+              top: -8,
+              child: Container(
+                padding: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary,
+                  shape: BoxShape.circle,
+                ),
+                constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
+                child: Center(
+                  child: Text(
+                    '${_existingNote!.shareIds!.length}',
+                    style: TextStyle(
+                      color: theme.colorScheme.onPrimary,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+      onPressed: _isLoaded && !_isNew ? _showShareSheet : null,
+      tooltip: 'Share Note',
+    );
+  }
+
+  Widget _buildReadOnlyBanner(ThemeData theme, bool isTrashed) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      color: theme.colorScheme.surfaceContainerHighest,
+      child: Row(
+        children: [
+          Icon(
+            LucideIcons.lock,
+            size: 16,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              isTrashed
+                  ? 'This note is in trash and cannot be edited. Restore it to make changes.'
+                  : 'You have viewer access. Only the owner can edit this note.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEditorHeader(ThemeData theme) {
+    final isReadOnly = _isReadOnly;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: GestureDetector(
+            onTap: !isReadOnly
+                ? () {
+                    if (!_titleFocusNode.hasFocus) {
+                      _titleFocusNode.requestFocus();
+                    }
+                  }
+                : null,
+            child: TextField(
+              controller: _titleController,
+              focusNode: _titleFocusNode,
+              readOnly: isReadOnly,
+              style: theme.textTheme.displaySmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onSurface,
+              ),
+              decoration: InputDecoration(
+                hintText: _isEditing && !isReadOnly ? 'Title' : null,
+                hintStyle: TextStyle(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                ),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                filled: false,
+              ),
+              textCapitalization: TextCapitalization.sentences,
+              showCursor: _isEditing && !isReadOnly,
+            ),
+          ),
+        ),
+        if ((_isEditing && !isReadOnly) || _selectedTagIds.isNotEmpty)
+          TagSelector(
+            selectedTagIds: _selectedTagIds,
+            readOnly: !_isEditing || isReadOnly,
+            onTagsChanged: (tagIds) {
+              if (!isReadOnly) {
+                setState(() => _selectedTagIds = tagIds);
+                _onContentChanged();
+              }
+            },
+          ),
+        if (!_isNew && (_existingNote != null || widget.noteId != null))
+          NoteAttachmentsGallery(
+            noteId: widget.noteId ?? _existingNote!.id,
+            isOwner: _existingNote?.isOwner ?? false,
+            canEdit:
+                (_existingNote?.canEdit ?? false) &&
+                (_existingNote?.isActive ?? false),
+            currentUserId: ref.read(activeUserIdProvider),
+          ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final serverUrl = ref.watch(serverUrlProvider);
+    final isReadOnly = _isReadOnly;
     final isTrashed = _existingNote?.isTrashed ?? false;
-    final isViewer = _existingNote?.permission == NotePermission.viewer;
-    final isReadOnly = isTrashed || isViewer;
 
     return PopScope(
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop && !_isDeleted) {
-          // Cancel auto-save timer
           _autoSaveTimer?.cancel();
-          // Final save if there are unsaved changes
           if (_hasUnsavedChanges || _isEditing) {
             await _saveNote();
           }
@@ -592,148 +817,27 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
             ),
             actions: [
               if (isTrashed) ...[
-                // Restore button for trashed notes
                 IconButton(
                   icon: const Icon(LucideIcons.rotateCcw),
                   onPressed: _isLoaded && !_isNew ? _restoreNote : null,
                   tooltip: 'Restore Note',
                 ),
-                // Permanent delete button for trashed notes
                 IconButton(
                   icon: const Icon(LucideIcons.trash2),
                   onPressed: _isLoaded && !_isNew ? _permanentDeleteNote : null,
                   tooltip: 'Delete Forever',
                 ),
               ] else ...[
-                // Shared by indicator for shared notes
                 if (_existingNote?.sharedBy != null)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.secondaryContainer,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _SharedByAvatar(
-                              sharedBy: _existingNote!.sharedBy!,
-                              serverUrl: serverUrl,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              'Shared by ${_existingNote!.sharedBy!.name}',
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: theme.colorScheme.onSecondaryContainer,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                // Background and Pin - shown for non-read-only (owners and editors)
-                if (!isReadOnly) ...[
+                  _buildSharedByBadge(theme, serverUrl),
+                if (!isReadOnly) _buildPinButton(theme),
+                if (_existingNote?.isOwner ?? true) _buildShareButton(theme),
+                if (!isReadOnly || (_existingNote?.isOwner ?? true))
                   IconButton(
-                    icon: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Icon(
-                          LucideIcons.pin,
-                          color: _isPinned
-                              ? theme.colorScheme.primary
-                              : theme.colorScheme.onSurface,
-                        ),
-                        if (_isPinned)
-                          Positioned(
-                            right: -2,
-                            top: -2,
-                            child: Container(
-                              width: 8,
-                              height: 8,
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.tertiary,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                    onPressed: _isLoaded && !isTrashed ? _togglePinned : null,
-                    tooltip: _isPinned ? 'Unpin Note' : 'Pin Note',
+                    icon: const Icon(LucideIcons.moreVertical),
+                    tooltip: 'More options',
+                    onPressed: _showOptionsSheet,
                   ),
-                  IconButton(
-                    icon: const Icon(LucideIcons.palette),
-                    onPressed: !isTrashed ? _showColorPicker : null,
-                    tooltip: 'Change Background',
-                  ),
-                ],
-                // Share, Archive, Delete - only for owners
-                if (_existingNote?.isOwner ?? true) ...[
-                  IconButton(
-                    icon: Icon(
-                      _isArchived
-                          ? LucideIcons.archiveRestore
-                          : LucideIcons.archive,
-                    ),
-                    onPressed: _isLoaded && !_isNew && !isTrashed
-                        ? _toggleArchived
-                        : null,
-                    tooltip: _isArchived ? 'Unarchive Note' : 'Archive Note',
-                  ),
-                  IconButton(
-                    icon: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        const Icon(LucideIcons.userPlus),
-                        // Badge showing share count
-                        if (_existingNote?.hasShares ?? false)
-                          Positioned(
-                            right: -4,
-                            top: -8,
-                            child: Container(
-                              padding: const EdgeInsets.all(3),
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.primary,
-                                shape: BoxShape.circle,
-                              ),
-                              constraints: const BoxConstraints(
-                                minWidth: 14,
-                                minHeight: 14,
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '${_existingNote!.shareIds!.length}',
-                                  style: TextStyle(
-                                    color: theme.colorScheme.onPrimary,
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                    onPressed: _isLoaded && !_isNew && !isTrashed
-                        ? _showShareSheet
-                        : null,
-                    tooltip: 'Share Note',
-                  ),
-                  IconButton(
-                    icon: const Icon(LucideIcons.trash2),
-                    onPressed: !isTrashed ? _deleteNote : null,
-                    tooltip: 'Delete Note',
-                  ),
-                ],
               ],
               const SizedBox(width: 8),
             ],
@@ -744,85 +848,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
               color: Colors.transparent,
               child: Column(
                 children: [
-                  // Read-only banner for trashed or viewer notes
-                  if (isReadOnly)
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
-                      ),
-                      color: theme.colorScheme.surfaceContainerHighest,
-                      child: Row(
-                        children: [
-                          Icon(
-                            LucideIcons.lock,
-                            size: 16,
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              isTrashed
-                                  ? 'This note is in trash and cannot be edited. Restore it to make changes.'
-                                  : 'You have viewer access. Only the owner can edit this note.',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: GestureDetector(
-                      onTap: !isReadOnly
-                          ? () {
-                              if (!_titleFocusNode.hasFocus) {
-                                _titleFocusNode.requestFocus();
-                              }
-                            }
-                          : null,
-                      child: TextField(
-                        controller: _titleController,
-                        focusNode: _titleFocusNode,
-                        readOnly: isReadOnly,
-                        style: theme.textTheme.displaySmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.onSurface,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: _isEditing && !isReadOnly ? 'Title' : null,
-                          hintStyle: TextStyle(
-                            color: theme.colorScheme.onSurface.withValues(
-                              alpha: 0.3,
-                            ),
-                          ),
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            vertical: 16,
-                          ),
-                          filled: false,
-                        ),
-                        textCapitalization: TextCapitalization.sentences,
-                        showCursor: _isEditing && !isReadOnly,
-                      ),
-                    ),
-                  ),
-                  if ((_isEditing && !isReadOnly) || _selectedTagIds.isNotEmpty)
-                    TagSelector(
-                      selectedTagIds: _selectedTagIds,
-                      readOnly: !_isEditing || isReadOnly,
-                      onTagsChanged: (tagIds) {
-                        if (!isReadOnly) {
-                          setState(() {
-                            _selectedTagIds = tagIds;
-                          });
-                          _onContentChanged(); // Trigger change detection and auto-save
-                        }
-                      },
-                    ),
+                  if (isReadOnly) _buildReadOnlyBanner(theme, isTrashed),
                   Expanded(
                     child: _isLoaded
                         ? RichTextEditor(
@@ -831,7 +857,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
                             hintText: 'Start typing...',
                             showToolbar: _isEditing && !isReadOnly,
                             canEdit: !isReadOnly,
-                            onEditingChanged: _onEditorEditingChanged,
+                            onEditingChanged: (_) => _updateEditingState(),
                             onChanged: (_) => _onContentChanged(),
                             sortChecklistItems: ref
                                 .watch(editorPreferencesControllerProvider)
@@ -840,6 +866,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
                               horizontal: 24,
                               vertical: 16,
                             ),
+                            header: _buildEditorHeader(theme),
                           )
                         : const Center(child: CircularProgressIndicator()),
                   ),

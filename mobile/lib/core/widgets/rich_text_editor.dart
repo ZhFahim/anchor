@@ -38,6 +38,9 @@ class RichTextEditor extends StatefulWidget {
   /// Whether to sort checklist items (checked to bottom, unchecked to top).
   final bool sortChecklistItems;
 
+  /// Optional header widget placed above the editor, scrolling together.
+  final Widget? header;
+
   const RichTextEditor({
     super.key,
     this.initialContent,
@@ -49,6 +52,7 @@ class RichTextEditor extends StatefulWidget {
     this.focusNode,
     this.contentPadding = const EdgeInsets.symmetric(vertical: 16),
     this.sortChecklistItems = true,
+    this.header,
   });
 
   @override
@@ -59,6 +63,7 @@ class RichTextEditorState extends State<RichTextEditor>
     with ChecklistReorderMixin {
   late QuillController _controller;
   late FocusNode _focusNode;
+  late ScrollController _scrollController;
   bool _isInternalFocusNode = false;
   bool _isEditing = false;
   EditorFormattingState _formattingState = const EditorFormattingState();
@@ -92,6 +97,7 @@ class RichTextEditorState extends State<RichTextEditor>
     super.initState();
     _controller = _createController(widget.initialContent);
     _controller.readOnly = !widget.canEdit;
+    _scrollController = ScrollController();
     _addListeners();
     initChecklistState();
 
@@ -117,6 +123,7 @@ class RichTextEditorState extends State<RichTextEditor>
     _removeListeners();
     _focusNode.removeListener(_onFocusChanged);
     _controller.dispose();
+    _scrollController.dispose();
     if (_isInternalFocusNode) {
       _focusNode.dispose();
     }
@@ -239,29 +246,30 @@ class RichTextEditorState extends State<RichTextEditor>
     if (mounted) setState(() {});
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Expanded(
-          child: GestureDetector(
-            onTap: widget.canEdit
-                ? () {
-                    if (!_focusNode.hasFocus) {
-                      _focusNode.requestFocus();
-                    }
-                  }
-                : null,
-            behavior: HitTestBehavior.opaque,
-            child: QuillEditor.basic(
+  Widget _buildScrollableEditor(BuildContext context) {
+    return GestureDetector(
+      onTap: widget.canEdit
+          ? () {
+              if (!_focusNode.hasFocus) _focusNode.requestFocus();
+            }
+          : null,
+      behavior: HitTestBehavior.opaque,
+      child: SingleChildScrollView(
+        controller: _scrollController,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ?widget.header,
+            QuillEditor.basic(
               controller: _controller,
               focusNode: _focusNode,
+              scrollController: _scrollController,
               config: QuillEditorConfig(
                 placeholder: widget.hintText,
                 padding: widget.contentPadding,
                 autoFocus: false,
-                expands: true,
-                scrollable: true,
+                expands: false,
+                scrollable: false,
                 showCursor: _isEditing && widget.canEdit,
                 enableInteractiveSelection: true,
                 customStyles: getEditorStyles(context),
@@ -269,8 +277,17 @@ class RichTextEditorState extends State<RichTextEditor>
                     getCheckedListStyle(attribute, context),
               ),
             ),
-          ),
+          ],
         ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Expanded(child: _buildScrollableEditor(context)),
         if (widget.showToolbar && _isEditing && widget.canEdit)
           EditorToolbar(
             controller: _controller,

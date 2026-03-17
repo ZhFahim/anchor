@@ -8,6 +8,7 @@ export class AttachmentResponseDto {
   mimeType: string;
   fileSize: number;
   position: number;
+  uploadedByUserId: string;
   createdAt: Date;
 }
 
@@ -22,6 +23,7 @@ export function toAttachmentResponse(
     mimeType: attachment.mimeType,
     fileSize: attachment.fileSize,
     position: attachment.position,
+    uploadedByUserId: attachment.uploadedByUserId,
     createdAt: attachment.createdAt,
   };
 }

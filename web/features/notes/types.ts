@@ -14,6 +14,7 @@ export interface NoteAttachment {
   mimeType: string;
   fileSize: number;
   position: number;
+  uploadedByUserId?: string | null;
   createdAt: string;
 }
 

@@ -1,27 +1,23 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Trash2, RotateCcw, Loader2, Pin } from "lucide-react";
+import { Trash2, RotateCcw, Loader2 } from "lucide-react";
 import {
   getTrashedNotes,
   restoreNote,
   permanentDeleteNote,
   deltaToFullPlainText,
-  QuillPreview,
-  NoteBackground,
   RestoreDialog,
   PermanentDeleteDialog,
+  NoteCard,
 } from "@/features/notes";
 import type { Note } from "@/features/notes";
 import { getTags } from "@/features/tags";
 import { Header } from "@/components/layout";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Masonry from "react-masonry-css";
-import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { useState } from "react";
@@ -73,6 +69,7 @@ export default function TrashPage() {
     mutationFn: restoreNote,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notes"] });
+      queryClient.invalidateQueries({ queryKey: ["notes", "trash"] });
       queryClient.invalidateQueries({ queryKey: ["tags"] });
       toast.success("Note restored");
     },
@@ -240,129 +237,63 @@ function TrashNoteCard({
   };
 
   return (
-    <Card
-      className={cn(
-        "group relative overflow-hidden cursor-pointer",
-        "border border-border/40",
-        "shadow-sm hover:shadow-xl",
-        "transition-all duration-300 ease-out",
-        "hover:border-border hover:-translate-y-1"
-      )}
-      onClick={handleCardClick}
-    >
-      <NoteBackground styleId={note.background} className="absolute inset-0" />
-      <div className="relative">
-        <CardContent>
-          {/* Pin indicator */}
-          {note.isPinned && (
-            <div className="absolute top-3 right-3 z-10">
-              <div className="w-7 h-7 rounded-full bg-accent/10 backdrop-blur-sm flex items-center justify-center border border-accent/20">
-                <Pin className="h-3.5 w-3.5 text-accent fill-accent" />
-              </div>
-            </div>
-          )}
-
-          {/* Title */}
-          <h3
-            className={cn(
-              "font-bold leading-tight mb-2 pr-8 line-clamp-2 group-hover:text-accent transition-colors duration-200",
-              "text-lg"
-            )}
-          >
-            {note.title || "Untitled"}
-          </h3>
-
-          {/* Content Preview */}
-          <QuillPreview
-            content={note.content}
-            maxLines={6}
-            className="mb-3"
+    <NoteCard
+      note={note}
+      viewMode="masonry"
+      footerLeft={
+        <span className="font-medium">
+          Deleted {format(new Date(note.updatedAt), "MMM d, yyyy")}
+        </span>
+      }
+      footerRight={
+        <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-2">
+          <TooltipProvider>
+            <Tooltip open={restoreTooltipOpen} onOpenChange={setRestoreTooltipOpen}>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleRestoreClick}
+                  disabled={isRestoring}
+                  className="h-7 w-7 hover:bg-accent hover:text-accent-foreground opacity-0 group-hover:opacity-100 transition-all duration-200 bg-background/80 backdrop-blur-sm border border-border/50"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top">Restore</TooltipContent>
+            </Tooltip>
+            <Tooltip open={deleteTooltipOpen && !deleteDialogOpen} onOpenChange={setDeleteTooltipOpen}>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all duration-200 bg-background/80 backdrop-blur-sm border border-border/50"
+                  onClick={handleDeleteButtonClick}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top">Delete Forever</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          <RestoreDialog
+            open={restoreDialogOpen}
+            onOpenChange={handleRestoreDialogClose}
+            onConfirm={handleRestoreConfirm}
+            isPending={isRestoring}
           />
-
-          {/* Tags */}
-          {note.tags && note.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mb-3">
-              {note.tags.slice(0, 3).map((tag) => (
-                <Badge
-                  key={tag.id}
-                  variant="secondary"
-                  className="text-xs px-2 py-0.5 rounded-full font-medium"
-                  style={{
-                    backgroundColor: tag.color
-                      ? `${tag.color}20`
-                      : undefined,
-                    color: tag.color || undefined,
-                  }}
-                >
-                  {tag.name}
-                </Badge>
-              ))}
-              {note.tags.length > 3 && (
-                <Badge
-                  variant="secondary"
-                  className="text-xs px-2 py-0.5 rounded-full"
-                >
-                  +{note.tags.length - 3}
-                </Badge>
-              )}
-            </div>
-          )}
-
-          {/* Footer */}
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span className="font-medium">
-              Deleted {format(new Date(note.updatedAt), "MMM d, yyyy")}
-            </span>
-            <TooltipProvider>
-              <div className="flex items-center gap-2">
-                <Tooltip open={restoreTooltipOpen} onOpenChange={setRestoreTooltipOpen}>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={handleRestoreClick}
-                      disabled={isRestoring}
-                      className="h-7 w-7 hover:bg-accent hover:text-accent-foreground opacity-0 group-hover:opacity-100 transition-all duration-200 bg-background/80 backdrop-blur-sm border border-border/50"
-                    >
-                      <RotateCcw className="h-3.5 w-3.5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">Restore</TooltipContent>
-                </Tooltip>
-                <Tooltip open={deleteTooltipOpen && !deleteDialogOpen} onOpenChange={setDeleteTooltipOpen}>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all duration-200 bg-background/80 backdrop-blur-sm border border-border/50"
-                      onClick={handleDeleteButtonClick}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">Delete Forever</TooltipContent>
-                </Tooltip>
-              </div>
-            </TooltipProvider>
-            <RestoreDialog
-              open={restoreDialogOpen}
-              onOpenChange={handleRestoreDialogClose}
-              onConfirm={handleRestoreConfirm}
-              isPending={isRestoring}
-            />
-            <PermanentDeleteDialog
-              open={deleteDialogOpen}
-              onOpenChange={handleDialogClose}
-              onConfirm={() => {
-                onDelete();
-                setDeleteDialogOpen(false);
-              }}
-              isPending={isDeleting}
-            />
-          </div>
-        </CardContent>
-      </div>
-    </Card>
+          <PermanentDeleteDialog
+            open={deleteDialogOpen}
+            onOpenChange={handleDialogClose}
+            onConfirm={() => {
+              onDelete();
+              setDeleteDialogOpen(false);
+            }}
+            isPending={isDeleting}
+          />
+        </div>
+      }
+      onClick={handleCardClick}
+    />
   );
 }
-

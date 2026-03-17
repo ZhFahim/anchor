@@ -216,7 +216,10 @@ export class NotesService {
         state: NoteState.trashed,
       },
       orderBy: { updatedAt: 'desc' },
-      include: NOTE_INCLUDE_TAGS,
+      include: {
+        ...NOTE_INCLUDE_TAGS,
+        ...NOTE_INCLUDE_ATTACHMENT_COUNT,
+      },
     });
 
     return notes.map((note) => transformNote(note, userId));
@@ -231,7 +234,10 @@ export class NotesService {
         isArchived: true,
       },
       orderBy: { updatedAt: 'desc' },
-      include: NOTE_INCLUDE_TAGS,
+      include: {
+        ...NOTE_INCLUDE_TAGS,
+        ...NOTE_INCLUDE_ATTACHMENT_COUNT,
+      },
     });
 
     return notes.map((note) => transformNote(note, userId));
@@ -427,6 +433,7 @@ export class NotesService {
       include: {
         ...NOTE_INCLUDE_TAGS,
         ...NOTE_INCLUDE_SHARES,
+        ...NOTE_INCLUDE_ATTACHMENT_COUNT,
       },
     });
 
@@ -455,6 +462,7 @@ export class NotesService {
           include: {
             ...NOTE_INCLUDE_TAGS,
             ...NOTE_INCLUDE_SHARES,
+            ...NOTE_INCLUDE_ATTACHMENT_COUNT,
           },
         },
       },

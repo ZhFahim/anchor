@@ -9,7 +9,8 @@ import { AttachmentsCollapsible } from "../attachments";
 interface NoteEditorContentProps {
   noteId?: string;
   canUpload?: boolean;
-  canDelete?: boolean;
+  isOwner?: boolean;
+  currentUserId?: string | null;
   attachmentCount?: number;
   title: string;
   content: string;
@@ -24,7 +25,8 @@ interface NoteEditorContentProps {
 export function NoteEditorContent({
   noteId,
   canUpload = false,
-  canDelete = false,
+  isOwner = false,
+  currentUserId = null,
   attachmentCount,
   title,
   content,
@@ -77,7 +79,8 @@ export function NoteEditorContent({
             <AttachmentsCollapsible
               noteId={noteId!}
               canUpload={!isTrashed && canUpload}
-              canDelete={canDelete}
+              isOwner={isOwner}
+              currentUserId={currentUserId}
             />
           </div>
         )}

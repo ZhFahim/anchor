@@ -10,8 +10,10 @@ export const ACCEPTED_AUDIO_TYPES = [
   "audio/mpeg",
   "audio/wav",
   "audio/mp4",
-  "audio/ogg",
   "audio/x-m4a",
+  "audio/ogg",
+  "audio/aac",
+  "audio/webm",
 ] as const;
 
 export const ACCEPTED_ATTACHMENT_TYPES = [
@@ -22,12 +24,9 @@ export const ACCEPTED_ATTACHMENT_TYPES = [
 /** Comma-separated string for the HTML input accept attribute */
 export const ACCEPTED_TYPES_STRING = ACCEPTED_ATTACHMENT_TYPES.join(",");
 
-/** Check if a file is an accepted attachment type */
+const ACCEPTED_MIME_SET = new Set<string>(ACCEPTED_ATTACHMENT_TYPES);
+
+/** Check if a file's MIME type is in the server's allowlist */
 export function isAcceptedAttachmentType(file: File): boolean {
-  const type = file.type;
-  return (
-    type.startsWith("image/") ||
-    type.startsWith("audio/") ||
-    type === "audio/x-m4a"
-  );
+  return ACCEPTED_MIME_SET.has(file.type);
 }

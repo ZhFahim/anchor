@@ -5,6 +5,7 @@ This is the Flutter mobile application for Anchor, a self-hosted note-taking pla
 ## Features
 
 -   **Offline-First**: Create and edit notes without an internet connection.
+-   **Attachments**: Attach images and audio recordings to notes.
 -   **Rich Text Editor**: Format your thoughts with bold, italic, lists, and more using Flutter Quill.
 -   **Sync**: Automatic bidirectional sync with the self-hosted server when online.
 -   **Secure**: JWT authentication and secure local storage.

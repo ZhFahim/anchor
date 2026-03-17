@@ -25,9 +25,11 @@ import {
   ShareDialog,
 } from "@/features/notes";
 import type { CreateNoteDto, UpdateNoteDto, Note } from "@/features/notes";
+import { useAuth } from "@/features/auth";
 import { toast } from "sonner";
 
 export default function NoteEditorPage() {
+  const { user } = useAuth();
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -390,7 +392,8 @@ export default function NoteEditorPage() {
       <NoteEditorContent
         noteId={!isNew ? noteId : undefined}
         canUpload={isOwner || isEditor}
-        canDelete={isOwner}
+        isOwner={isOwner}
+        currentUserId={user?.id ?? null}
         title={title}
         content={content}
         selectedTagIds={selectedTagIds}

@@ -22,14 +22,23 @@ import { AudioAttachmentList } from "./audio-attachment-list";
 interface AttachmentsCollapsibleProps {
   noteId: string;
   canUpload: boolean;
-  canDelete: boolean;
+  isOwner: boolean;
+  currentUserId?: string | null;
 }
 
 export function AttachmentsCollapsible({
   noteId,
   canUpload,
-  canDelete,
+  isOwner,
+  currentUserId = null,
 }: AttachmentsCollapsibleProps) {
+  const getCanDelete = useCallback(
+    (attachment: NoteAttachment) =>
+      canUpload &&
+      (isOwner ||
+        (currentUserId != null && attachment.uploadedByUserId === currentUserId)),
+    [canUpload, isOwner, currentUserId]
+  );
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<NoteAttachment | null>(null);
@@ -107,6 +116,14 @@ export function AttachmentsCollapsible({
     async (files: File[]) => {
       if (files.length === 0) return;
 
+      const MAX_SIZE = 50 * 1024 * 1024; // 50 MB — matches server limit
+      const oversized = files.filter((f) => f.size > MAX_SIZE);
+      if (oversized.length > 0) {
+        const names = oversized.map((f) => f.name).join(", ");
+        toast.error(`File too large (max 50 MB): ${names}`);
+        return;
+      }
+
       const invalidate = () => {
         queryClient.invalidateQueries({ queryKey: ["attachments", noteId] });
         queryClient.invalidateQueries({ queryKey: ["notes"] });
@@ -157,7 +174,8 @@ export function AttachmentsCollapsible({
   const audioAttachments = attachments.filter((a) => a.type === "audio");
   const hasAttachments = attachments.length > 0;
   const previewImages = imageAttachments.slice(0, 4);
-  const remainingCount = attachments.length - previewImages.length;
+  const remainingCount =
+    (imageAttachments.length - previewImages.length) + audioAttachments.length;
 
   // Don't render anything if no attachments and can't upload
   if (!hasAttachments && !canUpload) return null;
@@ -219,7 +237,7 @@ export function AttachmentsCollapsible({
             <ImageAttachmentGrid
               noteId={noteId}
               attachments={imageAttachments}
-              canDelete={canDelete}
+              getCanDelete={getCanDelete}
               canReorder={canUpload}
               onDelete={handleDeleteRequest}
               onReorder={(orderedImageIds) => {
@@ -236,7 +254,7 @@ export function AttachmentsCollapsible({
             <AudioAttachmentList
               noteId={noteId}
               attachments={audioAttachments}
-              canDelete={canDelete}
+              getCanDelete={getCanDelete}
               onDelete={handleDeleteRequest}
             />
           )}

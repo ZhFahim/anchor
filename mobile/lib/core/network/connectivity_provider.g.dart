@@ -82,7 +82,7 @@ final class SyncManagerProvider extends $NotifierProvider<SyncManager, bool> {
   }
 }
 
-String _$syncManagerHash() => r'd5d09edd6423a1263b998d915708e9a8e264da89';
+String _$syncManagerHash() => r'c126ef59ad37bff111c818c09ac0343116684872';
 
 abstract class _$SyncManager extends $Notifier<bool> {
   bool build();
@@ -103,12 +103,16 @@ abstract class _$SyncManager extends $Notifier<bool> {
   }
 }
 
+/// Reactive online status — rebuilds when connectivity changes.
+
 @ProviderFor(isOnline)
 const isOnlineProvider = IsOnlineProvider._();
 
-final class IsOnlineProvider
-    extends $FunctionalProvider<AsyncValue<bool>, bool, FutureOr<bool>>
-    with $FutureModifier<bool>, $FutureProvider<bool> {
+/// Reactive online status — rebuilds when connectivity changes.
+
+final class IsOnlineProvider extends $FunctionalProvider<bool, bool, bool>
+    with $Provider<bool> {
+  /// Reactive online status — rebuilds when connectivity changes.
   const IsOnlineProvider._()
     : super(
         from: null,
@@ -125,13 +129,21 @@ final class IsOnlineProvider
 
   @$internal
   @override
-  $FutureProviderElement<bool> $createElement($ProviderPointer pointer) =>
-      $FutureProviderElement(pointer);
+  $ProviderElement<bool> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
 
   @override
-  FutureOr<bool> create(Ref ref) {
+  bool create(Ref ref) {
     return isOnline(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(bool value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<bool>(value),
+    );
   }
 }
 
-String _$isOnlineHash() => r'e62aa0103f472e2bbcdbc3698127b57f571f7234';
+String _$isOnlineHash() => r'22038f50efa2819394df622acba2df1438ef7548';

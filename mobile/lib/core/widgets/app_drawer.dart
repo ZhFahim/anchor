@@ -200,7 +200,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                       ),
                     ),
                   ),
-                  if (trailing != null) trailing,
+                  ?trailing,
                 ],
               ),
             ),

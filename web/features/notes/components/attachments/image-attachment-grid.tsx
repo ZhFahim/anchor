@@ -26,7 +26,7 @@ import { ImageAttachmentItem } from "./image-attachment-item";
 interface ImageAttachmentGridProps {
   noteId: string;
   attachments: NoteAttachment[];
-  canDelete: boolean;
+  getCanDelete: (attachment: NoteAttachment) => boolean;
   canReorder: boolean;
   onDelete: (id: string) => void;
   onReorder: (orderedIds: string[]) => void;
@@ -35,7 +35,7 @@ interface ImageAttachmentGridProps {
 export function ImageAttachmentGrid({
   noteId,
   attachments,
-  canDelete,
+  getCanDelete,
   canReorder,
   onDelete,
   onReorder,
@@ -89,7 +89,7 @@ export function ImageAttachmentGrid({
           key={attachment.id}
           noteId={noteId}
           attachment={attachment}
-          canDelete={canDelete}
+          canDelete={getCanDelete(attachment)}
           canReorder={canReorder}
           onDelete={onDelete}
         />
@@ -131,7 +131,7 @@ export function ImageAttachmentGrid({
               <ImageAttachmentItem
                 noteId={noteId}
                 attachment={activeAttachment}
-                canDelete={false}
+                canDelete={getCanDelete(activeAttachment)}
                 onDelete={() => {}}
               />
             </div>

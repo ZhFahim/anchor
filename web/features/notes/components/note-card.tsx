@@ -22,6 +22,9 @@ interface NoteCardProps {
   isSelectionMode?: boolean;
   isSelected?: boolean;
   onSelectChange?: (noteId: string, ctrlOrCmd: boolean, shift: boolean) => void;
+  footerLeft?: React.ReactNode;
+  footerRight?: React.ReactNode;
+  onClick?: (e: React.MouseEvent) => void;
 }
 
 export function NoteCard({
@@ -31,6 +34,9 @@ export function NoteCard({
   isSelectionMode = false,
   isSelected = false,
   onSelectChange,
+  footerLeft,
+  footerRight,
+  onClick: onClickProp,
 }: NoteCardProps) {
   const router = useRouter();
 
@@ -69,11 +75,13 @@ export function NoteCard({
   // Calculate stagger delay (max 500ms for first 10 items)
   const staggerDelay = Math.min(index * 50, 500);
 
+  const effectiveOnClick = onClickProp ?? handleNoteClick;
+
   // List view layout
   if (viewMode === "list") {
     return (
       <div
-        onClick={handleNoteClick}
+        onClick={effectiveOnClick}
         onMouseDown={(e) => {
           // Prevent text selection when using modifier keys
           if (e.ctrlKey || e.metaKey || e.shiftKey) {
@@ -161,17 +169,22 @@ export function NoteCard({
                         )}
                       </div>
                     )}
-                    <SharedNoteIndicator note={note} />
-                    {/* Only show paperclip count if no image previews */}
-                    {(note.attachmentCount ?? 0) > 0 && (!note.imagePreviewIds || note.imagePreviewIds.length === 0) && (
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <Paperclip className="h-3 w-3" />
-                        <span>{note.attachmentCount}</span>
-                      </div>
+                    {footerLeft ?? (
+                      <>
+                        <SharedNoteIndicator note={note} />
+                        {/* Only show paperclip count if no image previews */}
+                        {(note.attachmentCount ?? 0) > 0 && (!note.imagePreviewIds || note.imagePreviewIds.length === 0) && (
+                          <div className="flex items-center gap-1 text-muted-foreground">
+                            <Paperclip className="h-3 w-3" />
+                            <span>{note.attachmentCount}</span>
+                          </div>
+                        )}
+                        <span className="text-xs text-muted-foreground font-medium">
+                          {format(new Date(note.updatedAt), "MMM d, yyyy")}
+                        </span>
+                      </>
                     )}
-                    <span className="text-xs text-muted-foreground font-medium">
-                      {format(new Date(note.updatedAt), "MMM d, yyyy")}
-                    </span>
+                    {footerRight}
                   </div>
                 </div>
 
@@ -194,7 +207,7 @@ export function NoteCard({
   // Grid and Masonry view (similar layout, different sizing)
   return (
     <div
-      onClick={handleNoteClick}
+      onClick={effectiveOnClick}
       onMouseDown={(e) => {
         // Prevent text selection when using modifier keys
         if (e.ctrlKey || e.metaKey || e.shiftKey) {
@@ -303,17 +316,22 @@ export function NoteCard({
             {/* Footer */}
             <div className="flex items-center justify-between text-xs text-muted-foreground mt-auto">
               <div className="flex items-center gap-2 flex-wrap">
-                <SharedNoteIndicator note={note} />
-                {(note.attachmentCount ?? 0) > 0 && (
-                  <div className="flex items-center gap-1 text-muted-foreground">
-                    <Paperclip className="h-3 w-3" />
-                    <span>{note.attachmentCount}</span>
-                  </div>
+                {footerLeft ?? (
+                  <>
+                    <SharedNoteIndicator note={note} />
+                    {(note.attachmentCount ?? 0) > 0 && (
+                      <div className="flex items-center gap-1 text-muted-foreground">
+                        <Paperclip className="h-3 w-3" />
+                        <span>{note.attachmentCount}</span>
+                      </div>
+                    )}
+                    <span className="font-medium">
+                      {format(new Date(note.updatedAt), "MMM d, yyyy")}
+                    </span>
+                  </>
                 )}
-                <span className="font-medium">
-                  {format(new Date(note.updatedAt), "MMM d, yyyy")}
-                </span>
               </div>
+              {footerRight}
             </div>
           </CardContent>
         </div>

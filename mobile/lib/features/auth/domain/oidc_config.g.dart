@@ -8,7 +8,7 @@ part of 'oidc_config.dart';
 
 _OidcConfig _$OidcConfigFromJson(Map<String, dynamic> json) => _OidcConfig(
   enabled: json['enabled'] as bool? ?? false,
-  providerName: json['providerName'] as String?,
+  providerName: json['providerName'] as String? ?? 'OIDC Provider',
   issuerUrl: json['issuerUrl'] as String?,
   clientId: json['clientId'] as String?,
   disableInternalAuth: json['disableInternalAuth'] as bool? ?? false,

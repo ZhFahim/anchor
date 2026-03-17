@@ -6,14 +6,14 @@ import { AudioAttachmentPlayer } from "./audio-attachment-player";
 interface AudioAttachmentListProps {
   noteId: string;
   attachments: NoteAttachment[];
-  canDelete: boolean;
+  getCanDelete: (attachment: NoteAttachment) => boolean;
   onDelete: (id: string) => void;
 }
 
 export function AudioAttachmentList({
   noteId,
   attachments,
-  canDelete,
+  getCanDelete,
   onDelete,
 }: AudioAttachmentListProps) {
   return (
@@ -25,7 +25,7 @@ export function AudioAttachmentList({
             key={attachment.id}
             noteId={noteId}
             attachment={attachment}
-            canDelete={canDelete}
+            canDelete={getCanDelete(attachment)}
             onDelete={onDelete}
           />
         ))}

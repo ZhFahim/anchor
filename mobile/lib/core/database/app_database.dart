@@ -5,17 +5,18 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../features/notes/data/local/notes_table.dart';
+import '../../features/notes/data/local/attachments_table.dart';
 import '../../features/tags/data/local/tags_table.dart';
 import '../providers/active_user_id_provider.dart';
 
 part 'app_database.g.dart';
 
-@DriftDatabase(tables: [Notes, Tags, NoteTags])
+@DriftDatabase(tables: [Notes, Tags, NoteTags, NoteAttachments])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(String userId) : super(_openConnection(userId));
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -39,6 +40,9 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(notes, notes.sharedByEmail);
         await m.addColumn(notes, notes.sharedByProfileImage);
       }
+      if (from < 7) {
+        await m.createTable(noteAttachments);
+      }
     },
   );
 }
@@ -48,7 +52,6 @@ LazyDatabase _openConnection(String userId) {
     final dbFolder = await getApplicationDocumentsDirectory();
     final userDbFile = File(path.join(dbFolder.path, 'db_$userId.sqlite'));
 
-    // One-time migration: rename legacy db.sqlite for current user
     if (!userDbFile.existsSync()) {
       final legacyFile = File(path.join(dbFolder.path, 'db.sqlite'));
       if (legacyFile.existsSync()) {

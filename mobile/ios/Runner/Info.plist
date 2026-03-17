@@ -56,5 +56,15 @@
 			</array>
 		</dict>
 	</array>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Anchor needs microphone access to record audio notes.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Anchor needs camera access to take photos and attach them to notes.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Anchor needs photo library access to attach images to notes.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Anchor needs access to save images to your photo library.</string>
+	<key>NSAppleMusicUsageDescription</key>
+	<string>Anchor needs access to your music library to attach audio files to notes.</string>
 </dict>
 </plist>

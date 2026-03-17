@@ -306,7 +306,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   ),
                                 ],
                               ),
-                              error: (_, __) => Row(
+                              error: (_, _) => Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(

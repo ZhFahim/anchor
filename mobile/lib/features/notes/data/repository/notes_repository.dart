@@ -9,7 +9,9 @@ import '../../../../core/database/app_database.dart';
 import '../../../../core/network/dio_provider.dart';
 import '../../../../core/providers/active_user_id_provider.dart';
 import '../../domain/note.dart' as domain;
+import '../../domain/note_attachment.dart' as domain;
 import '../../../tags/data/repository/tags_repository.dart';
+import 'note_attachments_repository.dart';
 
 part 'notes_repository.g.dart';
 
@@ -19,8 +21,9 @@ NotesRepository notesRepository(Ref ref) {
   final dio = ref.watch(dioProvider);
   const storage = FlutterSecureStorage();
   final tagsRepo = ref.watch(tagsRepositoryProvider);
+  final attachmentsRepo = ref.watch(noteAttachmentsRepositoryProvider);
   final userId = ref.watch(activeUserIdProvider)!;
-  return NotesRepository(db, dio, storage, tagsRepo, userId);
+  return NotesRepository(db, dio, storage, tagsRepo, attachmentsRepo, userId);
 }
 
 class NotesRepository {
@@ -28,19 +31,35 @@ class NotesRepository {
   final Dio _dio;
   final FlutterSecureStorage _storage;
   final TagsRepository _tagsRepo;
+  final NoteAttachmentsRepository _attachmentsRepo;
   final String _userId;
 
-  NotesRepository(this._db, this._dio, this._storage, this._tagsRepo, this._userId);
+  NotesRepository(
+    this._db,
+    this._dio,
+    this._storage,
+    this._tagsRepo,
+    this._attachmentsRepo,
+    this._userId,
+  );
 
   String get _lastSyncKey => 'last_synced_at_$_userId';
 
   // Watch only active notes
-  // Uses a left outer join to fetch notes and their tags in a single query
+  // Uses left outer joins to fetch notes, their tags, and image attachment paths
   Stream<List<domain.Note>> watchNotes({String? tagId}) {
     final query = _db.select(_db.notes).join([
       drift.leftOuterJoin(
         _db.noteTags,
         _db.noteTags.noteId.equalsExp(_db.notes.id),
+      ),
+      drift.leftOuterJoin(
+        _db.noteAttachments,
+        _db.noteAttachments.noteId.equalsExp(_db.notes.id) &
+            _db.noteAttachments.type.equals('image') &
+            _db.noteAttachments.syncStatus.isNotValue(
+              domain.AttachmentSyncStatus.pendingDelete.dbValue,
+            ),
       ),
     ]);
 
@@ -67,32 +86,61 @@ class NotesRepository {
         expression: _db.notes.updatedAt,
         mode: drift.OrderingMode.desc,
       ),
+      drift.OrderingTerm(
+        expression: _db.noteAttachments.position,
+        mode: drift.OrderingMode.asc,
+      ),
     ]);
 
-    // Watch the query - emits when notes or noteTags change
+    // Watch the query - emits when notes, noteTags, or noteAttachments change
     return query.watch().map((rows) {
-      // Group rows by note ID to handle one-to-many relationship
+      // Group rows by note ID to handle one-to-many relationships
       final noteMap = <String, domain.Note>{};
+      // Track up to 4 image attachment previews per note
+      final imagePreviewsMap = <String, List<domain.NoteImagePreview>>{};
 
       for (final row in rows) {
         final note = row.readTable(_db.notes);
-        final tagId = row.readTableOrNull(_db.noteTags)?.tagId;
+        final tagRow = row.readTableOrNull(_db.noteTags);
+        final attachmentRow = row.readTableOrNull(_db.noteAttachments);
 
         if (!noteMap.containsKey(note.id)) {
           noteMap[note.id] = _mapToDomain(note, []);
+          imagePreviewsMap[note.id] = [];
         }
 
-        if (tagId != null) {
+        if (tagRow?.tagId != null) {
           final currentNote = noteMap[note.id]!;
-          if (!currentNote.tagIds.contains(tagId)) {
+          if (!currentNote.tagIds.contains(tagRow!.tagId)) {
             noteMap[note.id] = currentNote.copyWith(
-              tagIds: [...currentNote.tagIds, tagId],
+              tagIds: [...currentNote.tagIds, tagRow.tagId],
+            );
+          }
+        }
+
+        if (attachmentRow != null) {
+          final previews = imagePreviewsMap[note.id]!;
+          final attachmentId =
+              attachmentRow.serverAttachmentId ?? attachmentRow.id;
+          if (previews.length < 4 &&
+              !previews.any((p) => p.attachmentId == attachmentId)) {
+            previews.add(
+              domain.NoteImagePreview(
+                attachmentId: attachmentId,
+                noteId: note.id,
+                filename: attachmentRow.originalFilename,
+                localPath: attachmentRow.localPath,
+              ),
             );
           }
         }
       }
 
-      return noteMap.values.toList();
+      return noteMap.entries.map((entry) {
+        return entry.value.copyWith(
+          imagePreviewData: imagePreviewsMap[entry.key] ?? [],
+        );
+      }).toList();
     });
   }
 
@@ -105,6 +153,14 @@ class NotesRepository {
               _db.noteTags,
               _db.noteTags.noteId.equalsExp(_db.notes.id),
             ),
+            drift.leftOuterJoin(
+              _db.noteAttachments,
+              _db.noteAttachments.noteId.equalsExp(_db.notes.id) &
+                  _db.noteAttachments.type.equals('image') &
+                  _db.noteAttachments.syncStatus.isNotValue(
+                    domain.AttachmentSyncStatus.pendingDelete.dbValue,
+                  ),
+            ),
           ])
           ..where(_db.notes.state.equals('trashed'))
           ..orderBy([
@@ -112,14 +168,20 @@ class NotesRepository {
               expression: _db.notes.updatedAt,
               mode: drift.OrderingMode.desc,
             ),
+            drift.OrderingTerm(
+              expression: _db.noteAttachments.position,
+              mode: drift.OrderingMode.asc,
+            ),
           ]);
 
     await for (final rows in query.watch()) {
       final noteMap = <String, domain.Note>{};
+      final imagePreviewsMap = <String, List<domain.NoteImagePreview>>{};
 
       for (final row in rows) {
         final note = row.readTable(_db.notes);
         final tagId = row.readTableOrNull(_db.noteTags)?.tagId;
+        final attachmentRow = row.readTableOrNull(_db.noteAttachments);
 
         // Skip shared notes that are trashed (only show owned notes)
         if (note.permission != 'owner') {
@@ -128,6 +190,7 @@ class NotesRepository {
 
         if (!noteMap.containsKey(note.id)) {
           noteMap[note.id] = _mapToDomain(note, []);
+          imagePreviewsMap[note.id] = [];
         }
 
         if (tagId != null) {
@@ -138,9 +201,32 @@ class NotesRepository {
             );
           }
         }
+
+        if (attachmentRow != null) {
+          final previews = imagePreviewsMap[note.id]!;
+          final attachmentId =
+              attachmentRow.serverAttachmentId ?? attachmentRow.id;
+          if (previews.length < 4 &&
+              !previews.any((p) => p.attachmentId == attachmentId)) {
+            previews.add(
+              domain.NoteImagePreview(
+                attachmentId: attachmentId,
+                noteId: note.id,
+                filename: attachmentRow.originalFilename,
+                localPath: attachmentRow.localPath,
+              ),
+            );
+          }
+        }
       }
 
-      yield noteMap.values.toList();
+      yield noteMap.entries
+          .map(
+            (e) => e.value.copyWith(
+              imagePreviewData: imagePreviewsMap[e.key] ?? [],
+            ),
+          )
+          .toList();
     }
   }
 
@@ -152,6 +238,14 @@ class NotesRepository {
               _db.noteTags,
               _db.noteTags.noteId.equalsExp(_db.notes.id),
             ),
+            drift.leftOuterJoin(
+              _db.noteAttachments,
+              _db.noteAttachments.noteId.equalsExp(_db.notes.id) &
+                  _db.noteAttachments.type.equals('image') &
+                  _db.noteAttachments.syncStatus.isNotValue(
+                    domain.AttachmentSyncStatus.pendingDelete.dbValue,
+                  ),
+            ),
           ])
           ..where(_db.notes.state.equals('active'))
           ..where(_db.notes.isArchived.equals(true))
@@ -160,17 +254,24 @@ class NotesRepository {
               expression: _db.notes.updatedAt,
               mode: drift.OrderingMode.desc,
             ),
+            drift.OrderingTerm(
+              expression: _db.noteAttachments.position,
+              mode: drift.OrderingMode.asc,
+            ),
           ]);
 
     return query.watch().map((rows) {
       final noteMap = <String, domain.Note>{};
+      final imagePreviewsMap = <String, List<domain.NoteImagePreview>>{};
 
       for (final row in rows) {
         final note = row.readTable(_db.notes);
         final tagId = row.readTableOrNull(_db.noteTags)?.tagId;
+        final attachmentRow = row.readTableOrNull(_db.noteAttachments);
 
         if (!noteMap.containsKey(note.id)) {
           noteMap[note.id] = _mapToDomain(note, []);
+          imagePreviewsMap[note.id] = [];
         }
 
         if (tagId != null) {
@@ -181,9 +282,32 @@ class NotesRepository {
             );
           }
         }
+
+        if (attachmentRow != null) {
+          final previews = imagePreviewsMap[note.id]!;
+          final attachmentId =
+              attachmentRow.serverAttachmentId ?? attachmentRow.id;
+          if (previews.length < 4 &&
+              !previews.any((p) => p.attachmentId == attachmentId)) {
+            previews.add(
+              domain.NoteImagePreview(
+                attachmentId: attachmentId,
+                noteId: note.id,
+                filename: attachmentRow.originalFilename,
+                localPath: attachmentRow.localPath,
+              ),
+            );
+          }
+        }
       }
 
-      return noteMap.values.toList();
+      return noteMap.entries
+          .map(
+            (e) => e.value.copyWith(
+              imagePreviewData: imagePreviewsMap[e.key] ?? [],
+            ),
+          )
+          .toList();
     });
   }
 
@@ -324,6 +448,9 @@ class NotesRepository {
   // Permanent delete - sets state to deleted (tombstone)
   // The note will be removed locally after sync confirms server received it
   Future<void> permanentDelete(String id) async {
+    // Clean up local attachment files and DB records
+    await _attachmentsRepo.deleteAllLocalForNote(id);
+
     final now = DateTime.now();
     await (_db.update(_db.notes)..where((tbl) => tbl.id.equals(id))).write(
       NotesCompanion(
@@ -383,27 +510,41 @@ class NotesRepository {
           (data['revokedSharedNoteIds'] as List?)?.cast<String>() ?? [];
       final syncedAt = data['syncedAt'] as String;
 
-      // 4. Process server changes with conflict resolution
+      final processedIds =
+          (data['processedIds'] as List?)?.cast<String>() ?? [];
+
+      final noteIdsForFileCleanup = <String>[];
+
+      // 4. Process server changes
       await _db.transaction(() async {
         // First handle revocations - delete these notes
         for (final revokedId in revokedNoteIds) {
+          // Remove attachment rows so reactive streams update immediately
+          await (_db.delete(
+            _db.noteAttachments,
+          )..where((tbl) => tbl.noteId.equals(revokedId))).go();
           await (_db.delete(
             _db.noteTags,
           )..where((tbl) => tbl.noteId.equals(revokedId))).go();
           await (_db.delete(
             _db.notes,
           )..where((tbl) => tbl.id.equals(revokedId))).go();
+          noteIdsForFileCleanup.add(revokedId);
         }
 
         for (final serverNote in serverChanges) {
           // If server note is deleted (tombstone), remove it locally
           if (serverNote.isDeleted) {
             await (_db.delete(
+              _db.noteAttachments,
+            )..where((tbl) => tbl.noteId.equals(serverNote.id))).go();
+            await (_db.delete(
               _db.noteTags,
             )..where((tbl) => tbl.noteId.equals(serverNote.id))).go();
             await (_db.delete(
               _db.notes,
             )..where((tbl) => tbl.id.equals(serverNote.id))).go();
+            noteIdsForFileCleanup.add(serverNote.id);
             continue;
           }
 
@@ -456,12 +597,25 @@ class NotesRepository {
             }
           }
         }
+      });
 
-        // Mark all successfully pushed notes as synced
-        final processedIds =
-            (data['processedIds'] as List?)?.cast<String>() ?? [];
+      // Clean up local attachment files for revoked/deleted notes after the
+      // transaction has committed
+      for (final noteId in noteIdsForFileCleanup) {
+        await _attachmentsRepo.deleteLocalFilesForNote(noteId);
+      }
+
+      // 5. Sync pending attachment uploads and deletes with server
+      await _attachmentsRepo.sync();
+
+      // 6. Fetch fresh attachment metadata for notes that changed this cycle
+      await _attachmentsRepo.fetchAttachmentsForNotes(
+        serverChanges.where((n) => !n.isDeleted).map((n) => n.id).toList(),
+      );
+
+      // 7. Mark notes as synced
+      await _db.transaction(() async {
         for (final id in processedIds) {
-          // Check if the note was a tombstone - if so, delete it locally
           final note = await (_db.select(
             _db.notes,
           )..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
@@ -473,16 +627,20 @@ class NotesRepository {
               _db.notes,
             )..where((tbl) => tbl.id.equals(id))).go();
           } else {
-            await (_db.update(_db.notes)..where((tbl) => tbl.id.equals(id)))
-                .write(const NotesCompanion(isSynced: drift.Value(true)));
+            final hasPending = await _attachmentsRepo
+                .hasPendingAttachmentsForNote(id);
+            if (!hasPending) {
+              await (_db.update(_db.notes)..where((tbl) => tbl.id.equals(id)))
+                  .write(const NotesCompanion(isSynced: drift.Value(true)));
+            }
           }
         }
       });
 
-      // 5. Save new sync timestamp
+      // 8. Save new sync timestamp
       await _storage.write(key: _lastSyncKey, value: syncedAt);
     } catch (e) {
-      // Sync failed, will retry later
+      // Sync failed, will retry later (handled by sync loop)
     }
   }
 

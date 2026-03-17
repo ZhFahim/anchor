@@ -34,6 +34,7 @@ export class NoteAttachmentsService {
       noteId,
       NoteSharePermission.editor,
     );
+    await this.noteAccessService.ensureNoteIsActive(noteId);
 
     if (!file) {
       throw new BadRequestException('No file provided');
@@ -65,23 +66,31 @@ export class NoteAttachmentsService {
       await fs.writeFile(filePath, file.buffer);
       fileSaved = true;
 
-      const maxPositionResult = await this.prisma.noteAttachment.aggregate({
-        where: { noteId },
-        _max: { position: true },
-      });
-      const nextPosition = (maxPositionResult._max.position ?? -1) + 1;
+      const attachment = await this.prisma.$transaction(async (tx) => {
+        // Shift all existing attachments down to make room at position 0
+        await tx.noteAttachment.updateMany({
+          where: { noteId },
+          data: { position: { increment: 1 } },
+        });
 
-      const attachment = await this.prisma.noteAttachment.create({
-        data: {
-          noteId,
-          uploadedByUserId: userId,
-          type: attachmentType,
-          originalFilename: file.originalname,
-          storedFilename,
-          mimeType: file.mimetype,
-          fileSize: file.size,
-          position: nextPosition,
-        },
+        return tx.noteAttachment.create({
+          data: {
+            noteId,
+            uploadedByUserId: userId,
+            type: attachmentType,
+            originalFilename: file.originalname,
+            storedFilename,
+            mimeType: file.mimetype,
+            fileSize: file.size,
+            position: 0,
+          },
+        });
+      });
+
+      // Touch the note so it appears in the sync feed for other clients
+      await this.prisma.note.update({
+        where: { id: noteId },
+        data: { updatedAt: new Date() },
       });
 
       return toAttachmentResponse(attachment);
@@ -135,8 +144,7 @@ export class NoteAttachmentsService {
   }
 
   async remove(userId: string, noteId: string, attachmentId: string) {
-    // Owner only can delete attachments
-    await this.noteAccessService.verifyNoteOwnership(userId, noteId);
+    await this.noteAccessService.ensureNoteIsActive(noteId);
 
     const attachment = await this.prisma.noteAttachment.findFirst({
       where: { id: attachmentId, noteId },
@@ -146,7 +154,28 @@ export class NoteAttachmentsService {
       throw new NotFoundException('Attachment not found');
     }
 
+    // Owner can delete any attachment; editors can delete their own uploads
+    const access = await this.noteAccessService.hasNoteAccess(
+      userId,
+      noteId,
+      NoteSharePermission.editor,
+    );
+    if (!access.hasAccess) {
+      throw new NotFoundException('Note not found');
+    }
+    if (!access.isOwner && attachment.uploadedByUserId !== userId) {
+      throw new BadRequestException(
+        'You can only delete attachments you uploaded',
+      );
+    }
+
     await this.prisma.noteAttachment.delete({ where: { id: attachmentId } });
+
+    // Touch the note so it appears in the sync feed for other clients
+    await this.prisma.note.update({
+      where: { id: noteId },
+      data: { updatedAt: new Date() },
+    });
 
     const filePath = path.join(this.baseDir, noteId, attachment.storedFilename);
     try {
@@ -168,6 +197,7 @@ export class NoteAttachmentsService {
       noteId,
       NoteSharePermission.editor,
     );
+    await this.noteAccessService.ensureNoteIsActive(noteId);
 
     const attachments = await this.prisma.noteAttachment.findMany({
       where: { noteId },
@@ -185,14 +215,19 @@ export class NoteAttachmentsService {
       }
     }
 
-    await this.prisma.$transaction(
-      orderedIds.map((id, index) =>
+    await this.prisma.$transaction([
+      ...orderedIds.map((id, index) =>
         this.prisma.noteAttachment.update({
           where: { id },
           data: { position: index },
         }),
       ),
-    );
+      // Touch the note so it appears in the sync feed for other clients
+      this.prisma.note.update({
+        where: { id: noteId },
+        data: { updatedAt: new Date() },
+      }),
+    ]);
 
     return this.findAll(userId, noteId);
   }

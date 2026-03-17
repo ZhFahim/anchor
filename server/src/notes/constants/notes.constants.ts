@@ -60,15 +60,19 @@ export const NOTE_INCLUDE_SHARES = {
 export const ATTACHMENT_MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
 export const ATTACHMENT_ALLOWED_MIME_TYPES = new Set([
+  // Image
   'image/jpeg',
   'image/png',
   'image/webp',
   'image/gif',
+  // Audio
   'audio/mpeg',
   'audio/wav',
   'audio/mp4',
-  'audio/ogg',
   'audio/x-m4a',
+  'audio/ogg',
+  'audio/aac',
+  'audio/webm',
 ]);
 
 // Error messages

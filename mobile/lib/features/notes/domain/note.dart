@@ -3,6 +3,21 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'note.freezed.dart';
 part 'note.g.dart';
 
+/// Preview info for note card image attachments; enough to fetch image if not cached.
+class NoteImagePreview {
+  final String attachmentId;
+  final String noteId;
+  final String filename;
+  final String? localPath;
+
+  const NoteImagePreview({
+    required this.attachmentId,
+    required this.noteId,
+    required this.filename,
+    this.localPath,
+  });
+}
+
 enum NoteState {
   active,
   trashed,
@@ -31,7 +46,8 @@ enum NotePermission {
   }
 
   bool get isOwner => this == NotePermission.owner;
-  bool get canEdit => this == NotePermission.owner || this == NotePermission.editor;
+  bool get canEdit =>
+      this == NotePermission.owner || this == NotePermission.editor;
 }
 
 /// User who shared the note
@@ -69,6 +85,10 @@ abstract class Note with _$Note {
     @Default(true)
     @JsonKey(includeFromJson: false, includeToJson: false)
     bool isSynced,
+    // Local only - image attachment previews for card thumbnails
+    @Default([])
+    @JsonKey(includeFromJson: false, includeToJson: false)
+    List<NoteImagePreview> imagePreviewData,
   }) = _Note;
 
   factory Note.fromJson(Map<String, dynamic> json) => _$NoteFromJson(json);

@@ -1504,17 +1504,746 @@ class NoteTagsCompanion extends UpdateCompanion<NoteTag> {
   }
 }
 
+class $NoteAttachmentsTable extends NoteAttachments
+    with TableInfo<$NoteAttachmentsTable, NoteAttachment> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NoteAttachmentsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _noteIdMeta = const VerificationMeta('noteId');
+  @override
+  late final GeneratedColumn<String> noteId = GeneratedColumn<String>(
+    'note_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _typeMeta = const VerificationMeta('type');
+  @override
+  late final GeneratedColumn<String> type = GeneratedColumn<String>(
+    'type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _originalFilenameMeta = const VerificationMeta(
+    'originalFilename',
+  );
+  @override
+  late final GeneratedColumn<String> originalFilename = GeneratedColumn<String>(
+    'original_filename',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _mimeTypeMeta = const VerificationMeta(
+    'mimeType',
+  );
+  @override
+  late final GeneratedColumn<String> mimeType = GeneratedColumn<String>(
+    'mime_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fileSizeMeta = const VerificationMeta(
+    'fileSize',
+  );
+  @override
+  late final GeneratedColumn<int> fileSize = GeneratedColumn<int>(
+    'file_size',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _positionMeta = const VerificationMeta(
+    'position',
+  );
+  @override
+  late final GeneratedColumn<int> position = GeneratedColumn<int>(
+    'position',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _localPathMeta = const VerificationMeta(
+    'localPath',
+  );
+  @override
+  late final GeneratedColumn<String> localPath = GeneratedColumn<String>(
+    'local_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('synced'),
+  );
+  static const VerificationMeta _serverAttachmentIdMeta =
+      const VerificationMeta('serverAttachmentId');
+  @override
+  late final GeneratedColumn<String> serverAttachmentId =
+      GeneratedColumn<String>(
+        'server_attachment_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _uploadedByUserIdMeta = const VerificationMeta(
+    'uploadedByUserId',
+  );
+  @override
+  late final GeneratedColumn<String> uploadedByUserId = GeneratedColumn<String>(
+    'uploaded_by_user_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    noteId,
+    type,
+    originalFilename,
+    mimeType,
+    fileSize,
+    position,
+    localPath,
+    syncStatus,
+    serverAttachmentId,
+    uploadedByUserId,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'note_attachments';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NoteAttachment> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('note_id')) {
+      context.handle(
+        _noteIdMeta,
+        noteId.isAcceptableOrUnknown(data['note_id']!, _noteIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_noteIdMeta);
+    }
+    if (data.containsKey('type')) {
+      context.handle(
+        _typeMeta,
+        type.isAcceptableOrUnknown(data['type']!, _typeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_typeMeta);
+    }
+    if (data.containsKey('original_filename')) {
+      context.handle(
+        _originalFilenameMeta,
+        originalFilename.isAcceptableOrUnknown(
+          data['original_filename']!,
+          _originalFilenameMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_originalFilenameMeta);
+    }
+    if (data.containsKey('mime_type')) {
+      context.handle(
+        _mimeTypeMeta,
+        mimeType.isAcceptableOrUnknown(data['mime_type']!, _mimeTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_mimeTypeMeta);
+    }
+    if (data.containsKey('file_size')) {
+      context.handle(
+        _fileSizeMeta,
+        fileSize.isAcceptableOrUnknown(data['file_size']!, _fileSizeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fileSizeMeta);
+    }
+    if (data.containsKey('position')) {
+      context.handle(
+        _positionMeta,
+        position.isAcceptableOrUnknown(data['position']!, _positionMeta),
+      );
+    }
+    if (data.containsKey('local_path')) {
+      context.handle(
+        _localPathMeta,
+        localPath.isAcceptableOrUnknown(data['local_path']!, _localPathMeta),
+      );
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('server_attachment_id')) {
+      context.handle(
+        _serverAttachmentIdMeta,
+        serverAttachmentId.isAcceptableOrUnknown(
+          data['server_attachment_id']!,
+          _serverAttachmentIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('uploaded_by_user_id')) {
+      context.handle(
+        _uploadedByUserIdMeta,
+        uploadedByUserId.isAcceptableOrUnknown(
+          data['uploaded_by_user_id']!,
+          _uploadedByUserIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  NoteAttachment map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NoteAttachment(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      noteId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note_id'],
+      )!,
+      type: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}type'],
+      )!,
+      originalFilename: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}original_filename'],
+      )!,
+      mimeType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}mime_type'],
+      )!,
+      fileSize: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}file_size'],
+      )!,
+      position: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}position'],
+      )!,
+      localPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}local_path'],
+      ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      serverAttachmentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}server_attachment_id'],
+      ),
+      uploadedByUserId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}uploaded_by_user_id'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $NoteAttachmentsTable createAlias(String alias) {
+    return $NoteAttachmentsTable(attachedDatabase, alias);
+  }
+}
+
+class NoteAttachment extends DataClass implements Insertable<NoteAttachment> {
+  final String id;
+  final String noteId;
+  final String type;
+  final String originalFilename;
+  final String mimeType;
+  final int fileSize;
+  final int position;
+  final String? localPath;
+  final String syncStatus;
+  final String? serverAttachmentId;
+  final String? uploadedByUserId;
+  final DateTime createdAt;
+  const NoteAttachment({
+    required this.id,
+    required this.noteId,
+    required this.type,
+    required this.originalFilename,
+    required this.mimeType,
+    required this.fileSize,
+    required this.position,
+    this.localPath,
+    required this.syncStatus,
+    this.serverAttachmentId,
+    this.uploadedByUserId,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['note_id'] = Variable<String>(noteId);
+    map['type'] = Variable<String>(type);
+    map['original_filename'] = Variable<String>(originalFilename);
+    map['mime_type'] = Variable<String>(mimeType);
+    map['file_size'] = Variable<int>(fileSize);
+    map['position'] = Variable<int>(position);
+    if (!nullToAbsent || localPath != null) {
+      map['local_path'] = Variable<String>(localPath);
+    }
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || serverAttachmentId != null) {
+      map['server_attachment_id'] = Variable<String>(serverAttachmentId);
+    }
+    if (!nullToAbsent || uploadedByUserId != null) {
+      map['uploaded_by_user_id'] = Variable<String>(uploadedByUserId);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  NoteAttachmentsCompanion toCompanion(bool nullToAbsent) {
+    return NoteAttachmentsCompanion(
+      id: Value(id),
+      noteId: Value(noteId),
+      type: Value(type),
+      originalFilename: Value(originalFilename),
+      mimeType: Value(mimeType),
+      fileSize: Value(fileSize),
+      position: Value(position),
+      localPath: localPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(localPath),
+      syncStatus: Value(syncStatus),
+      serverAttachmentId: serverAttachmentId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serverAttachmentId),
+      uploadedByUserId: uploadedByUserId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(uploadedByUserId),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory NoteAttachment.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NoteAttachment(
+      id: serializer.fromJson<String>(json['id']),
+      noteId: serializer.fromJson<String>(json['noteId']),
+      type: serializer.fromJson<String>(json['type']),
+      originalFilename: serializer.fromJson<String>(json['originalFilename']),
+      mimeType: serializer.fromJson<String>(json['mimeType']),
+      fileSize: serializer.fromJson<int>(json['fileSize']),
+      position: serializer.fromJson<int>(json['position']),
+      localPath: serializer.fromJson<String?>(json['localPath']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      serverAttachmentId: serializer.fromJson<String?>(
+        json['serverAttachmentId'],
+      ),
+      uploadedByUserId: serializer.fromJson<String?>(json['uploadedByUserId']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'noteId': serializer.toJson<String>(noteId),
+      'type': serializer.toJson<String>(type),
+      'originalFilename': serializer.toJson<String>(originalFilename),
+      'mimeType': serializer.toJson<String>(mimeType),
+      'fileSize': serializer.toJson<int>(fileSize),
+      'position': serializer.toJson<int>(position),
+      'localPath': serializer.toJson<String?>(localPath),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'serverAttachmentId': serializer.toJson<String?>(serverAttachmentId),
+      'uploadedByUserId': serializer.toJson<String?>(uploadedByUserId),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  NoteAttachment copyWith({
+    String? id,
+    String? noteId,
+    String? type,
+    String? originalFilename,
+    String? mimeType,
+    int? fileSize,
+    int? position,
+    Value<String?> localPath = const Value.absent(),
+    String? syncStatus,
+    Value<String?> serverAttachmentId = const Value.absent(),
+    Value<String?> uploadedByUserId = const Value.absent(),
+    DateTime? createdAt,
+  }) => NoteAttachment(
+    id: id ?? this.id,
+    noteId: noteId ?? this.noteId,
+    type: type ?? this.type,
+    originalFilename: originalFilename ?? this.originalFilename,
+    mimeType: mimeType ?? this.mimeType,
+    fileSize: fileSize ?? this.fileSize,
+    position: position ?? this.position,
+    localPath: localPath.present ? localPath.value : this.localPath,
+    syncStatus: syncStatus ?? this.syncStatus,
+    serverAttachmentId: serverAttachmentId.present
+        ? serverAttachmentId.value
+        : this.serverAttachmentId,
+    uploadedByUserId: uploadedByUserId.present
+        ? uploadedByUserId.value
+        : this.uploadedByUserId,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  NoteAttachment copyWithCompanion(NoteAttachmentsCompanion data) {
+    return NoteAttachment(
+      id: data.id.present ? data.id.value : this.id,
+      noteId: data.noteId.present ? data.noteId.value : this.noteId,
+      type: data.type.present ? data.type.value : this.type,
+      originalFilename: data.originalFilename.present
+          ? data.originalFilename.value
+          : this.originalFilename,
+      mimeType: data.mimeType.present ? data.mimeType.value : this.mimeType,
+      fileSize: data.fileSize.present ? data.fileSize.value : this.fileSize,
+      position: data.position.present ? data.position.value : this.position,
+      localPath: data.localPath.present ? data.localPath.value : this.localPath,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      serverAttachmentId: data.serverAttachmentId.present
+          ? data.serverAttachmentId.value
+          : this.serverAttachmentId,
+      uploadedByUserId: data.uploadedByUserId.present
+          ? data.uploadedByUserId.value
+          : this.uploadedByUserId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NoteAttachment(')
+          ..write('id: $id, ')
+          ..write('noteId: $noteId, ')
+          ..write('type: $type, ')
+          ..write('originalFilename: $originalFilename, ')
+          ..write('mimeType: $mimeType, ')
+          ..write('fileSize: $fileSize, ')
+          ..write('position: $position, ')
+          ..write('localPath: $localPath, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('serverAttachmentId: $serverAttachmentId, ')
+          ..write('uploadedByUserId: $uploadedByUserId, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    noteId,
+    type,
+    originalFilename,
+    mimeType,
+    fileSize,
+    position,
+    localPath,
+    syncStatus,
+    serverAttachmentId,
+    uploadedByUserId,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NoteAttachment &&
+          other.id == this.id &&
+          other.noteId == this.noteId &&
+          other.type == this.type &&
+          other.originalFilename == this.originalFilename &&
+          other.mimeType == this.mimeType &&
+          other.fileSize == this.fileSize &&
+          other.position == this.position &&
+          other.localPath == this.localPath &&
+          other.syncStatus == this.syncStatus &&
+          other.serverAttachmentId == this.serverAttachmentId &&
+          other.uploadedByUserId == this.uploadedByUserId &&
+          other.createdAt == this.createdAt);
+}
+
+class NoteAttachmentsCompanion extends UpdateCompanion<NoteAttachment> {
+  final Value<String> id;
+  final Value<String> noteId;
+  final Value<String> type;
+  final Value<String> originalFilename;
+  final Value<String> mimeType;
+  final Value<int> fileSize;
+  final Value<int> position;
+  final Value<String?> localPath;
+  final Value<String> syncStatus;
+  final Value<String?> serverAttachmentId;
+  final Value<String?> uploadedByUserId;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const NoteAttachmentsCompanion({
+    this.id = const Value.absent(),
+    this.noteId = const Value.absent(),
+    this.type = const Value.absent(),
+    this.originalFilename = const Value.absent(),
+    this.mimeType = const Value.absent(),
+    this.fileSize = const Value.absent(),
+    this.position = const Value.absent(),
+    this.localPath = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.serverAttachmentId = const Value.absent(),
+    this.uploadedByUserId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NoteAttachmentsCompanion.insert({
+    required String id,
+    required String noteId,
+    required String type,
+    required String originalFilename,
+    required String mimeType,
+    required int fileSize,
+    this.position = const Value.absent(),
+    this.localPath = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.serverAttachmentId = const Value.absent(),
+    this.uploadedByUserId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       noteId = Value(noteId),
+       type = Value(type),
+       originalFilename = Value(originalFilename),
+       mimeType = Value(mimeType),
+       fileSize = Value(fileSize);
+  static Insertable<NoteAttachment> custom({
+    Expression<String>? id,
+    Expression<String>? noteId,
+    Expression<String>? type,
+    Expression<String>? originalFilename,
+    Expression<String>? mimeType,
+    Expression<int>? fileSize,
+    Expression<int>? position,
+    Expression<String>? localPath,
+    Expression<String>? syncStatus,
+    Expression<String>? serverAttachmentId,
+    Expression<String>? uploadedByUserId,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (noteId != null) 'note_id': noteId,
+      if (type != null) 'type': type,
+      if (originalFilename != null) 'original_filename': originalFilename,
+      if (mimeType != null) 'mime_type': mimeType,
+      if (fileSize != null) 'file_size': fileSize,
+      if (position != null) 'position': position,
+      if (localPath != null) 'local_path': localPath,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (serverAttachmentId != null)
+        'server_attachment_id': serverAttachmentId,
+      if (uploadedByUserId != null) 'uploaded_by_user_id': uploadedByUserId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NoteAttachmentsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? noteId,
+    Value<String>? type,
+    Value<String>? originalFilename,
+    Value<String>? mimeType,
+    Value<int>? fileSize,
+    Value<int>? position,
+    Value<String?>? localPath,
+    Value<String>? syncStatus,
+    Value<String?>? serverAttachmentId,
+    Value<String?>? uploadedByUserId,
+    Value<DateTime>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return NoteAttachmentsCompanion(
+      id: id ?? this.id,
+      noteId: noteId ?? this.noteId,
+      type: type ?? this.type,
+      originalFilename: originalFilename ?? this.originalFilename,
+      mimeType: mimeType ?? this.mimeType,
+      fileSize: fileSize ?? this.fileSize,
+      position: position ?? this.position,
+      localPath: localPath ?? this.localPath,
+      syncStatus: syncStatus ?? this.syncStatus,
+      serverAttachmentId: serverAttachmentId ?? this.serverAttachmentId,
+      uploadedByUserId: uploadedByUserId ?? this.uploadedByUserId,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (noteId.present) {
+      map['note_id'] = Variable<String>(noteId.value);
+    }
+    if (type.present) {
+      map['type'] = Variable<String>(type.value);
+    }
+    if (originalFilename.present) {
+      map['original_filename'] = Variable<String>(originalFilename.value);
+    }
+    if (mimeType.present) {
+      map['mime_type'] = Variable<String>(mimeType.value);
+    }
+    if (fileSize.present) {
+      map['file_size'] = Variable<int>(fileSize.value);
+    }
+    if (position.present) {
+      map['position'] = Variable<int>(position.value);
+    }
+    if (localPath.present) {
+      map['local_path'] = Variable<String>(localPath.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (serverAttachmentId.present) {
+      map['server_attachment_id'] = Variable<String>(serverAttachmentId.value);
+    }
+    if (uploadedByUserId.present) {
+      map['uploaded_by_user_id'] = Variable<String>(uploadedByUserId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NoteAttachmentsCompanion(')
+          ..write('id: $id, ')
+          ..write('noteId: $noteId, ')
+          ..write('type: $type, ')
+          ..write('originalFilename: $originalFilename, ')
+          ..write('mimeType: $mimeType, ')
+          ..write('fileSize: $fileSize, ')
+          ..write('position: $position, ')
+          ..write('localPath: $localPath, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('serverAttachmentId: $serverAttachmentId, ')
+          ..write('uploadedByUserId: $uploadedByUserId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $NotesTable notes = $NotesTable(this);
   late final $TagsTable tags = $TagsTable(this);
   late final $NoteTagsTable noteTags = $NoteTagsTable(this);
+  late final $NoteAttachmentsTable noteAttachments = $NoteAttachmentsTable(
+    this,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [notes, tags, noteTags];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [
+    notes,
+    tags,
+    noteTags,
+    noteAttachments,
+  ];
 }
 
 typedef $$NotesTableCreateCompanionBuilder =
@@ -2259,6 +2988,353 @@ typedef $$NoteTagsTableProcessedTableManager =
       NoteTag,
       PrefetchHooks Function()
     >;
+typedef $$NoteAttachmentsTableCreateCompanionBuilder =
+    NoteAttachmentsCompanion Function({
+      required String id,
+      required String noteId,
+      required String type,
+      required String originalFilename,
+      required String mimeType,
+      required int fileSize,
+      Value<int> position,
+      Value<String?> localPath,
+      Value<String> syncStatus,
+      Value<String?> serverAttachmentId,
+      Value<String?> uploadedByUserId,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+typedef $$NoteAttachmentsTableUpdateCompanionBuilder =
+    NoteAttachmentsCompanion Function({
+      Value<String> id,
+      Value<String> noteId,
+      Value<String> type,
+      Value<String> originalFilename,
+      Value<String> mimeType,
+      Value<int> fileSize,
+      Value<int> position,
+      Value<String?> localPath,
+      Value<String> syncStatus,
+      Value<String?> serverAttachmentId,
+      Value<String?> uploadedByUserId,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+
+class $$NoteAttachmentsTableFilterComposer
+    extends Composer<_$AppDatabase, $NoteAttachmentsTable> {
+  $$NoteAttachmentsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get noteId => $composableBuilder(
+    column: $table.noteId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get originalFilename => $composableBuilder(
+    column: $table.originalFilename,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get mimeType => $composableBuilder(
+    column: $table.mimeType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get fileSize => $composableBuilder(
+    column: $table.fileSize,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get position => $composableBuilder(
+    column: $table.position,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get localPath => $composableBuilder(
+    column: $table.localPath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get serverAttachmentId => $composableBuilder(
+    column: $table.serverAttachmentId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get uploadedByUserId => $composableBuilder(
+    column: $table.uploadedByUserId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$NoteAttachmentsTableOrderingComposer
+    extends Composer<_$AppDatabase, $NoteAttachmentsTable> {
+  $$NoteAttachmentsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get noteId => $composableBuilder(
+    column: $table.noteId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get originalFilename => $composableBuilder(
+    column: $table.originalFilename,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get mimeType => $composableBuilder(
+    column: $table.mimeType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get fileSize => $composableBuilder(
+    column: $table.fileSize,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get position => $composableBuilder(
+    column: $table.position,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get localPath => $composableBuilder(
+    column: $table.localPath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get serverAttachmentId => $composableBuilder(
+    column: $table.serverAttachmentId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get uploadedByUserId => $composableBuilder(
+    column: $table.uploadedByUserId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$NoteAttachmentsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $NoteAttachmentsTable> {
+  $$NoteAttachmentsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get noteId =>
+      $composableBuilder(column: $table.noteId, builder: (column) => column);
+
+  GeneratedColumn<String> get type =>
+      $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<String> get originalFilename => $composableBuilder(
+    column: $table.originalFilename,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get mimeType =>
+      $composableBuilder(column: $table.mimeType, builder: (column) => column);
+
+  GeneratedColumn<int> get fileSize =>
+      $composableBuilder(column: $table.fileSize, builder: (column) => column);
+
+  GeneratedColumn<int> get position =>
+      $composableBuilder(column: $table.position, builder: (column) => column);
+
+  GeneratedColumn<String> get localPath =>
+      $composableBuilder(column: $table.localPath, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get serverAttachmentId => $composableBuilder(
+    column: $table.serverAttachmentId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get uploadedByUserId => $composableBuilder(
+    column: $table.uploadedByUserId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$NoteAttachmentsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NoteAttachmentsTable,
+          NoteAttachment,
+          $$NoteAttachmentsTableFilterComposer,
+          $$NoteAttachmentsTableOrderingComposer,
+          $$NoteAttachmentsTableAnnotationComposer,
+          $$NoteAttachmentsTableCreateCompanionBuilder,
+          $$NoteAttachmentsTableUpdateCompanionBuilder,
+          (
+            NoteAttachment,
+            BaseReferences<
+              _$AppDatabase,
+              $NoteAttachmentsTable,
+              NoteAttachment
+            >,
+          ),
+          NoteAttachment,
+          PrefetchHooks Function()
+        > {
+  $$NoteAttachmentsTableTableManager(
+    _$AppDatabase db,
+    $NoteAttachmentsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$NoteAttachmentsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$NoteAttachmentsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$NoteAttachmentsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> noteId = const Value.absent(),
+                Value<String> type = const Value.absent(),
+                Value<String> originalFilename = const Value.absent(),
+                Value<String> mimeType = const Value.absent(),
+                Value<int> fileSize = const Value.absent(),
+                Value<int> position = const Value.absent(),
+                Value<String?> localPath = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> serverAttachmentId = const Value.absent(),
+                Value<String?> uploadedByUserId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NoteAttachmentsCompanion(
+                id: id,
+                noteId: noteId,
+                type: type,
+                originalFilename: originalFilename,
+                mimeType: mimeType,
+                fileSize: fileSize,
+                position: position,
+                localPath: localPath,
+                syncStatus: syncStatus,
+                serverAttachmentId: serverAttachmentId,
+                uploadedByUserId: uploadedByUserId,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String noteId,
+                required String type,
+                required String originalFilename,
+                required String mimeType,
+                required int fileSize,
+                Value<int> position = const Value.absent(),
+                Value<String?> localPath = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> serverAttachmentId = const Value.absent(),
+                Value<String?> uploadedByUserId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NoteAttachmentsCompanion.insert(
+                id: id,
+                noteId: noteId,
+                type: type,
+                originalFilename: originalFilename,
+                mimeType: mimeType,
+                fileSize: fileSize,
+                position: position,
+                localPath: localPath,
+                syncStatus: syncStatus,
+                serverAttachmentId: serverAttachmentId,
+                uploadedByUserId: uploadedByUserId,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$NoteAttachmentsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $NoteAttachmentsTable,
+      NoteAttachment,
+      $$NoteAttachmentsTableFilterComposer,
+      $$NoteAttachmentsTableOrderingComposer,
+      $$NoteAttachmentsTableAnnotationComposer,
+      $$NoteAttachmentsTableCreateCompanionBuilder,
+      $$NoteAttachmentsTableUpdateCompanionBuilder,
+      (
+        NoteAttachment,
+        BaseReferences<_$AppDatabase, $NoteAttachmentsTable, NoteAttachment>,
+      ),
+      NoteAttachment,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -2268,6 +3344,8 @@ class $AppDatabaseManager {
   $$TagsTableTableManager get tags => $$TagsTableTableManager(_db, _db.tags);
   $$NoteTagsTableTableManager get noteTags =>
       $$NoteTagsTableTableManager(_db, _db.noteTags);
+  $$NoteAttachmentsTableTableManager get noteAttachments =>
+      $$NoteAttachmentsTableTableManager(_db, _db.noteAttachments);
 }
 
 // **************************************************************************

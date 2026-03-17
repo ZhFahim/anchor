@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$OidcConfig {
 
- bool get enabled; String? get providerName; String? get issuerUrl; String? get clientId; bool get disableInternalAuth;
+ bool get enabled; String get providerName; String? get issuerUrl; String? get clientId; bool get disableInternalAuth;
 /// Create a copy of OidcConfig
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,7 +48,7 @@ abstract mixin class $OidcConfigCopyWith<$Res>  {
   factory $OidcConfigCopyWith(OidcConfig value, $Res Function(OidcConfig) _then) = _$OidcConfigCopyWithImpl;
 @useResult
 $Res call({
- bool enabled, String? providerName, String? issuerUrl, String? clientId, bool disableInternalAuth
+ bool enabled, String providerName, String? issuerUrl, String? clientId, bool disableInternalAuth
 });
 
 
@@ -65,11 +65,11 @@ class _$OidcConfigCopyWithImpl<$Res>
 
 /// Create a copy of OidcConfig
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? enabled = null,Object? providerName = freezed,Object? issuerUrl = freezed,Object? clientId = freezed,Object? disableInternalAuth = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? enabled = null,Object? providerName = null,Object? issuerUrl = freezed,Object? clientId = freezed,Object? disableInternalAuth = null,}) {
   return _then(_self.copyWith(
 enabled: null == enabled ? _self.enabled : enabled // ignore: cast_nullable_to_non_nullable
-as bool,providerName: freezed == providerName ? _self.providerName : providerName // ignore: cast_nullable_to_non_nullable
-as String?,issuerUrl: freezed == issuerUrl ? _self.issuerUrl : issuerUrl // ignore: cast_nullable_to_non_nullable
+as bool,providerName: null == providerName ? _self.providerName : providerName // ignore: cast_nullable_to_non_nullable
+as String,issuerUrl: freezed == issuerUrl ? _self.issuerUrl : issuerUrl // ignore: cast_nullable_to_non_nullable
 as String?,clientId: freezed == clientId ? _self.clientId : clientId // ignore: cast_nullable_to_non_nullable
 as String?,disableInternalAuth: null == disableInternalAuth ? _self.disableInternalAuth : disableInternalAuth // ignore: cast_nullable_to_non_nullable
 as bool,
@@ -157,7 +157,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool enabled,  String? providerName,  String? issuerUrl,  String? clientId,  bool disableInternalAuth)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool enabled,  String providerName,  String? issuerUrl,  String? clientId,  bool disableInternalAuth)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _OidcConfig() when $default != null:
 return $default(_that.enabled,_that.providerName,_that.issuerUrl,_that.clientId,_that.disableInternalAuth);case _:
@@ -178,7 +178,7 @@ return $default(_that.enabled,_that.providerName,_that.issuerUrl,_that.clientId,
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool enabled,  String? providerName,  String? issuerUrl,  String? clientId,  bool disableInternalAuth)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool enabled,  String providerName,  String? issuerUrl,  String? clientId,  bool disableInternalAuth)  $default,) {final _that = this;
 switch (_that) {
 case _OidcConfig():
 return $default(_that.enabled,_that.providerName,_that.issuerUrl,_that.clientId,_that.disableInternalAuth);case _:
@@ -198,7 +198,7 @@ return $default(_that.enabled,_that.providerName,_that.issuerUrl,_that.clientId,
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool enabled,  String? providerName,  String? issuerUrl,  String? clientId,  bool disableInternalAuth)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool enabled,  String providerName,  String? issuerUrl,  String? clientId,  bool disableInternalAuth)?  $default,) {final _that = this;
 switch (_that) {
 case _OidcConfig() when $default != null:
 return $default(_that.enabled,_that.providerName,_that.issuerUrl,_that.clientId,_that.disableInternalAuth);case _:
@@ -213,11 +213,11 @@ return $default(_that.enabled,_that.providerName,_that.issuerUrl,_that.clientId,
 @JsonSerializable()
 
 class _OidcConfig implements OidcConfig {
-  const _OidcConfig({this.enabled = false, this.providerName, this.issuerUrl, this.clientId, this.disableInternalAuth = false});
+  const _OidcConfig({this.enabled = false, this.providerName = 'OIDC Provider', this.issuerUrl, this.clientId, this.disableInternalAuth = false});
   factory _OidcConfig.fromJson(Map<String, dynamic> json) => _$OidcConfigFromJson(json);
 
 @override@JsonKey() final  bool enabled;
-@override final  String? providerName;
+@override@JsonKey() final  String providerName;
 @override final  String? issuerUrl;
 @override final  String? clientId;
 @override@JsonKey() final  bool disableInternalAuth;
@@ -255,7 +255,7 @@ abstract mixin class _$OidcConfigCopyWith<$Res> implements $OidcConfigCopyWith<$
   factory _$OidcConfigCopyWith(_OidcConfig value, $Res Function(_OidcConfig) _then) = __$OidcConfigCopyWithImpl;
 @override @useResult
 $Res call({
- bool enabled, String? providerName, String? issuerUrl, String? clientId, bool disableInternalAuth
+ bool enabled, String providerName, String? issuerUrl, String? clientId, bool disableInternalAuth
 });
 
 
@@ -272,11 +272,11 @@ class __$OidcConfigCopyWithImpl<$Res>
 
 /// Create a copy of OidcConfig
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? enabled = null,Object? providerName = freezed,Object? issuerUrl = freezed,Object? clientId = freezed,Object? disableInternalAuth = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? enabled = null,Object? providerName = null,Object? issuerUrl = freezed,Object? clientId = freezed,Object? disableInternalAuth = null,}) {
   return _then(_OidcConfig(
 enabled: null == enabled ? _self.enabled : enabled // ignore: cast_nullable_to_non_nullable
-as bool,providerName: freezed == providerName ? _self.providerName : providerName // ignore: cast_nullable_to_non_nullable
-as String?,issuerUrl: freezed == issuerUrl ? _self.issuerUrl : issuerUrl // ignore: cast_nullable_to_non_nullable
+as bool,providerName: null == providerName ? _self.providerName : providerName // ignore: cast_nullable_to_non_nullable
+as String,issuerUrl: freezed == issuerUrl ? _self.issuerUrl : issuerUrl // ignore: cast_nullable_to_non_nullable
 as String?,clientId: freezed == clientId ? _self.clientId : clientId // ignore: cast_nullable_to_non_nullable
 as String?,disableInternalAuth: null == disableInternalAuth ? _self.disableInternalAuth : disableInternalAuth // ignore: cast_nullable_to_non_nullable
 as bool,
