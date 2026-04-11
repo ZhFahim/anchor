@@ -10,7 +10,7 @@ DefaultStyles getEditorStyles(BuildContext context) {
   final baseStyle = GoogleFonts.dmSans(
     color: theme.colorScheme.onSurface,
     fontSize: 18,
-    height: 1.6,
+    height: 1.48,
   );
 
   // Use Playfair Display for headers (matching app theme)
@@ -23,7 +23,7 @@ DefaultStyles getEditorStyles(BuildContext context) {
     paragraph: DefaultTextBlockStyle(
       baseStyle,
       const HorizontalSpacing(0, 0),
-      const VerticalSpacing(0, 8),
+      const VerticalSpacing(0, 6),
       const VerticalSpacing(0, 0),
       null,
     ),
@@ -72,7 +72,7 @@ DefaultStyles getEditorStyles(BuildContext context) {
     lists: DefaultListBlockStyle(
       baseStyle.copyWith(height: 1.2),
       const HorizontalSpacing(0, 0),
-      const VerticalSpacing(0, 12),
+      const VerticalSpacing(0, 10),
       const VerticalSpacing(8, 0),
       null,
       null,
