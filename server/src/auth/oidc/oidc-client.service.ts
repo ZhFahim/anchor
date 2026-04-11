@@ -164,6 +164,6 @@ export class OidcClientService {
    * Get callback URL
    */
   private getCallbackUrl(): string {
-    return `${this.oidcConfigService.getAppUrl()}/api/auth/oidc/callback`;
+    return this.oidcConfigService.getOidcCallbackUrl();
   }
 }

@@ -633,12 +633,11 @@ export default function AdminPage() {
                     <div className="rounded-lg border bg-muted/30 p-4">
                       <p className="text-sm font-medium mb-1">Callback URL</p>
                       <code className="text-xs break-all rounded bg-background px-2 py-1 block">
-                        {typeof window !== "undefined"
-                          ? `${window.location.origin}/api/auth/oidc/callback`
-                          : "/api/auth/oidc/callback"}
+                        {oidcSettings.callbackUrl}
                       </code>
                       <p className="text-xs text-muted-foreground mt-2">
-                        Add this URL in your OIDC provider as the redirect/callback URL.
+                        Add this URL in your OIDC provider as the redirect/callback URL. It comes from the {" "}
+                        <code className="px-1 py-0.5 bg-background rounded text-[0.7rem] font-mono">APP_URL</code> env variable.
                       </p>
                     </div>
                   </>

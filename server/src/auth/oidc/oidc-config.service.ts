@@ -117,6 +117,14 @@ export class OidcConfigService {
   }
 
   /**
+   * OIDC redirect URI
+   */
+  getOidcCallbackUrl(): string {
+    const base = this.getAppUrl().replace(/\/+$/, '');
+    return `${base}/api/auth/oidc/callback`;
+  }
+
+  /**
    * Check if OIDC is enabled
    */
   async isEnabled(): Promise<boolean> {
@@ -153,6 +161,7 @@ export class OidcConfigService {
     issuerUrl?: string;
     clientId?: string;
     hasClientSecret: boolean;
+    callbackUrl: string;
     disableInternalAuth: boolean;
     isLocked: boolean;
     source: 'env' | 'database' | 'default';
@@ -166,6 +175,7 @@ export class OidcConfigService {
       issuerUrl: config.issuerUrl,
       clientId: config.clientId,
       hasClientSecret: !!config.clientSecret,
+      callbackUrl: this.getOidcCallbackUrl(),
       disableInternalAuth: config.disableInternalAuth,
       isLocked: locked,
       source: locked ? 'env' : 'database',

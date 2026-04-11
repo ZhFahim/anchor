@@ -61,6 +61,7 @@ export interface OidcSettings {
   issuerUrl?: string;
   clientId?: string;
   hasClientSecret: boolean;
+  callbackUrl: string;
   disableInternalAuth: boolean;
   isLocked: boolean;
   source: "env" | "database" | "default";
