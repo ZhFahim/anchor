@@ -11,13 +11,13 @@ RUN apk add --no-cache libc6-compat
 #
 FROM base AS server_deps
 WORKDIR /app/server
-COPY server/package.json server/pnpm-lock.yaml ./
+COPY server/package.json server/pnpm-lock.yaml server/pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 
 # Production-only server deps (for smaller runtime image)
 FROM base AS server_prod_deps
 WORKDIR /app/server
-COPY server/package.json server/pnpm-lock.yaml ./
+COPY server/package.json server/pnpm-lock.yaml server/pnpm-workspace.yaml ./
 RUN pnpm install --prod --no-frozen-lockfile
 
 FROM base AS server_builder
