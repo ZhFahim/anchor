@@ -1,7 +1,8 @@
 "use client";
 
+import type { RefObject } from "react";
 import { Input } from "@/components/ui/input";
-import { RichTextEditor } from "@/features/notes";
+import { RichTextEditor, type RichTextEditorHandle } from "../editor";
 import { TagSelector } from "@/features/tags";
 import { cn } from "@/lib/utils";
 import { AttachmentsCollapsible } from "../attachments";
@@ -17,6 +18,9 @@ interface NoteEditorContentProps {
   selectedTagIds: string[];
   isReadOnly: boolean;
   isTrashed?: boolean;
+  titleInputRef?: RefObject<HTMLInputElement | null>;
+  contentEditorRef?: RefObject<RichTextEditorHandle | null>;
+  onEnsureNoteIdForAttachmentUpload?: () => Promise<string | null>;
   onTitleChange: (title: string) => void;
   onContentChange: (content: string) => void;
   onTagsChange: (tagIds: string[]) => void;
@@ -33,19 +37,22 @@ export function NoteEditorContent({
   selectedTagIds,
   isReadOnly,
   isTrashed = false,
+  titleInputRef,
+  contentEditorRef,
+  onEnsureNoteIdForAttachmentUpload,
   onTitleChange,
   onContentChange,
   onTagsChange,
 }: NoteEditorContentProps) {
   const showTags = !isReadOnly || selectedTagIds.length > 0;
-  const showAttachments =
-    !!noteId && (canUpload || (attachmentCount ?? 0) > 0);
+  const showAttachments = canUpload || (attachmentCount ?? 0) > 0;
 
   return (
     <div className="flex-1 relative">
       <div className="relative max-w-3xl mx-auto w-full px-4 lg:px-6 py-8">
         {/* Title */}
         <Input
+          ref={titleInputRef}
           value={title}
           onChange={(e) => !isReadOnly && onTitleChange(e.target.value)}
           placeholder="Title"
@@ -77,10 +84,11 @@ export function NoteEditorContent({
         {showAttachments && (
           <div className="py-3 border-b border-border/30">
             <AttachmentsCollapsible
-              noteId={noteId!}
+              noteId={noteId}
               canUpload={!isTrashed && canUpload}
               isOwner={isOwner}
               currentUserId={currentUserId}
+              onEnsureNoteId={onEnsureNoteIdForAttachmentUpload}
             />
           </div>
         )}
@@ -88,6 +96,7 @@ export function NoteEditorContent({
         {/* Content */}
         <div className="mt-2">
           <RichTextEditor
+            ref={contentEditorRef}
             value={content}
             onChange={onContentChange}
             placeholder="Start typing your thoughts..."

@@ -25,8 +25,25 @@ import {
   ShareDialog,
 } from "@/features/notes";
 import type { CreateNoteDto, UpdateNoteDto, Note } from "@/features/notes";
+import type { RichTextEditorHandle } from "@/features/notes/components/editor";
 import { useAuth } from "@/features/auth";
 import { toast } from "sonner";
+
+type PendingFocusRestore =
+  | {
+    target: "title";
+    selectionStart: number;
+    selectionEnd: number;
+  }
+  | {
+    target: "content";
+    index?: number;
+    length?: number;
+  };
+
+function getFocusRestoreStorageKey(noteId: string) {
+  return `note-focus-restore-${noteId}`;
+}
 
 export default function NoteEditorPage() {
   const { user } = useAuth();
@@ -52,6 +69,14 @@ export default function NoteEditorPage() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const restoreFocusFrameRef = useRef<number | null>(null);
+  const titleInputRef = useRef<HTMLInputElement | null>(null);
+  const contentEditorRef = useRef<RichTextEditorHandle | null>(null);
+  const hydratedNoteIdRef = useRef<string | null>(null);
+  const initializedNewNoteRef = useRef(false);
+  const autoFocusedNewNoteRef = useRef(false);
+  const pendingFocusRestoreRef = useRef<PendingFocusRestore | null>(null);
+  const pendingCreateNoteRef = useRef<Promise<Note> | null>(null);
   const lastSavedRef = useRef<{
     title: string;
     content: string;
@@ -64,9 +89,15 @@ export default function NoteEditorPage() {
   const [noteFromStorage, setNoteFromStorage] = useState<Note | null>(null);
 
   useEffect(() => {
-    if (isNew || typeof window === "undefined") return;
+    if (typeof window === "undefined") return;
+
+    if (isNew) {
+      setNoteFromStorage(null);
+      return;
+    }
 
     try {
+      setNoteFromStorage(null);
       const stored = sessionStorage.getItem(`note-${noteId}`);
       if (stored) {
         const note = JSON.parse(stored) as Note;
@@ -98,29 +129,126 @@ export default function NoteEditorPage() {
   const isReadOnly = note
     ? note.state === "trashed" || isViewer
     : false;
+  const canUpload = isOwner || isEditor;
 
-  // Initialize form with note data or tag from URL
+  const getTitleForSave = useCallback(() => {
+    return title.trim() === "" ? "Untitled" : title;
+  }, [title]);
+
+  const capturePendingFocusRestore = useCallback((): PendingFocusRestore | null => {
+    const titleInput = titleInputRef.current;
+    if (titleInput && document.activeElement === titleInput) {
+      const fallbackPosition = titleInput.value.length;
+      return {
+        target: "title",
+        selectionStart: titleInput.selectionStart ?? fallbackPosition,
+        selectionEnd: titleInput.selectionEnd ?? fallbackPosition,
+      };
+    }
+
+    const editorSelection = contentEditorRef.current?.getSelection();
+    if (editorSelection) {
+      return {
+        target: "content",
+        index: editorSelection.index,
+        length: editorSelection.length,
+      };
+    }
+
+    const activeElement = document.activeElement;
+    if (activeElement instanceof HTMLElement && activeElement.closest(".ql-editor")) {
+      return { target: "content" };
+    }
+
+    return null;
+  }, []);
+
+  // Initialize brand-new note state once per /new session.
+  useEffect(() => {
+    if (!isNew) {
+      initializedNewNoteRef.current = false;
+      autoFocusedNewNoteRef.current = false;
+      return;
+    }
+
+    if (initializedNewNoteRef.current) return;
+
+    initializedNewNoteRef.current = true;
+    hydratedNoteIdRef.current = null;
+    lastSavedRef.current = null;
+    pendingFocusRestoreRef.current = null;
+    setTitle("");
+    setContent("");
+    setIsPinned(false);
+    setIsArchived(false);
+    setBackground(null);
+    setSelectedTagIds(tagIdFromUrl ? [tagIdFromUrl] : []);
+  }, [isNew, tagIdFromUrl]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !isNew || autoFocusedNewNoteRef.current) return;
+
+    let frameId: number | null = null;
+
+    const focusTitle = () => {
+      const activeElement = document.activeElement;
+      const hasInteractiveFocus =
+        activeElement instanceof HTMLElement &&
+        activeElement !== document.body &&
+        (activeElement.tagName === "INPUT" ||
+          activeElement.tagName === "TEXTAREA" ||
+          activeElement.isContentEditable ||
+          activeElement.closest(".ql-editor") !== null);
+
+      if (hasInteractiveFocus) {
+        autoFocusedNewNoteRef.current = true;
+        return;
+      }
+
+      const titleInput = titleInputRef.current;
+      if (!titleInput) return;
+
+      titleInput.focus();
+      const cursorPosition = titleInput.value.length;
+      titleInput.setSelectionRange(cursorPosition, cursorPosition);
+      autoFocusedNewNoteRef.current = true;
+    };
+
+    frameId = window.requestAnimationFrame(focusTitle);
+
+    return () => {
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId);
+      }
+    };
+  }, [isNew]);
+
+  // Initialize editor fields once per note id so background refetches don't reset focus.
+  useEffect(() => {
+    if (!note || hydratedNoteIdRef.current === note.id) return;
+
+    const tagIds = note.tagIds || note.tags?.map((t) => t.id) || [];
+    setTitle(note.title);
+    setContent(note.content || "");
+    setIsPinned(note.isPinned);
+    setSelectedTagIds(tagIds);
+    setBackground(note.background || null);
+    lastSavedRef.current = {
+      title: note.title,
+      content: note.content || "",
+      isPinned: note.isPinned,
+      tagIds,
+      background: note.background || null,
+    };
+    hydratedNoteIdRef.current = note.id;
+  }, [note]);
+
+  // Keep lightweight metadata in sync with fresh query data.
   useEffect(() => {
     if (note) {
-      setTitle(note.title);
-      setContent(note.content || "");
-      setIsPinned(note.isPinned);
       setIsArchived(note.isArchived);
-      const tagIds = note.tagIds || note.tags?.map((t) => t.id) || [];
-      setSelectedTagIds(tagIds);
-      setBackground(note.background || null);
-      lastSavedRef.current = {
-        title: note.title,
-        content: note.content || "",
-        isPinned: note.isPinned,
-        tagIds,
-        background: note.background || null,
-      };
-    } else if (isNew && tagIdFromUrl) {
-      // Initialize with tag from URL when creating a new note
-      setSelectedTagIds([tagIdFromUrl]);
     }
-  }, [note, isNew, tagIdFromUrl]);
+  }, [note]);
 
   // Create note mutation
   const createMutation = useMutation({
@@ -131,13 +259,58 @@ export default function NoteEditorPage() {
       queryClient.setQueryData(["notes", newNote.id], newNote);
       queryClient.invalidateQueries({ queryKey: ["notes"] });
       queryClient.invalidateQueries({ queryKey: ["tags"] });
+      if (typeof window !== "undefined" && pendingFocusRestoreRef.current) {
+        sessionStorage.setItem(
+          getFocusRestoreStorageKey(newNote.id),
+          JSON.stringify(pendingFocusRestoreRef.current),
+        );
+      }
       toast.success("Note created");
       router.replace(`/notes/${newNote.id}`);
     },
     onError: () => {
+      pendingFocusRestoreRef.current = null;
       toast.error("Failed to create note");
     },
   });
+
+  const createNewNote = useCallback(
+    (focusRestore: PendingFocusRestore | null) => {
+      if (!isNew) {
+        return Promise.resolve(note);
+      }
+
+      if (pendingCreateNoteRef.current) {
+        return pendingCreateNoteRef.current;
+      }
+
+      pendingFocusRestoreRef.current = focusRestore;
+
+      const createPromise = createMutation.mutateAsync({
+        title: getTitleForSave(),
+        content: content || undefined,
+        isPinned,
+        background,
+        tagIds: selectedTagIds,
+      });
+
+      pendingCreateNoteRef.current = createPromise.finally(() => {
+        pendingCreateNoteRef.current = null;
+      });
+
+      return pendingCreateNoteRef.current;
+    },
+    [
+      background,
+      content,
+      createMutation,
+      getTitleForSave,
+      isNew,
+      isPinned,
+      note,
+      selectedTagIds,
+    ],
+  );
 
   // Update note mutation
   const updateMutation = useMutation({
@@ -257,8 +430,8 @@ export default function NoteEditorPage() {
       content !== lastSavedRef.current.content ||
       isPinned !== lastSavedRef.current.isPinned ||
       background !== lastSavedRef.current.background ||
-      JSON.stringify(selectedTagIds.sort()) !==
-      JSON.stringify(lastSavedRef.current.tagIds.sort())
+      JSON.stringify([...selectedTagIds].sort()) !==
+      JSON.stringify([...lastSavedRef.current.tagIds].sort())
     );
   }, [title, content, isPinned, selectedTagIds, background, isNew]);
 
@@ -266,29 +439,119 @@ export default function NoteEditorPage() {
     setHasUnsavedChanges(checkUnsavedChanges());
   }, [checkUnsavedChanges]);
 
+  useEffect(() => {
+    if (typeof window === "undefined" || isNew || !note) return;
+    if (hydratedNoteIdRef.current !== note.id) return;
+
+    const storageKey = getFocusRestoreStorageKey(note.id);
+    const storedRestore = sessionStorage.getItem(storageKey);
+    if (!storedRestore) return;
+
+    let restoreTarget: PendingFocusRestore;
+    try {
+      restoreTarget = JSON.parse(storedRestore) as PendingFocusRestore;
+    } catch {
+      sessionStorage.removeItem(storageKey);
+      return;
+    }
+
+    let attemptCount = 0;
+
+    const restoreFocus = () => {
+      attemptCount += 1;
+
+      if (restoreTarget.target === "title") {
+        const input = titleInputRef.current;
+        if (input) {
+          const maxPosition = input.value.length;
+          const selectionStart = Math.min(restoreTarget.selectionStart, maxPosition);
+          const selectionEnd = Math.min(restoreTarget.selectionEnd, maxPosition);
+          input.focus();
+          input.setSelectionRange(selectionStart, selectionEnd);
+          sessionStorage.removeItem(storageKey);
+          restoreFocusFrameRef.current = null;
+          return;
+        }
+      } else {
+        const editor = contentEditorRef.current;
+        if (editor) {
+          editor.focus();
+          if (
+            typeof restoreTarget.index === "number" &&
+            typeof restoreTarget.length === "number"
+          ) {
+            editor.setSelection(restoreTarget.index, restoreTarget.length);
+          }
+          sessionStorage.removeItem(storageKey);
+          restoreFocusFrameRef.current = null;
+          return;
+        }
+      }
+
+      if (attemptCount >= 10) {
+        sessionStorage.removeItem(storageKey);
+        restoreFocusFrameRef.current = null;
+        return;
+      }
+
+      restoreFocusFrameRef.current = window.requestAnimationFrame(restoreFocus);
+    };
+
+    restoreFocusFrameRef.current = window.requestAnimationFrame(restoreFocus);
+
+    return () => {
+      if (restoreFocusFrameRef.current !== null) {
+        window.cancelAnimationFrame(restoreFocusFrameRef.current);
+        restoreFocusFrameRef.current = null;
+      }
+    };
+  }, [isNew, note]);
+
   // Auto-save with debounce
   const save = useCallback(() => {
     if (isReadOnly) return;
+    if (createMutation.isPending || updateMutation.isPending) return;
     if (!title.trim() && isStoredContentEmpty(content)) return;
 
     if (isNew) {
-      createMutation.mutate({
-        title: title.trim() || "Untitled",
-        content: content || undefined,
-        isPinned,
-        background: background,
-        tagIds: selectedTagIds,
-      });
+      void createNewNote(capturePendingFocusRestore());
     } else {
+      pendingFocusRestoreRef.current = null;
       updateMutation.mutate({
-        title: title.trim() || "Untitled",
+        title: getTitleForSave(),
         content: content || undefined,
         isPinned,
         background: background,
         tagIds: selectedTagIds,
       });
     }
-  }, [title, content, isPinned, selectedTagIds, background, isNew, isReadOnly, createMutation, updateMutation]);
+  }, [
+    background,
+    capturePendingFocusRestore,
+    content,
+    createMutation.isPending,
+    createNewNote,
+    getTitleForSave,
+    isNew,
+    isPinned,
+    isReadOnly,
+    selectedTagIds,
+    title,
+    updateMutation,
+  ]);
+
+  const ensureNoteIdForAttachmentUpload = useCallback(async () => {
+    if (isReadOnly || !canUpload) {
+      return null;
+    }
+
+    if (!isNew) {
+      return noteId;
+    }
+
+    const newNote = await createNewNote(null);
+    return newNote?.id ?? null;
+  }, [canUpload, createNewNote, isNew, isReadOnly, noteId]);
 
   // Debounced auto-save (disabled when read-only)
   useEffect(() => {
@@ -314,6 +577,9 @@ export default function NoteEditorPage() {
     return () => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
+      }
+      if (restoreFocusFrameRef.current !== null) {
+        window.cancelAnimationFrame(restoreFocusFrameRef.current);
       }
     };
   }, []);
@@ -391,7 +657,7 @@ export default function NoteEditorPage() {
       {/* Content */}
       <NoteEditorContent
         noteId={!isNew ? noteId : undefined}
-        canUpload={isOwner || isEditor}
+        canUpload={canUpload}
         isOwner={isOwner}
         currentUserId={user?.id ?? null}
         title={title}
@@ -400,6 +666,9 @@ export default function NoteEditorPage() {
         attachmentCount={note?.attachmentCount}
         isReadOnly={isReadOnly}
         isTrashed={note?.state === "trashed"}
+        titleInputRef={titleInputRef}
+        contentEditorRef={contentEditorRef}
+        onEnsureNoteIdForAttachmentUpload={ensureNoteIdForAttachmentUpload}
         onTitleChange={setTitle}
         onContentChange={setContent}
         onTagsChange={setSelectedTagIds}

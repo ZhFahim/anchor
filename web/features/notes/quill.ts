@@ -23,6 +23,7 @@ export type QuillInstance = {
   getFormat: () => Record<string, unknown>;
   format: (name: string, value: unknown, source?: "user" | "api" | "silent") => void;
   formatText: (index: number, length: number, name: string, value: unknown, source?: "user" | "api" | "silent") => void;
+  focus: () => void;
   getText: (index?: number, length?: number) => string;
   insertText: (index: number, text: string, source?: "user" | "api" | "silent") => void;
   getSelection: (focus?: boolean) => { index: number; length: number } | null;

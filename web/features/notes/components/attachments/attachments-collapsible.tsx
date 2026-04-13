@@ -20,10 +20,11 @@ import { ImageAttachmentGrid } from "./image-attachment-grid";
 import { AudioAttachmentList } from "./audio-attachment-list";
 
 interface AttachmentsCollapsibleProps {
-  noteId: string;
+  noteId?: string;
   canUpload: boolean;
   isOwner: boolean;
   currentUserId?: string | null;
+  onEnsureNoteId?: () => Promise<string | null>;
 }
 
 export function AttachmentsCollapsible({
@@ -31,6 +32,7 @@ export function AttachmentsCollapsible({
   canUpload,
   isOwner,
   currentUserId = null,
+  onEnsureNoteId,
 }: AttachmentsCollapsibleProps) {
   const getCanDelete = useCallback(
     (attachment: NoteAttachment) =>
@@ -45,13 +47,13 @@ export function AttachmentsCollapsible({
 
   const { data: attachments = [] } = useQuery({
     queryKey: ["attachments", noteId],
-    queryFn: () => getNoteAttachments(noteId),
+    queryFn: () => getNoteAttachments(noteId!),
     enabled: !!noteId,
   });
 
   const deleteMutation = useMutation({
     mutationFn: ({ attachmentId }: { attachmentId: string }) =>
-      deleteAttachment(noteId, attachmentId),
+      deleteAttachment(noteId!, attachmentId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["attachments", noteId] });
       queryClient.invalidateQueries({ queryKey: ["notes"] });
@@ -65,7 +67,7 @@ export function AttachmentsCollapsible({
   });
 
   const reorderMutation = useMutation({
-    mutationFn: (orderedIds: string[]) => reorderAttachments(noteId, orderedIds),
+    mutationFn: (orderedIds: string[]) => reorderAttachments(noteId!, orderedIds),
     onMutate: async (orderedIds) => {
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: ["attachments", noteId] });
@@ -124,19 +126,24 @@ export function AttachmentsCollapsible({
         return;
       }
 
-      const invalidate = () => {
-        queryClient.invalidateQueries({ queryKey: ["attachments", noteId] });
-        queryClient.invalidateQueries({ queryKey: ["notes"] });
-      };
-
       const count = files.length;
       const loadingMessage =
         count === 1 ? `Uploading ${files[0].name}...` : `Uploading ${count} files...`;
 
       toast.promise(
         (async () => {
+          const activeNoteId = noteId ?? (await onEnsureNoteId?.());
+          if (!activeNoteId) {
+            throw new Error("Failed to create note for attachment upload");
+          }
+
+          const invalidate = () => {
+            queryClient.invalidateQueries({ queryKey: ["attachments", activeNoteId] });
+            queryClient.invalidateQueries({ queryKey: ["notes"] });
+          };
+
           const results = await Promise.allSettled(
-            files.map((file) => uploadAttachment(noteId, file))
+            files.map((file) => uploadAttachment(activeNoteId, file))
           );
           const succeeded = results.filter((r) => r.status === "fulfilled").length;
           const failed = results.filter((r) => r.status === "rejected").length;
@@ -167,7 +174,7 @@ export function AttachmentsCollapsible({
         }
       );
     },
-    [noteId, queryClient]
+    [noteId, onEnsureNoteId, queryClient]
   );
 
   const imageAttachments = attachments.filter((a) => a.type === "image");
@@ -200,7 +207,7 @@ export function AttachmentsCollapsible({
                   {previewImages.map((attachment) => (
                     <ThumbnailPreview
                       key={attachment.id}
-                      noteId={noteId}
+                      noteId={noteId!}
                       attachment={attachment}
                     />
                   ))}
@@ -235,7 +242,7 @@ export function AttachmentsCollapsible({
 
           {imageAttachments.length > 0 && (
             <ImageAttachmentGrid
-              noteId={noteId}
+              noteId={noteId!}
               attachments={imageAttachments}
               getCanDelete={getCanDelete}
               canReorder={canUpload}
@@ -252,7 +259,7 @@ export function AttachmentsCollapsible({
 
           {audioAttachments.length > 0 && (
             <AudioAttachmentList
-              noteId={noteId}
+              noteId={noteId!}
               attachments={audioAttachments}
               getCanDelete={getCanDelete}
               onDelete={handleDeleteRequest}
