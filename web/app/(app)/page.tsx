@@ -3,11 +3,11 @@
 import { useState, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { Sparkles, Search, Loader2 } from "lucide-react";
+import { Sparkles, Search } from "lucide-react";
 import { getNotes, deltaToFullPlainText } from "@/features/notes";
 import { getTags } from "@/features/tags";
 import { Header } from "@/components/layout";
-import { NoteCard } from "@/features/notes";
+import { NoteCard, NoteGridLoading } from "@/features/notes";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
@@ -86,8 +86,8 @@ export default function NotesPage() {
         )}
 
         {notesLoading ? (
-          <div className="flex items-center justify-center h-64">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <div className="max-w-7xl mx-auto">
+            <NoteGridLoading />
           </div>
         ) : filteredNotes.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-center">

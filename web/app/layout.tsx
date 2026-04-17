@@ -1,22 +1,10 @@
 import type { Metadata } from "next";
-import { DM_Sans, Playfair_Display, JetBrains_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import { Providers } from "./providers";
 import "./globals.css";
 
-const dmSans = DM_Sans({
-  variable: "--font-dm-sans",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const playfair = Playfair_Display({
-  variable: "--font-playfair",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const jetBrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains-mono",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
   display: "swap",
 });
@@ -37,7 +25,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${dmSans.variable} ${playfair.variable} ${jetBrainsMono.variable} font-sans`}
+        className={`${inter.variable} font-sans antialiased`}
       >
         <Providers>{children}</Providers>
       </body>

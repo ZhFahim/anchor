@@ -42,7 +42,8 @@ export function Header({ searchQuery, onSearchChange }: HeaderProps) {
         "flex h-16 items-center gap-3",
         "bg-background/60 backdrop-blur-2xl",
         "border-b border-border/30",
-        "px-4 lg:px-6",
+        "px-4",
+        "lg:static lg:h-auto lg:border-0 lg:bg-transparent lg:backdrop-blur-none lg:px-8 lg:pb-2 lg:pt-8",
         "transition-all duration-300"
       )}
     >

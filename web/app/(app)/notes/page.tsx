@@ -7,7 +7,6 @@ import Masonry from "react-masonry-css";
 import {
   Sparkles,
   Search,
-  Loader2,
   X,
   Plus,
   Pin,
@@ -22,7 +21,8 @@ import {
   deltaToFullPlainText,
   bulkDeleteNotes,
   bulkArchiveNotes,
-  useSelectionMode
+  useSelectionMode,
+  NoteGridLoading,
 } from "@/features/notes";
 import { getTags } from "@/features/tags";
 import { Header } from "@/components/layout";
@@ -483,8 +483,8 @@ export default function NotesPage() {
 
           {/* Content */}
           {notesLoading ? (
-            <div className="flex items-center justify-center h-64">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <div className="max-w-7xl mx-auto">
+              <NoteGridLoading />
             </div>
           ) : filteredNotes.length === 0 ? (
             <div className="flex flex-col items-center justify-center min-h-[60vh] text-center max-w-md mx-auto">

@@ -1,5 +1,5 @@
 /// Curated list of pleasant tag colors (standard hex format for cross-platform)
-const TAG_COLORS = [
+export const TAG_COLORS = [
   '#E57373', // Red 300
   '#F06292', // Pink 300
   '#BA68C8', // Purple 300
@@ -26,4 +26,3 @@ const TAG_COLORS = [
 export function generateRandomTagColor(): string {
   return TAG_COLORS[Math.floor(Math.random() * TAG_COLORS.length)];
 }
-
