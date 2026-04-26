@@ -7,6 +7,8 @@ class Tags extends Table {
   DateTimeColumn get updatedAt => dateTime().nullable()();
   BoolColumn get isSynced => boolean().withDefault(const Constant(false))();
   BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
+  // Last server-assigned syncVersion we have seen (BigInt as string).
+  TextColumn get syncVersion => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

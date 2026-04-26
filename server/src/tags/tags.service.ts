@@ -7,6 +7,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateTagDto } from './dto/create-tag.dto';
 import { UpdateTagDto } from './dto/update-tag.dto';
 import { SyncTagsDto } from './dto/sync-tags.dto';
+import { bumpSyncVersion } from '../sync/sync-version';
 
 @Injectable()
 export class TagsService {
@@ -26,23 +27,27 @@ export class TagsService {
       throw new ConflictException('A tag with this name already exists');
     }
 
-    return this.prisma.tag.create({
-      data: {
-        ...createTagDto,
-        userId,
-      },
-      include: {
-        _count: {
-          select: {
-            notes: {
-              where: {
-                state: 'active',
-                isArchived: false,
+    return this.prisma.$transaction(async (tx) => {
+      const syncVersion = await bumpSyncVersion(tx);
+      return tx.tag.create({
+        data: {
+          ...createTagDto,
+          userId,
+          syncVersion,
+        },
+        include: {
+          _count: {
+            select: {
+              notes: {
+                where: {
+                  state: 'active',
+                  isArchived: false,
+                },
               },
             },
           },
         },
-      },
+      });
     });
   }
 
@@ -111,32 +116,39 @@ export class TagsService {
       }
     }
 
-    return this.prisma.tag.update({
-      where: { id },
-      data: updateTagDto,
-      include: {
-        _count: {
-          select: {
-            notes: {
-              where: {
-                state: 'active',
-                isArchived: false,
+    return this.prisma.$transaction(async (tx) => {
+      const syncVersion = await bumpSyncVersion(tx);
+      return tx.tag.update({
+        where: { id },
+        data: { ...updateTagDto, syncVersion },
+        include: {
+          _count: {
+            select: {
+              notes: {
+                where: {
+                  state: 'active',
+                  isArchived: false,
+                },
               },
             },
           },
         },
-      },
+      });
     });
   }
 
   async remove(userId: string, id: string) {
     await this.findOne(userId, id);
 
-    return this.prisma.tag.update({
-      where: { id },
-      data: {
-        isDeleted: true,
-      },
+    return this.prisma.$transaction(async (tx) => {
+      const syncVersion = await bumpSyncVersion(tx);
+      return tx.tag.update({
+        where: { id },
+        data: {
+          isDeleted: true,
+          syncVersion,
+        },
+      });
     });
   }
 
@@ -177,9 +189,12 @@ export class TagsService {
       if (change.isDeleted) {
         // Soft delete tag
         try {
-          await this.prisma.tag.update({
-            where: { id: change.id },
-            data: { isDeleted: true },
+          await this.prisma.$transaction(async (tx) => {
+            const syncVersion = await bumpSyncVersion(tx);
+            await tx.tag.update({
+              where: { id: change.id },
+              data: { isDeleted: true, syncVersion },
+            });
           });
         } catch {
           // Tag might not exist, ignore
@@ -195,13 +210,17 @@ export class TagsService {
       if (!existingTag) {
         // Tag doesn't exist on server - create it
         try {
-          await this.prisma.tag.create({
-            data: {
-              id: change.id,
-              name: change.name,
-              color: change.color,
-              userId,
-            },
+          await this.prisma.$transaction(async (tx) => {
+            const syncVersion = await bumpSyncVersion(tx);
+            await tx.tag.create({
+              data: {
+                id: change.id,
+                name: change.name,
+                color: change.color,
+                userId,
+                syncVersion,
+              },
+            });
           });
         } catch {
           // Might conflict with name, ignore
@@ -215,12 +234,16 @@ export class TagsService {
         if (clientUpdatedAt > serverUpdatedAt) {
           // Client wins - update server
           try {
-            await this.prisma.tag.update({
-              where: { id: change.id },
-              data: {
-                name: change.name,
-                color: change.color,
-              },
+            await this.prisma.$transaction(async (tx) => {
+              const syncVersion = await bumpSyncVersion(tx);
+              await tx.tag.update({
+                where: { id: change.id },
+                data: {
+                  name: change.name,
+                  color: change.color,
+                  syncVersion,
+                },
+              });
             });
           } catch {
             // Might conflict with name, ignore

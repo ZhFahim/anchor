@@ -51,10 +51,23 @@ final class ConnectivityStreamProvider
 String _$connectivityStreamHash() =>
     r'dbd2c4ce5970f1f97dad2730821bb5ca0b99c327';
 
+/// Thin facade preserved for callers that already use SyncManager (e.g.
+/// pull-to-refresh, the AnchorApp watch in main.dart). All real work now
+/// lives in [SyncWorker]; this notifier just observes connectivity transitions
+/// and forwards manual-sync requests.
+
 @ProviderFor(SyncManager)
 const syncManagerProvider = SyncManagerProvider._();
 
+/// Thin facade preserved for callers that already use SyncManager (e.g.
+/// pull-to-refresh, the AnchorApp watch in main.dart). All real work now
+/// lives in [SyncWorker]; this notifier just observes connectivity transitions
+/// and forwards manual-sync requests.
 final class SyncManagerProvider extends $NotifierProvider<SyncManager, bool> {
+  /// Thin facade preserved for callers that already use SyncManager (e.g.
+  /// pull-to-refresh, the AnchorApp watch in main.dart). All real work now
+  /// lives in [SyncWorker]; this notifier just observes connectivity transitions
+  /// and forwards manual-sync requests.
   const SyncManagerProvider._()
     : super(
         from: null,
@@ -82,7 +95,12 @@ final class SyncManagerProvider extends $NotifierProvider<SyncManager, bool> {
   }
 }
 
-String _$syncManagerHash() => r'c126ef59ad37bff111c818c09ac0343116684872';
+String _$syncManagerHash() => r'c5af06f7d0bb578e9d24a312a59acb22bde33af7';
+
+/// Thin facade preserved for callers that already use SyncManager (e.g.
+/// pull-to-refresh, the AnchorApp watch in main.dart). All real work now
+/// lives in [SyncWorker]; this notifier just observes connectivity transitions
+/// and forwards manual-sync requests.
 
 abstract class _$SyncManager extends $Notifier<bool> {
   bool build();

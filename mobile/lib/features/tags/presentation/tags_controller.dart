@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:uuid/uuid.dart';
 import '../data/repository/tags_repository.dart';
+import '../../../core/sync/sync_worker.dart';
 import '../domain/tag.dart';
 
 part 'tags_controller.g.dart';
@@ -10,14 +11,13 @@ part 'tags_controller.g.dart';
 class TagsController extends _$TagsController {
   @override
   Stream<List<Tag>> build() {
-    // Trigger initial sync
     Future.microtask(() => sync());
     return ref.watch(tagsRepositoryProvider).watchTags();
   }
 
   Future<void> sync() async {
     try {
-      await ref.read(tagsRepositoryProvider).sync();
+      await ref.read(syncWorkerProvider).requestSync(immediate: true);
     } catch (e) {
       debugPrint('Tags sync error: $e');
     }

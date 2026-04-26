@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'dio_provider.dart';
+part of 'sync_worker.dart';
 
 // **************************************************************************
 // RiverpodGenerator
@@ -9,42 +9,43 @@ part of 'dio_provider.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 
-@ProviderFor(dio)
-const dioProvider = DioProvider._();
+@ProviderFor(syncWorker)
+const syncWorkerProvider = SyncWorkerProvider._();
 
-final class DioProvider extends $FunctionalProvider<Dio, Dio, Dio>
-    with $Provider<Dio> {
-  const DioProvider._()
+final class SyncWorkerProvider
+    extends $FunctionalProvider<SyncWorker, SyncWorker, SyncWorker>
+    with $Provider<SyncWorker> {
+  const SyncWorkerProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'dioProvider',
+        name: r'syncWorkerProvider',
         isAutoDispose: true,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$dioHash();
+  String debugGetCreateSourceHash() => _$syncWorkerHash();
 
   @$internal
   @override
-  $ProviderElement<Dio> $createElement($ProviderPointer pointer) =>
+  $ProviderElement<SyncWorker> $createElement($ProviderPointer pointer) =>
       $ProviderElement(pointer);
 
   @override
-  Dio create(Ref ref) {
-    return dio(ref);
+  SyncWorker create(Ref ref) {
+    return syncWorker(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(Dio value) {
+  Override overrideWithValue(SyncWorker value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<Dio>(value),
+      providerOverride: $SyncValueProvider<SyncWorker>(value),
     );
   }
 }
 
-String _$dioHash() => r'11532878f6d23cc55fc4980523ab1b2c55623931';
+String _$syncWorkerHash() => r'a47b58ff53049f5933b01f5955532937ab8bccaf';

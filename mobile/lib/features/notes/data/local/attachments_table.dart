@@ -18,6 +18,8 @@ class NoteAttachments extends Table {
   // User who uploaded this attachment (null for local-only pending uploads)
   TextColumn get uploadedByUserId => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  // Last server-assigned syncVersion we have seen (BigInt as string).
+  TextColumn get syncVersion => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

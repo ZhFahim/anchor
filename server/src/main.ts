@@ -5,6 +5,11 @@ import helmet from 'helmet';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import * as fs from 'fs';
 
+// JSON.stringify can't serialize BigInt — needed for syncVersion columns.
+(BigInt.prototype as unknown as { toJSON: () => string }).toJSON = function () {
+  return this.toString();
+};
+
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 

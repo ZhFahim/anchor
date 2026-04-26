@@ -1,22 +1,25 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:uuid/uuid.dart';
 import '../../features/notes/data/local/notes_table.dart';
 import '../../features/notes/data/local/attachments_table.dart';
 import '../../features/tags/data/local/tags_table.dart';
 import '../providers/active_user_id_provider.dart';
+import '../sync/sync_outbox_table.dart';
 
 part 'app_database.g.dart';
 
-@DriftDatabase(tables: [Notes, Tags, NoteTags, NoteAttachments])
+@DriftDatabase(tables: [Notes, Tags, NoteTags, NoteAttachments, SyncOutbox])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(String userId) : super(_openConnection(userId));
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -43,8 +46,79 @@ class AppDatabase extends _$AppDatabase {
       if (from < 7) {
         await m.createTable(noteAttachments);
       }
+      if (from < 8) {
+        await m.createTable(syncOutbox);
+        await m.addColumn(notes, notes.syncVersion);
+        await m.addColumn(tags, tags.syncVersion);
+        await m.addColumn(noteAttachments, noteAttachments.syncVersion);
+        await _backfillOutboxFromDirtyRows();
+      }
     },
   );
+
+  // Carry pre-upgrade dirty rows into the new outbox so unsynced offline
+  // edits aren't stranded after the protocol switch.
+  Future<void> _backfillOutboxFromDirtyRows() async {
+    const uuid = Uuid();
+    final now = DateTime.now().millisecondsSinceEpoch;
+
+    final dirtyNotes = await (select(
+      notes,
+    )..where((tbl) => tbl.isSynced.equals(false))).get();
+    for (final note in dirtyNotes) {
+      final tagRows = await (select(
+        noteTags,
+      )..where((tbl) => tbl.noteId.equals(note.id))).get();
+      final tagIds = tagRows.map((r) => r.tagId).toList();
+
+      final isDelete = note.state == 'deleted';
+      final payload = isDelete
+          ? <String, dynamic>{}
+          : {
+              'title': note.title,
+              'content': note.content,
+              'isPinned': note.isPinned,
+              'isArchived': note.isArchived,
+              'background': note.background,
+              'state': note.state,
+              'tagIds': tagIds,
+            };
+
+      await into(syncOutbox).insert(
+        SyncOutboxCompanion.insert(
+          clientOpId: uuid.v4(),
+          entityType: 'note',
+          entityId: note.id,
+          op: isDelete ? 'delete' : 'upsert',
+          payloadJson: jsonEncode(payload),
+          clientUpdatedAt: note.updatedAt?.millisecondsSinceEpoch ?? now,
+          createdAt: now,
+        ),
+      );
+    }
+
+    final dirtyTags = await (select(
+      tags,
+    )..where((tbl) => tbl.isSynced.equals(false))).get();
+    for (final tag in dirtyTags) {
+      final isDelete = tag.isDeleted;
+      final payload = isDelete
+          ? <String, dynamic>{}
+          : {'name': tag.name, 'color': tag.color};
+
+      await into(syncOutbox).insert(
+        SyncOutboxCompanion.insert(
+          clientOpId: uuid.v4(),
+          entityType: 'tag',
+          entityId: tag.id,
+          op: isDelete ? 'delete' : 'upsert',
+          payloadJson: jsonEncode(payload),
+          clientUpdatedAt: tag.updatedAt?.millisecondsSinceEpoch ?? now,
+          createdAt: now,
+        ),
+      );
+    }
+  }
 }
 
 LazyDatabase _openConnection(String userId) {

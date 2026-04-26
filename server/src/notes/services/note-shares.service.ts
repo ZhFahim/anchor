@@ -11,13 +11,14 @@ import {
   SHARED_WITH_USER_SELECT,
   ERROR_MESSAGES,
 } from '../constants/notes.constants';
+import { bumpSyncVersion } from '../../sync/sync-version';
 
 @Injectable()
 export class NoteSharesService {
   constructor(
     private prisma: PrismaService,
     private noteAccessService: NoteAccessService,
-  ) { }
+  ) {}
 
   async shareNote(ownerId: string, noteId: string, shareNoteDto: ShareNoteDto) {
     const { sharedWithUserId, permission } = shareNoteDto;
@@ -46,17 +47,21 @@ export class NoteSharesService {
     });
 
     if (existingShare) {
-      const updated = await this.prisma.noteShare.update({
-        where: { id: existingShare.id },
-        data: {
-          permission,
-          isDeleted: false, // Reactivate if it was soft-deleted
-        },
-        include: {
-          sharedWithUser: {
-            select: SHARED_WITH_USER_SELECT,
+      const updated = await this.prisma.$transaction(async (tx) => {
+        const syncVersion = await bumpSyncVersion(tx);
+        return tx.noteShare.update({
+          where: { id: existingShare.id },
+          data: {
+            permission,
+            isDeleted: false, // Reactivate if it was soft-deleted
+            syncVersion,
           },
-        },
+          include: {
+            sharedWithUser: {
+              select: SHARED_WITH_USER_SELECT,
+            },
+          },
+        });
       });
 
       return {
@@ -68,18 +73,22 @@ export class NoteSharesService {
       };
     }
 
-    const created = await this.prisma.noteShare.create({
-      data: {
-        noteId,
-        sharedWithUserId,
-        permission,
-        sharedByUserId: ownerId,
-      },
-      include: {
-        sharedWithUser: {
-          select: SHARED_WITH_USER_SELECT,
+    const created = await this.prisma.$transaction(async (tx) => {
+      const syncVersion = await bumpSyncVersion(tx);
+      return tx.noteShare.create({
+        data: {
+          noteId,
+          sharedWithUserId,
+          permission,
+          sharedByUserId: ownerId,
+          syncVersion,
         },
-      },
+        include: {
+          sharedWithUser: {
+            select: SHARED_WITH_USER_SELECT,
+          },
+        },
+      });
     });
 
     return {
@@ -137,14 +146,17 @@ export class NoteSharesService {
       throw new NotFoundException(ERROR_MESSAGES.SHARE_NOT_FOUND);
     }
 
-    const updated = await this.prisma.noteShare.update({
-      where: { id: shareId },
-      data: { permission: updateDto.permission },
-      include: {
-        sharedWithUser: {
-          select: SHARED_WITH_USER_SELECT,
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const syncVersion = await bumpSyncVersion(tx);
+      return tx.noteShare.update({
+        where: { id: shareId },
+        data: { permission: updateDto.permission, syncVersion },
+        include: {
+          sharedWithUser: {
+            select: SHARED_WITH_USER_SELECT,
+          },
         },
-      },
+      });
     });
 
     return {
@@ -171,9 +183,12 @@ export class NoteSharesService {
       throw new NotFoundException(ERROR_MESSAGES.SHARE_NOT_FOUND);
     }
 
-    await this.prisma.noteShare.update({
-      where: { id: shareId },
-      data: { isDeleted: true },
+    await this.prisma.$transaction(async (tx) => {
+      const syncVersion = await bumpSyncVersion(tx);
+      await tx.noteShare.update({
+        where: { id: shareId },
+        data: { isDeleted: true, syncVersion },
+      });
     });
 
     return { success: true };

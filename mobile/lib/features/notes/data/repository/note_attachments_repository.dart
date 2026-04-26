@@ -7,8 +7,8 @@ import 'package:path/path.dart' as path;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/database/app_database.dart';
-import '../../../../core/network/connectivity_provider.dart';
 import '../../../../core/network/dio_provider.dart';
+import '../../../../core/sync/sync_worker.dart';
 import '../../domain/note_attachment.dart' as domain;
 
 part 'note_attachments_repository.g.dart';
@@ -19,7 +19,11 @@ NoteAttachmentsRepository noteAttachmentsRepository(Ref ref) {
   final dio = ref.watch(dioProvider);
 
   void triggerSync() {
-    ref.read(syncManagerProvider.notifier).manualSync();
+    try {
+      ref.read(syncWorkerProvider).requestSync();
+    } catch (e) {
+      debugPrint('Sync trigger failed: $e');
+    }
   }
 
   return NoteAttachmentsRepository(db, dio, triggerSync);
@@ -358,6 +362,19 @@ class NoteAttachmentsRepository {
       const NotesCompanion(isSynced: drift.Value(false)),
     );
   }
+
+  Future<void> deleteFileAtPath(String filePath) async {
+    try {
+      final file = File(filePath);
+      if (file.existsSync()) {
+        await file.delete();
+      }
+    } catch (e) {
+      debugPrint('Failed to delete file $filePath: $e');
+    }
+  }
+
+  Future<void> syncBinaries() => sync();
 
   /// Sync pending uploads and deletes with server
   Future<void> sync() async {

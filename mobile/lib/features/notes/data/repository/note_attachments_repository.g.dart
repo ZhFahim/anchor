@@ -55,4 +55,4 @@ final class NoteAttachmentsRepositoryProvider
 }
 
 String _$noteAttachmentsRepositoryHash() =>
-    r'cc5fadc96e79ea721fe195f427b6559948413c5e';
+    r'ba76be637299670241c17f17cfade2fb40f7327f';

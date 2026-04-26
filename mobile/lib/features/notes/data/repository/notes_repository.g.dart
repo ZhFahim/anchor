@@ -49,4 +49,4 @@ final class NotesRepositoryProvider
   }
 }
 
-String _$notesRepositoryHash() => r'c2db2f78b5f9c8b2edccb4821bd32cba6e69c82c';
+String _$notesRepositoryHash() => r'decb9a7a758f8ce97b15380f952d15b3a267dda4';

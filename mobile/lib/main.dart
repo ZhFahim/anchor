@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'core/app_initializer.dart';
 import 'core/network/connectivity_provider.dart';
+import 'core/providers/active_user_id_provider.dart';
 import 'core/router/app_router.dart';
+import 'core/sync/sync_worker.dart';
 import 'core/theme/app_theme.dart';
 import 'features/settings/presentation/controllers/theme_preferences_controller.dart';
 
@@ -13,16 +15,48 @@ void main() async {
   runApp(const ProviderScope(child: AnchorApp()));
 }
 
-class AnchorApp extends ConsumerWidget {
+class AnchorApp extends ConsumerStatefulWidget {
   const AnchorApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AnchorApp> createState() => _AnchorAppState();
+}
+
+class _AnchorAppState extends ConsumerState<AnchorApp>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      final userId = ref.read(activeUserIdProvider);
+      if (userId != null) {
+        ref.read(syncWorkerProvider).requestSync(immediate: true);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final router = ref.watch(goRouterProvider);
     final themeMode = ref.watch(themeModeControllerProvider);
 
-    // Initialize sync manager to listen for connectivity changes
     ref.watch(syncManagerProvider);
+    final userId = ref.watch(activeUserIdProvider);
+    if (userId != null) {
+      ref.watch(syncWorkerProvider);
+    }
 
     return MaterialApp.router(
       title: 'Anchor Notes',

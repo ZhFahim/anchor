@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:anchor/features/notes/domain/note.dart';
 import '../data/repository/notes_repository.dart';
-import '../../tags/data/repository/tags_repository.dart';
+import '../../../core/sync/sync_worker.dart';
 import '../../tags/presentation/tags_controller.dart';
 
 part 'notes_controller.g.dart';
@@ -35,10 +35,7 @@ class NotesController extends _$NotesController {
     final syncingNotifier = ref.read(syncingStateProvider.notifier);
     syncingNotifier.setSyncing(true);
     try {
-      // Sync tags FIRST to ensure tag IDs are resolved
-      await ref.read(tagsRepositoryProvider).sync();
-      // Then sync notes
-      await ref.read(notesRepositoryProvider).sync();
+      await ref.read(syncWorkerProvider).requestSync(immediate: true);
     } catch (e) {
       debugPrint('Sync error: $e');
     } finally {

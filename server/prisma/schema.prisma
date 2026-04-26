@@ -30,23 +30,24 @@ enum AttachmentType {
 }
 
 model User {
-  id                   String           @id @default(uuid())
-  email                String           @unique
-  password             String?
-  name                 String
-  profileImage         String?
-  apiToken             String?          @unique
-  isAdmin              Boolean          @default(false)
-  status               UserStatus       @default(active)
-  oidcSubject          String?          @unique
-  createdAt            DateTime         @default(now())
-  updatedAt            DateTime         @updatedAt
-  notes                Note[]
-  tags                 Tag[]
-  sharedNotes          NoteShare[]      @relation("SharedBy")
-  notesSharedWithMe    NoteShare[]      @relation("SharedWith")
-  refreshTokens        RefreshToken[]
-  uploadedAttachments  NoteAttachment[]
+  id                  String           @id @default(uuid())
+  email               String           @unique
+  password            String?
+  name                String
+  profileImage        String?
+  apiToken            String?          @unique
+  isAdmin             Boolean          @default(false)
+  status              UserStatus       @default(active)
+  oidcSubject         String?          @unique
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  notes               Note[]
+  tags                Tag[]
+  sharedNotes         NoteShare[]      @relation("SharedBy")
+  notesSharedWithMe   NoteShare[]      @relation("SharedWith")
+  refreshTokens       RefreshToken[]
+  uploadedAttachments NoteAttachment[]
+  syncOpLogs          SyncOpLog[]
 }
 
 model Settings {
@@ -58,52 +59,59 @@ model Settings {
 }
 
 model Note {
-  id          String      @id @default(uuid())
+  id          String           @id @default(uuid())
   title       String
-  content     String?  
-  isPinned    Boolean     @default(false)
-  isArchived  Boolean     @default(false)
+  content     String?
+  isPinned    Boolean          @default(false)
+  isArchived  Boolean          @default(false)
   background  String?
-  state       NoteState   @default(active)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  state       NoteState        @default(active)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  syncVersion BigInt           @default(0)
   userId      String
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   tags        Tag[]
   sharedWith  NoteShare[]
   attachments NoteAttachment[]
+
+  @@index([userId, syncVersion])
 }
 
 model Tag {
-  id        String    @id @default(uuid())
-  name      String
-  color     String?
-  isDeleted Boolean   @default(false)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  userId    String
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  notes     Note[]
+  id          String   @id @default(uuid())
+  name        String
+  color       String?
+  isDeleted   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  syncVersion BigInt   @default(0)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notes       Note[]
 
   @@unique([userId, name])
+  @@index([userId, syncVersion])
 }
 
 model NoteShare {
-  id              String         @id @default(uuid())
-  noteId          String
-  note            Note           @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  id               String              @id @default(uuid())
+  noteId           String
+  note             Note                @relation(fields: [noteId], references: [id], onDelete: Cascade)
   sharedWithUserId String
-  sharedWithUser  User           @relation("SharedWith", fields: [sharedWithUserId], references: [id], onDelete: Cascade)
-  permission      NoteSharePermission
-  sharedByUserId  String
-  sharedByUser    User           @relation("SharedBy", fields: [sharedByUserId], references: [id], onDelete: Cascade)
-  isDeleted       Boolean        @default(false)
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  sharedWithUser   User                @relation("SharedWith", fields: [sharedWithUserId], references: [id], onDelete: Cascade)
+  permission       NoteSharePermission
+  sharedByUserId   String
+  sharedByUser     User                @relation("SharedBy", fields: [sharedByUserId], references: [id], onDelete: Cascade)
+  isDeleted        Boolean             @default(false)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  syncVersion      BigInt              @default(0)
 
   @@unique([noteId, sharedWithUserId])
   @@index([noteId])
   @@index([sharedWithUserId])
+  @@index([sharedWithUserId, syncVersion])
 }
 
 model RefreshToken {
@@ -128,11 +136,28 @@ model NoteAttachment {
   mimeType         String
   fileSize         Int
   position         Int            @default(0)
+  isDeleted        Boolean        @default(false)
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
+  syncVersion      BigInt         @default(0)
   note             Note           @relation(fields: [noteId], references: [id], onDelete: Cascade)
   uploadedByUser   User           @relation(fields: [uploadedByUserId], references: [id], onDelete: Cascade)
 
   @@index([noteId])
   @@index([uploadedByUserId])
+  @@index([noteId, syncVersion])
+}
+
+model SyncOpLog {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clientOpId String
+  entityType String
+  entityId   String
+  resultJson String
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, clientOpId])
+  @@index([createdAt])
 }

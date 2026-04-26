@@ -6,12 +6,16 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NoteAccessService } from './note-access.service';
-import { NoteSharePermission, AttachmentType } from 'src/generated/prisma/enums';
+import {
+  NoteSharePermission,
+  AttachmentType,
+} from 'src/generated/prisma/enums';
 import {
   ATTACHMENT_MAX_FILE_SIZE,
   ATTACHMENT_ALLOWED_MIME_TYPES,
 } from '../constants/notes.constants';
 import { toAttachmentResponse } from '../dto/attachment-response.dto';
+import { bumpSyncVersion } from '../../sync/sync-version';
 import * as crypto from 'crypto';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -41,7 +45,9 @@ export class NoteAttachmentsService {
     }
 
     if (!ATTACHMENT_ALLOWED_MIME_TYPES.has(file.mimetype)) {
-      throw new BadRequestException(`File type ${file.mimetype} is not allowed`);
+      throw new BadRequestException(
+        `File type ${file.mimetype} is not allowed`,
+      );
     }
 
     if (file.size > ATTACHMENT_MAX_FILE_SIZE) {
@@ -67,13 +73,17 @@ export class NoteAttachmentsService {
       fileSaved = true;
 
       const attachment = await this.prisma.$transaction(async (tx) => {
-        // Shift all existing attachments down to make room at position 0
-        await tx.noteAttachment.updateMany({
-          where: { noteId },
-          data: { position: { increment: 1 } },
-        });
+        // Shift existing attachments down to make room at position 0
+        await tx.$executeRaw`
+          UPDATE "NoteAttachment"
+          SET position = position + 1,
+              "syncVersion" = nextval('sync_version_seq'),
+              "updatedAt" = NOW()
+          WHERE "noteId" = ${noteId}
+        `;
 
-        return tx.noteAttachment.create({
+        const attachmentSyncVersion = await bumpSyncVersion(tx);
+        const created = await tx.noteAttachment.create({
           data: {
             noteId,
             uploadedByUserId: userId,
@@ -83,14 +93,17 @@ export class NoteAttachmentsService {
             mimeType: file.mimetype,
             fileSize: file.size,
             position: 0,
+            syncVersion: attachmentSyncVersion,
           },
         });
-      });
 
-      // Touch the note so it appears in the sync feed for other clients
-      await this.prisma.note.update({
-        where: { id: noteId },
-        data: { updatedAt: new Date() },
+        const noteSyncVersion = await bumpSyncVersion(tx);
+        await tx.note.update({
+          where: { id: noteId },
+          data: { syncVersion: noteSyncVersion },
+        });
+
+        return created;
       });
 
       return toAttachmentResponse(attachment);
@@ -99,7 +112,9 @@ export class NoteAttachmentsService {
         try {
           await fs.unlink(filePath);
         } catch (deleteError) {
-          this.logger.error(`Failed to delete file after DB error: ${filePath}`);
+          this.logger.error(
+            `Failed to delete file after DB error: ${filePath}`,
+          );
         }
       }
       throw new BadRequestException('Failed to upload attachment');
@@ -169,12 +184,14 @@ export class NoteAttachmentsService {
       );
     }
 
-    await this.prisma.noteAttachment.delete({ where: { id: attachmentId } });
+    await this.prisma.$transaction(async (tx) => {
+      await tx.noteAttachment.delete({ where: { id: attachmentId } });
 
-    // Touch the note so it appears in the sync feed for other clients
-    await this.prisma.note.update({
-      where: { id: noteId },
-      data: { updatedAt: new Date() },
+      const noteSyncVersion = await bumpSyncVersion(tx);
+      await tx.note.update({
+        where: { id: noteId },
+        data: { syncVersion: noteSyncVersion },
+      });
     });
 
     const filePath = path.join(this.baseDir, noteId, attachment.storedFilename);
@@ -215,19 +232,21 @@ export class NoteAttachmentsService {
       }
     }
 
-    await this.prisma.$transaction([
-      ...orderedIds.map((id, index) =>
-        this.prisma.noteAttachment.update({
-          where: { id },
-          data: { position: index },
-        }),
-      ),
-      // Touch the note so it appears in the sync feed for other clients
-      this.prisma.note.update({
+    await this.prisma.$transaction(async (tx) => {
+      for (let index = 0; index < orderedIds.length; index++) {
+        const syncVersion = await bumpSyncVersion(tx);
+        await tx.noteAttachment.update({
+          where: { id: orderedIds[index] },
+          data: { position: index, syncVersion },
+        });
+      }
+
+      const noteSyncVersion = await bumpSyncVersion(tx);
+      await tx.note.update({
         where: { id: noteId },
-        data: { updatedAt: new Date() },
-      }),
-    ]);
+        data: { syncVersion: noteSyncVersion },
+      });
+    });
 
     return this.findAll(userId, noteId);
   }

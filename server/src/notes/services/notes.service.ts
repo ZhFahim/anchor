@@ -7,6 +7,7 @@ import { NoteState, NoteSharePermission } from 'src/generated/prisma/enums';
 import { NoteAccessService } from './note-access.service';
 import { NoteAttachmentsService } from './note-attachments.service';
 import { transformNote } from '../utils/note-transformer.util';
+import { bumpSyncVersion } from '../../sync/sync-version';
 import {
   ERROR_MESSAGES,
   NOTE_INCLUDE_TAGS,
@@ -20,23 +21,27 @@ export class NotesService {
     private prisma: PrismaService,
     private noteAccessService: NoteAccessService,
     private noteAttachmentsService: NoteAttachmentsService,
-  ) { }
+  ) {}
 
   async create(userId: string, createNoteDto: CreateNoteDto) {
     const { tagIds, ...noteData } = createNoteDto;
 
-    const note = await this.prisma.note.create({
-      data: {
-        ...noteData,
-        state: NoteState.active,
-        userId,
-        tags: tagIds?.length
-          ? {
-            connect: tagIds.map((id) => ({ id })),
-          }
-          : undefined,
-      },
-      include: NOTE_INCLUDE_TAGS,
+    const note = await this.prisma.$transaction(async (tx) => {
+      const syncVersion = await bumpSyncVersion(tx);
+      return tx.note.create({
+        data: {
+          ...noteData,
+          state: NoteState.active,
+          userId,
+          syncVersion,
+          tags: tagIds?.length
+            ? {
+                connect: tagIds.map((id) => ({ id })),
+              }
+            : undefined,
+        },
+        include: NOTE_INCLUDE_TAGS,
+      });
     });
 
     return transformNote(note, userId);
@@ -69,29 +74,29 @@ export class NotesService {
           },
           ...(tagId
             ? [
-              {
-                tags: {
-                  some: { id: tagId },
+                {
+                  tags: {
+                    some: { id: tagId },
+                  },
                 },
-              },
-            ]
+              ]
             : []),
           ...(search
             ? [
-              {
-                OR: [
-                  {
-                    title: { contains: search, mode: 'insensitive' as const },
-                  },
-                  {
-                    content: {
-                      contains: search,
-                      mode: 'insensitive' as const,
+                {
+                  OR: [
+                    {
+                      title: { contains: search, mode: 'insensitive' as const },
                     },
-                  },
-                ],
-              },
-            ]
+                    {
+                      content: {
+                        contains: search,
+                        mode: 'insensitive' as const,
+                      },
+                    },
+                  ],
+                },
+              ]
             : []),
         ],
       },
@@ -144,18 +149,22 @@ export class NotesService {
 
     const { tagIds, ...noteData } = updateNoteDto;
 
-    const note = await this.prisma.note.update({
-      where: { id },
-      data: {
-        ...noteData,
-        // Use 'set' to replace all tags at once (implicit many-to-many)
-        ...(tagIds !== undefined && {
-          tags: {
-            set: tagIds.map((tagId) => ({ id: tagId })),
-          },
-        }),
-      },
-      include: NOTE_INCLUDE_TAGS,
+    const note = await this.prisma.$transaction(async (tx) => {
+      const syncVersion = await bumpSyncVersion(tx);
+      return tx.note.update({
+        where: { id },
+        data: {
+          ...noteData,
+          syncVersion,
+          // Use 'set' to replace all tags at once (implicit many-to-many)
+          ...(tagIds !== undefined && {
+            tags: {
+              set: tagIds.map((tagId) => ({ id: tagId })),
+            },
+          }),
+        },
+        include: NOTE_INCLUDE_TAGS,
+      });
     });
 
     return transformNote(note, userId);
@@ -165,10 +174,13 @@ export class NotesService {
   async remove(userId: string, id: string) {
     await this.noteAccessService.verifyNoteOwnership(userId, id);
 
-    const note = await this.prisma.note.update({
-      where: { id },
-      data: { state: NoteState.trashed },
-      include: NOTE_INCLUDE_TAGS,
+    const note = await this.prisma.$transaction(async (tx) => {
+      const syncVersion = await bumpSyncVersion(tx);
+      return tx.note.update({
+        where: { id },
+        data: { state: NoteState.trashed, syncVersion },
+        include: NOTE_INCLUDE_TAGS,
+      });
     });
 
     return transformNote(note, userId);
@@ -186,10 +198,13 @@ export class NotesService {
       throw new NotFoundException('Note is not in trash');
     }
 
-    const restoredNote = await this.prisma.note.update({
-      where: { id },
-      data: { state: NoteState.active },
-      include: NOTE_INCLUDE_TAGS,
+    const restoredNote = await this.prisma.$transaction(async (tx) => {
+      const syncVersion = await bumpSyncVersion(tx);
+      return tx.note.update({
+        where: { id },
+        data: { state: NoteState.active, syncVersion },
+        include: NOTE_INCLUDE_TAGS,
+      });
     });
 
     return transformNote(restoredNote, userId);
@@ -199,10 +214,13 @@ export class NotesService {
   async permanentDelete(userId: string, id: string) {
     await this.noteAccessService.verifyNoteOwnership(userId, id);
 
-    const note = await this.prisma.note.update({
-      where: { id },
-      data: { state: NoteState.deleted },
-      include: NOTE_INCLUDE_TAGS,
+    const note = await this.prisma.$transaction(async (tx) => {
+      const syncVersion = await bumpSyncVersion(tx);
+      return tx.note.update({
+        where: { id },
+        data: { state: NoteState.deleted, syncVersion },
+        include: NOTE_INCLUDE_TAGS,
+      });
     });
 
     return transformNote(note, userId);
@@ -249,15 +267,16 @@ export class NotesService {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
 
-    const result = await this.prisma.note.updateMany({
-      where: {
-        state: NoteState.trashed,
-        updatedAt: { lt: cutoffDate },
-      },
-      data: { state: NoteState.deleted },
-    });
+    const convertedCount = await this.prisma.$executeRaw`
+      UPDATE "Note"
+      SET state = 'deleted'::"NoteState",
+          "syncVersion" = nextval('sync_version_seq'),
+          "updatedAt" = NOW()
+      WHERE state = 'trashed'::"NoteState"
+        AND "updatedAt" < ${cutoffDate}
+    `;
 
-    return { convertedCount: result.count };
+    return { convertedCount };
   }
 
   // Purge tombstones older than retention period (30 days)
@@ -317,13 +336,14 @@ export class NotesService {
       );
     }
 
-    await this.prisma.note.updateMany({
-      where: {
-        id: { in: noteIds },
-        userId,
-      },
-      data: { state: NoteState.trashed },
-    });
+    await this.prisma.$executeRaw`
+      UPDATE "Note"
+      SET state = 'trashed'::"NoteState",
+          "syncVersion" = nextval('sync_version_seq'),
+          "updatedAt" = NOW()
+      WHERE id = ANY(${noteIds}::text[])
+        AND "userId" = ${userId}
+    `;
 
     return { count: noteIds.length };
   }
@@ -344,13 +364,14 @@ export class NotesService {
       );
     }
 
-    await this.prisma.note.updateMany({
-      where: {
-        id: { in: noteIds },
-        userId,
-      },
-      data: { isArchived: true },
-    });
+    await this.prisma.$executeRaw`
+      UPDATE "Note"
+      SET "isArchived" = true,
+          "syncVersion" = nextval('sync_version_seq'),
+          "updatedAt" = NOW()
+      WHERE id = ANY(${noteIds}::text[])
+        AND "userId" = ${userId}
+    `;
 
     return { count: noteIds.length };
   }
@@ -370,22 +391,26 @@ export class NotesService {
       if (!existingNote) {
         // Note doesn't exist on server - create it (only if user is owner)
         // For shared notes, they should already exist on server
-        await this.prisma.note.create({
-          data: {
-            id: change.id,
-            title: change.title,
-            content: change.content,
-            isPinned: change.isPinned ?? false,
-            isArchived: change.isArchived ?? false,
-            background: change.background,
-            state: (change.state as NoteState) ?? NoteState.active,
-            userId,
-            tags: change.tagIds?.length
-              ? {
-                connect: change.tagIds.map((id) => ({ id })),
-              }
-              : undefined,
-          },
+        await this.prisma.$transaction(async (tx) => {
+          const syncVersion = await bumpSyncVersion(tx);
+          await tx.note.create({
+            data: {
+              id: change.id,
+              title: change.title,
+              content: change.content,
+              isPinned: change.isPinned ?? false,
+              isArchived: change.isArchived ?? false,
+              background: change.background,
+              state: (change.state as NoteState) ?? NoteState.active,
+              userId,
+              syncVersion,
+              tags: change.tagIds?.length
+                ? {
+                    connect: change.tagIds.map((id) => ({ id })),
+                  }
+                : undefined,
+            },
+          });
         });
         processedIds.push(change.id);
       } else {
@@ -429,9 +454,12 @@ export class NotesService {
             };
           }
 
-          await this.prisma.note.update({
-            where: { id: change.id },
-            data: updateData,
+          await this.prisma.$transaction(async (tx) => {
+            const syncVersion = await bumpSyncVersion(tx);
+            await tx.note.update({
+              where: { id: change.id },
+              data: { ...updateData, syncVersion },
+            });
           });
           conflicts.push({ noteId: change.id, resolution: 'client' });
         } else {
@@ -460,18 +488,18 @@ export class NotesService {
         sharedWithUserId: userId,
         ...(lastSyncedAt
           ? {
-            OR: [
-              // Case 1: Share itself was updated (permission change or deleted)
-              { updatedAt: { gt: new Date(lastSyncedAt) } },
-              // Case 2: Note was updated AND share is not deleted
-              {
-                isDeleted: false,
-                note: {
-                  updatedAt: { gt: new Date(lastSyncedAt) },
+              OR: [
+                // Case 1: Share itself was updated (permission change or deleted)
+                { updatedAt: { gt: new Date(lastSyncedAt) } },
+                // Case 2: Note was updated AND share is not deleted
+                {
+                  isDeleted: false,
+                  note: {
+                    updatedAt: { gt: new Date(lastSyncedAt) },
+                  },
                 },
-              },
-            ],
-          }
+              ],
+            }
           : { isDeleted: false }), // Initial sync: only get active shares
       },
       include: {
