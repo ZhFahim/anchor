@@ -42,10 +42,14 @@ Dio dio(Ref ref) {
 
   dio.options.connectTimeout = const Duration(seconds: 10);
   dio.options.receiveTimeout = const Duration(seconds: 10);
-  dio.options.headers = {
+  final customHeaders = ref.watch(customHeadersProvider).value ?? [];
+  final Map<String, String> headers = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
+    for (final h in customHeaders)
+      if (h.key.trim().isNotEmpty) h.key.trim(): h.value,
   };
+  dio.options.headers = headers;
 
   // Allow self-signed certificates when the user has enabled the setting
   final allowSelfSigned =
@@ -95,6 +99,8 @@ Dio dio(Ref ref) {
               refreshDio.options.headers = {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
+                for (final h in customHeaders)
+                  if (h.key.trim().isNotEmpty) h.key.trim(): h.value,
               };
               if (allowSelfSigned && serverUrl != null && serverUrl.isNotEmpty) {
                 refreshDio.httpClientAdapter =
