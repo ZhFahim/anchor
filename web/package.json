@@ -2,6 +2,7 @@
   "name": "anchor-web",
   "version": "0.11.0",
   "private": true,
+  "packageManager": "pnpm@11.0.9",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

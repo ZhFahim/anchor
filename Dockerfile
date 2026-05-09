@@ -15,10 +15,8 @@ COPY server/package.json server/pnpm-lock.yaml server/pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 
 # Production-only server deps (for smaller runtime image)
-FROM base AS server_prod_deps
-WORKDIR /app/server
-COPY server/package.json server/pnpm-lock.yaml server/pnpm-workspace.yaml ./
-RUN pnpm install --prod --no-frozen-lockfile
+FROM server_deps AS server_prod_deps
+RUN pnpm prune --prod
 
 FROM base AS server_builder
 WORKDIR /app/server
@@ -38,7 +36,7 @@ RUN if [ -d src/generated ]; then mkdir -p dist/src && cp -R src/generated dist/
 #
 FROM base AS web_deps
 WORKDIR /app/web
-COPY web/package.json web/pnpm-lock.yaml ./
+COPY web/package.json web/pnpm-lock.yaml web/pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 
 FROM base AS web_builder

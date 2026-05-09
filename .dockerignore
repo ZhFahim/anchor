@@ -1,0 +1,35 @@
+# Git and local metadata
+.git
+.github
+.DS_Store
+
+# Local configuration and logs
+.env
+.env.*
+*.log
+*.pid
+*.seed
+*.pid.lock
+
+# Dependency and build outputs
+**/node_modules
+**/.next
+**/dist
+**/build
+**/coverage
+**/.turbo
+**/.vercel
+**/.dart_tool
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/android/.gradle
+**/ios/Pods
+**/*.tsbuildinfo
+
+# Mobile app
+mobile
+
+# Files not needed by the Dockerfile
+docker-compose*.yml
+README.md
+LICENSE
