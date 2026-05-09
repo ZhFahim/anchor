@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:anchor/core/network/connectivity_provider.dart';
 import 'package:anchor/core/widgets/quill_preview.dart';
 import 'package:anchor/core/widgets/app_drawer.dart';
 import 'package:anchor/features/tags/presentation/tags_controller.dart';
@@ -50,7 +51,6 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
 
   Future<void> _onRefresh() async {
     await ref.read(notesControllerProvider.notifier).sync();
-    ref.read(tagsControllerProvider.notifier).sync();
   }
 
   Widget _buildNoteItem(
@@ -84,7 +84,7 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
     final searchQuery = ref.watch(searchQueryProvider);
     final selectedTagId = ref.watch(selectedTagFilterProvider);
     final tagsAsync = ref.watch(tagsControllerProvider);
-    final isSyncing = ref.watch(syncingStateProvider);
+    final isSyncing = ref.watch(syncManagerProvider);
     final isSelectionMode = ref.watch(selectionModeProvider);
     final selectedNoteIds = ref.watch(selectedNoteIdsProvider);
     final viewOptionsAsync = ref.watch(notesViewOptionsProvider);

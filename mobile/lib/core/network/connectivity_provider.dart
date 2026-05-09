@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../providers/active_user_id_provider.dart';
 import '../../features/notes/data/repository/note_attachments_repository.dart';
 import '../../features/notes/data/repository/notes_repository.dart';
 import '../../features/tags/data/repository/tags_repository.dart';
+import 'sync_requester.dart';
 
 part 'connectivity_provider.g.dart';
 
@@ -20,9 +22,14 @@ Stream<List<ConnectivityResult>> connectivityStream(Ref ref) {
 @riverpod
 class SyncManager extends _$SyncManager {
   bool _wasOffline = false;
+  bool _rerunRequested = false;
+  Future<void>? _activeSync;
 
   @override
   bool build() {
+    registerAppSyncRequester(requestSync);
+    ref.onDispose(() => registerAppSyncRequester(null));
+
     // Listen to connectivity changes
     ref.listen<AsyncValue<List<ConnectivityResult>>>(
       connectivityStreamProvider,
@@ -30,13 +37,19 @@ class SyncManager extends _$SyncManager {
         next.whenData((results) {
           if (isOnlineFromResults(results) && _wasOffline) {
             // Connection restored - trigger sync
-            _triggerSync();
+            requestSync();
           }
 
           _wasOffline = !isOnlineFromResults(results);
         });
       },
     );
+
+    ref.listen<String?>(activeUserIdProvider, (previous, next) {
+      if (next != null && next != previous) {
+        requestSync();
+      }
+    });
 
     // Check initial connectivity state
     _checkInitialState();
@@ -49,34 +62,59 @@ class SyncManager extends _$SyncManager {
       final results = await Connectivity().checkConnectivity();
       _wasOffline =
           results.isEmpty || results.contains(ConnectivityResult.none);
+      if (!_wasOffline) {
+        requestSync();
+      }
     } catch (e) {
       _wasOffline = true;
     }
   }
 
-  Future<void> _triggerSync() async {
+  Future<void> requestSync() {
     // Don't sync if no user is logged in
     final userId = ref.read(activeUserIdProvider);
-    if (userId == null) return;
+    if (userId == null) return Future.value();
 
-    if (state) return; // Already syncing
+    final activeSync = _activeSync;
+    if (activeSync != null) {
+      _rerunRequested = true;
+      return activeSync;
+    }
+
+    final syncFuture = _runSyncLoop();
+    _activeSync = syncFuture;
+    return syncFuture;
+  }
+
+  Future<void> _runSyncLoop() async {
     state = true;
     try {
-      // Sync tags FIRST to ensure tag IDs are resolved before notes sync
-      await ref.read(tagsRepositoryProvider).sync();
-      // Sync notes (includes attachment sync, atomic mark-synced when content + attachments synced)
-      await ref.read(notesRepositoryProvider).sync();
-      // Evict old cached attachments if cache exceeds threshold
-      await ref.read(noteAttachmentsRepositoryProvider).evictCache();
-    } catch (e) {
-      // Sync failed, will retry on next connectivity change
+      do {
+        _rerunRequested = false;
+        try {
+          await _runSyncCycle();
+        } catch (e) {
+          debugPrint('Sync failed: $e');
+          break;
+        }
+      } while (_rerunRequested && ref.read(activeUserIdProvider) != null);
     } finally {
       state = false;
+      _activeSync = null;
     }
   }
 
+  Future<void> _runSyncCycle() async {
+    // Sync tags FIRST to ensure tag IDs are resolved before notes sync
+    await ref.read(tagsRepositoryProvider).sync();
+    // Sync notes (includes attachment sync, atomic mark-synced when content + attachments synced)
+    await ref.read(notesRepositoryProvider).sync();
+    // Evict old cached attachments if cache exceeds threshold
+    await ref.read(noteAttachmentsRepositoryProvider).evictCache();
+  }
+
   Future<void> manualSync() async {
-    await _triggerSync();
+    await requestSync();
   }
 }
 

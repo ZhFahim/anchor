@@ -2,11 +2,15 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateNoteDto } from '../dto/create-note.dto';
 import { UpdateNoteDto } from '../dto/update-note.dto';
-import { SyncNotesDto } from '../dto/sync-notes.dto';
+import { SyncNoteDto, SyncNotesDto } from '../dto/sync-notes.dto';
 import { NoteState, NoteSharePermission } from 'src/generated/prisma/enums';
 import { NoteAccessService } from './note-access.service';
 import { NoteAttachmentsService } from './note-attachments.service';
 import { transformNote } from '../utils/note-transformer.util';
+import {
+  getSyncUpdatedAtWindow,
+  withForcedSyncIds,
+} from '../../sync/sync-window.util';
 import {
   ERROR_MESSAGES,
   NOTE_INCLUDE_TAGS,
@@ -358,132 +362,27 @@ export class NotesService {
   // Sync endpoint - handles bi-directional sync with conflict resolution
   async sync(userId: string, syncDto: SyncNotesDto) {
     const { lastSyncedAt, changes } = syncDto;
-    const processedIds: string[] = [];
-    const conflicts: { noteId: string; resolution: 'server' | 'client' }[] = [];
+    const incoming = await this.processIncomingSyncChanges(
+      userId,
+      changes || [],
+    );
 
-    // Process incoming changes from client
-    for (const change of changes || []) {
-      const existingNote = await this.prisma.note.findUnique({
-        where: { id: change.id },
-      });
+    const syncCutoff = new Date();
+    const forceServerIds = Array.from(incoming.forceServerNoteIds);
+    const updatedAtWindow = getSyncUpdatedAtWindow(lastSyncedAt, syncCutoff);
 
-      if (!existingNote) {
-        // Note doesn't exist on server - create it (only if user is owner)
-        // For shared notes, they should already exist on server
-        await this.prisma.note.create({
-          data: {
-            id: change.id,
-            title: change.title,
-            content: change.content,
-            isPinned: change.isPinned ?? false,
-            isArchived: change.isArchived ?? false,
-            background: change.background,
-            state: (change.state as NoteState) ?? NoteState.active,
-            userId,
-            tags: change.tagIds?.length
-              ? {
-                connect: change.tagIds.map((id) => ({ id })),
-              }
-              : undefined,
-          },
-        });
-        processedIds.push(change.id);
-      } else {
-        // Check access - owner or editor
-        const access = await this.noteAccessService.hasNoteAccess(
-          userId,
-          change.id,
-          NoteSharePermission.editor,
-        );
-
-        if (!access.hasAccess) {
-          // No access or viewer trying to edit - skip
-          continue;
-        }
-
-        // Note exists and user has edit access - compare timestamps for conflict resolution
-        const clientUpdatedAt = new Date(change.updatedAt);
-        const serverUpdatedAt = existingNote.updatedAt;
-
-        if (clientUpdatedAt > serverUpdatedAt) {
-          // Client wins - update server
-          // Only allow certain fields to be updated for shared notes (not state, isArchived)
-          const updateData: any = {
-            title: change.title,
-            content: change.content,
-            isPinned: change.isPinned,
-            background: change.background,
-          };
-
-          // Only owner can update state and isArchived
-          if (access.isOwner) {
-            updateData.isArchived = change.isArchived;
-            updateData.state =
-              (change.state as NoteState) ?? existingNote.state;
-          }
-
-          // Update tags if provided (editors can update tags)
-          if (change.tagIds !== undefined) {
-            updateData.tags = {
-              set: change.tagIds.map((id) => ({ id })),
-            };
-          }
-
-          await this.prisma.note.update({
-            where: { id: change.id },
-            data: updateData,
-          });
-          conflicts.push({ noteId: change.id, resolution: 'client' });
-        } else {
-          conflicts.push({ noteId: change.id, resolution: 'server' });
-        }
-        processedIds.push(change.id);
-      }
-    }
-
-    // Get all notes modified after lastSyncedAt (including trashed and deleted/tombstones)
-    const ownNotes = await this.prisma.note.findMany({
-      where: {
-        userId,
-        updatedAt: lastSyncedAt ? { gt: new Date(lastSyncedAt) } : undefined,
-      },
-      include: {
-        ...NOTE_INCLUDE_TAGS,
-        ...NOTE_INCLUDE_SHARES,
-        ...NOTE_INCLUDE_ATTACHMENT_COUNT,
-      },
-    });
-
-    // Get shared notes modified after lastSyncedAt
-    const sharedShares = await this.prisma.noteShare.findMany({
-      where: {
-        sharedWithUserId: userId,
-        ...(lastSyncedAt
-          ? {
-            OR: [
-              // Case 1: Share itself was updated (permission change or deleted)
-              { updatedAt: { gt: new Date(lastSyncedAt) } },
-              // Case 2: Note was updated AND share is not deleted
-              {
-                isDeleted: false,
-                note: {
-                  updatedAt: { gt: new Date(lastSyncedAt) },
-                },
-              },
-            ],
-          }
-          : { isDeleted: false }), // Initial sync: only get active shares
-      },
-      include: {
-        note: {
-          include: {
-            ...NOTE_INCLUDE_TAGS,
-            ...NOTE_INCLUDE_SHARES,
-            ...NOTE_INCLUDE_ATTACHMENT_COUNT,
-          },
-        },
-      },
-    });
+    const ownNotes = await this.findOwnSyncNotes(
+      userId,
+      updatedAtWindow,
+      forceServerIds,
+    );
+    const sharedShares = await this.findSharedSyncShares(
+      userId,
+      lastSyncedAt,
+      syncCutoff,
+      updatedAtWindow,
+      forceServerIds,
+    );
 
     // Transform own notes
     const transformedOwnNotes = ownNotes.map((note) =>
@@ -504,12 +403,238 @@ export class NotesService {
     return {
       serverChanges,
       revokedSharedNoteIds,
-      processedIds,
-      conflicts,
-      syncedAt: new Date().toISOString(),
+      processedIds: incoming.processedIds,
+      conflicts: incoming.conflicts,
+      syncedAt: syncCutoff.toISOString(),
     };
   }
+
+  private async processIncomingSyncChanges(
+    userId: string,
+    changes: SyncNoteDto[],
+  ): Promise<IncomingNoteSyncResult> {
+    const result: IncomingNoteSyncResult = {
+      processedIds: [],
+      conflicts: [],
+      forceServerNoteIds: new Set<string>(),
+    };
+
+    for (const change of changes) {
+      const existingNote = await this.prisma.note.findUnique({
+        where: { id: change.id },
+      });
+
+      if (!existingNote) {
+        await this.createMissingSyncNote(userId, change);
+        result.processedIds.push(change.id);
+        continue;
+      }
+
+      await this.processExistingSyncNote(userId, change, existingNote, result);
+    }
+
+    return result;
+  }
+
+  private async createMissingSyncNote(userId: string, change: SyncNoteDto) {
+    await this.prisma.note.create({
+      data: {
+        id: change.id,
+        title: change.title,
+        content: change.content,
+        isPinned: change.isPinned ?? false,
+        isArchived: change.isArchived ?? false,
+        background: change.background,
+        state: (change.state as NoteState) ?? NoteState.active,
+        userId,
+        tags: change.tagIds?.length
+          ? {
+            connect: change.tagIds.map((id) => ({ id })),
+          }
+          : undefined,
+      },
+    });
+  }
+
+  private async processExistingSyncNote(
+    userId: string,
+    change: SyncNoteDto,
+    existingNote,
+    result: IncomingNoteSyncResult,
+  ) {
+    const access = await this.noteAccessService.hasNoteAccess(
+      userId,
+      change.id,
+      NoteSharePermission.editor,
+    );
+
+    if (!access.hasAccess) {
+      const readAccess = await this.noteAccessService.hasNoteAccess(
+        userId,
+        change.id,
+      );
+      if (readAccess.hasAccess) {
+        result.forceServerNoteIds.add(change.id);
+        result.conflicts.push({ noteId: change.id, resolution: 'server' });
+        result.processedIds.push(change.id);
+      }
+      return;
+    }
+
+    const clientUpdatedAt = new Date(change.updatedAt);
+    const serverUpdatedAt = existingNote.updatedAt;
+
+    if (clientUpdatedAt <= serverUpdatedAt) {
+      result.forceServerNoteIds.add(change.id);
+      result.conflicts.push({ noteId: change.id, resolution: 'server' });
+      result.processedIds.push(change.id);
+      return;
+    }
+
+    const didUpdate = await this.updateSyncNoteIfUnchanged(
+      change,
+      existingNote,
+      access.isOwner,
+    );
+
+    if (didUpdate) {
+      result.conflicts.push({ noteId: change.id, resolution: 'client' });
+    } else {
+      result.forceServerNoteIds.add(change.id);
+      result.conflicts.push({ noteId: change.id, resolution: 'server' });
+    }
+    result.processedIds.push(change.id);
+  }
+
+  private async updateSyncNoteIfUnchanged(
+    change: SyncNoteDto,
+    existingNote,
+    isOwner: boolean,
+  ) {
+    const updateData: any = {
+      title: change.title,
+      content: change.content,
+      isPinned: change.isPinned,
+      background: change.background,
+    };
+
+    if (isOwner) {
+      updateData.isArchived = change.isArchived;
+      updateData.state = (change.state as NoteState) ?? existingNote.state;
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const result = await tx.note.updateMany({
+        where: { id: change.id, updatedAt: existingNote.updatedAt },
+        data: updateData,
+      });
+
+      if (result.count !== 1) {
+        return false;
+      }
+
+      if (change.tagIds !== undefined) {
+        await tx.note.update({
+          where: { id: change.id },
+          data: {
+            tags: {
+              set: change.tagIds.map((id) => ({ id })),
+            },
+          },
+        });
+      }
+
+      return true;
+    });
+  }
+
+  private findOwnSyncNotes(
+    userId: string,
+    updatedAtWindow: ReturnType<typeof getSyncUpdatedAtWindow>,
+    forceServerIds: string[],
+  ) {
+    return this.prisma.note.findMany({
+      where: {
+        userId,
+        ...withForcedSyncIds(updatedAtWindow, forceServerIds),
+      },
+      include: {
+        ...NOTE_INCLUDE_TAGS,
+        ...NOTE_INCLUDE_SHARES,
+        ...NOTE_INCLUDE_ATTACHMENT_COUNT,
+      },
+    });
+  }
+
+  private findSharedSyncShares(
+    userId: string,
+    lastSyncedAt: string | undefined,
+    syncCutoff: Date,
+    updatedAtWindow: ReturnType<typeof getSyncUpdatedAtWindow>,
+    forceServerIds: string[],
+  ) {
+    return this.prisma.noteShare.findMany({
+      where: {
+        sharedWithUserId: userId,
+        ...buildSharedSyncWhere(
+          lastSyncedAt,
+          syncCutoff,
+          updatedAtWindow,
+          forceServerIds,
+        ),
+      },
+      include: {
+        note: {
+          include: {
+            ...NOTE_INCLUDE_TAGS,
+            ...NOTE_INCLUDE_SHARES,
+            ...NOTE_INCLUDE_ATTACHMENT_COUNT,
+          },
+        },
+      },
+    });
+  }
 }
+
+type SyncConflict = { noteId: string; resolution: 'server' | 'client' };
+
+interface IncomingNoteSyncResult {
+  processedIds: string[];
+  conflicts: SyncConflict[];
+  forceServerNoteIds: Set<string>;
+}
+
+const buildSharedSyncWhere = (
+  lastSyncedAt: string | undefined,
+  syncCutoff: Date,
+  updatedAtWindow: ReturnType<typeof getSyncUpdatedAtWindow>,
+  forceServerIds: string[],
+) => {
+  if (lastSyncedAt) {
+    return {
+      OR: [
+        { updatedAt: updatedAtWindow },
+        { isDeleted: false, note: { updatedAt: updatedAtWindow } },
+        ...activeForcedNoteIds(forceServerIds),
+      ],
+    };
+  }
+
+  const initialActiveShares = {
+    isDeleted: false,
+    updatedAt: { lte: syncCutoff },
+    note: { updatedAt: { lte: syncCutoff } },
+  };
+
+  return forceServerIds.length
+    ? { OR: [initialActiveShares, ...activeForcedNoteIds(forceServerIds)] }
+    : initialActiveShares;
+};
+
+const activeForcedNoteIds = (forceServerIds: string[]) =>
+  forceServerIds.length
+    ? [{ isDeleted: false, noteId: { in: forceServerIds } }]
+    : [];
 
 const clampLimit = (limit?: number) => {
   if (typeof limit !== 'number' || Number.isNaN(limit)) {

@@ -1,8 +1,7 @@
-import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:anchor/core/network/sync_requester.dart';
 import 'package:anchor/features/notes/domain/note.dart';
 import '../data/repository/notes_repository.dart';
-import '../../tags/data/repository/tags_repository.dart';
 import '../../tags/presentation/tags_controller.dart';
 
 part 'notes_controller.g.dart';
@@ -23,7 +22,7 @@ class NotesController extends _$NotesController {
   @override
   Stream<List<Note>> build() {
     // Trigger sync on first build
-    Future.microtask(() => sync());
+    Future.microtask(requestAppSync);
 
     // Watch for tag filter changes
     final selectedTagId = ref.watch(selectedTagFilterProvider);
@@ -32,18 +31,7 @@ class NotesController extends _$NotesController {
   }
 
   Future<void> sync() async {
-    final syncingNotifier = ref.read(syncingStateProvider.notifier);
-    syncingNotifier.setSyncing(true);
-    try {
-      // Sync tags FIRST to ensure tag IDs are resolved
-      await ref.read(tagsRepositoryProvider).sync();
-      // Then sync notes
-      await ref.read(notesRepositoryProvider).sync();
-    } catch (e) {
-      debugPrint('Sync error: $e');
-    } finally {
-      syncingNotifier.setSyncing(false);
-    }
+    await requestAppSync();
   }
 
   Future<void> deleteNote(String id) async {

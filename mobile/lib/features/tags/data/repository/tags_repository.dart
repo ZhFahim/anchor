@@ -7,6 +7,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:drift/drift.dart' as drift;
 import '../../../../core/database/app_database.dart';
 import '../../../../core/network/dio_provider.dart';
+import '../../../../core/network/sync_requester.dart';
+import '../../../../core/network/sync_upload_snapshot.dart';
 import '../../../../core/providers/active_user_id_provider.dart';
 import '../../domain/tag.dart' as domain;
 
@@ -122,8 +124,8 @@ class TagsRepository {
           mode: drift.InsertMode.insertOrReplace,
         );
 
-    // Trigger sync in background
-    sync();
+    // Trigger coordinated sync in background
+    scheduleAppSync();
 
     return tagWithTimestamp;
   }
@@ -136,7 +138,7 @@ class TagsRepository {
         .update(_db.tags)
         .replace(_mapToData(tagWithTimestamp, isSynced: false));
 
-    sync();
+    scheduleAppSync();
   }
 
   // Delete tag
@@ -153,7 +155,7 @@ class TagsRepository {
     // Remove tag associations locally
     await (_db.delete(_db.noteTags)..where((tbl) => tbl.tagId.equals(id))).go();
 
-    sync();
+    scheduleAppSync();
   }
 
   // Get tags for a note
@@ -212,117 +214,169 @@ class TagsRepository {
   // Sync tags with server
   Future<void> sync() async {
     try {
-      // 1. Get last sync timestamp
-      final lastSyncedAt = await _storage.read(key: _lastTagSyncKey);
+      final payload = await _collectLocalChanges();
+      final response = await _postSync(payload);
 
-      // 2. Get all unsynced local tags
-      final unsyncedRows = await (_db.select(
-        _db.tags,
-      )..where((tbl) => tbl.isSynced.equals(false))).get();
-
-      final localChanges = unsyncedRows.map((row) {
-        final tag = _mapToDomain(row);
-        return {
-          'id': tag.id,
-          'name': tag.name,
-          'color': tag.color,
-          'updatedAt': tag.updatedAt?.toIso8601String(),
-          'isDeleted': tag.isDeleted,
-        };
-      }).toList();
-
-      // 3. Send sync request to server
-      final response = await _dio.post(
-        '/api/tags/sync',
-        data: {'lastSyncedAt': lastSyncedAt, 'changes': localChanges},
-      );
-
-      final data = response.data as Map<String, dynamic>;
-      final serverChanges = (data['serverChanges'] as List)
-          .map((e) => domain.Tag.fromJson(e as Map<String, dynamic>))
-          .toList();
-      final syncedAt = data['syncedAt'] as String;
-      final processedIds =
-          (data['processedIds'] as List?)?.cast<String>() ?? [];
-
-      // 4. Process server changes
       await _db.transaction(() async {
-        for (final serverTag in serverChanges) {
-          // If server tag is deleted (tombstone), remove it locally
-          if (serverTag.isDeleted) {
-            await (_db.delete(
-              _db.noteTags,
-            )..where((tbl) => tbl.tagId.equals(serverTag.id))).go();
-            await (_db.delete(
-              _db.tags,
-            )..where((tbl) => tbl.id.equals(serverTag.id))).go();
-            continue;
-          }
-
-          final localTag = await (_db.select(
-            _db.tags,
-          )..where((tbl) => tbl.id.equals(serverTag.id))).getSingleOrNull();
-
-          if (localTag == null) {
-            // Tag doesn't exist locally - insert it
-            await _db
-                .into(_db.tags)
-                .insert(
-                  _mapToData(serverTag, isSynced: true),
-                  mode: drift.InsertMode.insertOrReplace,
-                );
-          } else {
-            // Tag exists - compare timestamps
-            final serverUpdatedAt = serverTag.updatedAt;
-            final localUpdatedAt = localTag.updatedAt;
-
-            if (serverUpdatedAt != null &&
-                (localUpdatedAt == null ||
-                    serverUpdatedAt.isAfter(localUpdatedAt) ||
-                    serverUpdatedAt.isAtSameMomentAs(localUpdatedAt))) {
-              await (_db.update(
-                _db.tags,
-              )..where((tbl) => tbl.id.equals(serverTag.id))).write(
-                TagsCompanion(
-                  name: drift.Value(serverTag.name),
-                  color: drift.Value(serverTag.color),
-                  updatedAt: drift.Value(serverTag.updatedAt),
-                  isSynced: const drift.Value(true),
-                  isDeleted: const drift.Value(false),
-                ),
-              );
-            }
-          }
-        }
-
-        // Mark all pushed tags as synced
-        for (final id in processedIds) {
-          final tag = await (_db.select(
-            _db.tags,
-          )..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
-          if (tag != null && tag.isDeleted) {
-            // Remove deleted tags and their associations
-            await (_db.delete(
-              _db.noteTags,
-            )..where((tbl) => tbl.tagId.equals(id))).go();
-            await (_db.delete(
-              _db.tags,
-            )..where((tbl) => tbl.id.equals(id))).go();
-          } else if (tag != null) {
-            await (_db.update(_db.tags)..where((tbl) => tbl.id.equals(id)))
-                .write(const TagsCompanion(isSynced: drift.Value(true)));
-          }
-        }
+        await _applyServerChanges(
+          response.serverChanges,
+          payload.uploadSnapshots,
+        );
+        await _markProcessedTagsSynced(
+          response.processedIds,
+          payload.uploadSnapshots,
+        );
       });
 
-      // 5. Save new sync timestamp
-      await _storage.write(key: _lastTagSyncKey, value: syncedAt);
+      await _storage.write(key: _lastTagSyncKey, value: response.syncedAt);
       debugPrint(
-        'Tags sync completed: ${serverChanges.length} changes from server',
+        'Tags sync completed: ${response.serverChanges.length} changes from server',
       );
     } catch (e) {
       debugPrint('Tags sync failed: $e');
-      // Sync failed, will retry later
+      rethrow;
+    }
+  }
+
+  Future<_TagSyncPayload> _collectLocalChanges() async {
+    final lastSyncedAt = await _storage.read(key: _lastTagSyncKey);
+    final unsyncedRows = await (_db.select(
+      _db.tags,
+    )..where((tbl) => tbl.isSynced.equals(false))).get();
+
+    return _TagSyncPayload(
+      lastSyncedAt: lastSyncedAt,
+      localChanges: unsyncedRows.map(_tagToSyncChange).toList(),
+      uploadSnapshots: SyncUploadSnapshot({
+        for (final row in unsyncedRows) row.id: row.updatedAt,
+      }),
+    );
+  }
+
+  Map<String, dynamic> _tagToSyncChange(Tag row) {
+    final tag = _mapToDomain(row);
+    return {
+      'id': tag.id,
+      'name': tag.name,
+      'color': tag.color,
+      'updatedAt': tag.updatedAt?.toIso8601String(),
+      'isDeleted': tag.isDeleted,
+    };
+  }
+
+  Future<_TagsSyncResponse> _postSync(_TagSyncPayload payload) async {
+    final response = await _dio.post(
+      '/api/tags/sync',
+      data: {
+        'lastSyncedAt': payload.lastSyncedAt,
+        'changes': payload.localChanges,
+      },
+    );
+
+    final data = response.data as Map<String, dynamic>;
+    return _TagsSyncResponse(
+      serverChanges: (data['serverChanges'] as List)
+          .map((e) => domain.Tag.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      processedIds: (data['processedIds'] as List?)?.cast<String>() ?? [],
+      syncedAt: data['syncedAt'] as String,
+    );
+  }
+
+  Future<void> _applyServerChanges(
+    List<domain.Tag> serverChanges,
+    SyncUploadSnapshot uploadSnapshots,
+  ) async {
+    for (final serverTag in serverChanges) {
+      final localTag = await _getLocalTagRow(serverTag.id);
+      final uploadedThisCycle = uploadSnapshots.contains(serverTag.id);
+
+      if (localTag != null &&
+          uploadSnapshots.hasChanged(serverTag.id, localTag.updatedAt)) {
+        continue;
+      }
+
+      if (serverTag.isDeleted) {
+        await _removeLocalTag(serverTag.id);
+        continue;
+      }
+
+      await _upsertServerTag(
+        serverTag,
+        localTag,
+        forceApply: uploadedThisCycle,
+      );
+    }
+  }
+
+  Future<Tag?> _getLocalTagRow(String id) {
+    return (_db.select(
+      _db.tags,
+    )..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
+  }
+
+  Future<void> _removeLocalTag(String id) async {
+    await (_db.delete(_db.noteTags)..where((tbl) => tbl.tagId.equals(id))).go();
+    await (_db.delete(_db.tags)..where((tbl) => tbl.id.equals(id))).go();
+  }
+
+  Future<void> _upsertServerTag(
+    domain.Tag serverTag,
+    Tag? localTag, {
+    required bool forceApply,
+  }) async {
+    if (localTag == null) {
+      await _db
+          .into(_db.tags)
+          .insert(
+            _mapToData(serverTag, isSynced: true),
+            mode: drift.InsertMode.insertOrReplace,
+          );
+      return;
+    }
+
+    if (!forceApply && !_serverShouldReplaceLocal(serverTag, localTag)) {
+      return;
+    }
+
+    await (_db.update(
+      _db.tags,
+    )..where((tbl) => tbl.id.equals(serverTag.id))).write(
+      TagsCompanion(
+        name: drift.Value(serverTag.name),
+        color: drift.Value(serverTag.color),
+        updatedAt: drift.Value(serverTag.updatedAt),
+        isSynced: const drift.Value(true),
+        isDeleted: const drift.Value(false),
+      ),
+    );
+  }
+
+  bool _serverShouldReplaceLocal(domain.Tag serverTag, Tag localTag) {
+    final serverUpdatedAt = serverTag.updatedAt;
+    final localUpdatedAt = localTag.updatedAt;
+
+    return serverUpdatedAt != null &&
+        (localUpdatedAt == null ||
+            serverUpdatedAt.isAfter(localUpdatedAt) ||
+            serverUpdatedAt.isAtSameMomentAs(localUpdatedAt));
+  }
+
+  Future<void> _markProcessedTagsSynced(
+    List<String> processedIds,
+    SyncUploadSnapshot uploadSnapshots,
+  ) async {
+    for (final id in processedIds) {
+      final tag = await _getLocalTagRow(id);
+      if (!uploadSnapshots.isCurrent(id, tag?.updatedAt)) continue;
+
+      if (tag != null && tag.isDeleted) {
+        await _removeLocalTag(id);
+      } else if (tag != null) {
+        await (_db.update(_db.tags)..where((tbl) => tbl.id.equals(id))).write(
+          const TagsCompanion(isSynced: drift.Value(true)),
+        );
+      }
     }
   }
 
@@ -348,4 +402,28 @@ class TagsRepository {
       isDeleted: tag.isDeleted,
     );
   }
+}
+
+class _TagSyncPayload {
+  final String? lastSyncedAt;
+  final List<Map<String, dynamic>> localChanges;
+  final SyncUploadSnapshot uploadSnapshots;
+
+  _TagSyncPayload({
+    required this.lastSyncedAt,
+    required this.localChanges,
+    required this.uploadSnapshots,
+  });
+}
+
+class _TagsSyncResponse {
+  final List<domain.Tag> serverChanges;
+  final List<String> processedIds;
+  final String syncedAt;
+
+  _TagsSyncResponse({
+    required this.serverChanges,
+    required this.processedIds,
+    required this.syncedAt,
+  });
 }

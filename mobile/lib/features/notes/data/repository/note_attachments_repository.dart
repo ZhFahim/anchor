@@ -7,8 +7,8 @@ import 'package:path/path.dart' as path;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/database/app_database.dart';
-import '../../../../core/network/connectivity_provider.dart';
 import '../../../../core/network/dio_provider.dart';
+import '../../../../core/network/sync_requester.dart';
 import '../../domain/note_attachment.dart' as domain;
 
 part 'note_attachments_repository.g.dart';
@@ -18,23 +18,18 @@ NoteAttachmentsRepository noteAttachmentsRepository(Ref ref) {
   final db = ref.watch(appDatabaseProvider);
   final dio = ref.watch(dioProvider);
 
-  void triggerSync() {
-    ref.read(syncManagerProvider.notifier).manualSync();
-  }
-
-  return NoteAttachmentsRepository(db, dio, triggerSync);
+  return NoteAttachmentsRepository(db, dio);
 }
 
 class NoteAttachmentsRepository {
   final AppDatabase _db;
   final Dio _dio;
-  final void Function() _triggerSync;
 
   /// In-flight downloads keyed by attachmentId to deduplicate concurrent
   /// requests for the same file.
   final Map<String, Future<String>> _activeDownloads = {};
 
-  NoteAttachmentsRepository(this._db, this._dio, this._triggerSync);
+  NoteAttachmentsRepository(this._db, this._dio);
 
   /// Watch attachments for a note reactively (excludes pending-delete)
   Stream<List<domain.NoteAttachment>> watchAttachments(String noteId) {
@@ -282,7 +277,7 @@ class NoteAttachmentsRepository {
     }
 
     await _markNoteUnsynced(noteId);
-    _triggerSync();
+    scheduleAppSync();
   }
 
   /// Add attachment: copy to persistent storage, insert into DB
@@ -348,7 +343,7 @@ class NoteAttachmentsRepository {
     }
 
     await _markNoteUnsynced(noteId);
-    _triggerSync();
+    scheduleAppSync();
     return localId;
   }
 
@@ -361,6 +356,8 @@ class NoteAttachmentsRepository {
 
   /// Sync pending uploads and deletes with server
   Future<void> sync() async {
+    final failedAttachmentIds = <String>[];
+
     // 1. Process pending uploads
     final pendingUpload =
         await (_db.select(_db.noteAttachments)..where(
@@ -435,6 +432,7 @@ class NoteAttachmentsRepository {
         });
       } catch (e) {
         debugPrint('Attachment upload failed for ${row.id}: $e');
+        failedAttachmentIds.add(row.id);
         // Will retry next sync
       }
     }
@@ -466,8 +464,15 @@ class NoteAttachmentsRepository {
         )..where((tbl) => tbl.id.equals(row.id))).go();
       } catch (e) {
         debugPrint('Attachment delete failed for ${row.id}: $e');
+        failedAttachmentIds.add(row.id);
         // Will retry next sync
       }
+    }
+
+    if (failedAttachmentIds.isNotEmpty) {
+      throw Exception(
+        'Attachment sync failed for ${failedAttachmentIds.length} attachment(s)',
+      );
     }
   }
 

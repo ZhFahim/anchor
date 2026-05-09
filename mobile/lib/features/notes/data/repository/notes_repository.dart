@@ -2,11 +2,14 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:drift/drift.dart' as drift;
 import '../../../../core/database/app_database.dart';
 import '../../../../core/network/dio_provider.dart';
+import '../../../../core/network/sync_requester.dart';
+import '../../../../core/network/sync_upload_snapshot.dart';
 import '../../../../core/providers/active_user_id_provider.dart';
 import '../../domain/note.dart' as domain;
 import '../../domain/note_attachment.dart' as domain;
@@ -337,8 +340,8 @@ class NotesRepository {
         );
     await _tagsRepo.setTagsForNote(note.id, note.tagIds);
 
-    // Trigger sync in background
-    sync();
+    // Trigger coordinated sync in background
+    scheduleAppSync();
   }
 
   Future<void> updateNote(domain.Note note) async {
@@ -349,8 +352,8 @@ class NotesRepository {
         .replace(_mapToData(noteWithTimestamp, isSynced: false));
     await _tagsRepo.setTagsForNote(note.id, note.tagIds);
 
-    // Trigger sync in background
-    sync();
+    // Trigger coordinated sync in background
+    scheduleAppSync();
   }
 
   // Soft delete - moves note to trash
@@ -365,7 +368,7 @@ class NotesRepository {
       ),
     );
 
-    sync();
+    scheduleAppSync();
   }
 
   // Restore from trash
@@ -380,7 +383,7 @@ class NotesRepository {
       ),
     );
 
-    sync();
+    scheduleAppSync();
   }
 
   // Archive a note
@@ -395,7 +398,7 @@ class NotesRepository {
       ),
     );
 
-    sync();
+    scheduleAppSync();
   }
 
   // Unarchive a note
@@ -410,7 +413,7 @@ class NotesRepository {
       ),
     );
 
-    sync();
+    scheduleAppSync();
   }
 
   // Bulk delete notes
@@ -426,7 +429,7 @@ class NotesRepository {
       ),
     );
 
-    sync();
+    scheduleAppSync();
     return ids.length;
   }
 
@@ -443,7 +446,7 @@ class NotesRepository {
       ),
     );
 
-    sync();
+    scheduleAppSync();
     return ids.length;
   }
 
@@ -467,7 +470,7 @@ class NotesRepository {
       _db.noteTags,
     )..where((tbl) => tbl.noteId.equals(id))).go();
 
-    sync();
+    scheduleAppSync();
   }
 
   // One time migrations when sync protocol version changes (e.g. new feature
@@ -503,180 +506,256 @@ class NotesRepository {
   // Bi-directional sync with server
   Future<void> sync() async {
     try {
-      // 1. Get last sync timestamp
-      final lastSyncedAt = await _storage.read(key: _lastSyncKey);
-
-      // 2. Get all unsynced local notes (including tombstones)
-      final unsyncedRows = await (_db.select(
-        _db.notes,
-      )..where((tbl) => tbl.isSynced.equals(false))).get();
-
-      final localChanges = <Map<String, dynamic>>[];
-      for (final row in unsyncedRows) {
-        final tagIds = await _tagsRepo.getTagIdsForNote(row.id);
-        final note = _mapToDomain(row, tagIds);
-        localChanges.add({
-          'id': note.id,
-          'title': note.title,
-          'content': note.content,
-          'isPinned': note.isPinned,
-          'isArchived': note.isArchived,
-          'background': note.background,
-          'state': note.state.name,
-          'tagIds': note.tagIds,
-          'updatedAt': note.updatedAt?.toIso8601String(),
-        });
-      }
-
-      // 3. Send sync request to server
-      final response = await _dio.post(
-        '/api/notes/sync',
-        data: {'lastSyncedAt': lastSyncedAt, 'changes': localChanges},
+      final payload = await _collectLocalChanges();
+      final response = await _postSync(payload);
+      final applyResult = await _applyServerChanges(
+        response,
+        payload.uploadSnapshots,
       );
 
-      final data = response.data as Map<String, dynamic>;
-      final serverChanges = (data['serverChanges'] as List)
-          .map((e) => domain.Note.fromJson(e as Map<String, dynamic>))
-          .toList();
-      final revokedNoteIds =
-          (data['revokedSharedNoteIds'] as List?)?.cast<String>() ?? [];
-      final syncedAt = data['syncedAt'] as String;
-
-      final processedIds =
-          (data['processedIds'] as List?)?.cast<String>() ?? [];
-
-      final noteIdsForFileCleanup = <String>[];
-
-      // 4. Process server changes
-      await _db.transaction(() async {
-        // First handle revocations - delete these notes
-        for (final revokedId in revokedNoteIds) {
-          // Remove attachment rows so reactive streams update immediately
-          await (_db.delete(
-            _db.noteAttachments,
-          )..where((tbl) => tbl.noteId.equals(revokedId))).go();
-          await (_db.delete(
-            _db.noteTags,
-          )..where((tbl) => tbl.noteId.equals(revokedId))).go();
-          await (_db.delete(
-            _db.notes,
-          )..where((tbl) => tbl.id.equals(revokedId))).go();
-          noteIdsForFileCleanup.add(revokedId);
-        }
-
-        for (final serverNote in serverChanges) {
-          // If server note is deleted (tombstone), remove it locally
-          if (serverNote.isDeleted) {
-            await (_db.delete(
-              _db.noteAttachments,
-            )..where((tbl) => tbl.noteId.equals(serverNote.id))).go();
-            await (_db.delete(
-              _db.noteTags,
-            )..where((tbl) => tbl.noteId.equals(serverNote.id))).go();
-            await (_db.delete(
-              _db.notes,
-            )..where((tbl) => tbl.id.equals(serverNote.id))).go();
-            noteIdsForFileCleanup.add(serverNote.id);
-            continue;
-          }
-
-          final localNote = await (_db.select(
-            _db.notes,
-          )..where((tbl) => tbl.id.equals(serverNote.id))).getSingleOrNull();
-
-          if (localNote == null) {
-            // Note doesn't exist locally - insert it
-            await _db
-                .into(_db.notes)
-                .insert(
-                  _mapToData(serverNote, isSynced: true),
-                  mode: drift.InsertMode.insertOrReplace,
-                );
-            await _tagsRepo.setTagsForNote(serverNote.id, serverNote.tagIds);
-          } else {
-            // Note exists - compare timestamps
-            final serverUpdatedAt = serverNote.updatedAt;
-            final localUpdatedAt = localNote.updatedAt;
-
-            // Server wins if it's newer or equal (server is source of truth)
-            if (serverUpdatedAt != null &&
-                (localUpdatedAt == null ||
-                    serverUpdatedAt.isAfter(localUpdatedAt) ||
-                    serverUpdatedAt.isAtSameMomentAs(localUpdatedAt))) {
-              await (_db.update(
-                _db.notes,
-              )..where((tbl) => tbl.id.equals(serverNote.id))).write(
-                NotesCompanion(
-                  title: drift.Value(serverNote.title),
-                  content: drift.Value(serverNote.content),
-                  isPinned: drift.Value(serverNote.isPinned),
-                  isArchived: drift.Value(serverNote.isArchived),
-                  background: drift.Value(serverNote.background),
-                  state: drift.Value(serverNote.state.name),
-                  updatedAt: drift.Value(serverNote.updatedAt),
-                  permission: drift.Value(serverNote.permission.name),
-                  shareIds: drift.Value(jsonEncode(serverNote.shareIds ?? [])),
-                  sharedById: drift.Value(serverNote.sharedBy?.id),
-                  sharedByName: drift.Value(serverNote.sharedBy?.name),
-                  sharedByEmail: drift.Value(serverNote.sharedBy?.email),
-                  sharedByProfileImage: drift.Value(
-                    serverNote.sharedBy?.profileImage,
-                  ),
-                  isSynced: const drift.Value(true),
-                ),
-              );
-              await _tagsRepo.setTagsForNote(serverNote.id, serverNote.tagIds);
-            }
-          }
-        }
-      });
-
-      // Clean up local attachment files for revoked/deleted notes after the
-      // transaction has committed
-      for (final noteId in noteIdsForFileCleanup) {
-        await _attachmentsRepo.deleteLocalFilesForNote(noteId);
-      }
-
-      // 5. Sync pending attachment uploads and deletes with server
+      await _cleanupLocalFiles(applyResult.noteIdsForFileCleanup);
       await _attachmentsRepo.sync();
-
-      // 6. Fetch fresh attachment metadata for notes that changed this cycle
-      await _attachmentsRepo.fetchAttachmentsForNotes(
-        serverChanges.where((n) => !n.isDeleted).map((n) => n.id).toList(),
+      await _fetchAttachmentMetadata(response.serverChanges);
+      await _markProcessedNotesSynced(
+        response.processedIds,
+        payload.uploadSnapshots,
+        applyResult.acceptedServerSnapshots,
       );
-
-      // 7. Mark notes as synced
-      await _db.transaction(() async {
-        for (final id in processedIds) {
-          final note = await (_db.select(
-            _db.notes,
-          )..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
-          if (note != null && note.state == 'deleted') {
-            await (_db.delete(
-              _db.noteTags,
-            )..where((tbl) => tbl.noteId.equals(id))).go();
-            await (_db.delete(
-              _db.notes,
-            )..where((tbl) => tbl.id.equals(id))).go();
-          } else {
-            final hasPending = await _attachmentsRepo
-                .hasPendingAttachmentsForNote(id);
-            if (!hasPending) {
-              await (_db.update(_db.notes)..where((tbl) => tbl.id.equals(id)))
-                  .write(const NotesCompanion(isSynced: drift.Value(true)));
-            }
-          }
-        }
-      });
-
-      // 8. Save new sync timestamp
-      await _storage.write(key: _lastSyncKey, value: syncedAt);
-
-      // 9. Run any pending protocol migrations
+      await _storage.write(key: _lastSyncKey, value: response.syncedAt);
       await _runProtocolMigrations();
     } catch (e) {
-      // Sync failed, will retry later (handled by sync loop)
+      debugPrint('Notes sync failed: $e');
+      rethrow;
     }
+  }
+
+  Future<_NoteSyncPayload> _collectLocalChanges() async {
+    final lastSyncedAt = await _storage.read(key: _lastSyncKey);
+    final unsyncedRows = await (_db.select(
+      _db.notes,
+    )..where((tbl) => tbl.isSynced.equals(false))).get();
+
+    final snapshots = <String, DateTime?>{};
+    final localChanges = <Map<String, dynamic>>[];
+
+    for (final row in unsyncedRows) {
+      snapshots[row.id] = row.updatedAt;
+      final tagIds = await _tagsRepo.getTagIdsForNote(row.id);
+      final note = _mapToDomain(row, tagIds);
+      localChanges.add(_noteToSyncChange(note));
+    }
+
+    return _NoteSyncPayload(
+      lastSyncedAt: lastSyncedAt,
+      localChanges: localChanges,
+      uploadSnapshots: SyncUploadSnapshot(snapshots),
+    );
+  }
+
+  Map<String, dynamic> _noteToSyncChange(domain.Note note) {
+    return {
+      'id': note.id,
+      'title': note.title,
+      'content': note.content,
+      'isPinned': note.isPinned,
+      'isArchived': note.isArchived,
+      'background': note.background,
+      'state': note.state.name,
+      'tagIds': note.tagIds,
+      'updatedAt': note.updatedAt?.toIso8601String(),
+    };
+  }
+
+  Future<_NotesSyncResponse> _postSync(_NoteSyncPayload payload) async {
+    final response = await _dio.post(
+      '/api/notes/sync',
+      data: {
+        'lastSyncedAt': payload.lastSyncedAt,
+        'changes': payload.localChanges,
+      },
+    );
+
+    final data = response.data as Map<String, dynamic>;
+    return _NotesSyncResponse(
+      serverChanges: (data['serverChanges'] as List)
+          .map((e) => domain.Note.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      revokedNoteIds:
+          (data['revokedSharedNoteIds'] as List?)?.cast<String>() ?? [],
+      processedIds: (data['processedIds'] as List?)?.cast<String>() ?? [],
+      syncedAt: data['syncedAt'] as String,
+    );
+  }
+
+  Future<_NotesServerApplyResult> _applyServerChanges(
+    _NotesSyncResponse response,
+    SyncUploadSnapshot uploadSnapshots,
+  ) async {
+    final noteIdsForFileCleanup = <String>{};
+    final acceptedServerSnapshots = <String, DateTime?>{};
+
+    await _db.transaction(() async {
+      for (final revokedId in response.revokedNoteIds) {
+        await _removeLocalNote(revokedId);
+        noteIdsForFileCleanup.add(revokedId);
+      }
+
+      for (final serverNote in response.serverChanges) {
+        final localNote = await _getLocalNoteRow(serverNote.id);
+        final uploadedThisCycle = uploadSnapshots.contains(serverNote.id);
+
+        if (uploadedThisCycle && localNote == null) {
+          continue;
+        }
+
+        if (localNote != null &&
+            uploadSnapshots.hasChanged(serverNote.id, localNote.updatedAt)) {
+          continue;
+        }
+
+        if (serverNote.isDeleted) {
+          await _removeLocalNote(serverNote.id);
+          noteIdsForFileCleanup.add(serverNote.id);
+          continue;
+        }
+
+        final didApply = await _upsertServerNote(
+          serverNote,
+          localNote,
+          forceApply: uploadedThisCycle,
+          markSynced: !uploadedThisCycle,
+        );
+        if (didApply && uploadedThisCycle) {
+          acceptedServerSnapshots[serverNote.id] = serverNote.updatedAt;
+        }
+      }
+    });
+
+    return _NotesServerApplyResult(
+      noteIdsForFileCleanup: noteIdsForFileCleanup,
+      acceptedServerSnapshots: SyncUploadSnapshot(acceptedServerSnapshots),
+    );
+  }
+
+  Future<Note?> _getLocalNoteRow(String id) {
+    return (_db.select(
+      _db.notes,
+    )..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
+  }
+
+  Future<void> _removeLocalNote(String id) async {
+    await (_db.delete(
+      _db.noteAttachments,
+    )..where((tbl) => tbl.noteId.equals(id))).go();
+    await (_db.delete(
+      _db.noteTags,
+    )..where((tbl) => tbl.noteId.equals(id))).go();
+    await (_db.delete(_db.notes)..where((tbl) => tbl.id.equals(id))).go();
+  }
+
+  Future<bool> _upsertServerNote(
+    domain.Note serverNote,
+    Note? localNote, {
+    required bool forceApply,
+    required bool markSynced,
+  }) async {
+    if (localNote == null) {
+      await _db
+          .into(_db.notes)
+          .insert(
+            _mapToData(serverNote, isSynced: markSynced),
+            mode: drift.InsertMode.insertOrReplace,
+          );
+      await _tagsRepo.setTagsForNote(serverNote.id, serverNote.tagIds);
+      return true;
+    }
+
+    if (!forceApply && !_serverShouldReplaceLocal(serverNote, localNote)) {
+      return false;
+    }
+
+    await (_db.update(
+      _db.notes,
+    )..where((tbl) => tbl.id.equals(serverNote.id))).write(
+      NotesCompanion(
+        title: drift.Value(serverNote.title),
+        content: drift.Value(serverNote.content),
+        isPinned: drift.Value(serverNote.isPinned),
+        isArchived: drift.Value(serverNote.isArchived),
+        background: drift.Value(serverNote.background),
+        state: drift.Value(serverNote.state.name),
+        updatedAt: drift.Value(serverNote.updatedAt),
+        permission: drift.Value(serverNote.permission.name),
+        shareIds: drift.Value(jsonEncode(serverNote.shareIds ?? [])),
+        sharedById: drift.Value(serverNote.sharedBy?.id),
+        sharedByName: drift.Value(serverNote.sharedBy?.name),
+        sharedByEmail: drift.Value(serverNote.sharedBy?.email),
+        sharedByProfileImage: drift.Value(serverNote.sharedBy?.profileImage),
+        isSynced: drift.Value(markSynced),
+      ),
+    );
+    await _tagsRepo.setTagsForNote(serverNote.id, serverNote.tagIds);
+    return true;
+  }
+
+  bool _serverShouldReplaceLocal(domain.Note serverNote, Note localNote) {
+    final serverUpdatedAt = serverNote.updatedAt;
+    final localUpdatedAt = localNote.updatedAt;
+
+    return serverUpdatedAt != null &&
+        (localUpdatedAt == null ||
+            serverUpdatedAt.isAfter(localUpdatedAt) ||
+            serverUpdatedAt.isAtSameMomentAs(localUpdatedAt));
+  }
+
+  Future<void> _cleanupLocalFiles(Set<String> noteIds) async {
+    for (final noteId in noteIds) {
+      await _attachmentsRepo.deleteLocalFilesForNote(noteId);
+    }
+  }
+
+  Future<void> _fetchAttachmentMetadata(List<domain.Note> serverChanges) {
+    return _attachmentsRepo.fetchAttachmentsForNotes(
+      serverChanges.where((n) => !n.isDeleted).map((n) => n.id).toList(),
+    );
+  }
+
+  Future<void> _markProcessedNotesSynced(
+    List<String> processedIds,
+    SyncUploadSnapshot uploadSnapshots,
+    SyncUploadSnapshot acceptedServerSnapshots,
+  ) async {
+    await _db.transaction(() async {
+      for (final id in processedIds) {
+        final note = await _getLocalNoteRow(id);
+        final isUploadedVersionCurrent = uploadSnapshots.isCurrent(
+          id,
+          note?.updatedAt,
+        );
+        final isAcceptedServerVersionCurrent = acceptedServerSnapshots
+            .isCurrent(id, note?.updatedAt);
+        if (!isUploadedVersionCurrent && !isAcceptedServerVersionCurrent) {
+          continue;
+        }
+
+        if (note != null && note.state == 'deleted') {
+          await (_db.delete(
+            _db.noteTags,
+          )..where((tbl) => tbl.noteId.equals(id))).go();
+          await (_db.delete(_db.notes)..where((tbl) => tbl.id.equals(id))).go();
+          continue;
+        }
+
+        if (note == null) continue;
+        final hasPending = await _attachmentsRepo.hasPendingAttachmentsForNote(
+          id,
+        );
+        if (!hasPending) {
+          await (_db.update(_db.notes)..where((tbl) => tbl.id.equals(id)))
+              .write(const NotesCompanion(isSynced: drift.Value(true)));
+        }
+      }
+    });
   }
 
   domain.Note _mapToDomain(Note row, List<String> tagIds) {
@@ -725,4 +804,40 @@ class NotesRepository {
       isSynced: isSynced,
     );
   }
+}
+
+class _NoteSyncPayload {
+  final String? lastSyncedAt;
+  final List<Map<String, dynamic>> localChanges;
+  final SyncUploadSnapshot uploadSnapshots;
+
+  _NoteSyncPayload({
+    required this.lastSyncedAt,
+    required this.localChanges,
+    required this.uploadSnapshots,
+  });
+}
+
+class _NotesSyncResponse {
+  final List<domain.Note> serverChanges;
+  final List<String> revokedNoteIds;
+  final List<String> processedIds;
+  final String syncedAt;
+
+  _NotesSyncResponse({
+    required this.serverChanges,
+    required this.revokedNoteIds,
+    required this.processedIds,
+    required this.syncedAt,
+  });
+}
+
+class _NotesServerApplyResult {
+  final Set<String> noteIdsForFileCleanup;
+  final SyncUploadSnapshot acceptedServerSnapshots;
+
+  _NotesServerApplyResult({
+    required this.noteIdsForFileCleanup,
+    required this.acceptedServerSnapshots,
+  });
 }

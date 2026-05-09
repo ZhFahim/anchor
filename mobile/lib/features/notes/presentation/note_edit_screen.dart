@@ -40,6 +40,8 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
   bool _isDeleted = false;
   bool _isLoaded = false;
   bool _isEditing = false;
+  bool _allowPop = false;
+  bool _isHandlingPop = false;
   bool _isPinned = false;
   bool _isArchived = false;
   Note? _existingNote;
@@ -204,8 +206,10 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
   Future<void> _autoSave() async {
     if (!_hasUnsavedChanges) return;
 
-    await _saveNote();
+    await _savePendingChanges();
+  }
 
+  void _updateLastSavedState() {
     // Update last saved state (track actual saved title, which is 'Untitled' if empty)
     final title = _titleController.text.trim();
     _lastSavedTitle = title.isNotEmpty ? title : 'Untitled';
@@ -214,11 +218,37 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
     _lastSavedTagIds = _selectedTagIds.toSet();
     _lastSavedBackground = _selectedBackground;
     _lastSavedPinned = _isPinned;
+  }
+
+  Future<void> _savePendingChanges() async {
+    await _saveNote();
+    _updateLastSavedState();
 
     if (mounted) {
       setState(() {
         _hasUnsavedChanges = false;
       });
+    }
+  }
+
+  Future<void> _saveAndPop([Object? result]) async {
+    if (_isHandlingPop) return;
+
+    _isHandlingPop = true;
+    _autoSaveTimer?.cancel();
+
+    try {
+      if (!_isDeleted &&
+          (_hasUnsavedChanges || _isEditing || _checkForChanges())) {
+        await _savePendingChanges();
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _allowPop = true;
+        });
+        context.pop(result);
+      }
     }
   }
 
@@ -796,13 +826,10 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
     final isTrashed = _existingNote?.isTrashed ?? false;
 
     return PopScope(
+      canPop: _allowPop,
       onPopInvokedWithResult: (didPop, result) async {
-        if (didPop && !_isDeleted) {
-          _autoSaveTimer?.cancel();
-          if (_hasUnsavedChanges || _isEditing) {
-            await _saveNote();
-          }
-        }
+        if (didPop) return;
+        await _saveAndPop(result);
       },
       child: NoteBackground(
         styleId: _selectedBackground,
@@ -813,7 +840,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
             backgroundColor: Colors.transparent,
             leading: IconButton(
               icon: const Icon(LucideIcons.chevronLeft),
-              onPressed: () => context.pop(),
+              onPressed: _saveAndPop,
             ),
             actions: [
               if (isTrashed) ...[

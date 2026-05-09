@@ -22,6 +22,7 @@ export const SHARED_WITH_USER_SELECT = {
 // Common Prisma include patterns for notes
 export const NOTE_INCLUDE_TAGS = {
   tags: {
+    where: { isDeleted: false },
     select: { id: true, userId: true },
   },
 } as const;
