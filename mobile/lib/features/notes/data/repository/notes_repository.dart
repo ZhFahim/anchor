@@ -508,18 +508,17 @@ class NotesRepository {
     try {
       final payload = await _collectLocalChanges();
       final response = await _postSync(payload);
-      final applyResult = await _applyServerChanges(
+      final noteIdsForFileCleanup = await _applyServerChanges(
         response,
         payload.uploadSnapshots,
       );
 
-      await _cleanupLocalFiles(applyResult.noteIdsForFileCleanup);
+      await _cleanupLocalFiles(noteIdsForFileCleanup);
       await _attachmentsRepo.sync();
       await _fetchAttachmentMetadata(response.serverChanges);
       await _markProcessedNotesSynced(
         response.processedIds,
         payload.uploadSnapshots,
-        applyResult.acceptedServerSnapshots,
       );
       await _storage.write(key: _lastSyncKey, value: response.syncedAt);
       await _runProtocolMigrations();
@@ -587,12 +586,11 @@ class NotesRepository {
     );
   }
 
-  Future<_NotesServerApplyResult> _applyServerChanges(
+  Future<Set<String>> _applyServerChanges(
     _NotesSyncResponse response,
     SyncUploadSnapshot uploadSnapshots,
   ) async {
     final noteIdsForFileCleanup = <String>{};
-    final acceptedServerSnapshots = <String, DateTime?>{};
 
     await _db.transaction(() async {
       for (final revokedId in response.revokedNoteIds) {
@@ -603,10 +601,6 @@ class NotesRepository {
       for (final serverNote in response.serverChanges) {
         final localNote = await _getLocalNoteRow(serverNote.id);
         final uploadedThisCycle = uploadSnapshots.contains(serverNote.id);
-
-        if (uploadedThisCycle && localNote == null) {
-          continue;
-        }
 
         if (localNote != null &&
             uploadSnapshots.hasChanged(serverNote.id, localNote.updatedAt)) {
@@ -619,22 +613,15 @@ class NotesRepository {
           continue;
         }
 
-        final didApply = await _upsertServerNote(
+        await _upsertServerNote(
           serverNote,
           localNote,
           forceApply: uploadedThisCycle,
-          markSynced: !uploadedThisCycle,
         );
-        if (didApply && uploadedThisCycle) {
-          acceptedServerSnapshots[serverNote.id] = serverNote.updatedAt;
-        }
       }
     });
 
-    return _NotesServerApplyResult(
-      noteIdsForFileCleanup: noteIdsForFileCleanup,
-      acceptedServerSnapshots: SyncUploadSnapshot(acceptedServerSnapshots),
-    );
+    return noteIdsForFileCleanup;
   }
 
   Future<Note?> _getLocalNoteRow(String id) {
@@ -653,25 +640,24 @@ class NotesRepository {
     await (_db.delete(_db.notes)..where((tbl) => tbl.id.equals(id))).go();
   }
 
-  Future<bool> _upsertServerNote(
+  Future<void> _upsertServerNote(
     domain.Note serverNote,
     Note? localNote, {
     required bool forceApply,
-    required bool markSynced,
   }) async {
     if (localNote == null) {
       await _db
           .into(_db.notes)
           .insert(
-            _mapToData(serverNote, isSynced: markSynced),
+            _mapToData(serverNote, isSynced: true),
             mode: drift.InsertMode.insertOrReplace,
           );
       await _tagsRepo.setTagsForNote(serverNote.id, serverNote.tagIds);
-      return true;
+      return;
     }
 
     if (!forceApply && !_serverShouldReplaceLocal(serverNote, localNote)) {
-      return false;
+      return;
     }
 
     await (_db.update(
@@ -691,11 +677,10 @@ class NotesRepository {
         sharedByName: drift.Value(serverNote.sharedBy?.name),
         sharedByEmail: drift.Value(serverNote.sharedBy?.email),
         sharedByProfileImage: drift.Value(serverNote.sharedBy?.profileImage),
-        isSynced: drift.Value(markSynced),
+        isSynced: const drift.Value(true),
       ),
     );
     await _tagsRepo.setTagsForNote(serverNote.id, serverNote.tagIds);
-    return true;
   }
 
   bool _serverShouldReplaceLocal(domain.Note serverNote, Note localNote) {
@@ -723,18 +708,11 @@ class NotesRepository {
   Future<void> _markProcessedNotesSynced(
     List<String> processedIds,
     SyncUploadSnapshot uploadSnapshots,
-    SyncUploadSnapshot acceptedServerSnapshots,
   ) async {
     await _db.transaction(() async {
       for (final id in processedIds) {
         final note = await _getLocalNoteRow(id);
-        final isUploadedVersionCurrent = uploadSnapshots.isCurrent(
-          id,
-          note?.updatedAt,
-        );
-        final isAcceptedServerVersionCurrent = acceptedServerSnapshots
-            .isCurrent(id, note?.updatedAt);
-        if (!isUploadedVersionCurrent && !isAcceptedServerVersionCurrent) {
+        if (!uploadSnapshots.isCurrent(id, note?.updatedAt)) {
           continue;
         }
 
@@ -829,15 +807,5 @@ class _NotesSyncResponse {
     required this.revokedNoteIds,
     required this.processedIds,
     required this.syncedAt,
-  });
-}
-
-class _NotesServerApplyResult {
-  final Set<String> noteIdsForFileCleanup;
-  final SyncUploadSnapshot acceptedServerSnapshots;
-
-  _NotesServerApplyResult({
-    required this.noteIdsForFileCleanup,
-    required this.acceptedServerSnapshots,
   });
 }
