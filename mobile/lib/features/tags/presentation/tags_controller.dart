@@ -11,8 +11,6 @@ part 'tags_controller.g.dart';
 class TagsController extends _$TagsController {
   @override
   Stream<List<Tag>> build() {
-    // Trigger initial sync
-    Future.microtask(requestAppSync);
     return ref.watch(tagsRepositoryProvider).watchTags();
   }
 

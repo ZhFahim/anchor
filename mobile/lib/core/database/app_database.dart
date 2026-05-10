@@ -63,7 +63,7 @@ LazyDatabase _openConnection(String userId) {
   });
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 AppDatabase appDatabase(Ref ref) {
   final userId = ref.watch(activeUserIdProvider);
   if (userId == null) {

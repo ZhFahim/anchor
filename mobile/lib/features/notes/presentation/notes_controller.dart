@@ -21,12 +21,7 @@ class SyncingState extends _$SyncingState {
 class NotesController extends _$NotesController {
   @override
   Stream<List<Note>> build() {
-    // Trigger sync on first build
-    Future.microtask(requestAppSync);
-
-    // Watch for tag filter changes
     final selectedTagId = ref.watch(selectedTagFilterProvider);
-
     return ref.watch(notesRepositoryProvider).watchNotes(tagId: selectedTagId);
   }
 
