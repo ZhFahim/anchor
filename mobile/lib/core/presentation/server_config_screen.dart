@@ -191,13 +191,91 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
 
     return null;
   }
-
+  void _showAddHeaderDialog({int? editIndex, CustomHeader? existing}) {
+    final keyCtrl = TextEditingController(text: existing?.key ?? '');
+    final valueCtrl = TextEditingController(text: existing?.value ?? '');
+    showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Text(
+            editIndex != null ? 'Edit Header' : 'Add Header',
+            style: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: keyCtrl,
+                decoration: InputDecoration(
+                  labelText: 'Name',
+                  hintText: 'X-Custom-Header',
+                  prefixIcon: const Icon(LucideIcons.tag),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                autocorrect: false,
+                textInputAction: TextInputAction.next,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: valueCtrl,
+                decoration: InputDecoration(
+                  labelText: 'Value',
+                  hintText: 'header-value',
+                  prefixIcon: const Icon(LucideIcons.text),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                autocorrect: false,
+                textInputAction: TextInputAction.done,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () {
+                final k = keyCtrl.text.trim();
+                final v = valueCtrl.text;
+                if (k.isEmpty) return;
+                final header = CustomHeader(key: k, value: v);
+                final notifier =
+                    ref.read(customHeadersProvider.notifier);
+                if (editIndex != null) {
+                  notifier.updateHeader(editIndex, header);
+                } else {
+                  notifier.addHeader(header);
+                }
+                Navigator.of(ctx).pop();
+              },
+              child: Text(editIndex != null ? 'Save' : 'Add'),
+            ),
+          ],
+        );
+      },
+    );
+  }
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final allowSelfSigned =
         ref.watch(allowSelfSignedCertProvider).value ?? false;
-
+    final customHeaders = ref.watch(customHeadersProvider).value ?? [];
+    final canAddMore = customHeaders.length < maxCustomHeaders;
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -301,7 +379,19 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
                       ),
                     ],
                   ),
-
+                  const SizedBox(height: 8),
+                  // Custom headers section
+                  _CustomHeadersSection(
+                    headers: customHeaders,
+                    canAddMore: canAddMore,
+                    onAdd: () => _showAddHeaderDialog(),
+                    onEdit: (i) => _showAddHeaderDialog(
+                      editIndex: i,
+                      existing: customHeaders[i],
+                    ),
+                    onRemove: (i) =>
+                        ref.read(customHeadersProvider.notifier).removeHeader(i),
+                  ),
                   // Error message
                   if (_error != null) ...[
                     const SizedBox(height: 8),
@@ -400,6 +490,186 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
                 ],
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+class _CustomHeadersSection extends StatelessWidget {
+  final List<CustomHeader> headers;
+  final bool canAddMore;
+  final VoidCallback onAdd;
+  final void Function(int index) onEdit;
+  final void Function(int index) onRemove;
+  const _CustomHeadersSection({
+    required this.headers,
+    required this.canAddMore,
+    required this.onAdd,
+    required this.onEdit,
+    required this.onRemove,
+  });
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Section row: icon + label + "Add" button
+        Row(
+          children: [
+            Icon(
+              LucideIcons.sliders,
+              size: 18,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Custom headers',
+                style: theme.textTheme.bodyMedium,
+              ),
+            ),
+            if (canAddMore)
+              TextButton.icon(
+                onPressed: onAdd,
+                icon: const Icon(LucideIcons.plus, size: 16),
+                label: const Text('Add'),
+                style: TextButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                ),
+              )
+            else
+              Text(
+                'Max $maxCustomHeaders reached',
+                style: GoogleFonts.dmSans(
+                  fontSize: 12,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                ),
+              ),
+          ],
+        ),
+        if (headers.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Container(
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest
+                  .withValues(alpha: 0.4),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.06),
+              ),
+            ),
+            child: Column(
+              children: [
+                for (int i = 0; i < headers.length; i++) ...[
+                  if (i > 0)
+                    Divider(
+                      height: 1,
+                      indent: 16,
+                      endIndent: 16,
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.06),
+                    ),
+                  _HeaderRow(
+                    header: headers[i],
+                    onEdit: () => onEdit(i),
+                    onRemove: () => onRemove(i),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ] else ...[
+          const SizedBox(height: 4),
+          Text(
+            'No custom headers added.',
+            style: GoogleFonts.dmSans(
+              fontSize: 12,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+class _HeaderRow extends StatelessWidget {
+  final CustomHeader header;
+  final VoidCallback onEdit;
+  final VoidCallback onRemove;
+  const _HeaderRow({
+    required this.header,
+    required this.onEdit,
+    required this.onRemove,
+  });
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onEdit,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  LucideIcons.tag,
+                  size: 16,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      header.key,
+                      style: GoogleFonts.dmSans(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      header.value.isEmpty ? '(empty)' : header.value,
+                      style: GoogleFonts.dmSans(
+                        fontSize: 12,
+                        color: header.value.isEmpty
+                            ? theme.colorScheme.onSurface.withValues(alpha: 0.35)
+                            : theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                onPressed: onRemove,
+                icon: Icon(
+                  LucideIcons.trash2,
+                  size: 16,
+                  color: theme.colorScheme.error.withValues(alpha: 0.7),
+                ),
+                visualDensity: VisualDensity.compact,
+                tooltip: 'Remove',
+              ),
+            ],
           ),
         ),
       ),
