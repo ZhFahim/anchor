@@ -1,6 +1,6 @@
-import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:uuid/uuid.dart';
+import '../../../core/logging/app_logger.dart';
 import '../../../core/network/sync_requester.dart';
 import '../data/repository/tags_repository.dart';
 import '../domain/tag.dart';
@@ -16,9 +16,14 @@ class TagsController extends _$TagsController {
 
   Future<void> sync() async {
     try {
-      await requestAppSync();
-    } catch (e) {
-      debugPrint('Tags sync error: $e');
+      await requestAppSync(trigger: 'TagsController.sync');
+    } catch (e, stack) {
+      AppLogger.instance.error(
+        'Tags',
+        'Sync request failed',
+        error: e,
+        stackTrace: stack,
+      );
     }
   }
 

@@ -1,12 +1,12 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:drift/drift.dart' as drift;
-import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/database/app_database.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/network/dio_provider.dart';
 import '../../../../core/network/sync_requester.dart';
 import '../../domain/note_attachment.dart' as domain;
@@ -51,8 +51,13 @@ class NoteAttachmentsRepository {
     for (final noteId in noteIds) {
       try {
         await fetchAttachments(noteId);
-      } catch (e) {
-        debugPrint('Failed to fetch attachments for $noteId: $e');
+      } catch (e, stack) {
+        AppLogger.instance.error(
+          'Attachments',
+          'Failed to fetch attachments for $noteId',
+          error: e,
+          stackTrace: stack,
+        );
       }
     }
   }
@@ -131,8 +136,13 @@ class NoteAttachmentsRepository {
     for (final p in orphanedPaths) {
       try {
         await File(p).delete();
-      } catch (e) {
-        debugPrint('Failed to delete orphaned file $p: $e');
+      } catch (e, stack) {
+        AppLogger.instance.error(
+          'Attachments',
+          'Failed to delete orphaned file $p',
+          error: e,
+          stackTrace: stack,
+        );
       }
     }
 
@@ -257,8 +267,13 @@ class NoteAttachmentsRepository {
       if (row.localPath != null) {
         try {
           await File(row.localPath!).delete();
-        } catch (e) {
-          debugPrint('Failed to delete local file ${row.localPath}: $e');
+        } catch (e, stack) {
+          AppLogger.instance.error(
+            'Attachments',
+            'Failed to delete local file ${row.localPath}',
+            error: e,
+            stackTrace: stack,
+          );
         }
       }
       await (_db.delete(
@@ -277,7 +292,7 @@ class NoteAttachmentsRepository {
     }
 
     await _markNoteUnsynced(noteId);
-    scheduleAppSync();
+    scheduleAppSync(trigger: 'AttachmentsRepo.deleteAttachment');
   }
 
   /// Add attachment: copy to persistent storage, insert into DB
@@ -336,14 +351,19 @@ class NoteAttachmentsRepository {
     } catch (e) {
       try {
         await File(persistentPath).delete();
-      } catch (deleteErr) {
-        debugPrint('Failed to clean up file $persistentPath: $deleteErr');
+      } catch (deleteErr, stack) {
+        AppLogger.instance.error(
+          'Attachments',
+          'Failed to clean up file $persistentPath',
+          error: deleteErr,
+          stackTrace: stack,
+        );
       }
       rethrow;
     }
 
     await _markNoteUnsynced(noteId);
-    scheduleAppSync();
+    scheduleAppSync(trigger: 'AttachmentsRepo.addAttachment');
     return localId;
   }
 
@@ -393,10 +413,15 @@ class NoteAttachmentsRepository {
             '${attachment.id}-${attachment.originalFilename}',
           );
           await File(row.localPath!).rename(cachedPath);
-        } catch (e) {
+        } catch (e, stack) {
           // Rename may fail across filesystems — fall back to delete.
           // The image will be re-downloaded on next view.
-          debugPrint('Failed to move upload to cache: $e');
+          AppLogger.instance.warn(
+            'Attachments',
+            'Failed to move upload to cache',
+            error: e,
+            stackTrace: stack,
+          );
           cachedPath = null;
           try {
             await File(row.localPath!).delete();
@@ -430,8 +455,13 @@ class NoteAttachmentsRepository {
             _db.noteAttachments,
           )..where((tbl) => tbl.id.equals(row.id))).go();
         });
-      } catch (e) {
-        debugPrint('Attachment upload failed for ${row.id}: $e');
+      } catch (e, stack) {
+        AppLogger.instance.error(
+          'Attachments',
+          'Attachment upload failed for ${row.id}',
+          error: e,
+          stackTrace: stack,
+        );
         failedAttachmentIds.add(row.id);
         // Will retry next sync
       }
@@ -453,17 +483,25 @@ class NoteAttachmentsRepository {
         if (row.localPath != null) {
           try {
             await File(row.localPath!).delete();
-          } catch (e) {
-            debugPrint(
-              'Failed to delete local file for attachment ${row.id}: $e',
+          } catch (e, stack) {
+            AppLogger.instance.error(
+              'Attachments',
+              'Failed to delete local file for attachment ${row.id}',
+              error: e,
+              stackTrace: stack,
             );
           }
         }
         await (_db.delete(
           _db.noteAttachments,
         )..where((tbl) => tbl.id.equals(row.id))).go();
-      } catch (e) {
-        debugPrint('Attachment delete failed for ${row.id}: $e');
+      } catch (e, stack) {
+        AppLogger.instance.error(
+          'Attachments',
+          'Attachment delete failed for ${row.id}',
+          error: e,
+          stackTrace: stack,
+        );
         failedAttachmentIds.add(row.id);
         // Will retry next sync
       }
@@ -511,8 +549,13 @@ class NoteAttachmentsRepository {
       if (noteDir.existsSync()) {
         try {
           await noteDir.delete(recursive: true);
-        } catch (e) {
-          debugPrint('Failed to delete attachment dir ${noteDir.path}: $e');
+        } catch (e, stack) {
+          AppLogger.instance.error(
+            'Attachments',
+            'Failed to delete attachment dir ${noteDir.path}',
+            error: e,
+            stackTrace: stack,
+          );
         }
       }
     }
@@ -529,8 +572,13 @@ class NoteAttachmentsRepository {
       if (row.localPath != null) {
         try {
           await File(row.localPath!).delete();
-        } catch (e) {
-          debugPrint('Failed to delete local file ${row.localPath}: $e');
+        } catch (e, stack) {
+          AppLogger.instance.error(
+            'Attachments',
+            'Failed to delete local file ${row.localPath}',
+            error: e,
+            stackTrace: stack,
+          );
         }
       }
     }
@@ -549,8 +597,13 @@ class NoteAttachmentsRepository {
       if (noteDir.existsSync()) {
         try {
           await noteDir.delete(recursive: true);
-        } catch (e) {
-          debugPrint('Failed to delete attachment dir ${noteDir.path}: $e');
+        } catch (e, stack) {
+          AppLogger.instance.error(
+            'Attachments',
+            'Failed to delete attachment dir ${noteDir.path}',
+            error: e,
+            stackTrace: stack,
+          );
         }
       }
     }
@@ -598,11 +651,17 @@ class NoteAttachmentsRepository {
           const NoteAttachmentsCompanion(localPath: drift.Value(null)),
         );
 
-        debugPrint(
+        AppLogger.instance.info(
+          'Attachments',
           'Evicted cached attachment: ${path.basename(file.path)} ($size bytes)',
         );
-      } catch (e) {
-        debugPrint('Failed to evict cached file ${file.path}: $e');
+      } catch (e, stack) {
+        AppLogger.instance.error(
+          'Attachments',
+          'Failed to evict cached file ${file.path}',
+          error: e,
+          stackTrace: stack,
+        );
       }
     }
   }

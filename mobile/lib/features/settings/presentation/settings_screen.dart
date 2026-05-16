@@ -223,6 +223,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           _buildDivider(context),
                           _buildActionItem(
                             context,
+                            title: 'View Logs',
+                            subtitle:
+                                'Diagnostic logs for support and debugging',
+                            icon: LucideIcons.fileText,
+                            onTap: () => context.push(
+                              '/${AppRoutes.settings}/${AppRoutes.viewLogs}',
+                            ),
+                          ),
+                          _buildDivider(context),
+                          _buildActionItem(
+                            context,
                             title: 'Log Out',
                             subtitle: 'Sign out of your account',
                             icon: LucideIcons.logOut,

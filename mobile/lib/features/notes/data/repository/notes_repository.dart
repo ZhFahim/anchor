@@ -2,11 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:drift/drift.dart' as drift;
 import '../../../../core/database/app_database.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/network/dio_provider.dart';
 import '../../../../core/network/sync_requester.dart';
 import '../../../../core/network/sync_upload_snapshot.dart';
@@ -340,8 +340,16 @@ class NotesRepository {
         );
     await _tagsRepo.setTagsForNote(note.id, note.tagIds);
 
+    AppLogger.instance.info(
+      'Notes',
+      'createNote id=${note.id} title.len=${noteWithTimestamp.title.length} '
+          'content.len=${noteWithTimestamp.content?.length ?? 0} '
+          'tags=${note.tagIds.length} updatedAt=${noteWithTimestamp.updatedAt?.toIso8601String()} '
+          '→ isSynced=false',
+    );
+
     // Trigger coordinated sync in background
-    scheduleAppSync();
+    scheduleAppSync(trigger: 'NotesRepo.createNote');
   }
 
   Future<void> updateNote(domain.Note note) async {
@@ -352,8 +360,16 @@ class NotesRepository {
         .replace(_mapToData(noteWithTimestamp, isSynced: false));
     await _tagsRepo.setTagsForNote(note.id, note.tagIds);
 
+    AppLogger.instance.info(
+      'Notes',
+      'updateNote id=${note.id} title.len=${noteWithTimestamp.title.length} '
+          'content.len=${noteWithTimestamp.content?.length ?? 0} '
+          'tags=${note.tagIds.length} updatedAt=${noteWithTimestamp.updatedAt?.toIso8601String()} '
+          '→ isSynced=false',
+    );
+
     // Trigger coordinated sync in background
-    scheduleAppSync();
+    scheduleAppSync(trigger: 'NotesRepo.updateNote');
   }
 
   // Soft delete - moves note to trash
@@ -368,7 +384,7 @@ class NotesRepository {
       ),
     );
 
-    scheduleAppSync();
+    scheduleAppSync(trigger: 'NotesRepo.deleteNote');
   }
 
   // Restore from trash
@@ -383,7 +399,7 @@ class NotesRepository {
       ),
     );
 
-    scheduleAppSync();
+    scheduleAppSync(trigger: 'NotesRepo.restoreNote');
   }
 
   // Archive a note
@@ -398,7 +414,7 @@ class NotesRepository {
       ),
     );
 
-    scheduleAppSync();
+    scheduleAppSync(trigger: 'NotesRepo.archiveNote');
   }
 
   // Unarchive a note
@@ -413,7 +429,7 @@ class NotesRepository {
       ),
     );
 
-    scheduleAppSync();
+    scheduleAppSync(trigger: 'NotesRepo.unarchiveNote');
   }
 
   // Bulk delete notes
@@ -429,7 +445,7 @@ class NotesRepository {
       ),
     );
 
-    scheduleAppSync();
+    scheduleAppSync(trigger: 'NotesRepo.bulkDeleteNotes');
     return ids.length;
   }
 
@@ -446,7 +462,7 @@ class NotesRepository {
       ),
     );
 
-    scheduleAppSync();
+    scheduleAppSync(trigger: 'NotesRepo.bulkArchiveNotes');
     return ids.length;
   }
 
@@ -470,7 +486,7 @@ class NotesRepository {
       _db.noteTags,
     )..where((tbl) => tbl.noteId.equals(id))).go();
 
-    scheduleAppSync();
+    scheduleAppSync(trigger: 'NotesRepo.permanentDelete');
   }
 
   // One time migrations when sync protocol version changes (e.g. new feature
@@ -505,8 +521,14 @@ class NotesRepository {
 
   // Bi-directional sync with server
   Future<void> sync() async {
+    final cycleStart = DateTime.now();
     try {
       final payload = await _collectLocalChanges();
+      AppLogger.instance.info(
+        'Notes',
+        'Notes sync start: uploading=${payload.localChanges.length} '
+            'lastSyncedAt=${payload.lastSyncedAt}',
+      );
       final response = await _postSync(payload);
       final noteIdsForFileCleanup = await _applyServerChanges(
         response,
@@ -522,8 +544,23 @@ class NotesRepository {
       );
       await _storage.write(key: _lastSyncKey, value: response.syncedAt);
       await _runProtocolMigrations();
-    } catch (e) {
-      debugPrint('Notes sync failed: $e');
+      AppLogger.instance.info(
+        'Notes',
+        'Notes sync done in '
+            '${DateTime.now().difference(cycleStart).inMilliseconds}ms: '
+            'serverChanges=${response.serverChanges.length} '
+            'processed=${response.processedIds.length} '
+            'revoked=${response.revokedNoteIds.length} '
+            'syncedAt=${response.syncedAt}',
+      );
+    } catch (e, stack) {
+      AppLogger.instance.error(
+        'Notes',
+        'Notes sync failed after '
+            '${DateTime.now().difference(cycleStart).inMilliseconds}ms',
+        error: e,
+        stackTrace: stack,
+      );
       rethrow;
     }
   }
@@ -542,6 +579,12 @@ class NotesRepository {
       final tagIds = await _tagsRepo.getTagIdsForNote(row.id);
       final note = _mapToDomain(row, tagIds);
       localChanges.add(_noteToSyncChange(note));
+      AppLogger.instance.debug(
+        'Notes',
+        'Local change: id=${row.id} state=${row.state} '
+            'content.len=${row.content?.length ?? 0} '
+            'updatedAt=${row.updatedAt?.toIso8601String()}',
+      );
     }
 
     return _NoteSyncPayload(
@@ -594,6 +637,10 @@ class NotesRepository {
 
     await _db.transaction(() async {
       for (final revokedId in response.revokedNoteIds) {
+        AppLogger.instance.info(
+          'Notes',
+          'Server revoked share: id=$revokedId → removing local',
+        );
         await _removeLocalNote(revokedId);
         noteIdsForFileCleanup.add(revokedId);
       }
@@ -604,10 +651,19 @@ class NotesRepository {
 
         if (localNote != null &&
             uploadSnapshots.hasChanged(serverNote.id, localNote.updatedAt)) {
+          AppLogger.instance.debug(
+            'Notes',
+            'Skip server change for ${serverNote.id}: local was edited '
+                'during sync (local.updatedAt=${localNote.updatedAt?.toIso8601String()})',
+          );
           continue;
         }
 
         if (serverNote.isDeleted) {
+          AppLogger.instance.info(
+            'Notes',
+            'Server deleted: id=${serverNote.id} → removing local',
+          );
           await _removeLocalNote(serverNote.id);
           noteIdsForFileCleanup.add(serverNote.id);
           continue;
@@ -646,6 +702,11 @@ class NotesRepository {
     required bool forceApply,
   }) async {
     if (localNote == null) {
+      AppLogger.instance.debug(
+        'Notes',
+        'Insert server note: id=${serverNote.id} '
+            'updatedAt=${serverNote.updatedAt?.toIso8601String()} → isSynced=true',
+      );
       await _db
           .into(_db.notes)
           .insert(
@@ -657,8 +718,21 @@ class NotesRepository {
     }
 
     if (!forceApply && !_serverShouldReplaceLocal(serverNote, localNote)) {
+      AppLogger.instance.debug(
+        'Notes',
+        'Keep local for ${serverNote.id}: local.updatedAt='
+            '${localNote.updatedAt?.toIso8601String()} >= '
+            'server.updatedAt=${serverNote.updatedAt?.toIso8601String()}',
+      );
       return;
     }
+    AppLogger.instance.debug(
+      'Notes',
+      'Apply server change to ${serverNote.id}: '
+          'server.updatedAt=${serverNote.updatedAt?.toIso8601String()} '
+          'local.updatedAt=${localNote.updatedAt?.toIso8601String()} '
+          'forceApply=$forceApply',
+    );
 
     await (_db.update(
       _db.notes,
@@ -713,10 +787,19 @@ class NotesRepository {
       for (final id in processedIds) {
         final note = await _getLocalNoteRow(id);
         if (!uploadSnapshots.isCurrent(id, note?.updatedAt)) {
+          AppLogger.instance.info(
+            'Notes',
+            'Skip mark-synced for $id: local re-edited during sync '
+                '(now updatedAt=${note?.updatedAt?.toIso8601String()})',
+          );
           continue;
         }
 
         if (note != null && note.state == 'deleted') {
+          AppLogger.instance.info(
+            'Notes',
+            'Server acked delete $id → removing local row',
+          );
           await (_db.delete(
             _db.noteTags,
           )..where((tbl) => tbl.noteId.equals(id))).go();
@@ -724,13 +807,25 @@ class NotesRepository {
           continue;
         }
 
-        if (note == null) continue;
+        if (note == null) {
+          AppLogger.instance.warn(
+            'Notes',
+            'Server acked $id but no local row present',
+          );
+          continue;
+        }
         final hasPending = await _attachmentsRepo.hasPendingAttachmentsForNote(
           id,
         );
         if (!hasPending) {
           await (_db.update(_db.notes)..where((tbl) => tbl.id.equals(id)))
               .write(const NotesCompanion(isSynced: drift.Value(true)));
+          AppLogger.instance.info('Notes', 'Marked synced: id=$id');
+        } else {
+          AppLogger.instance.info(
+            'Notes',
+            'Keep $id unsynced: pending attachment uploads',
+          );
         }
       }
     });

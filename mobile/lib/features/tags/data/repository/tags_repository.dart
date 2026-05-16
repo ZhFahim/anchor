@@ -1,11 +1,11 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:drift/drift.dart' as drift;
 import '../../../../core/database/app_database.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/network/dio_provider.dart';
 import '../../../../core/network/sync_requester.dart';
 import '../../../../core/network/sync_upload_snapshot.dart';
@@ -125,7 +125,7 @@ class TagsRepository {
         );
 
     // Trigger coordinated sync in background
-    scheduleAppSync();
+    scheduleAppSync(trigger: 'TagsRepo.createTag');
 
     return tagWithTimestamp;
   }
@@ -138,7 +138,7 @@ class TagsRepository {
         .update(_db.tags)
         .replace(_mapToData(tagWithTimestamp, isSynced: false));
 
-    scheduleAppSync();
+    scheduleAppSync(trigger: 'TagsRepo.updateTag');
   }
 
   // Delete tag
@@ -155,7 +155,7 @@ class TagsRepository {
     // Remove tag associations locally
     await (_db.delete(_db.noteTags)..where((tbl) => tbl.tagId.equals(id))).go();
 
-    scheduleAppSync();
+    scheduleAppSync(trigger: 'TagsRepo.deleteTag');
   }
 
   // Get tags for a note
@@ -213,8 +213,14 @@ class TagsRepository {
 
   // Sync tags with server
   Future<void> sync() async {
+    final cycleStart = DateTime.now();
     try {
       final payload = await _collectLocalChanges();
+      AppLogger.instance.info(
+        'Tags',
+        'Tags sync start: uploading=${payload.localChanges.length} '
+            'lastSyncedAt=${payload.lastSyncedAt}',
+      );
       final response = await _postSync(payload);
 
       await _db.transaction(() async {
@@ -229,11 +235,22 @@ class TagsRepository {
       });
 
       await _storage.write(key: _lastTagSyncKey, value: response.syncedAt);
-      debugPrint(
-        'Tags sync completed: ${response.serverChanges.length} changes from server',
+      AppLogger.instance.info(
+        'Tags',
+        'Tags sync done in '
+            '${DateTime.now().difference(cycleStart).inMilliseconds}ms: '
+            'serverChanges=${response.serverChanges.length} '
+            'processed=${response.processedIds.length} '
+            'syncedAt=${response.syncedAt}',
       );
-    } catch (e) {
-      debugPrint('Tags sync failed: $e');
+    } catch (e, stack) {
+      AppLogger.instance.error(
+        'Tags',
+        'Tags sync failed after '
+            '${DateTime.now().difference(cycleStart).inMilliseconds}ms',
+        error: e,
+        stackTrace: stack,
+      );
       rethrow;
     }
   }

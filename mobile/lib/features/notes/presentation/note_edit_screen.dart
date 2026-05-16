@@ -19,6 +19,7 @@ import 'package:anchor/features/notes/presentation/widgets/note_attachments_gall
 import 'package:anchor/features/notes/presentation/widgets/note_audio_recorder_sheet.dart';
 import 'package:anchor/features/notes/presentation/widgets/note_options_sheet.dart';
 import 'package:anchor/features/notes/data/repository/note_attachments_repository.dart';
+import 'package:anchor/core/logging/app_logger.dart';
 import 'package:anchor/core/providers/active_user_id_provider.dart';
 import '../data/repository/notes_repository.dart';
 
@@ -462,6 +463,10 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
         plainText.isEmpty &&
         _selectedBackground == null &&
         !_isPinned) {
+      AppLogger.instance.debug(
+        'NoteEdit',
+        '_saveNote: skipping empty note (isNew=$_isNew)',
+      );
       return;
     }
 
@@ -478,6 +483,11 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
         updatedAt: DateTime.now(),
         isSynced: false,
       );
+      AppLogger.instance.info(
+        'NoteEdit',
+        '_saveNote create: id=${newNote.id} title.len=${newNote.title.length} '
+            'content.len=${content.length} tags=${_selectedTagIds.length}',
+      );
       await repository.createNote(newNote);
       if (mounted) {
         setState(() {
@@ -491,13 +501,29 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
 
       // Check if anything changed
       final tagsChanged = !_listEquals(_existingNote!.tagIds, _selectedTagIds);
-      if (_existingNote!.title == actualTitle &&
-          _existingNote!.content == content &&
-          _existingNote!.isPinned == _isPinned &&
-          _existingNote!.background == _selectedBackground &&
+      final titleChanged = _existingNote!.title != actualTitle;
+      final contentChanged = _existingNote!.content != content;
+      final pinChanged = _existingNote!.isPinned != _isPinned;
+      final bgChanged = _existingNote!.background != _selectedBackground;
+      if (!titleChanged &&
+          !contentChanged &&
+          !pinChanged &&
+          !bgChanged &&
           !tagsChanged) {
+        AppLogger.instance.debug(
+          'NoteEdit',
+          '_saveNote: no field changed for id=${_existingNote!.id}, skipping',
+        );
         return;
       }
+
+      AppLogger.instance.info(
+        'NoteEdit',
+        '_saveNote update: id=${_existingNote!.id} '
+            'title=$titleChanged content=$contentChanged '
+            '(${_existingNote!.content?.length ?? 0}→${content.length}) '
+            'pin=$pinChanged bg=$bgChanged tags=$tagsChanged',
+      );
 
       final updatedNote = _existingNote!.copyWith(
         title: actualTitle,

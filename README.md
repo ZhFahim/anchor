@@ -212,6 +212,20 @@ services:
 Alternatively, configure OIDC via the admin panel (Settings → OIDC Authentication) when the three env vars are not all set.
 
 
+## Troubleshooting & Collecting Logs
+
+Anchor never collects any data. When you need to report a bug, you can collect logs yourself and share them with the maintainer.
+
+**Mobile app**
+
+1. Reproduce the issue.
+2. Open Settings → View Logs.
+3. Tap the **Export** (download) button at the bottom, then share the saved `.log` file in your bug report.
+
+Every request and response is captured with bodies and headers redacted — authorization, password, token, refresh token, secret, and email values are always replaced with `***`.
+
+Logs are stored locally on the device only (rolling file, ~2 MB max).
+
 ## Roadmap
 
 Future planned features:

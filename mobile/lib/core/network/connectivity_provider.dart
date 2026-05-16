@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../logging/app_logger.dart';
 import '../providers/active_user_id_provider.dart';
 import '../../features/notes/data/repository/note_attachments_repository.dart';
 import '../../features/notes/data/repository/notes_repository.dart';
@@ -93,8 +93,13 @@ class SyncManager extends _$SyncManager {
         _rerunRequested = false;
         try {
           await _runSyncCycle();
-        } catch (e) {
-          debugPrint('Sync failed: $e');
+        } catch (e, stack) {
+          AppLogger.instance.error(
+            'Sync',
+            'Sync failed',
+            error: e,
+            stackTrace: stack,
+          );
           break;
         }
       } while (_rerunRequested && ref.read(activeUserIdProvider) != null);
@@ -105,12 +110,26 @@ class SyncManager extends _$SyncManager {
   }
 
   Future<void> _runSyncCycle() async {
-    // Sync tags FIRST to ensure tag IDs are resolved before notes sync
-    await ref.read(tagsRepositoryProvider).sync();
-    // Sync notes (includes attachment sync, atomic mark-synced when content + attachments synced)
-    await ref.read(notesRepositoryProvider).sync();
-    // Evict old cached attachments if cache exceeds threshold
-    await ref.read(noteAttachmentsRepositoryProvider).evictCache();
+    final start = DateTime.now();
+    AppLogger.instance.info('Sync', 'App sync cycle start');
+    try {
+      // Sync tags FIRST to ensure tag IDs are resolved before notes sync
+      await ref.read(tagsRepositoryProvider).sync();
+      // Sync notes (includes attachment sync, atomic mark-synced when content + attachments synced)
+      await ref.read(notesRepositoryProvider).sync();
+      // Evict old cached attachments if cache exceeds threshold
+      await ref.read(noteAttachmentsRepositoryProvider).evictCache();
+      AppLogger.instance.info(
+        'Sync',
+        'App sync cycle done in ${DateTime.now().difference(start).inMilliseconds}ms',
+      );
+    } catch (e) {
+      AppLogger.instance.warn(
+        'Sync',
+        'App sync cycle aborted after ${DateTime.now().difference(start).inMilliseconds}ms: $e',
+      );
+      rethrow;
+    }
   }
 
   Future<void> manualSync() async {

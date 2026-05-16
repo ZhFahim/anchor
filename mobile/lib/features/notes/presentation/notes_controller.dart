@@ -26,7 +26,7 @@ class NotesController extends _$NotesController {
   }
 
   Future<void> sync() async {
-    await requestAppSync();
+    await requestAppSync(trigger: 'NotesController.sync');
   }
 
   Future<void> deleteNote(String id) async {

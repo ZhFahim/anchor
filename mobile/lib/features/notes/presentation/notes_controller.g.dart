@@ -90,7 +90,7 @@ final class NotesControllerProvider
   NotesController create() => NotesController();
 }
 
-String _$notesControllerHash() => r'9f12f104a9c95489b6d51997d5e73d88ff08e676';
+String _$notesControllerHash() => r'953343600bc29c2a488234d295820179559f286e';
 
 abstract class _$NotesController extends $StreamNotifier<List<Note>> {
   Stream<List<Note>> build();

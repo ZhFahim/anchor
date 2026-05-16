@@ -1,5 +1,5 @@
-import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../../../core/logging/app_logger.dart';
 import '../data/repository/note_shares_repository.dart';
 import '../data/repository/users_repository.dart';
 import '../domain/note_share.dart';
@@ -30,8 +30,13 @@ class ShareNoteController extends _$ShareNoteController {
     try {
       await repository.shareNote(noteId, sharedWithUserId, permission);
       ref.invalidateSelf();
-    } catch (e) {
-      debugPrint('Share note failed: $e');
+    } catch (e, stack) {
+      AppLogger.instance.error(
+        'Share',
+        'Share note failed',
+        error: e,
+        stackTrace: stack,
+      );
       rethrow;
     }
   }
@@ -45,8 +50,13 @@ class ShareNoteController extends _$ShareNoteController {
     try {
       await repository.updateNoteSharePermission(noteId, shareId, permission);
       ref.invalidateSelf();
-    } catch (e) {
-      debugPrint('Update share permission failed: $e');
+    } catch (e, stack) {
+      AppLogger.instance.error(
+        'Share',
+        'Update share permission failed',
+        error: e,
+        stackTrace: stack,
+      );
       rethrow;
     }
   }
@@ -57,8 +67,13 @@ class ShareNoteController extends _$ShareNoteController {
     try {
       await repository.revokeShare(noteId, shareId);
       ref.invalidateSelf();
-    } catch (e) {
-      debugPrint('Revoke share failed: $e');
+    } catch (e, stack) {
+      AppLogger.instance.error(
+        'Share',
+        'Revoke share failed',
+        error: e,
+        stackTrace: stack,
+      );
       rethrow;
     }
   }
