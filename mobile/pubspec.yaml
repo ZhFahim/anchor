@@ -78,6 +78,8 @@ dependencies:
   photo_view: ^0.15.0
   shimmer: ^3.0.0
 
+  url_launcher: ^6.3.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

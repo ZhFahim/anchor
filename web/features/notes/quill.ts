@@ -20,14 +20,20 @@ export type QuillDelta = {
 export type QuillInstance = {
   getContents: () => QuillDelta;
   updateContents: (delta: QuillDelta, source?: "user" | "api" | "silent") => void;
-  getFormat: () => Record<string, unknown>;
+  getFormat: (index?: number, length?: number) => Record<string, unknown>;
   format: (name: string, value: unknown, source?: "user" | "api" | "silent") => void;
   formatText: (index: number, length: number, name: string, value: unknown, source?: "user" | "api" | "silent") => void;
   focus: () => void;
   getText: (index?: number, length?: number) => string;
   insertText: (index: number, text: string, source?: "user" | "api" | "silent") => void;
+  deleteText: (index: number, length: number, source?: "user" | "api" | "silent") => void;
   getSelection: (focus?: boolean) => { index: number; length: number } | null;
   setSelection: (index: number, length: number, source?: "user" | "api" | "silent") => void;
+  getBounds: (
+    index: number,
+    length?: number,
+  ) => { top: number; left: number; width: number; height: number; bottom: number; right: number } | null;
+  root: HTMLElement;
   history: {
     undo: () => void;
     redo: () => void;
