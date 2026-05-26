@@ -17,18 +17,8 @@ import {
   Undo2,
   Redo2,
   Link as LinkIcon,
-  Type,
-  Globe,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import type { QuillInstance } from "@/features/notes";
 import { LIST_FORMATS } from "@/features/notes";
@@ -66,16 +56,13 @@ interface QuillToolbarProps {
   getQuill: () => QuillInstance | null;
   isFocused: boolean;
   updateKey: number;
+  onOpenLinkDialog: () => void;
 }
 
-export function QuillToolbar({ getQuill, isFocused, updateKey }: QuillToolbarProps) {
+export function QuillToolbar({ getQuill, isFocused, updateKey, onOpenLinkDialog }: QuillToolbarProps) {
   const [format, setFormat] = useState<Record<string, unknown>>({});
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
-
-  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
-  const [linkText, setLinkText] = useState("");
-  const [linkUrl, setLinkUrl] = useState("");
 
   // Update toolbar state when parent signals a change (via updateKey)
   // This avoids subscribing to Quill events directly, which caused focus issues
@@ -124,35 +111,6 @@ export function QuillToolbar({ getQuill, isFocused, updateKey }: QuillToolbarPro
       "h-8 w-8 rounded-full p-0 shrink-0 transition-colors duration-100",
       active ? "bg-muted/60 text-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted/30",
     );
-
-  const openLinkDialog = () => {
-    if (!quill) return;
-    const sel = quill.getSelection();
-    const text = sel && sel.length ? quill.getText(sel.index, sel.length) ?? "" : "";
-    setLinkText(text);
-    setLinkUrl("");
-    setLinkDialogOpen(true);
-  };
-
-  const submitLink = () => {
-    if (!quill) return;
-    const url = linkUrl.trim();
-    if (!url) return;
-
-    const sel = quill.getSelection(true);
-    if (!sel) return;
-
-    if (sel.length === 0) {
-      const text = linkText.trim() || url;
-      quill.insertText(sel.index, text, "user");
-      quill.formatText(sel.index, text.length, "link", url, "user");
-      quill.setSelection(sel.index + text.length, 0, "user");
-    } else {
-      quill.format("link", url, "user");
-    }
-
-    setLinkDialogOpen(false);
-  };
 
   return (
     <>
@@ -321,64 +279,15 @@ export function QuillToolbar({ getQuill, isFocused, updateKey }: QuillToolbarPro
           <Button
             type="button"
             variant="ghost"
-            className={btnClass(false)}
+            className={btnClass(Boolean(format.link))}
             disabled={!quill}
-            title="Insert link"
-            onClick={openLinkDialog}
+            title={format.link ? "Edit link" : "Insert link"}
+            onClick={onOpenLinkDialog}
           >
             <LinkIcon className="h-4 w-4" />
           </Button>
         </div>
       </div>
-
-      <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center">
-                <LinkIcon className="h-5 w-5 text-accent" />
-              </div>
-              Insert Link
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="grid gap-3">
-            <div className="relative">
-              <Type className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                value={linkText}
-                onChange={(e) => setLinkText(e.target.value)}
-                placeholder="Link text"
-                className="pl-9"
-              />
-            </div>
-            <div className="relative">
-              <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                value={linkUrl}
-                onChange={(e) => setLinkUrl(e.target.value)}
-                placeholder="https://..."
-                className="pl-9"
-                inputMode="url"
-              />
-            </div>
-          </div>
-
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button type="button" variant="ghost" onClick={() => setLinkDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              onClick={submitLink}
-              disabled={!linkUrl.trim()}
-              className="bg-accent text-accent-foreground hover:bg-accent/90"
-            >
-              Insert
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }

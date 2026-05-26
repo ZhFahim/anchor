@@ -1,11 +1,18 @@
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
+import 'app_snackbar.dart';
 import 'editor/checklist_reorder_mixin.dart';
-import 'editor/editor_toolbar.dart';
 import 'editor/editor_styles.dart';
+import 'editor/editor_toolbar.dart';
+import 'editor/link_actions_sheet.dart';
+import 'editor/link_edit_sheet.dart';
+import 'editor/link_utils.dart';
 
 /// A reusable rich text editor widget powered by flutter_quill.
 ///
@@ -166,8 +173,17 @@ class RichTextEditorState extends State<RichTextEditor>
   }
 
   QuillController _createController(String? content) {
+    // ignore: experimental_member_use
+    final config = QuillControllerConfig(
+      // ignore: experimental_member_use
+      clipboardConfig: QuillClipboardConfig(
+        // ignore: experimental_member_use
+        onClipboardPaste: _onClipboardPaste,
+      ),
+    );
+
     if (content == null || content.isEmpty) {
-      return QuillController.basic();
+      return QuillController.basic(config: config);
     }
 
     try {
@@ -177,13 +193,44 @@ class RichTextEditorState extends State<RichTextEditor>
         return QuillController(
           document: document,
           selection: const TextSelection.collapsed(offset: 0),
+          config: config,
         );
       }
     } catch (_) {
       // Invalid JSON -> fall through to empty document
     }
 
-    return QuillController.basic();
+    return QuillController.basic(config: config);
+  }
+
+  Future<bool> _onClipboardPaste() async {
+    final clip = await Clipboard.getData(Clipboard.kTextPlain);
+    final raw = clip?.text?.trim() ?? '';
+    if (!isLikelyUrl(raw)) return false;
+
+    final sel = _controller.selection;
+    if (!sel.isValid) return false;
+
+    if (sel.isCollapsed) {
+      _controller.replaceText(
+        sel.start,
+        0,
+        raw,
+        TextSelection.collapsed(offset: sel.start + raw.length),
+      );
+      _controller.formatText(sel.start, raw.length, LinkAttribute(raw));
+    } else {
+      _controller.formatText(
+        sel.start,
+        sel.end - sel.start,
+        LinkAttribute(raw),
+      );
+      _controller.updateSelection(
+        TextSelection.collapsed(offset: sel.end),
+        ChangeSource.local,
+      );
+    }
+    return true;
   }
 
   void _notifyChange() {
@@ -193,36 +240,112 @@ class RichTextEditorState extends State<RichTextEditor>
     }
   }
 
-  void _insertLink() {
+  void _openLinkDialog() {
     final selection = _controller.selection;
-    final text = _controller.document.toPlainText();
-    final selectedText = selection.isCollapsed
-        ? ''
-        : text.substring(selection.start, selection.end);
+    final existing = linkAtSelection(_controller);
 
-    showDialog(
-      context: context,
-      builder: (ctx) => LinkInsertDialog(
-        initialText: selectedText,
-        onSubmit: (text, url) {
-          if (selection.isCollapsed) {
-            _controller.replaceText(
-              selection.start,
-              0,
-              text,
-              TextSelection.collapsed(offset: selection.start + text.length),
-            );
-            _controller.formatText(
-              selection.start,
-              text.length,
-              LinkAttribute(url),
-            );
-          } else {
-            _controller.formatSelection(LinkAttribute(url));
-          }
-        },
-      ),
+    final docText = _controller.document.toPlainText();
+    final selectedText = (existing == null && !selection.isCollapsed)
+        ? docText.substring(selection.start, selection.end)
+        : '';
+    final selectionIsUrl = existing == null && isLikelyUrl(selectedText);
+
+    LinkEditSheet.show(
+      context,
+      initialText: existing?.text ?? (selectionIsUrl ? '' : selectedText),
+      initialUrl: existing?.url ?? (selectionIsUrl ? selectedText : ''),
+      onRemove: existing == null
+          ? null
+          : () => _removeLinkAt(existing.start, existing.length),
+      onSubmit: (text, url) {
+        if (existing != null) {
+          _replaceLink(existing.start, existing.length, text, url);
+        } else if (selection.isCollapsed) {
+          final insertAt = selection.start;
+          _controller.replaceText(
+            insertAt,
+            0,
+            text,
+            TextSelection.collapsed(offset: insertAt + text.length),
+          );
+          _controller.formatText(insertAt, text.length, LinkAttribute(url));
+        } else if (text == selectedText) {
+          _controller.formatSelection(LinkAttribute(url));
+        } else {
+          _replaceLink(
+            selection.start,
+            selection.end - selection.start,
+            text,
+            url,
+          );
+        }
+      },
     );
+  }
+
+  void _replaceLink(int start, int length, String newText, String newUrl) {
+    _controller.replaceText(start, length, '', null);
+    _controller.replaceText(
+      start,
+      0,
+      newText,
+      TextSelection.collapsed(offset: start + newText.length),
+    );
+    _controller.formatText(start, newText.length, LinkAttribute(newUrl));
+  }
+
+  void _removeLinkAt(int start, int length) {
+    _controller.formatText(
+      start,
+      length,
+      Attribute.clone(Attribute.link, null),
+    );
+  }
+
+  void _handleLaunchUrl(String url) {
+    launchExternal(context, url);
+  }
+
+  Future<LinkMenuAction> _onLinkLongPress(
+    BuildContext ctx,
+    String link,
+    Node node,
+  ) async {
+    final range = getLinkRange(node);
+    final start = range.start;
+    final length = range.end - range.start;
+    final text = _controller.document.toPlainText().substring(start, range.end);
+    final action = await LinkActionsSheet.show(ctx, text: text, url: link);
+    if (action == null || !mounted) return LinkMenuAction.none;
+    switch (action) {
+      case LinkAction.open:
+        _handleLaunchUrl(link);
+      case LinkAction.copy:
+        await _copyLink(link);
+      case LinkAction.edit:
+        _editLinkRange(start, length, text, link);
+      case LinkAction.remove:
+        _removeLinkAt(start, length);
+    }
+    return LinkMenuAction.none;
+  }
+
+  void _editLinkRange(int start, int length, String text, String url) {
+    LinkEditSheet.show(
+      context,
+      initialText: text,
+      initialUrl: url,
+      onRemove: () => _removeLinkAt(start, length),
+      onSubmit: (newText, newUrl) {
+        _replaceLink(start, length, newText, newUrl);
+      },
+    );
+  }
+
+  Future<void> _copyLink(String url) async {
+    await Clipboard.setData(ClipboardData(text: url));
+    if (!mounted) return;
+    AppSnackbar.showSuccess(context, message: 'Link copied');
   }
 
   // Public API
@@ -275,6 +398,8 @@ class RichTextEditorState extends State<RichTextEditor>
                 customStyles: getEditorStyles(context),
                 customStyleBuilder: (attribute) =>
                     getCheckedListStyle(attribute, context),
+                onLaunchUrl: _handleLaunchUrl,
+                linkActionPickerDelegate: _onLinkLongPress,
               ),
             ),
           ],
@@ -285,16 +410,137 @@ class RichTextEditorState extends State<RichTextEditor>
 
   @override
   Widget build(BuildContext context) {
+    final showBubble =
+        widget.canEdit && _isEditing && _formattingState.linkUrl != null;
+
     return Column(
       children: [
         Expanded(child: _buildScrollableEditor(context)),
+        if (showBubble)
+          _LinkActionBubble(
+            url: _formattingState.linkUrl!,
+            onOpen: () => _handleLaunchUrl(_formattingState.linkUrl!),
+            onCopy: () => _copyLink(_formattingState.linkUrl!),
+            onEdit: _openLinkDialog,
+            onRemove: () => _removeLinkAt(
+              _formattingState.linkStart,
+              _formattingState.linkLength,
+            ),
+          ),
         if (widget.showToolbar && _isEditing && widget.canEdit)
           EditorToolbar(
             controller: _controller,
             state: _formattingState,
-            onLinkPressed: _insertLink,
+            onLinkPressed: _openLinkDialog,
           ),
       ],
+    );
+  }
+}
+
+class _LinkActionBubble extends StatelessWidget {
+  final String url;
+  final VoidCallback onOpen;
+  final VoidCallback onCopy;
+  final VoidCallback onEdit;
+  final VoidCallback onRemove;
+
+  const _LinkActionBubble({
+    required this.url,
+    required this.onOpen,
+    required this.onCopy,
+    required this.onEdit,
+    required this.onRemove,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: isDark
+            ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6)
+            : theme.colorScheme.surfaceContainerLow,
+        border: Border(
+          top: BorderSide(
+            color: theme.colorScheme.outline.withValues(alpha: 0.15),
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(LucideIcons.link, size: 16, color: theme.colorScheme.tertiary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              url,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.dmSans(
+                fontSize: 13,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.85),
+              ),
+            ),
+          ),
+          _BubbleAction(
+            icon: LucideIcons.externalLink,
+            tooltip: 'Open',
+            onTap: onOpen,
+          ),
+          _BubbleAction(icon: LucideIcons.copy, tooltip: 'Copy', onTap: onCopy),
+          _BubbleAction(
+            icon: LucideIcons.pencil,
+            tooltip: 'Edit',
+            onTap: onEdit,
+          ),
+          _BubbleAction(
+            icon: LucideIcons.unlink,
+            tooltip: 'Remove',
+            onTap: onRemove,
+            color: theme.colorScheme.error,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BubbleAction extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+  final Color? color;
+
+  const _BubbleAction({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+    this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final iconColor =
+        color ?? theme.colorScheme.onSurface.withValues(alpha: 0.7);
+
+    return Tooltip(
+      message: tooltip,
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
+        child: Container(
+          width: 32,
+          height: 32,
+          alignment: Alignment.center,
+          child: Icon(icon, size: 16, color: iconColor),
+        ),
+      ),
     );
   }
 }
