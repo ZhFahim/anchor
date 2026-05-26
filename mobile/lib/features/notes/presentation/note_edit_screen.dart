@@ -1,26 +1,28 @@
 import 'dart:async';
+
+import 'package:anchor/core/logging/app_logger.dart';
+import 'package:anchor/core/network/server_config_provider.dart';
+import 'package:anchor/core/providers/active_user_id_provider.dart';
+import 'package:anchor/core/widgets/app_snackbar.dart';
+import 'package:anchor/core/widgets/confirm_dialog.dart';
+import 'package:anchor/core/widgets/rich_text_editor.dart';
+import 'package:anchor/features/notes/data/repository/note_attachments_repository.dart';
+import 'package:anchor/features/notes/domain/note.dart';
+import 'package:anchor/features/notes/presentation/widgets/note_attachments_gallery.dart';
+import 'package:anchor/features/notes/presentation/widgets/note_audio_recorder_sheet.dart';
+import 'package:anchor/features/notes/presentation/widgets/note_background.dart';
+import 'package:anchor/features/notes/presentation/widgets/note_background_picker.dart';
+import 'package:anchor/features/notes/presentation/widgets/note_options_sheet.dart';
+import 'package:anchor/features/notes/presentation/widgets/share_note_sheet.dart';
+import 'package:anchor/features/settings/presentation/controllers/editor_preferences_controller.dart';
+import 'package:anchor/features/tags/presentation/widgets/tag_selector.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:uuid/uuid.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:anchor/features/notes/domain/note.dart';
-import 'package:anchor/core/widgets/confirm_dialog.dart';
-import 'package:anchor/core/widgets/app_snackbar.dart';
-import 'package:anchor/core/widgets/rich_text_editor.dart';
-import 'package:anchor/features/settings/presentation/controllers/editor_preferences_controller.dart';
-import 'package:anchor/core/network/server_config_provider.dart';
-import 'package:anchor/features/tags/presentation/widgets/tag_selector.dart';
-import 'package:anchor/features/notes/presentation/widgets/note_background.dart';
-import 'package:anchor/features/notes/presentation/widgets/note_background_picker.dart';
-import 'package:anchor/features/notes/presentation/widgets/share_note_sheet.dart';
-import 'package:anchor/features/notes/presentation/widgets/note_attachments_gallery.dart';
-import 'package:anchor/features/notes/presentation/widgets/note_audio_recorder_sheet.dart';
-import 'package:anchor/features/notes/presentation/widgets/note_options_sheet.dart';
-import 'package:anchor/features/notes/data/repository/note_attachments_repository.dart';
-import 'package:anchor/core/logging/app_logger.dart';
-import 'package:anchor/core/providers/active_user_id_provider.dart';
+
 import '../data/repository/notes_repository.dart';
 
 class NoteEditScreen extends ConsumerStatefulWidget {
@@ -480,7 +482,6 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
         isPinned: _isPinned,
         tagIds: _selectedTagIds,
         background: _selectedBackground,
-        updatedAt: DateTime.now(),
         isSynced: false,
       );
       AppLogger.instance.info(
@@ -532,7 +533,6 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
         isArchived: _isArchived,
         tagIds: _selectedTagIds,
         background: _selectedBackground,
-        updatedAt: DateTime.now(),
         isSynced: false,
       );
       await repository.updateNote(updatedNote);

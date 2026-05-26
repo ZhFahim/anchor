@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:uuid/uuid.dart';
+
 import '../../../core/logging/app_logger.dart';
 import '../../../core/network/sync_requester.dart';
 import '../data/repository/tags_repository.dart';
@@ -49,7 +50,6 @@ class TagsController extends _$TagsController {
       id: const Uuid().v4(),
       name: trimmedName,
       color: color ?? generateRandomTagColor(),
-      updatedAt: DateTime.now(),
       isSynced: false,
     );
     // This now waits for server response when online

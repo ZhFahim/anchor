@@ -1,10 +1,12 @@
 import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:drift/drift.dart' as drift;
-import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:uuid/uuid.dart';
+
 import '../../../../core/database/app_database.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../../../core/network/dio_provider.dart';
@@ -191,6 +193,26 @@ class NoteAttachmentsRepository {
       file.deleteSync();
     }
 
+    // If the local row was deleted (stale UI snapshot), the server won't have
+    // it either — short-circuit instead of burning a guaranteed 404.
+    final existsLocally =
+        await (_db.selectOnly(_db.noteAttachments)
+              ..addColumns([_db.noteAttachments.id])
+              ..where(
+                _db.noteAttachments.id.equals(attachmentId) |
+                    _db.noteAttachments.serverAttachmentId.equals(attachmentId),
+              )
+              ..limit(1))
+            .getSingleOrNull();
+    if (existsLocally == null) {
+      AppLogger.instance.debug(
+        'Attachments',
+        'Skip download for $attachmentId (noteId=$noteId): not in local DB '
+            '— stale UI snapshot, attachment was likely deleted',
+      );
+      throw StateError('Attachment $attachmentId no longer exists locally');
+    }
+
     // Deduplicate
     if (_activeDownloads.containsKey(attachmentId)) {
       return _activeDownloads[attachmentId]!;
@@ -367,16 +389,24 @@ class NoteAttachmentsRepository {
     return localId;
   }
 
-  /// Mark the note as having pending local work so the sync loop picks it up
+  // Bumps updatedAt so the re-upload beats the server's sub-second-precision
+  // stamp; reusing the truncated value would trip a false server-overrode warn.
   Future<void> _markNoteUnsynced(String noteId) async {
     await (_db.update(_db.notes)..where((tbl) => tbl.id.equals(noteId))).write(
-      const NotesCompanion(isSynced: drift.Value(false)),
+      NotesCompanion(
+        isSynced: const drift.Value(false),
+        updatedAt: drift.Value(DateTime.now().toUtc()),
+      ),
     );
   }
 
   /// Sync pending uploads and deletes with server
   Future<void> sync() async {
+    final cycleStart = DateTime.now();
     final failedAttachmentIds = <String>[];
+    int uploaded = 0;
+    int deleted = 0;
+    int skipped = 0;
 
     // 1. Process pending uploads
     final pendingUpload =
@@ -387,8 +417,34 @@ class NoteAttachmentsRepository {
             ))
             .get();
 
+    // 2. Process pending deletes
+    final pendingDelete =
+        await (_db.select(_db.noteAttachments)..where(
+              (tbl) => tbl.syncStatus.equals(
+                domain.AttachmentSyncStatus.pendingDelete.dbValue,
+              ),
+            ))
+            .get();
+
+    if (pendingUpload.isEmpty && pendingDelete.isEmpty) {
+      return;
+    }
+
+    AppLogger.instance.info(
+      'Attachments',
+      'Attachments sync start: pendingUploads=${pendingUpload.length} '
+          'pendingDeletes=${pendingDelete.length}',
+    );
+
     for (final row in pendingUpload) {
-      if (row.localPath == null) continue;
+      if (row.localPath == null) {
+        AppLogger.instance.warn(
+          'Attachments',
+          'Skip upload ${row.id}: missing localPath (noteId=${row.noteId})',
+        );
+        skipped++;
+        continue;
+      }
       try {
         final attachment = await _uploadToServer(
           row.noteId,
@@ -455,10 +511,16 @@ class NoteAttachmentsRepository {
             _db.noteAttachments,
           )..where((tbl) => tbl.id.equals(row.id))).go();
         });
+        uploaded++;
+        AppLogger.instance.info(
+          'Attachments',
+          'Uploaded attachment ${attachment.id} for note ${attachment.noteId} '
+              '(${attachment.fileSize}B, ${attachment.mimeType})',
+        );
       } catch (e, stack) {
         AppLogger.instance.error(
           'Attachments',
-          'Attachment upload failed for ${row.id}',
+          'Attachment upload failed for ${row.id} (noteId=${row.noteId})',
           error: e,
           stackTrace: stack,
         );
@@ -466,15 +528,6 @@ class NoteAttachmentsRepository {
         // Will retry next sync
       }
     }
-
-    // 2. Process pending deletes
-    final pendingDelete =
-        await (_db.select(_db.noteAttachments)..where(
-              (tbl) => tbl.syncStatus.equals(
-                domain.AttachmentSyncStatus.pendingDelete.dbValue,
-              ),
-            ))
-            .get();
 
     for (final row in pendingDelete) {
       final serverId = row.serverAttachmentId ?? row.id;
@@ -495,10 +548,15 @@ class NoteAttachmentsRepository {
         await (_db.delete(
           _db.noteAttachments,
         )..where((tbl) => tbl.id.equals(row.id))).go();
+        deleted++;
+        AppLogger.instance.info(
+          'Attachments',
+          'Deleted attachment ${row.id} (serverId=$serverId noteId=${row.noteId})',
+        );
       } catch (e, stack) {
         AppLogger.instance.error(
           'Attachments',
-          'Attachment delete failed for ${row.id}',
+          'Attachment delete failed for ${row.id} (noteId=${row.noteId})',
           error: e,
           stackTrace: stack,
         );
@@ -506,6 +564,14 @@ class NoteAttachmentsRepository {
         // Will retry next sync
       }
     }
+
+    AppLogger.instance.info(
+      'Attachments',
+      'Attachments sync done in '
+          '${DateTime.now().difference(cycleStart).inMilliseconds}ms: '
+          'uploaded=$uploaded deleted=$deleted skipped=$skipped '
+          'failed=${failedAttachmentIds.length}',
+    );
 
     if (failedAttachmentIds.isNotEmpty) {
       throw Exception(

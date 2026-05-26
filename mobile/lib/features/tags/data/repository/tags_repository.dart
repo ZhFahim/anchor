@@ -1,9 +1,10 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
+import 'package:drift/drift.dart' as drift;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:drift/drift.dart' as drift;
+
 import '../../../../core/database/app_database.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../../../core/network/dio_provider.dart';
@@ -114,7 +115,7 @@ class TagsRepository {
 
   // Create tag - strictly local first
   Future<domain.Tag> createTag(domain.Tag tag) async {
-    final tagWithTimestamp = tag.copyWith(updatedAt: DateTime.now());
+    final tagWithTimestamp = tag.copyWith(updatedAt: DateTime.now().toUtc());
 
     // Save locally
     await _db
@@ -132,7 +133,7 @@ class TagsRepository {
 
   // Update tag
   Future<void> updateTag(domain.Tag tag) async {
-    final tagWithTimestamp = tag.copyWith(updatedAt: DateTime.now());
+    final tagWithTimestamp = tag.copyWith(updatedAt: DateTime.now().toUtc());
 
     await _db
         .update(_db.tags)
@@ -143,7 +144,7 @@ class TagsRepository {
 
   // Delete tag
   Future<void> deleteTag(String id) async {
-    final now = DateTime.now();
+    final now = DateTime.now().toUtc();
     // Mark as deleted locally (tombstone)
     await (_db.update(_db.tags)..where((tbl) => tbl.id.equals(id))).write(
       TagsCompanion(
@@ -224,13 +225,14 @@ class TagsRepository {
       final response = await _postSync(payload);
 
       await _db.transaction(() async {
-        await _applyServerChanges(
+        final postApplySnapshot = await _applyServerChanges(
           response.serverChanges,
+          response.processedIds,
           payload.uploadSnapshots,
         );
         await _markProcessedTagsSynced(
           response.processedIds,
-          payload.uploadSnapshots,
+          postApplySnapshot,
         );
       });
 
@@ -276,7 +278,7 @@ class TagsRepository {
       'id': tag.id,
       'name': tag.name,
       'color': tag.color,
-      'updatedAt': tag.updatedAt?.toIso8601String(),
+      'updatedAt': tag.updatedAt?.toUtc().toIso8601String(),
       'isDeleted': tag.isDeleted,
     };
   }
@@ -300,10 +302,18 @@ class TagsRepository {
     );
   }
 
-  Future<void> _applyServerChanges(
+  Future<SyncUploadSnapshot> _applyServerChanges(
     List<domain.Tag> serverChanges,
+    List<String> processedIds,
     SyncUploadSnapshot uploadSnapshots,
   ) async {
+    // See notes_repository for the rationale: default to the pre-upload
+    // snapshot, overwrite with the post-write value for ids we actually apply.
+    final postApply = <String, DateTime?>{
+      for (final id in processedIds)
+        if (uploadSnapshots.contains(id)) id: uploadSnapshots[id],
+    };
+
     for (final serverTag in serverChanges) {
       final localTag = await _getLocalTagRow(serverTag.id);
       final uploadedThisCycle = uploadSnapshots.contains(serverTag.id);
@@ -315,6 +325,9 @@ class TagsRepository {
 
       if (serverTag.isDeleted) {
         await _removeLocalTag(serverTag.id);
+        if (uploadedThisCycle) {
+          postApply[serverTag.id] = null;
+        }
         continue;
       }
 
@@ -323,7 +336,14 @@ class TagsRepository {
         localTag,
         forceApply: uploadedThisCycle,
       );
+
+      if (uploadedThisCycle) {
+        final applied = await _getLocalTagRow(serverTag.id);
+        postApply[serverTag.id] = applied?.updatedAt;
+      }
     }
+
+    return SyncUploadSnapshot(postApply);
   }
 
   Future<Tag?> _getLocalTagRow(String id) {
@@ -381,11 +401,11 @@ class TagsRepository {
 
   Future<void> _markProcessedTagsSynced(
     List<String> processedIds,
-    SyncUploadSnapshot uploadSnapshots,
+    SyncUploadSnapshot postApplySnapshot,
   ) async {
     for (final id in processedIds) {
       final tag = await _getLocalTagRow(id);
-      if (!uploadSnapshots.isCurrent(id, tag?.updatedAt)) continue;
+      if (!postApplySnapshot.isCurrent(id, tag?.updatedAt)) continue;
 
       if (tag != null && tag.isDeleted) {
         await _removeLocalTag(id);

@@ -1,11 +1,14 @@
 import 'dart:async';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../logging/app_logger.dart';
-import '../providers/active_user_id_provider.dart';
+
 import '../../features/notes/data/repository/note_attachments_repository.dart';
 import '../../features/notes/data/repository/notes_repository.dart';
 import '../../features/tags/data/repository/tags_repository.dart';
+import '../logging/app_logger.dart';
+import '../providers/active_user_id_provider.dart';
+import 'server_config_provider.dart';
 import 'sync_requester.dart';
 
 part 'connectivity_provider.g.dart';
@@ -113,6 +116,16 @@ class SyncManager extends _$SyncManager {
     final start = DateTime.now();
     AppLogger.instance.info('Sync', 'App sync cycle start');
     try {
+      final serverUrl = await ref.read(serverConfigProvider.future);
+      await ref.read(allowSelfSignedCertProvider.future);
+      if (serverUrl == null || serverUrl.isEmpty) {
+        AppLogger.instance.info(
+          'Sync',
+          'App sync cycle skipped: no server configured',
+        );
+        return;
+      }
+
       // Sync tags FIRST to ensure tag IDs are resolved before notes sync
       await ref.read(tagsRepositoryProvider).sync();
       // Sync notes (includes attachment sync, atomic mark-synced when content + attachments synced)

@@ -6,6 +6,8 @@ class SyncUploadSnapshot {
 
   bool contains(String id) => _updatedAtById.containsKey(id);
 
+  DateTime? operator [](String id) => _updatedAtById[id];
+
   bool isCurrent(String id, DateTime? updatedAt) {
     if (!contains(id)) return false;
     return sameSyncTimestamp(updatedAt, _updatedAtById[id]);
