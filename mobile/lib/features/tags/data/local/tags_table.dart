@@ -20,4 +20,3 @@ class NoteTags extends Table {
   @override
   Set<Column> get primaryKey => {noteId, tagId};
 }
-

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:anchor/features/notes/domain/note.dart';
 import 'package:anchor/core/widgets/confirm_dialog.dart';
 import 'package:anchor/core/widgets/quill_preview.dart'
@@ -49,10 +49,7 @@ class SelectionAppBarActions extends ConsumerWidget {
         }
       } catch (e) {
         if (context.mounted) {
-          AppSnackbar.showError(
-            context,
-            message: 'Failed to archive notes',
-          );
+          AppSnackbar.showError(context, message: 'Failed to archive notes');
         }
       }
     }
@@ -90,10 +87,7 @@ class SelectionAppBarActions extends ConsumerWidget {
         }
       } catch (e) {
         if (context.mounted) {
-          AppSnackbar.showError(
-            context,
-            message: 'Failed to delete notes',
-          );
+          AppSnackbar.showError(context, message: 'Failed to delete notes');
         }
       }
     }

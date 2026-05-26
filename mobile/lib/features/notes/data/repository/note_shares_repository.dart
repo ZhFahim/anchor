@@ -87,8 +87,11 @@ class NoteSharesRepository {
       final shareUserIds = shares.map((s) => s.sharedWithUser.id).toList();
 
       // Update local database
-      await (_db.update(_db.notes)..where((tbl) => tbl.id.equals(noteId)))
-          .write(NotesCompanion(shareIds: drift.Value(jsonEncode(shareUserIds))));
+      await (_db.update(
+        _db.notes,
+      )..where((tbl) => tbl.id.equals(noteId))).write(
+        NotesCompanion(shareIds: drift.Value(jsonEncode(shareUserIds))),
+      );
     } catch (e) {
       // Silently fail - sync will eventually fix it
     }

@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../network/dio_provider.dart';
 import '../network/server_config_provider.dart';
 import '../widgets/app_snackbar.dart';
@@ -261,8 +261,9 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
                         size: 18,
                         color: allowSelfSigned
                             ? theme.colorScheme.error
-                            : theme.colorScheme.onSurface
-                                .withValues(alpha: 0.5),
+                            : theme.colorScheme.onSurface.withValues(
+                                alpha: 0.5,
+                              ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(

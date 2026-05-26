@@ -22,7 +22,7 @@ Future<ServerInfo?> serverInfo(Ref ref) async {
   try {
     final dio = ref.watch(dioProvider);
     final response = await dio.get('/api/health');
-    
+
     if (response.statusCode == 200) {
       return ServerInfo.fromJson(response.data);
     }
