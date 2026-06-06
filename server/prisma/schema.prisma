@@ -85,7 +85,7 @@ model Tag {
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   notes     Note[]
 
-  @@unique([userId, name])
+  // (userId, name) uniqueness is enforced for active tags via a partial index in migration
 }
 
 model NoteShare {

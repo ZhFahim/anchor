@@ -30,7 +30,11 @@ export class AdminService {
           state: { not: NoteState.deleted },
         },
       }),
-      this.prisma.tag.count(),
+      this.prisma.tag.count({
+        where: {
+          isDeleted: false,
+        },
+      }),
     ]);
 
     return {

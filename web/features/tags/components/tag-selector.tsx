@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { Plus, X, Loader2, Search, Tag as TagIcon, Hash } from "lucide-react";
 import { getTags, createTag, generateRandomTagColor } from "@/features/tags";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ export function TagSelector({
 }: TagSelectorProps) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
   const { data: tags = [], isLoading } = useQuery({
@@ -38,13 +40,16 @@ export function TagSelector({
       queryClient.invalidateQueries({ queryKey: ["tags"] });
       onTagsChange([...selectedTagIds, newTag.id]);
       setSearchQuery("");
-      setOpen(false);
+      inputRef.current?.focus();
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to create tag");
     },
   });
 
   const selectedTags = useMemo(
     () => tags.filter((tag) => selectedTagIds.includes(tag.id)),
-    [tags, selectedTagIds]
+    [tags, selectedTagIds],
   );
 
   const filteredTags = useMemo(
@@ -52,9 +57,9 @@ export function TagSelector({
       tags.filter(
         (tag) =>
           !selectedTagIds.includes(tag.id) &&
-          tag.name.toLowerCase().includes(searchQuery.toLowerCase())
+          tag.name.toLowerCase().includes(searchQuery.toLowerCase()),
       ),
-    [tags, selectedTagIds, searchQuery]
+    [tags, selectedTagIds, searchQuery],
   );
 
   const toggleTag = (tagId: string) => {
@@ -65,6 +70,14 @@ export function TagSelector({
     }
   };
 
+  // Add a tag from the list and reset the query so the next one can be typed.
+  // Refocus the input since a mouse click moves focus to the clicked item.
+  const selectTag = (tagId: string) => {
+    onTagsChange([...selectedTagIds, tagId]);
+    setSearchQuery("");
+    inputRef.current?.focus();
+  };
+
   const handleCreateTag = () => {
     if (searchQuery.trim()) {
       createTagMutation.mutate({
@@ -72,6 +85,21 @@ export function TagSelector({
         color: generateRandomTagColor(),
       });
     }
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    if (filteredTags.length > 0) {
+      selectTag(filteredTags[0].id);
+    } else if (searchQuery.trim() && !createTagMutation.isPending) {
+      handleCreateTag();
+    }
+  };
+
+  const handleOpenChange = (next: boolean) => {
+    setOpen(next);
+    if (!next) setSearchQuery("");
   };
 
   if (readOnly && selectedTags.length === 0) {
@@ -113,7 +141,7 @@ export function TagSelector({
       ))}
 
       {!readOnly && (
-        <Popover open={open} onOpenChange={setOpen}>
+        <Popover open={open} onOpenChange={handleOpenChange}>
           <PopoverTrigger asChild>
             <Button
               variant="ghost"
@@ -135,16 +163,18 @@ export function TagSelector({
               <div className="flex items-center px-3 py-2 border-b border-border/40 bg-muted/20">
                 <Search className="h-4 w-4 text-muted-foreground shrink-0 mr-2" />
                 <input
+                  ref={inputRef}
                   className="flex-1 bg-transparent border-none outline-none text-sm placeholder:text-muted-foreground/70"
                   placeholder="Search tags..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={handleSearchKeyDown}
                   autoFocus
                 />
               </div>
 
               {/* Tag List */}
-              <div className="max-h-[280px] overflow-y-auto p-1 scrollbar-none">
+              <div className="max-h-70 overflow-y-auto p-1 scrollbar-none">
                 {isLoading ? (
                   <div className="flex flex-col items-center justify-center py-8 gap-2 text-muted-foreground">
                     <Loader2 className="h-5 w-5 animate-spin" />
@@ -157,14 +187,16 @@ export function TagSelector({
                         {filteredTags.map((tag) => (
                           <button
                             key={tag.id}
-                            onClick={() => toggleTag(tag.id)}
+                            onClick={() => selectTag(tag.id)}
                             className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-sm text-sm hover:bg-muted/50 transition-colors text-left group"
                           >
                             <Hash
                               className="w-3.5 h-3.5 shrink-0"
                               style={{ color: tag.color || "var(--accent)" }}
                             />
-                            <span className="flex-1 text-foreground/90 truncate">{tag.name}</span>
+                            <span className="flex-1 text-foreground/90 truncate">
+                              {tag.name}
+                            </span>
                             <Plus className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                           </button>
                         ))}
@@ -186,7 +218,9 @@ export function TagSelector({
                               <Plus className="h-3 w-3" />
                             )}
                           </div>
-                          <span className="truncate">Create "{searchQuery}"</span>
+                          <span className="truncate">
+                            Create "{searchQuery}"
+                          </span>
                         </button>
                       </div>
                     )}
@@ -195,7 +229,9 @@ export function TagSelector({
                       <div className="py-8 text-center px-4">
                         <TagIcon className="h-8 w-8 text-muted-foreground/20 mx-auto mb-2" />
                         <p className="text-xs text-muted-foreground">
-                          {tags.length > 0 ? "All existing tags added" : "No tags found"}
+                          {tags.length > 0
+                            ? "All existing tags added"
+                            : "No tags found"}
                         </p>
                       </div>
                     )}
