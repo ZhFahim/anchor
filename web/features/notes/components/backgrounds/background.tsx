@@ -1,19 +1,19 @@
 "use client";
 
-import { cn } from "@/lib/utils";
-import {
-  getBackgroundStyle,
-  getBackgroundColor,
-} from "@/features/notes/backgrounds";
 import { useTheme } from "next-themes";
+import {
+  getBackgroundColor,
+  getBackgroundStyle,
+} from "@/features/notes/backgrounds";
+import { cn } from "@/lib/utils";
 import {
   DotsPattern,
   GridPattern,
-  LinesPattern,
-  WavesPattern,
-  IconPattern,
   ICON_PATTERN_ICONS,
   ICON_PATTERN_ROTATIONS,
+  IconPattern,
+  LinesPattern,
+  WavesPattern,
 } from "./patterns";
 
 interface NoteBackgroundProps {
@@ -35,9 +35,7 @@ export function NoteBackground({
   const backgroundColor = getBackgroundColor(styleId, isDark);
 
   if (!style || !backgroundColor) {
-    return (
-      <div className={cn("relative bg-card", className)}>{children}</div>
-    );
+    return <div className={cn("relative bg-card", className)}>{children}</div>;
   }
 
   const patternColor = isDark
@@ -74,10 +72,15 @@ function renderPattern(patternId: string, color: string) {
     case "pattern_groceries":
     case "pattern_music":
     case "pattern_travel":
-    case "pattern_code":
-      const Icon = ICON_PATTERN_ICONS[patternId as keyof typeof ICON_PATTERN_ICONS];
-      const rotation = ICON_PATTERN_ROTATIONS[patternId as keyof typeof ICON_PATTERN_ROTATIONS] ?? 0;
+    case "pattern_code": {
+      const Icon =
+        ICON_PATTERN_ICONS[patternId as keyof typeof ICON_PATTERN_ICONS];
+      const rotation =
+        ICON_PATTERN_ROTATIONS[
+          patternId as keyof typeof ICON_PATTERN_ROTATIONS
+        ] ?? 0;
       return <IconPattern icon={Icon} color={color} rotation={rotation} />;
+    }
     default:
       return null;
   }

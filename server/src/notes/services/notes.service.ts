@@ -4,6 +4,7 @@ import { CreateNoteDto } from '../dto/create-note.dto';
 import { UpdateNoteDto } from '../dto/update-note.dto';
 import { SyncNoteDto, SyncNotesDto } from '../dto/sync-notes.dto';
 import { NoteState, NoteSharePermission } from 'src/generated/prisma/enums';
+import type { Note, Prisma } from 'src/generated/prisma/client';
 import { NoteAccessService } from './note-access.service';
 import { NoteAttachmentsService } from './note-attachments.service';
 import { transformNote } from '../utils/note-transformer.util';
@@ -24,7 +25,7 @@ export class NotesService {
     private prisma: PrismaService,
     private noteAccessService: NoteAccessService,
     private noteAttachmentsService: NoteAttachmentsService,
-  ) { }
+  ) {}
 
   async create(userId: string, createNoteDto: CreateNoteDto) {
     const { tagIds, ...noteData } = createNoteDto;
@@ -36,8 +37,8 @@ export class NotesService {
         userId,
         tags: tagIds?.length
           ? {
-            connect: tagIds.map((id) => ({ id })),
-          }
+              connect: tagIds.map((id) => ({ id })),
+            }
           : undefined,
       },
       include: NOTE_INCLUDE_TAGS,
@@ -73,29 +74,29 @@ export class NotesService {
           },
           ...(tagId
             ? [
-              {
-                tags: {
-                  some: { id: tagId },
+                {
+                  tags: {
+                    some: { id: tagId },
+                  },
                 },
-              },
-            ]
+              ]
             : []),
           ...(search
             ? [
-              {
-                OR: [
-                  {
-                    title: { contains: search, mode: 'insensitive' as const },
-                  },
-                  {
-                    content: {
-                      contains: search,
-                      mode: 'insensitive' as const,
+                {
+                  OR: [
+                    {
+                      title: { contains: search, mode: 'insensitive' as const },
                     },
-                  },
-                ],
-              },
-            ]
+                    {
+                      content: {
+                        contains: search,
+                        mode: 'insensitive' as const,
+                      },
+                    },
+                  ],
+                },
+              ]
             : []),
         ],
       },
@@ -449,8 +450,8 @@ export class NotesService {
         userId,
         tags: change.tagIds?.length
           ? {
-            connect: change.tagIds.map((id) => ({ id })),
-          }
+              connect: change.tagIds.map((id) => ({ id })),
+            }
           : undefined,
       },
     });
@@ -459,7 +460,7 @@ export class NotesService {
   private async processExistingSyncNote(
     userId: string,
     change: SyncNoteDto,
-    existingNote,
+    existingNote: Note,
     result: IncomingNoteSyncResult,
   ) {
     const access = await this.noteAccessService.hasNoteAccess(
@@ -508,10 +509,10 @@ export class NotesService {
 
   private async updateSyncNoteIfUnchanged(
     change: SyncNoteDto,
-    existingNote,
+    existingNote: Note,
     isOwner: boolean,
   ) {
-    const updateData: any = {
+    const updateData: Prisma.NoteUpdateInput = {
       title: change.title,
       content: change.content,
       isPinned: change.isPinned,

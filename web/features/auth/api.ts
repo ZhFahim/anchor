@@ -2,33 +2,47 @@ import { api } from "@/lib/api/client";
 import type {
   ApiTokenResponse,
   AuthResponse,
-  LoginCredentials,
-  RegisterCredentials,
   ChangePasswordCredentials,
-  UpdateProfileDto,
+  LoginCredentials,
   OidcConfig,
   OidcExchangeResponse,
-  User
+  RegisterCredentials,
+  UpdateProfileDto,
+  User,
 } from "./types";
 
-export async function login(credentials: LoginCredentials): Promise<AuthResponse> {
+export async function login(
+  credentials: LoginCredentials,
+): Promise<AuthResponse> {
   return api.post("api/auth/login", { json: credentials }).json<AuthResponse>();
 }
 
-export async function register(credentials: RegisterCredentials): Promise<AuthResponse> {
-  return api.post("api/auth/register", { json: credentials }).json<AuthResponse>();
+export async function register(
+  credentials: RegisterCredentials,
+): Promise<AuthResponse> {
+  return api
+    .post("api/auth/register", { json: credentials })
+    .json<AuthResponse>();
 }
 
 export async function getMe(): Promise<User> {
   return api.get("api/auth/me").json<User>();
 }
 
-export async function getRegistrationMode(): Promise<{ mode: "disabled" | "enabled" | "review" }> {
-  return api.get("api/auth/registration-mode").json<{ mode: "disabled" | "enabled" | "review" }>();
+export async function getRegistrationMode(): Promise<{
+  mode: "disabled" | "enabled" | "review";
+}> {
+  return api
+    .get("api/auth/registration-mode")
+    .json<{ mode: "disabled" | "enabled" | "review" }>();
 }
 
-export async function changePassword(credentials: ChangePasswordCredentials): Promise<{ message: string }> {
-  return api.post("api/auth/change-password", { json: credentials }).json<{ message: string }>();
+export async function changePassword(
+  credentials: ChangePasswordCredentials,
+): Promise<{ message: string }> {
+  return api
+    .post("api/auth/change-password", { json: credentials })
+    .json<{ message: string }>();
 }
 
 export async function updateProfile(data: UpdateProfileDto): Promise<User> {
@@ -61,13 +75,17 @@ export async function getOidcConfig(): Promise<OidcConfig> {
   return api.get("api/auth/oidc/config").json<OidcConfig>();
 }
 
-export async function exchangeOidcCode(code: string): Promise<OidcExchangeResponse> {
+export async function exchangeOidcCode(
+  code: string,
+): Promise<OidcExchangeResponse> {
   return api
     .post("api/auth/oidc/exchange", { json: { code } })
     .json<OidcExchangeResponse>();
 }
 
-export async function revokeRefreshToken(refreshToken?: string | null): Promise<void> {
+export async function revokeRefreshToken(
+  refreshToken?: string | null,
+): Promise<void> {
   if (!refreshToken) return;
   return api.post("api/auth/logout", { json: { refreshToken } }).json<void>();
 }

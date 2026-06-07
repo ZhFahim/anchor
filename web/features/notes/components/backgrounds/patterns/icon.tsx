@@ -1,4 +1,4 @@
-import { ShoppingBag, Music, Plane, Code } from "lucide-react";
+import { Code, Music, Plane, ShoppingBag } from "lucide-react";
 
 // Icon pattern: spacing = 60px, fontSize = 24px
 export function IconPattern({
@@ -32,13 +32,14 @@ export function IconPattern({
           style={{
             left: `${x}px`,
             top: `${y}px`,
-            transform: `translate(-50%, -50%) ${rotation !== 0 ? `rotate(${rotation * (180 / Math.PI)}deg)` : ""
-              }`,
+            transform: `translate(-50%, -50%) ${
+              rotation !== 0 ? `rotate(${rotation * (180 / Math.PI)}deg)` : ""
+            }`,
             color,
           }}
         >
           <Icon size={iconSize} className="[&_*]:stroke-current" />
-        </div>
+        </div>,
       );
     }
   }

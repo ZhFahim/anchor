@@ -1,5 +1,14 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 import type { LinkRange, QuillDelta, QuillInstance } from "@/features/notes";
 import {
   createChecklistMoveDelta,
@@ -14,15 +23,6 @@ import {
   stringifyDelta,
 } from "@/features/notes";
 import { usePreferencesStore } from "@/features/preferences";
-import dynamic from "next/dynamic";
-import {
-  forwardRef,
-  useCallback,
-  useEffect,
-  useImperativeHandle,
-  useRef,
-  useState,
-} from "react";
 import { LinkBubble } from "./link-bubble";
 import { LinkDialog } from "./link-dialog";
 import { QuillToolbar } from "./quill-toolbar";
@@ -30,7 +30,7 @@ import { QuillToolbar } from "./quill-toolbar";
 // Dynamic import for SSR compatibility
 const ReactQuill = dynamic(() => import("react-quill-new"), {
   ssr: false,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: react-quill-new's dynamic() wrapper drops the ref/prop types at this boundary
 }) as any;
 
 function pasteAsLink(
@@ -76,8 +76,7 @@ export const RichTextEditor = forwardRef<
     },
     ref,
   ) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- ReactQuill ref type
-    const quillRef = useRef<any>(null);
+    const quillRef = useRef<{ getEditor: () => QuillInstance }>(null);
     const quillInstanceRef = useRef<QuillInstance | null>(null);
     const [editorContainerEl, setEditorContainerEl] =
       useState<HTMLDivElement | null>(null);
@@ -126,8 +125,7 @@ export const RichTextEditor = forwardRef<
         _html: string,
         changeDelta: unknown,
         source: "user" | "api" | "silent" | string,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- react-quill editor type
-        editor: any,
+        editor: QuillInstance,
       ) => {
         // Ignore non-user changes (hydration, API updates)
         if (source !== "user" || readOnly) return;
@@ -231,8 +229,9 @@ export const RichTextEditor = forwardRef<
           editingRange: { start: existing.start, length: existing.length },
         }));
       } else {
-        const selectedText =
-          sel && sel.length ? (quill.getText(sel.index, sel.length) ?? "") : "";
+        const selectedText = sel?.length
+          ? (quill.getText(sel.index, sel.length) ?? "")
+          : "";
         const selectionIsUrl = isLikelyUrl(selectedText);
         setLinkDialogState((s) => ({
           open: true,

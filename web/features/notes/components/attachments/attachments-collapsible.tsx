@@ -1,23 +1,27 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState, useCallback } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ChevronDown, Paperclip, Plus } from "lucide-react";
+import { useCallback, useState } from "react";
 import { toast } from "sonner";
-import { Paperclip, ChevronDown, Plus } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
-  getNoteAttachments,
-  uploadAttachment,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
+import { cn } from "@/lib/utils";
+import {
   deleteAttachment,
+  getNoteAttachments,
   reorderAttachments,
+  uploadAttachment,
 } from "../../api";
-import type { NoteAttachment } from "../../types";
 import { useAttachmentBlob } from "../../hooks";
+import type { NoteAttachment } from "../../types";
 import { AttachmentUploadZone } from "./attachment-upload-zone";
-import { ImageAttachmentGrid } from "./image-attachment-grid";
 import { AudioAttachmentList } from "./audio-attachment-list";
+import { ImageAttachmentGrid } from "./image-attachment-grid";
 
 interface AttachmentsCollapsibleProps {
   noteId?: string;
@@ -38,8 +42,9 @@ export function AttachmentsCollapsible({
     (attachment: NoteAttachment) =>
       canUpload &&
       (isOwner ||
-        (currentUserId != null && attachment.uploadedByUserId === currentUserId)),
-    [canUpload, isOwner, currentUserId]
+        (currentUserId != null &&
+          attachment.uploadedByUserId === currentUserId)),
+    [canUpload, isOwner, currentUserId],
   );
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
@@ -67,13 +72,17 @@ export function AttachmentsCollapsible({
   });
 
   const reorderMutation = useMutation({
-    mutationFn: (orderedIds: string[]) => reorderAttachments(noteId!, orderedIds),
+    mutationFn: (orderedIds: string[]) =>
+      reorderAttachments(noteId!, orderedIds),
     onMutate: async (orderedIds) => {
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: ["attachments", noteId] });
 
       // Snapshot the previous value
-      const previousAttachments = queryClient.getQueryData<NoteAttachment[]>(["attachments", noteId]);
+      const previousAttachments = queryClient.getQueryData<NoteAttachment[]>([
+        "attachments",
+        noteId,
+      ]);
 
       // Optimistically update to the new order
       if (previousAttachments) {
@@ -88,7 +97,10 @@ export function AttachmentsCollapsible({
     onError: (_err, _orderedIds, context) => {
       // Roll back to the previous value on error
       if (context?.previousAttachments) {
-        queryClient.setQueryData(["attachments", noteId], context.previousAttachments);
+        queryClient.setQueryData(
+          ["attachments", noteId],
+          context.previousAttachments,
+        );
       }
       toast.error("Failed to reorder attachments");
     },
@@ -105,7 +117,7 @@ export function AttachmentsCollapsible({
         setDeleteTarget(attachment);
       }
     },
-    [attachments]
+    [attachments],
   );
 
   const handleDeleteConfirm = useCallback(() => {
@@ -128,7 +140,9 @@ export function AttachmentsCollapsible({
 
       const count = files.length;
       const loadingMessage =
-        count === 1 ? `Uploading ${files[0].name}...` : `Uploading ${count} files...`;
+        count === 1
+          ? `Uploading ${files[0].name}...`
+          : `Uploading ${count} files...`;
 
       toast.promise(
         (async () => {
@@ -138,14 +152,18 @@ export function AttachmentsCollapsible({
           }
 
           const invalidate = () => {
-            queryClient.invalidateQueries({ queryKey: ["attachments", activeNoteId] });
+            queryClient.invalidateQueries({
+              queryKey: ["attachments", activeNoteId],
+            });
             queryClient.invalidateQueries({ queryKey: ["notes"] });
           };
 
           const results = await Promise.allSettled(
-            files.map((file) => uploadAttachment(activeNoteId, file))
+            files.map((file) => uploadAttachment(activeNoteId, file)),
           );
-          const succeeded = results.filter((r) => r.status === "fulfilled").length;
+          const succeeded = results.filter(
+            (r) => r.status === "fulfilled",
+          ).length;
           const failed = results.filter((r) => r.status === "rejected").length;
 
           invalidate();
@@ -170,11 +188,12 @@ export function AttachmentsCollapsible({
         {
           loading: loadingMessage,
           success: (msg) => msg,
-          error: (err) => (err instanceof Error ? err.message : "Upload failed"),
-        }
+          error: (err) =>
+            err instanceof Error ? err.message : "Upload failed",
+        },
       );
     },
-    [noteId, onEnsureNoteId, queryClient]
+    [noteId, onEnsureNoteId, queryClient],
   );
 
   const imageAttachments = attachments.filter((a) => a.type === "image");
@@ -182,7 +201,7 @@ export function AttachmentsCollapsible({
   const hasAttachments = attachments.length > 0;
   const previewImages = imageAttachments.slice(0, 4);
   const remainingCount =
-    (imageAttachments.length - previewImages.length) + audioAttachments.length;
+    imageAttachments.length - previewImages.length + audioAttachments.length;
 
   // Don't render anything if no attachments and can't upload
   if (!hasAttachments && !canUpload) return null;
@@ -192,10 +211,12 @@ export function AttachmentsCollapsible({
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <CollapsibleTrigger asChild>
           <button
+            type="button"
             className={cn(
               "w-full flex items-center gap-3 py-2.5 px-3 rounded-md transition-colors",
               "hover:bg-muted/50 group text-left",
-              !hasAttachments && "mx-0 justify-center border-2 border-dashed border-border/50 hover:border-border/80 py-3"
+              !hasAttachments &&
+                "mx-0 justify-center border-2 border-dashed border-border/50 hover:border-border/80 py-3",
             )}
           >
             {hasAttachments ? (
@@ -215,29 +236,38 @@ export function AttachmentsCollapsible({
 
                 {/* Count text */}
                 <span className="text-sm text-muted-foreground/80">
-                  {attachments.length} {attachments.length === 1 ? "attachment" : "attachments"}
+                  {attachments.length}{" "}
+                  {attachments.length === 1 ? "attachment" : "attachments"}
                   {remainingCount > 0 && previewImages.length > 0 && (
-                    <span className="text-muted-foreground/50"> (+{remainingCount} more)</span>
+                    <span className="text-muted-foreground/50">
+                      {" "}
+                      (+{remainingCount} more)
+                    </span>
                   )}
                 </span>
 
                 <ChevronDown
                   className={cn(
                     "h-4 w-4 text-muted-foreground/60 ml-auto transition-transform duration-200",
-                    isOpen && "rotate-180"
+                    isOpen && "rotate-180",
                   )}
                 />
               </>
             ) : (
               <>
                 <Plus className="h-4 w-4 text-muted-foreground/70" />
-                <span className="text-sm text-muted-foreground/70">Add attachments</span>
+                <span className="text-sm text-muted-foreground/70">
+                  Add attachments
+                </span>
               </>
             )}
           </button>
         </CollapsibleTrigger>
 
-        <CollapsibleContent forceMount className={cn("pt-3", !isOpen && "hidden")}>
+        <CollapsibleContent
+          forceMount
+          className={cn("pt-3", !isOpen && "hidden")}
+        >
           {canUpload && <AttachmentUploadZone onFiles={handleFiles} />}
 
           {imageAttachments.length > 0 && (
@@ -305,11 +335,7 @@ function ThumbnailPreview({
       {isLoading ? (
         <div className="w-full h-full animate-pulse bg-muted-foreground/10" />
       ) : blobUrl ? (
-        <img
-          src={blobUrl}
-          alt=""
-          className="w-full h-full object-cover"
-        />
+        <img src={blobUrl} alt="" className="w-full h-full object-cover" />
       ) : (
         <div className="w-full h-full bg-muted-foreground/10" />
       )}

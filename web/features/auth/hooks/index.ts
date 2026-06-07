@@ -1,2 +1,2 @@
 export { useAuth } from "./use-auth";
-export { useOidcConfig, useOidcLogin, useOidcCallback } from "./use-oidc";
+export { useOidcCallback, useOidcConfig, useOidcLogin } from "./use-oidc";

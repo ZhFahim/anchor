@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { type ReactNode, useEffect } from "react";
 import { useAuth } from "@/features/auth";
 
 interface AdminGuardProps {
@@ -42,4 +42,3 @@ export function AdminGuard({ children }: AdminGuardProps) {
 
   return <>{children}</>;
 }
-

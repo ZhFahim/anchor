@@ -1,5 +1,7 @@
 "use client";
 
+import { Globe, Link as LinkIcon, Type } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,8 +12,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { isLikelyUrl } from "@/features/notes";
-import { Globe, Link as LinkIcon, Type } from "lucide-react";
-import { useEffect, useState } from "react";
 
 export interface LinkDialogProps {
   open: boolean;

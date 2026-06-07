@@ -4,8 +4,8 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ImageAttachmentItem } from "./image-attachment-item";
 import type { NoteAttachment } from "../../types";
+import { ImageAttachmentItem } from "./image-attachment-item";
 
 interface SortableImageItemProps {
   noteId: string;
@@ -40,10 +40,7 @@ export function SortableImageItem({
     <div
       ref={setNodeRef}
       style={style}
-      className={cn(
-        "relative group/sortable",
-        isDragging && "z-50"
-      )}
+      className={cn("relative group/sortable", isDragging && "z-50")}
     >
       {isDragging ? (
         // Placeholder shown in the original position while dragging
@@ -65,7 +62,7 @@ export function SortableImageItem({
               className={cn(
                 "absolute top-2 left-2 p-1 rounded-full cursor-grab active:cursor-grabbing",
                 "bg-black/50 text-white",
-                "opacity-0 group-hover/sortable:opacity-100 transition-opacity duration-200"
+                "opacity-0 group-hover/sortable:opacity-100 transition-opacity duration-200",
               )}
             >
               <GripVertical className="h-3.5 w-3.5" />

@@ -29,7 +29,7 @@ import { AuthGuard } from '../../auth/auth.guard';
 export class NoteAttachmentsController {
   constructor(
     private readonly noteAttachmentsService: NoteAttachmentsService,
-  ) { }
+  ) {}
 
   @Post()
   @UseInterceptors(
@@ -47,10 +47,7 @@ export class NoteAttachmentsController {
   }
 
   @Get()
-  findAll(
-    @CurrentUser('id') userId: string,
-    @Param('noteId') noteId: string,
-  ) {
+  findAll(@CurrentUser('id') userId: string, @Param('noteId') noteId: string) {
     return this.noteAttachmentsService.findAll(userId, noteId);
   }
 

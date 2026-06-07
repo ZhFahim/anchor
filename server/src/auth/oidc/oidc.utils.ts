@@ -3,14 +3,19 @@ import { HttpException } from '@nestjs/common';
 /**
  * Extract user-facing error message from OIDC related errors.
  */
-export function getErrorMessage(error: unknown, fallback = 'An unexpected error occurred'): string {
+export function getErrorMessage(
+  error: unknown,
+  fallback = 'An unexpected error occurred',
+): string {
   if (error instanceof HttpException) {
     const response = error.getResponse();
     const msg =
       typeof response === 'string'
         ? response
         : (response as { message?: string | string[] })?.message;
-    return Array.isArray(msg) ? msg.join(', ') : (msg ?? error.message) ?? fallback;
+    return Array.isArray(msg)
+      ? msg.join(', ')
+      : (msg ?? error.message ?? fallback);
   }
 
   // OAuth/OIDC provider errors

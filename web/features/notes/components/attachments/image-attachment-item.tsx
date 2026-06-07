@@ -1,12 +1,17 @@
 "use client";
 
+import { AlertCircle, Download, RefreshCw, Trash2, X } from "lucide-react";
 import { useState } from "react";
-import { Trash2, X, AlertCircle, RefreshCw, Download } from "lucide-react";
-import { Dialog, DialogContent, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 import { useAttachmentBlob } from "../../hooks";
 import type { NoteAttachment } from "../../types";
-import { cn } from "@/lib/utils";
 
 interface ImageAttachmentItemProps {
   noteId: string;
@@ -23,7 +28,7 @@ export function ImageAttachmentItem({
 }: ImageAttachmentItemProps) {
   const { blobUrl, isLoading, error, retry } = useAttachmentBlob(
     noteId,
-    attachment.id
+    attachment.id,
   );
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
@@ -39,7 +44,7 @@ export function ImageAttachmentItem({
 
   const truncatedName =
     attachment.originalFilename.length > 40
-      ? attachment.originalFilename.slice(0, 37) + "..."
+      ? `${attachment.originalFilename.slice(0, 37)}...`
       : attachment.originalFilename;
 
   return (
@@ -60,6 +65,7 @@ export function ImageAttachmentItem({
               Failed to load
             </span>
             <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 retry();
@@ -76,7 +82,7 @@ export function ImageAttachmentItem({
             alt={attachment.originalFilename}
             className={cn(
               "w-full h-full object-cover transition-transform duration-200",
-              "group-hover:scale-105"
+              "group-hover:scale-105",
             )}
           />
         )}
@@ -88,13 +94,14 @@ export function ImageAttachmentItem({
             <div
               className={cn(
                 "absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent",
-                "opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                "opacity-0 group-hover:opacity-100 transition-opacity duration-200",
               )}
             />
 
             {/* Delete button - top right */}
             {canDelete && (
               <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   onDelete(attachment.id);
@@ -103,7 +110,7 @@ export function ImageAttachmentItem({
                   "absolute top-2 right-2 p-1.5 rounded-full",
                   "bg-black/50 hover:bg-red-500 text-white",
                   "opacity-0 group-hover:opacity-100 transition-all duration-200",
-                  "hover:scale-110"
+                  "hover:scale-110",
                 )}
               >
                 <Trash2 className="h-3.5 w-3.5" />
@@ -119,7 +126,7 @@ export function ImageAttachmentItem({
           showCloseButton={false}
           className={cn(
             "max-w-5xl w-full p-0 gap-0 overflow-hidden",
-            "bg-background/95 backdrop-blur-sm border-border/50"
+            "bg-background/95 backdrop-blur-sm border-border/50",
           )}
         >
           {/* Header */}

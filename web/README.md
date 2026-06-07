@@ -40,29 +40,34 @@ A modern, feature-rich note-taking web application built with Next.js, React, an
 ### Installation
 
 1. Clone the repository:
+
 ```bash
 git clone <repository-url>
 cd anchor/web
 ```
 
 2. Start the backend (required):
-Ensure you have a database and backend running. From the project root:
+   Ensure you have a database and backend running. From the project root:
+
 ```bash
 docker compose -f docker-compose.dev.yml up -d
 ```
 
 3. Install dependencies:
+
 ```bash
 pnpm install
 ```
 
 3. Set up environment variables (optional):
-The web app uses Next.js rewrites to proxy API requests. For development, you can optionally set:
+   The web app uses Next.js rewrites to proxy API requests. For development, you can optionally set:
+
 ```bash
 # Create .env.local if needed
 ```
 
 Edit `.env.local` (if using a custom server URL):
+
 ```env
 SERVER_URL=http://localhost:3001
 ```
@@ -70,6 +75,7 @@ SERVER_URL=http://localhost:3001
 **Note**: By default, the app proxies `/api/*` requests to `http://127.0.0.1:3001/api/*` via Next.js rewrites. The `SERVER_URL` environment variable is only needed if your backend runs on a different host/port.
 
 4. Run the development server:
+
 ```bash
 pnpm dev
 ```
@@ -121,8 +127,8 @@ web/
 
 ## Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
+| Variable     | Description                                 | Default                 |
+| ------------ | ------------------------------------------- | ----------------------- |
 | `SERVER_URL` | Backend API URL (used for Next.js rewrites) | `http://127.0.0.1:3001` |
 
 **Note**: The web app uses Next.js rewrites to proxy `/api/*` requests to the backend server. Client-side code makes requests to `/api/*` which are automatically rewritten to the backend. The `SERVER_URL` environment variable is only needed if your backend runs on a different host/port than the default.
@@ -140,10 +146,19 @@ web/
 4. Add `store.ts` if state management is needed
 5. Export everything through `index.ts`
 
+### Linting & Formatting
+
+This project uses [Biome](https://biomejs.dev/) for linting and formatting.
+
+```bash
+pnpm check       # lint + format + imports, read-only
+pnpm check:fix   # fix everything (safe lint fixes + format + import sort)
+```
+
 ## Contributing
 
 1. Create a feature branch
 2. Make your changes
 3. Ensure the build passes: `pnpm build`
-4. Run linting: `pnpm lint`
+4. Run linting: `pnpm check` (auto-fix with `pnpm check:fix`)
 5. Submit a pull request

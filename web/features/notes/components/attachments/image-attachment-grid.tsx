@@ -1,27 +1,27 @@
 "use client";
 
-import { useState } from "react";
 import {
-  DndContext,
   closestCenter,
+  DndContext,
+  type DragEndEvent,
+  DragOverlay,
+  type DragStartEvent,
   KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
-  DragEndEvent,
-  DragStartEvent,
-  DragOverlay,
 } from "@dnd-kit/core";
 import {
   arrayMove,
+  rectSortingStrategy,
   SortableContext,
   sortableKeyboardCoordinates,
-  rectSortingStrategy,
 } from "@dnd-kit/sortable";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import type { NoteAttachment } from "../../types";
-import { SortableImageItem } from "./sortable-image-item";
 import { ImageAttachmentItem } from "./image-attachment-item";
+import { SortableImageItem } from "./sortable-image-item";
 
 interface ImageAttachmentGridProps {
   noteId: string;
@@ -51,7 +51,7 @@ export function ImageAttachmentGrid({
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    })
+    }),
   );
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -79,7 +79,7 @@ export function ImageAttachmentGrid({
     "grid gap-2",
     count === 1 && "grid-cols-1 max-w-sm",
     count === 2 && "grid-cols-2 max-w-lg",
-    count >= 3 && "grid-cols-2 md:grid-cols-3"
+    count >= 3 && "grid-cols-2 md:grid-cols-3",
   );
 
   const content = (

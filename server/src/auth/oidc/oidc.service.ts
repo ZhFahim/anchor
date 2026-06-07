@@ -30,7 +30,7 @@ export class OidcService {
     private readonly oidcClientService: OidcClientService,
     private readonly oidcStateService: OidcStateService,
     private readonly oidcUserService: OidcUserService,
-  ) { }
+  ) {}
 
   /**
    * Get authorization URL to redirect user to OIDC provider
@@ -65,8 +65,6 @@ export class OidcService {
     callbackUrl: string,
     stateFromProvider: string,
   ): Promise<OidcAuthResult> {
-    const oidcConfig = await this.oidcConfigService.getConfig();
-
     // Retrieve and validate state
     const storedState = this.oidcStateService.getState(stateFromProvider);
     if (!storedState) {
@@ -93,9 +91,9 @@ export class OidcService {
       ).claims?.()?.sub;
       const userinfo = tokenResponse.access_token
         ? await this.oidcClientService.fetchUserInfo(
-          tokenResponse.access_token,
-          expectedSubject,
-        )
+            tokenResponse.access_token,
+            expectedSubject,
+          )
         : null;
 
       // Extract user claims from token response and userinfo
@@ -112,7 +110,10 @@ export class OidcService {
       }
 
       // Generate access and refresh tokens
-      const tokens = await this.authService.createTokenPair(user.id, user.email);
+      const tokens = await this.authService.createTokenPair(
+        user.id,
+        user.email,
+      );
 
       return {
         access_token: tokens.access_token,
@@ -144,7 +145,8 @@ export class OidcService {
         error,
         'Failed to process OIDC callback. Please try again from the login page.',
       );
-      const isProviderError = !(error instanceof Error) || (error as { cause?: unknown }).cause;
+      const isProviderError =
+        !(error instanceof Error) || (error as { cause?: unknown }).cause;
       throw new InternalServerErrorException(
         isProviderError ? `OIDC provider error: ${msg}` : msg,
       );

@@ -1,20 +1,47 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { Lock, Loader2, Eye, EyeOff, User, Upload, X, ListChecks, Info, KeyRound, Copy, RotateCw, Trash2 } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  Copy,
+  Eye,
+  EyeOff,
+  Info,
+  KeyRound,
+  Loader2,
+  Lock,
+  RotateCw,
+  Trash2,
+  Upload,
+  User,
+  X,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { changePassword, updateProfile, uploadProfileImage, removeProfileImage, getApiToken, regenerateApiToken, revokeApiToken } from "@/features/auth/api";
+import {
+  changePassword,
+  getApiToken,
+  regenerateApiToken,
+  removeProfileImage,
+  revokeApiToken,
+  updateProfile,
+  uploadProfileImage,
+} from "@/features/auth/api";
 import { useAuthStore } from "@/features/auth/store";
 import { usePreferencesStore } from "@/features/preferences";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import packageJson from "../../../package.json";
 
 export default function SettingsPage() {
@@ -26,7 +53,7 @@ export default function SettingsPage() {
   // Profile state
   const [name, setName] = useState(user?.name ?? "");
   const [profileImagePreview, setProfileImagePreview] = useState<string | null>(
-    user?.profileImage || null
+    user?.profileImage || null,
   );
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [shouldRemoveImage, setShouldRemoveImage] = useState(false);
@@ -43,7 +70,7 @@ export default function SettingsPage() {
     if (user?.name !== undefined && user.name !== name) {
       setName(user.name);
     }
-  }, [user?.name]);
+  }, [user?.name, name]);
 
   // Password state
   const [currentPassword, setCurrentPassword] = useState("");
@@ -52,9 +79,11 @@ export default function SettingsPage() {
   const [currentPasswordError, setCurrentPasswordError] = useState("");
   const [newPasswordError, setNewPasswordError] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
-  const [isCurrentPasswordVisible, setIsCurrentPasswordVisible] = useState(false);
+  const [isCurrentPasswordVisible, setIsCurrentPasswordVisible] =
+    useState(false);
   const [isNewPasswordVisible, setIsNewPasswordVisible] = useState(false);
-  const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
+  const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] =
+    useState(false);
   const [isApiTokenVisible, setIsApiTokenVisible] = useState(false);
   const [regenerateDialogOpen, setRegenerateDialogOpen] = useState(false);
   const [revokeDialogOpen, setRevokeDialogOpen] = useState(false);
@@ -162,12 +191,14 @@ export default function SettingsPage() {
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const promises: Promise<any>[] = [];
+    const promises: Promise<unknown>[] = [];
 
     // Update name only if it changed and is not empty
     const trimmedName = name.trim();
     if (trimmedName !== (user?.name || "")) {
-      promises.push(updateProfileMutation.mutateAsync({ name: trimmedName || null }));
+      promises.push(
+        updateProfileMutation.mutateAsync({ name: trimmedName || null }),
+      );
     }
 
     // Upload image if selected (takes precedence over removal)
@@ -203,8 +234,10 @@ export default function SettingsPage() {
       const errorMessage = error.message || "Failed to change password";
 
       // Map API errors to appropriate fields
-      if (errorMessage.toLowerCase().includes("current password") ||
-        errorMessage.toLowerCase().includes("incorrect")) {
+      if (
+        errorMessage.toLowerCase().includes("current password") ||
+        errorMessage.toLowerCase().includes("incorrect")
+      ) {
         setCurrentPasswordError(errorMessage);
         setNewPasswordError("");
         setConfirmPasswordError("");
@@ -243,7 +276,9 @@ export default function SettingsPage() {
     });
   };
 
-  const handleCurrentPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCurrentPasswordChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     setCurrentPassword(e.target.value);
     if (currentPasswordError) {
       setCurrentPasswordError("");
@@ -266,7 +301,9 @@ export default function SettingsPage() {
     }
   };
 
-  const handleConfirmPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleConfirmPasswordChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     setConfirmPassword(e.target.value);
     if (confirmPasswordError) {
       setConfirmPasswordError("");
@@ -276,7 +313,11 @@ export default function SettingsPage() {
   const handleConfirmPasswordBlur = () => {
     if (confirmPassword && confirmPassword.length < 8) {
       setConfirmPasswordError("Password must be at least 8 characters");
-    } else if (confirmPassword && newPassword && confirmPassword !== newPassword) {
+    } else if (
+      confirmPassword &&
+      newPassword &&
+      confirmPassword !== newPassword
+    ) {
       setConfirmPasswordError("Passwords do not match");
     }
   };
@@ -356,8 +397,13 @@ export default function SettingsPage() {
               <Label>Profile Image</Label>
               <div className="flex items-center gap-4">
                 <Avatar className="h-20 w-20">
-                  <AvatarImage src={profileImagePreview || undefined} alt={user?.name ?? user?.email ?? ""} />
-                  <AvatarFallback className="text-lg">{getInitials()}</AvatarFallback>
+                  <AvatarImage
+                    src={profileImagePreview || undefined}
+                    alt={user?.name ?? user?.email ?? ""}
+                  />
+                  <AvatarFallback className="text-lg">
+                    {getInitials()}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col gap-2">
                   <input
@@ -417,9 +463,15 @@ export default function SettingsPage() {
             <Button
               type="submit"
               className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
-              disabled={updateProfileMutation.isPending || uploadImageMutation.isPending || removeImageMutation.isPending}
+              disabled={
+                updateProfileMutation.isPending ||
+                uploadImageMutation.isPending ||
+                removeImageMutation.isPending
+              }
             >
-              {updateProfileMutation.isPending || uploadImageMutation.isPending || removeImageMutation.isPending ? (
+              {updateProfileMutation.isPending ||
+              uploadImageMutation.isPending ||
+              removeImageMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Saving...
@@ -448,7 +500,8 @@ export default function SettingsPage() {
                 Sort checklist items
               </Label>
               <p className="text-sm text-muted-foreground">
-                Automatically move checked checklist items to the bottom of the list
+                Automatically move checked checklist items to the bottom of the
+                list
               </p>
             </div>
             <Switch
@@ -480,10 +533,12 @@ export default function SettingsPage() {
             <p className="text-sm text-destructive">
               Failed to load API token. Try refreshing the page.
             </p>
-          ) : apiTokenResponse?.apiToken === null || apiTokenResponse?.apiToken === undefined ? (
+          ) : apiTokenResponse?.apiToken === null ||
+            apiTokenResponse?.apiToken === undefined ? (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                No API token. Generate one to allow external services to access your notes.
+                No API token. Generate one to allow external services to access
+                your notes.
               </p>
               <Button
                 type="button"
@@ -545,14 +600,18 @@ export default function SettingsPage() {
               </div>
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <p className="text-xs text-muted-foreground">
-                  Regenerating will invalidate your current token immediately. Revoking disables external access.
+                  Regenerating will invalidate your current token immediately.
+                  Revoking disables external access.
                 </p>
                 <div className="flex items-center gap-2">
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => setRegenerateDialogOpen(true)}
-                    disabled={regenerateApiTokenMutation.isPending || revokeApiTokenMutation.isPending}
+                    disabled={
+                      regenerateApiTokenMutation.isPending ||
+                      revokeApiTokenMutation.isPending
+                    }
                     className="flex items-center gap-2"
                   >
                     <RotateCw className="h-4 w-4" />
@@ -562,7 +621,10 @@ export default function SettingsPage() {
                     type="button"
                     variant="outline"
                     onClick={() => setRevokeDialogOpen(true)}
-                    disabled={regenerateApiTokenMutation.isPending || revokeApiTokenMutation.isPending}
+                    disabled={
+                      regenerateApiTokenMutation.isPending ||
+                      revokeApiTokenMutation.isPending
+                    }
                     className="flex items-center gap-2 text-destructive hover:text-destructive"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -621,7 +683,8 @@ export default function SettingsPage() {
                   onChange={handleCurrentPasswordChange}
                   className={cn(
                     "pl-10 pr-10 h-12 bg-background/50",
-                    currentPasswordError && "border-destructive focus:border-destructive focus:ring-destructive/20"
+                    currentPasswordError &&
+                      "border-destructive focus:border-destructive focus:ring-destructive/20",
                   )}
                   aria-invalid={!!currentPasswordError}
                   required
@@ -629,7 +692,9 @@ export default function SettingsPage() {
                 {currentPassword && (
                   <button
                     type="button"
-                    onClick={() => setIsCurrentPasswordVisible(!isCurrentPasswordVisible)}
+                    onClick={() =>
+                      setIsCurrentPasswordVisible(!isCurrentPasswordVisible)
+                    }
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                   >
                     {isCurrentPasswordVisible ? (
@@ -659,7 +724,8 @@ export default function SettingsPage() {
                   onBlur={handleNewPasswordBlur}
                   className={cn(
                     "pl-10 pr-10 h-12 bg-background/50",
-                    newPasswordError && "border-destructive focus:border-destructive focus:ring-destructive/20"
+                    newPasswordError &&
+                      "border-destructive focus:border-destructive focus:ring-destructive/20",
                   )}
                   aria-invalid={!!newPasswordError}
                   required
@@ -667,7 +733,9 @@ export default function SettingsPage() {
                 {newPassword && (
                   <button
                     type="button"
-                    onClick={() => setIsNewPasswordVisible(!isNewPasswordVisible)}
+                    onClick={() =>
+                      setIsNewPasswordVisible(!isNewPasswordVisible)
+                    }
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                   >
                     {isNewPasswordVisible ? (
@@ -701,7 +769,8 @@ export default function SettingsPage() {
                   onBlur={handleConfirmPasswordBlur}
                   className={cn(
                     "pl-10 pr-10 h-12 bg-background/50",
-                    confirmPasswordError && "border-destructive focus:border-destructive focus:ring-destructive/20"
+                    confirmPasswordError &&
+                      "border-destructive focus:border-destructive focus:ring-destructive/20",
                   )}
                   aria-invalid={!!confirmPasswordError}
                   required
@@ -709,7 +778,9 @@ export default function SettingsPage() {
                 {confirmPassword && (
                   <button
                     type="button"
-                    onClick={() => setIsConfirmPasswordVisible(!isConfirmPasswordVisible)}
+                    onClick={() =>
+                      setIsConfirmPasswordVisible(!isConfirmPasswordVisible)
+                    }
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                   >
                     {isConfirmPasswordVisible ? (

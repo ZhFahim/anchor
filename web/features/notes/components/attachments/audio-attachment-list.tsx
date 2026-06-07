@@ -18,7 +18,9 @@ export function AudioAttachmentList({
 }: AudioAttachmentListProps) {
   return (
     <div className="mb-4">
-      <p className="text-xs text-muted-foreground font-medium mb-2 uppercase tracking-wide">Audio</p>
+      <p className="text-xs text-muted-foreground font-medium mb-2 uppercase tracking-wide">
+        Audio
+      </p>
       <div className="flex flex-col gap-2">
         {attachments.map((attachment) => (
           <AudioAttachmentPlayer

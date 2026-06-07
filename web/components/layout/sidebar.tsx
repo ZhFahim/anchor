@@ -1,47 +1,32 @@
 "use client";
 
-import { useState } from "react";
-import Image from "next/image";
-import Link from "next/link";
-import { usePathname, useSearchParams, useRouter } from "next/navigation";
-import { cn } from "@/lib/utils";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  FileText,
-  Trash2,
+  AlertTriangle,
   Archive,
-  Tag,
-  LogOut,
-  Moon,
-  Sun,
-  Monitor,
-  ChevronRight,
   ChevronLeft,
+  ChevronRight,
+  FileText,
+  LogOut,
   LucideHash,
-  Plus,
-  User,
-  UserCog,
+  Monitor,
+  Moon,
   MoreVertical,
   Pencil,
-  AlertTriangle,
+  Plus,
   Settings,
+  Sun,
+  Tag,
+  Trash2,
+  UserCog,
 } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useTheme } from "next-themes";
+import { useState } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-  TooltipProvider,
-} from "@/components/ui/tooltip";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-  DropdownMenuLabel,
-} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -50,12 +35,30 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { useTheme } from "next-themes";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useAuth } from "@/features/auth";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getTags, updateTag, deleteTag, type Tag as TagType } from "@/features/tags";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import {
+  deleteTag,
+  getTags,
+  type Tag as TagType,
+  updateTag,
+} from "@/features/tags";
+import { cn } from "@/lib/utils";
 
 interface SidebarProps {
   className?: string;
@@ -132,9 +135,16 @@ export function Sidebar({
   };
 
   const handleRenameSubmit = () => {
-    if (selectedTag && renameValue.trim() && renameValue.trim() !== selectedTag.name) {
+    if (
+      selectedTag &&
+      renameValue.trim() &&
+      renameValue.trim() !== selectedTag.name
+    ) {
       setRenameError(null);
-      updateTagMutation.mutate({ id: selectedTag.id, name: renameValue.trim() });
+      updateTagMutation.mutate({
+        id: selectedTag.id,
+        name: renameValue.trim(),
+      });
     }
   };
 
@@ -195,7 +205,7 @@ export function Sidebar({
         <div
           className={cn(
             "flex h-16 items-center border-b border-sidebar-border transition-all duration-300",
-            isCollapsed ? "justify-center px-2" : "justify-between px-4"
+            isCollapsed ? "justify-center px-2" : "justify-between px-4",
           )}
         >
           <Link
@@ -203,7 +213,7 @@ export function Sidebar({
             onClick={onNavigate}
             className={cn(
               "flex items-center gap-2 transition-colors hover:opacity-80",
-              isCollapsed && "justify-center"
+              isCollapsed && "justify-center",
             )}
           >
             <Image
@@ -273,10 +283,13 @@ export function Sidebar({
                     "hover:border-solid hover:border-accent",
                     "hover:bg-accent hover:text-accent-foreground",
                     "hover:shadow-lg hover:shadow-accent/20",
-                    "active:scale-95"
+                    "active:scale-95",
                   )}
                 >
-                  <Plus className="h-6 w-6 transition-transform duration-300 group-hover:rotate-180" strokeWidth={2} />
+                  <Plus
+                    className="h-6 w-6 transition-transform duration-300 group-hover:rotate-180"
+                    strokeWidth={2}
+                  />
                 </Link>
               </TooltipTrigger>
               <TooltipContent side="right">New Note</TooltipContent>
@@ -296,10 +309,13 @@ export function Sidebar({
                 "hover:border-solid hover:border-accent",
                 "hover:bg-accent hover:text-accent-foreground",
                 "hover:shadow-lg hover:shadow-accent/20",
-                "active:scale-[0.98]"
+                "active:scale-[0.98]",
               )}
             >
-              <Plus className="h-5 w-5 transition-transform duration-300 group-hover:rotate-180" strokeWidth={2} />
+              <Plus
+                className="h-5 w-5 transition-transform duration-300 group-hover:rotate-180"
+                strokeWidth={2}
+              />
               <span>New Note</span>
             </Link>
           )}
@@ -308,9 +324,13 @@ export function Sidebar({
         {/* Middle Content - Navigation and Tags */}
         <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
           {/* Navigation */}
-          <div className={cn("space-y-1", isCollapsed ? "px-2 py-2" : "px-3 py-2")}>
+          <div
+            className={cn("space-y-1", isCollapsed ? "px-2 py-2" : "px-3 py-2")}
+          >
             {navItems.map((item) => {
-              const isActive = pathname === item.href && !(item.href === "/notes" && tagIdParam);
+              const isActive =
+                pathname === item.href &&
+                !(item.href === "/notes" && tagIdParam);
               const NavLink = (
                 <Link
                   key={item.href}
@@ -323,7 +343,7 @@ export function Sidebar({
                       : "gap-3 px-3 py-2.5",
                     isActive
                       ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
                   )}
                   aria-current={isActive ? "page" : undefined}
                 >
@@ -353,7 +373,8 @@ export function Sidebar({
                 <ScrollArea className="flex-1 min-h-0">
                   <div className="space-y-1 px-2 py-2">
                     {tags.map((tag) => {
-                      const isTagActive = pathname === "/notes" && tagIdParam === String(tag.id);
+                      const isTagActive =
+                        pathname === "/notes" && tagIdParam === String(tag.id);
                       const TagLink = (
                         <Link
                           key={tag.id}
@@ -365,7 +386,7 @@ export function Sidebar({
                             "transition-all duration-200",
                             isTagActive
                               ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                              : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                              : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
                           )}
                           aria-current={isTagActive ? "page" : undefined}
                         >
@@ -382,7 +403,9 @@ export function Sidebar({
                             <div className="flex items-center gap-2">
                               <span>{tag.name}</span>
                               {tag._count && (
-                                <span className="text-xs opacity-60">({tag._count.notes})</span>
+                                <span className="text-xs opacity-60">
+                                  ({tag._count.notes})
+                                </span>
                               )}
                             </div>
                           </TooltipContent>
@@ -401,7 +424,9 @@ export function Sidebar({
                     <div className="space-y-1">
                       {tags.map((tag) => {
                         // Active if we are in /notes?tagId=this_tag.id
-                        const isTagActive = pathname === "/notes" && tagIdParam === String(tag.id);
+                        const isTagActive =
+                          pathname === "/notes" &&
+                          tagIdParam === String(tag.id);
                         return (
                           <div
                             key={tag.id}
@@ -409,7 +434,7 @@ export function Sidebar({
                               "group flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition-colors",
                               isTagActive
                                 ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                                : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                                : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
                             )}
                           >
                             <Link
@@ -424,7 +449,9 @@ export function Sidebar({
                                 className="h-3 w-3 flex-shrink-0"
                                 style={{ color: tag.color || "var(--accent)" }}
                               />
-                              <span className="flex-1 truncate">{tag.name}</span>
+                              <span className="flex-1 truncate">
+                                {tag.name}
+                              </span>
                             </Link>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
@@ -433,7 +460,7 @@ export function Sidebar({
                                   size="icon"
                                   className={cn(
                                     "h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity",
-                                    "text-sidebar-foreground/50 hover:text-sidebar-foreground"
+                                    "text-sidebar-foreground/50 hover:text-sidebar-foreground",
                                   )}
                                   onClick={(e) => {
                                     e.preventDefault();
@@ -523,11 +550,22 @@ export function Sidebar({
                       >
                         <Avatar className="h-8 w-8 flex-shrink-0">
                           <AvatarImage
-                            src={user.profileImage ? user.profileImage.startsWith('http') ? user.profileImage : user.profileImage : undefined}
+                            src={
+                              user.profileImage
+                                ? user.profileImage.startsWith("http")
+                                  ? user.profileImage
+                                  : user.profileImage
+                                : undefined
+                            }
                             alt={user.name}
                           />
                           <AvatarFallback className="text-xs">
-                            {user.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)}
+                            {user.name
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")
+                              .toUpperCase()
+                              .slice(0, 2)}
                           </AvatarFallback>
                         </Avatar>
                       </Button>
@@ -543,11 +581,22 @@ export function Sidebar({
                   >
                     <Avatar className="h-8 w-8 flex-shrink-0">
                       <AvatarImage
-                        src={user.profileImage ? user.profileImage.startsWith('http') ? user.profileImage : user.profileImage : undefined}
+                        src={
+                          user.profileImage
+                            ? user.profileImage.startsWith("http")
+                              ? user.profileImage
+                              : user.profileImage
+                            : undefined
+                        }
                         alt={user.name}
                       />
                       <AvatarFallback className="text-xs">
-                        {user.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)}
+                        {user.name
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")
+                          .toUpperCase()
+                          .slice(0, 2)}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0 text-left">
@@ -622,14 +671,13 @@ export function Sidebar({
                   }
                 }}
                 className={cn(
-                  renameError && "border-destructive focus:border-destructive focus:ring-destructive/20"
+                  renameError &&
+                    "border-destructive focus:border-destructive focus:ring-destructive/20",
                 )}
                 autoFocus
               />
               {renameError && (
-                <p className="text-xs text-destructive px-1">
-                  {renameError}
-                </p>
+                <p className="text-xs text-destructive px-1">{renameError}</p>
               )}
             </div>
             <DialogFooter>
@@ -647,7 +695,11 @@ export function Sidebar({
               <Button
                 onClick={handleRenameSubmit}
                 variant={renameError ? "destructive" : "default"}
-                disabled={!renameValue.trim() || renameValue.trim() === selectedTag?.name || updateTagMutation.isPending}
+                disabled={
+                  !renameValue.trim() ||
+                  renameValue.trim() === selectedTag?.name ||
+                  updateTagMutation.isPending
+                }
               >
                 {updateTagMutation.isPending ? "Renaming..." : "Rename"}
               </Button>
@@ -666,7 +718,9 @@ export function Sidebar({
                 <DialogTitle>Delete Tag</DialogTitle>
               </div>
               <DialogDescription>
-                Delete <span className="font-semibold">{selectedTag?.name}</span>? This will remove it from all notes. This action cannot be undone.
+                Delete{" "}
+                <span className="font-semibold">{selectedTag?.name}</span>? This
+                will remove it from all notes. This action cannot be undone.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>

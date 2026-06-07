@@ -1,15 +1,15 @@
 import { api } from "@/lib/api/client";
 import type {
   AdminStats,
-  UsersListResponse,
   AdminUser,
   CreateUserDto,
-  UpdateUserDto,
-  ResetPasswordResponse,
-  RegistrationSettings,
-  UpdateRegistrationModeDto,
   OidcSettings,
+  RegistrationSettings,
+  ResetPasswordResponse,
   UpdateOidcSettingsDto,
+  UpdateRegistrationModeDto,
+  UpdateUserDto,
+  UsersListResponse,
 } from "./types";
 
 export async function getAdminStats(): Promise<AdminStats> {
@@ -18,7 +18,7 @@ export async function getAdminStats(): Promise<AdminStats> {
 
 export async function getUsers(
   skip = 0,
-  take = 50
+  take = 50,
 ): Promise<UsersListResponse> {
   return api
     .get("api/admin/users", {
@@ -27,15 +27,13 @@ export async function getUsers(
     .json<UsersListResponse>();
 }
 
-export async function createUser(
-  data: CreateUserDto
-): Promise<AdminUser> {
+export async function createUser(data: CreateUserDto): Promise<AdminUser> {
   return api.post("api/admin/users", { json: data }).json<AdminUser>();
 }
 
 export async function updateUser(
   id: string,
-  data: UpdateUserDto
+  data: UpdateUserDto,
 ): Promise<AdminUser> {
   return api.patch(`api/admin/users/${id}`, { json: data }).json<AdminUser>();
 }
@@ -46,7 +44,7 @@ export async function deleteUser(id: string): Promise<{ message: string }> {
 
 export async function resetPassword(
   id: string,
-  newPassword?: string
+  newPassword?: string,
 ): Promise<ResetPasswordResponse> {
   return api
     .post(`api/admin/users/${id}/reset-password`, {
@@ -62,7 +60,7 @@ export async function getRegistrationSettings(): Promise<RegistrationSettings> {
 }
 
 export async function updateRegistrationMode(
-  data: UpdateRegistrationModeDto
+  data: UpdateRegistrationModeDto,
 ): Promise<RegistrationSettings> {
   return api
     .patch("api/admin/settings/registration", { json: data })
@@ -86,7 +84,7 @@ export async function getOidcSettings(): Promise<OidcSettings> {
 }
 
 export async function updateOidcSettings(
-  data: UpdateOidcSettingsDto
+  data: UpdateOidcSettingsDto,
 ): Promise<OidcSettings> {
   return api
     .patch("api/admin/settings/oidc", { json: data })

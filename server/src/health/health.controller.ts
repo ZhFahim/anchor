@@ -11,9 +11,11 @@ export class HealthController {
     let version: string | undefined;
     try {
       const packageJsonPath = path.join(process.cwd(), 'package.json');
-      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+      const packageJson = JSON.parse(
+        fs.readFileSync(packageJsonPath, 'utf8'),
+      ) as { version?: string };
       version = packageJson.version;
-    } catch (error) {
+    } catch {
       // Fallback to npm_package_version if package.json read fails
       version = process.env.npm_package_version;
     }

@@ -50,100 +50,100 @@
   --radius: 1rem;
 
   /* Light Theme - matching mobile app */
-  --background: #F0F4F8;
+  --background: #f0f4f8;
   /* Cool Gray/Blue tint */
-  --foreground: #2D3142;
+  --foreground: #2d3142;
   /* Dark Slate */
 
-  --card: #FFFFFF;
-  --card-foreground: #2D3142;
+  --card: #ffffff;
+  --card-foreground: #2d3142;
 
-  --popover: #FFFFFF;
-  --popover-foreground: #2D3142;
+  --popover: #ffffff;
+  --popover-foreground: #2d3142;
 
-  --primary: #2D3142;
+  --primary: #2d3142;
   /* Dark Slate */
-  --primary-foreground: #FFFFFF;
+  --primary-foreground: #ffffff;
 
-  --secondary: #4F5D75;
+  --secondary: #4f5d75;
   /* Slate Blue */
-  --secondary-foreground: #FFFFFF;
+  --secondary-foreground: #ffffff;
 
-  --muted: #E8ECF1;
-  --muted-foreground: #4F5D75;
+  --muted: #e8ecf1;
+  --muted-foreground: #4f5d75;
 
-  --accent: #EF8354;
+  --accent: #ef8354;
   /* Burnt Orange */
-  --accent-foreground: #FFFFFF;
+  --accent-foreground: #ffffff;
 
-  --destructive: #E53E3E;
+  --destructive: #e53e3e;
 
-  --border: #D8DEE6;
-  --input: #D8DEE6;
-  --ring: #EF8354;
+  --border: #d8dee6;
+  --input: #d8dee6;
+  --ring: #ef8354;
 
-  --chart-1: #EF8354;
-  --chart-2: #4F5D75;
-  --chart-3: #2D3142;
-  --chart-4: #6B7A8F;
-  --chart-5: #9CA8B8;
+  --chart-1: #ef8354;
+  --chart-2: #4f5d75;
+  --chart-3: #2d3142;
+  --chart-4: #6b7a8f;
+  --chart-5: #9ca8b8;
 
-  --sidebar: #FFFFFF;
-  --sidebar-foreground: #2D3142;
-  --sidebar-primary: #2D3142;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #F0F4F8;
-  --sidebar-accent-foreground: #2D3142;
-  --sidebar-border: #E8ECF1;
-  --sidebar-ring: #EF8354;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #2d3142;
+  --sidebar-primary: #2d3142;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f0f4f8;
+  --sidebar-accent-foreground: #2d3142;
+  --sidebar-border: #e8ecf1;
+  --sidebar-ring: #ef8354;
 }
 
 .dark {
   /* Dark Theme - matching mobile app */
-  --background: #1C1E26;
+  --background: #1c1e26;
   /* Deep Blue-Black */
-  --foreground: #EAEAEA;
+  --foreground: #eaeaea;
   /* Off-white */
 
-  --card: #262A36;
-  --card-foreground: #EAEAEA;
+  --card: #262a36;
+  --card-foreground: #eaeaea;
 
-  --popover: #262A36;
-  --popover-foreground: #EAEAEA;
+  --popover: #262a36;
+  --popover-foreground: #eaeaea;
 
-  --primary: #EAEAEA;
-  --primary-foreground: #1C1E26;
+  --primary: #eaeaea;
+  --primary-foreground: #1c1e26;
 
-  --secondary: #4F5D75;
-  --secondary-foreground: #EAEAEA;
+  --secondary: #4f5d75;
+  --secondary-foreground: #eaeaea;
 
-  --muted: #2D3142;
-  --muted-foreground: #9CA8B8;
+  --muted: #2d3142;
+  --muted-foreground: #9ca8b8;
 
-  --accent: #EF8354;
+  --accent: #ef8354;
   /* Burnt Orange stays the same */
-  --accent-foreground: #FFFFFF;
+  --accent-foreground: #ffffff;
 
-  --destructive: #FC8181;
+  --destructive: #fc8181;
 
-  --border: #3A3F4B;
-  --input: #3A3F4B;
-  --ring: #EF8354;
+  --border: #3a3f4b;
+  --input: #3a3f4b;
+  --ring: #ef8354;
 
-  --chart-1: #EF8354;
-  --chart-2: #6B7A8F;
-  --chart-3: #9CA8B8;
-  --chart-4: #4F5D75;
-  --chart-5: #2D3142;
+  --chart-1: #ef8354;
+  --chart-2: #6b7a8f;
+  --chart-3: #9ca8b8;
+  --chart-4: #4f5d75;
+  --chart-5: #2d3142;
 
-  --sidebar: #262A36;
-  --sidebar-foreground: #EAEAEA;
-  --sidebar-primary: #EF8354;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #2D3142;
-  --sidebar-accent-foreground: #EAEAEA;
-  --sidebar-border: #3A3F4B;
-  --sidebar-ring: #EF8354;
+  --sidebar: #262a36;
+  --sidebar-foreground: #eaeaea;
+  --sidebar-primary: #ef8354;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #2d3142;
+  --sidebar-accent-foreground: #eaeaea;
+  --sidebar-border: #3a3f4b;
+  --sidebar-ring: #ef8354;
 }
 
 @layer base {
@@ -243,7 +243,17 @@
   border-radius: 4px;
   background: var(--muted);
   color: var(--foreground);
-  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace);
+  font-family: var(
+    --font-mono,
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    "Liberation Mono",
+    "Courier New",
+    monospace
+  );
   font-size: 14px;
   overflow-x: auto;
 }
@@ -251,55 +261,55 @@
 /* ===== Quill Checklist Styling ===== */
 .anchor-quill .ql-editor li[data-list="checked"],
 .anchor-quill .ql-editor li[data-list="unchecked"] {
-  padding-left: 28px !important;
+  padding-left: 28px;
   list-style: none;
   position: relative;
 }
 
 /* Style Quill's checkbox element (span.ql-ui) */
-.anchor-quill .ql-editor li[data-list="checked"]>.ql-ui,
-.anchor-quill .ql-editor li[data-list="unchecked"]>.ql-ui {
+.anchor-quill .ql-editor li[data-list="checked"] > .ql-ui,
+.anchor-quill .ql-editor li[data-list="unchecked"] > .ql-ui {
   position: absolute;
   left: 0;
   top: 0.35em;
-  width: 18px !important;
-  height: 18px !important;
+  width: 18px;
+  height: 18px;
   border-radius: 5px;
   box-sizing: border-box;
   cursor: pointer;
   transition: all 150ms ease;
   background: transparent;
-  padding: 0 !important;
-  margin: 0 !important;
+  padding: 0;
+  margin: 0;
 }
 
 /* Hide default Quill checkbox character */
-.anchor-quill .ql-editor li[data-list="checked"]>.ql-ui::before,
-.anchor-quill .ql-editor li[data-list="unchecked"]>.ql-ui::before {
-  content: '' !important;
-  display: none !important;
+.anchor-quill .ql-editor li[data-list="checked"] > .ql-ui::before,
+.anchor-quill .ql-editor li[data-list="unchecked"] > .ql-ui::before {
+  content: "";
+  display: none;
 }
 
 /* Unchecked - clean outline */
-.anchor-quill .ql-editor li[data-list="unchecked"]>.ql-ui {
+.anchor-quill .ql-editor li[data-list="unchecked"] > .ql-ui {
   border: 2px solid var(--muted-foreground);
   opacity: 0.7;
 }
 
-.anchor-quill .ql-editor li[data-list="unchecked"]:hover>.ql-ui {
+.anchor-quill .ql-editor li[data-list="unchecked"]:hover > .ql-ui {
   border-color: var(--accent);
   opacity: 1;
 }
 
 /* Checked - solid fill with checkmark */
-.anchor-quill .ql-editor li[data-list="checked"]>.ql-ui {
+.anchor-quill .ql-editor li[data-list="checked"] > .ql-ui {
   border: 2px solid var(--accent);
   background: var(--accent);
 }
 
 /* Checkmark using ::after */
-.anchor-quill .ql-editor li[data-list="checked"]>.ql-ui::after {
-  content: '';
+.anchor-quill .ql-editor li[data-list="checked"] > .ql-ui::after {
+  content: "";
   display: block;
   position: absolute;
   left: 50%;
@@ -320,11 +330,11 @@
 
 /* Quill Bullet List Styling */
 .anchor-quill .ql-editor li[data-list="bullet"] {
-  padding-left: 16px !important;
+  padding-left: 16px;
 }
 
 .anchor-quill .ql-editor li[data-list="ordered"] {
-  padding-left: 24px !important;
+  padding-left: 24px;
 }
 
 /* ===== Masonry Grid Layout ===== */
@@ -339,7 +349,7 @@
   background-clip: padding-box;
 }
 
-.masonry-grid-column>* {
+.masonry-grid-column > * {
   margin-bottom: 16px;
 }
 
@@ -430,8 +440,11 @@
 
 /* ===== Background Pattern (Subtle) ===== */
 .bg-pattern {
-  background-image:
-    radial-gradient(circle at 1px 1px, var(--border) 1px, transparent 0);
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    var(--border) 1px,
+    transparent 0
+  );
   background-size: 40px 40px;
 }
 
@@ -455,7 +468,9 @@
 
 /* ===== Smooth Transitions for Theme Switching ===== */
 html {
-  transition: background-color 200ms ease, color 200ms ease;
+  transition:
+    background-color 200ms ease,
+    color 200ms ease;
 }
 
 /* ===== Selection Styling ===== */

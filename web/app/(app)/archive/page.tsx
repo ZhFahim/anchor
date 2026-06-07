@@ -1,31 +1,30 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { format } from "date-fns";
 import { Archive, ArchiveRestore, Loader2 } from "lucide-react";
-import {
-  getArchivedNotes,
-  unarchiveNote,
-  deltaToFullPlainText,
-  ArchiveDialog,
-  NoteCard,
-} from "@/features/notes";
-import type { Note } from "@/features/notes";
-import { getTags } from "@/features/tags";
+import { useRouter } from "next/navigation";
+import * as React from "react";
+import { useMemo, useState } from "react";
+import Masonry from "react-masonry-css";
+import { toast } from "sonner";
 import { Header } from "@/components/layout";
 import { Button } from "@/components/ui/button";
-import { useMemo } from "react";
-import { format } from "date-fns";
-import { toast } from "sonner";
-import { useState } from "react";
-import * as React from "react";
-import { useRouter } from "next/navigation";
-import Masonry from "react-masonry-css";
 import {
   Tooltip,
   TooltipContent,
-  TooltipTrigger,
   TooltipProvider,
+  TooltipTrigger,
 } from "@/components/ui/tooltip";
+import type { Note } from "@/features/notes";
+import {
+  ArchiveDialog,
+  deltaToFullPlainText,
+  getArchivedNotes,
+  NoteCard,
+  unarchiveNote,
+} from "@/features/notes";
+import { getTags } from "@/features/tags";
 
 const masonryBreakpoints = {
   default: 4,
@@ -57,8 +56,8 @@ export default function ArchivePage() {
       ...note,
       tags: note.tagIds
         ? note.tagIds
-          .map((tagId) => tags.find((tag) => tag.id === tagId))
-          .filter((tag): tag is NonNullable<typeof tag> => tag !== undefined)
+            .map((tagId) => tags.find((tag) => tag.id === tagId))
+            .filter((tag): tag is NonNullable<typeof tag> => tag !== undefined)
         : [],
     }));
   }, [notes, tags]);

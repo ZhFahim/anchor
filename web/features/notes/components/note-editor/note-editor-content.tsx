@@ -2,10 +2,10 @@
 
 import type { RefObject } from "react";
 import { Input } from "@/components/ui/input";
-import { RichTextEditor, type RichTextEditorHandle } from "../editor";
 import { TagSelector } from "@/features/tags";
 import { cn } from "@/lib/utils";
 import { AttachmentsCollapsible } from "../attachments";
+import { RichTextEditor, type RichTextEditorHandle } from "../editor";
 
 interface NoteEditorContentProps {
   noteId?: string;
@@ -65,7 +65,7 @@ export function NoteEditorContent({
             "placeholder:text-muted-foreground/40",
             "focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-0",
             isReadOnly && "cursor-default",
-            !isTrashed && isReadOnly && "text-foreground"
+            !isTrashed && isReadOnly && "text-foreground",
           )}
         />
 

@@ -1,45 +1,45 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+import { useAuth } from "@/features/auth";
+import type { CreateNoteDto, Note, UpdateNoteDto } from "@/features/notes";
 import {
-  getNote,
-  createNote,
-  updateNote,
-  deleteNote,
+  ArchiveDialog,
   archiveNote,
-  unarchiveNote,
-  restoreNote,
-  permanentDeleteNote,
+  createNote,
+  DeleteDialog,
+  deleteNote,
+  getNote,
   isStoredContentEmpty,
   NoteBackground,
-  ArchiveDialog,
-  RestoreDialog,
-  DeleteDialog,
-  PermanentDeleteDialog,
-  ReadOnlyBanner,
-  NoteEditorHeader,
   NoteEditorContent,
+  NoteEditorHeader,
+  PermanentDeleteDialog,
+  permanentDeleteNote,
+  ReadOnlyBanner,
+  RestoreDialog,
+  restoreNote,
   ShareDialog,
+  unarchiveNote,
+  updateNote,
 } from "@/features/notes";
-import type { CreateNoteDto, UpdateNoteDto, Note } from "@/features/notes";
 import type { RichTextEditorHandle } from "@/features/notes/components/editor";
-import { useAuth } from "@/features/auth";
-import { toast } from "sonner";
 
 type PendingFocusRestore =
   | {
-    target: "title";
-    selectionStart: number;
-    selectionEnd: number;
-  }
+      target: "title";
+      selectionStart: number;
+      selectionEnd: number;
+    }
   | {
-    target: "content";
-    index?: number;
-    length?: number;
-  };
+      target: "content";
+      index?: number;
+      length?: number;
+    };
 
 function getFocusRestoreStorageKey(noteId: string) {
   return `note-focus-restore-${noteId}`;
@@ -64,7 +64,8 @@ export default function NoteEditorPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
   const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
-  const [permanentDeleteDialogOpen, setPermanentDeleteDialogOpen] = useState(false);
+  const [permanentDeleteDialogOpen, setPermanentDeleteDialogOpen] =
+    useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
@@ -111,7 +112,11 @@ export default function NoteEditorPage() {
   }, [noteId, isNew]);
 
   // Fetch existing note (only if not in sessionStorage)
-  const { data: noteFromApi, isLoading, refetch: refetchNote } = useQuery({
+  const {
+    data: noteFromApi,
+    isLoading,
+    refetch: refetchNote,
+  } = useQuery({
     queryKey: ["notes", noteId],
     queryFn: () => getNote(noteId),
     enabled: !isNew && !noteFromStorage,
@@ -126,42 +131,44 @@ export default function NoteEditorPage() {
   const isEditor = note ? note.permission === "editor" : false;
 
   // Check if note is read-only (trashed notes or viewers are read-only)
-  const isReadOnly = note
-    ? note.state === "trashed" || isViewer
-    : false;
+  const isReadOnly = note ? note.state === "trashed" || isViewer : false;
   const canUpload = isOwner || isEditor;
 
   const getTitleForSave = useCallback(() => {
     return title.trim() === "" ? "Untitled" : title;
   }, [title]);
 
-  const capturePendingFocusRestore = useCallback((): PendingFocusRestore | null => {
-    const titleInput = titleInputRef.current;
-    if (titleInput && document.activeElement === titleInput) {
-      const fallbackPosition = titleInput.value.length;
-      return {
-        target: "title",
-        selectionStart: titleInput.selectionStart ?? fallbackPosition,
-        selectionEnd: titleInput.selectionEnd ?? fallbackPosition,
-      };
-    }
+  const capturePendingFocusRestore =
+    useCallback((): PendingFocusRestore | null => {
+      const titleInput = titleInputRef.current;
+      if (titleInput && document.activeElement === titleInput) {
+        const fallbackPosition = titleInput.value.length;
+        return {
+          target: "title",
+          selectionStart: titleInput.selectionStart ?? fallbackPosition,
+          selectionEnd: titleInput.selectionEnd ?? fallbackPosition,
+        };
+      }
 
-    const editorSelection = contentEditorRef.current?.getSelection();
-    if (editorSelection) {
-      return {
-        target: "content",
-        index: editorSelection.index,
-        length: editorSelection.length,
-      };
-    }
+      const editorSelection = contentEditorRef.current?.getSelection();
+      if (editorSelection) {
+        return {
+          target: "content",
+          index: editorSelection.index,
+          length: editorSelection.length,
+        };
+      }
 
-    const activeElement = document.activeElement;
-    if (activeElement instanceof HTMLElement && activeElement.closest(".ql-editor")) {
-      return { target: "content" };
-    }
+      const activeElement = document.activeElement;
+      if (
+        activeElement instanceof HTMLElement &&
+        activeElement.closest(".ql-editor")
+      ) {
+        return { target: "content" };
+      }
 
-    return null;
-  }, []);
+      return null;
+    }, []);
 
   // Initialize brand-new note state once per /new session.
   useEffect(() => {
@@ -186,7 +193,12 @@ export default function NoteEditorPage() {
   }, [isNew, tagIdFromUrl]);
 
   useEffect(() => {
-    if (typeof window === "undefined" || !isNew || autoFocusedNewNoteRef.current) return;
+    if (
+      typeof window === "undefined" ||
+      !isNew ||
+      autoFocusedNewNoteRef.current
+    )
+      return;
 
     let frameId: number | null = null;
 
@@ -431,7 +443,7 @@ export default function NoteEditorPage() {
       isPinned !== lastSavedRef.current.isPinned ||
       background !== lastSavedRef.current.background ||
       JSON.stringify([...selectedTagIds].sort()) !==
-      JSON.stringify([...lastSavedRef.current.tagIds].sort())
+        JSON.stringify([...lastSavedRef.current.tagIds].sort())
     );
   }, [title, content, isPinned, selectedTagIds, background, isNew]);
 
@@ -464,8 +476,14 @@ export default function NoteEditorPage() {
         const input = titleInputRef.current;
         if (input) {
           const maxPosition = input.value.length;
-          const selectionStart = Math.min(restoreTarget.selectionStart, maxPosition);
-          const selectionEnd = Math.min(restoreTarget.selectionEnd, maxPosition);
+          const selectionStart = Math.min(
+            restoreTarget.selectionStart,
+            maxPosition,
+          );
+          const selectionEnd = Math.min(
+            restoreTarget.selectionEnd,
+            maxPosition,
+          );
           input.focus();
           input.setSelectionRange(selectionStart, selectionEnd);
           sessionStorage.removeItem(storageKey);
@@ -612,10 +630,7 @@ export default function NoteEditorPage() {
 
   return (
     <div className="min-h-screen flex flex-col relative">
-      <NoteBackground
-        styleId={background}
-        className="fixed inset-0 z-0"
-      />
+      <NoteBackground styleId={background} className="fixed inset-0 z-0" />
 
       {/* Header */}
       <NoteEditorHeader

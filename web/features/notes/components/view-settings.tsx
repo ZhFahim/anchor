@@ -1,17 +1,17 @@
 "use client";
 
-import { useState } from "react";
 import {
-  LayoutGrid,
+  ArrowDown,
+  ArrowUp,
+  Calendar,
+  Check,
+  FileText,
   Grid3x3,
+  LayoutGrid,
   List,
   Settings2,
-  Calendar,
-  FileText,
-  ArrowUp,
-  ArrowDown,
-  Check,
 } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -19,8 +19,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
+import type { SortBy, SortOrder, ViewMode } from "@/features/preferences";
 import { cn } from "@/lib/utils";
-import { ViewMode, SortBy, SortOrder } from "@/features/preferences";
 
 interface ViewSettingsProps {
   viewMode: ViewMode;
@@ -31,13 +31,21 @@ interface ViewSettingsProps {
   onSortOrderChange: (order: SortOrder) => void;
 }
 
-const viewModes: { value: ViewMode; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+const viewModes: {
+  value: ViewMode;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+}[] = [
   { value: "masonry", label: "Masonry", icon: LayoutGrid },
   { value: "grid", label: "Grid", icon: Grid3x3 },
   { value: "list", label: "List", icon: List },
 ];
 
-const sortOptions: { value: SortBy; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+const sortOptions: {
+  value: SortBy;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+}[] = [
   { value: "updatedAt", label: "Last Modified", icon: Calendar },
   { value: "createdAt", label: "Date Created", icon: Calendar },
   { value: "title", label: "Title", icon: FileText },
@@ -83,35 +91,41 @@ export function ViewSettings({
                 return (
                   <div key={option.value} className="flex items-center gap-1">
                     <button
+                      type="button"
                       onClick={() => onSortByChange(option.value)}
                       className={cn(
                         "flex-1 flex items-center gap-2.5 px-2 py-1.5 rounded-sm text-sm transition-colors",
                         "hover:bg-primary/5",
                         isSelected
                           ? "bg-primary/10 text-primary font-medium"
-                          : "text-muted-foreground"
+                          : "text-muted-foreground",
                       )}
                     >
-                      <Icon className={cn(
-                        "h-3.5 w-3.5 transition-colors",
-                        isSelected ? "text-primary" : "text-muted-foreground/60"
-                      )} />
+                      <Icon
+                        className={cn(
+                          "h-3.5 w-3.5 transition-colors",
+                          isSelected
+                            ? "text-primary"
+                            : "text-muted-foreground/60",
+                        )}
+                      />
                       <span className="flex-1 text-left">{option.label}</span>
-                      {isSelected && (
-                        <Check className="h-3 w-3 text-primary" />
-                      )}
+                      {isSelected && <Check className="h-3 w-3 text-primary" />}
                     </button>
                     {isSelected && (
                       <button
+                        type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          onSortOrderChange(sortOrder === "asc" ? "desc" : "asc");
+                          onSortOrderChange(
+                            sortOrder === "asc" ? "desc" : "asc",
+                          );
                         }}
                         className={cn(
                           "flex items-center justify-center px-2 py-1.5 rounded-sm text-xs font-medium transition-colors",
                           "bg-primary/10 text-primary",
                           "hover:bg-primary/15",
-                          "border border-primary/20"
+                          "border border-primary/20",
                         )}
                         title={`Sort ${sortOrder === "asc" ? "descending" : "ascending"}`}
                       >
@@ -139,6 +153,7 @@ export function ViewSettings({
                 const isSelected = viewMode === mode.value;
                 return (
                   <button
+                    type="button"
                     key={mode.value}
                     onClick={() => {
                       onViewModeChange(mode.value);
@@ -149,13 +164,17 @@ export function ViewSettings({
                       "hover:bg-primary/5",
                       isSelected
                         ? "bg-primary/10 text-primary font-medium border border-primary/20"
-                        : "text-muted-foreground"
+                        : "text-muted-foreground",
                     )}
                   >
-                    <Icon className={cn(
-                      "h-3.5 w-3.5 transition-colors",
-                      isSelected ? "text-primary" : "text-muted-foreground/60"
-                    )} />
+                    <Icon
+                      className={cn(
+                        "h-3.5 w-3.5 transition-colors",
+                        isSelected
+                          ? "text-primary"
+                          : "text-muted-foreground/60",
+                      )}
+                    />
                     <span>{mode.label}</span>
                   </button>
                 );
@@ -167,4 +186,3 @@ export function ViewSettings({
     </Popover>
   );
 }
-

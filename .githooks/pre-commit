@@ -1,0 +1,39 @@
+#!/bin/sh
+# Pre-commit: lint staged files per project.
+#   web/    -> Biome
+#   server/ -> ESLint + Prettier
+# Enable once per clone with:  git config core.hooksPath .githooks
+# (web/server `prepare` scripts also set this automatically on `pnpm install`.)
+#
+# mobile/ (Flutter) is not covered here.
+
+staged() {
+	git diff --cached --name-only --diff-filter=ACMR
+}
+
+status=0
+
+# --- web: Biome on staged web/ files ---
+if staged | grep -q '^web/'; then
+	echo "Running Biome on staged web/ files…"
+	(cd web && pnpm exec biome check --staged --no-errors-on-unmatched) || status=1
+fi
+
+# --- server: ESLint + Prettier on staged server/*.ts files ---
+server_files=$(staged | grep '^server/.*\.ts$' | sed 's|^server/||')
+if [ -n "$server_files" ]; then
+	echo "Running Prettier + ESLint on staged server/ files…"
+	# shellcheck disable=SC2086
+	(cd server && echo "$server_files" | xargs pnpm exec prettier --check) || status=1
+	# shellcheck disable=SC2086
+	(cd server && echo "$server_files" | xargs pnpm exec eslint) || status=1
+fi
+
+if [ "$status" -ne 0 ]; then
+	echo
+	echo "✖ Lint/format checks failed."
+	echo "  web:    pnpm --dir web check:fix"
+	echo "  server: pnpm --dir server check:fix"
+	echo "Fix the issues, re-stage, then commit again."
+	exit 1
+fi

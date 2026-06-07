@@ -244,14 +244,27 @@ Future planned features:
    git checkout -b feature/your-feature
    ```
 3. Make your changes
-4. Ensure builds pass:
-   - Web: `cd web && pnpm build`
-   - Server: `cd server && pnpm build`
+4. Ensure builds pass and code is linted:
+   - Web: `cd web && pnpm build && pnpm check`
+   - Server: `cd server && pnpm build && pnpm check`
 5. Commit changes:
    ```bash
    git commit -m "Describe your change"
    ```
 6. Push and create a Pull Request
+
+### Code style
+
+Linting and formatting are enforced in CI and by a pre-commit hook
+(`.githooks/pre-commit`) that checks staged files.
+Running `pnpm install` in either `web` or `server`
+enables the hook automatically (via the `prepare` script). To enable it manually:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+Before committing, fix issues with `pnpm check:fix` in the relevant project.
 
 ## Support
 

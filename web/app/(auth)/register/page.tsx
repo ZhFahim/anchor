@@ -1,15 +1,21 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { Mail, Lock, Loader2, AlertCircle, User } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { AlertCircle, Loader2, Lock, Mail, User } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAuth, getRegistrationMode } from "@/features/auth";
+import { getRegistrationMode, useAuth } from "@/features/auth";
 
 export default function RegisterPage() {
   const [name, setName] = useState("");
@@ -70,7 +76,9 @@ export default function RegisterPage() {
                 />
               </div>
               <div className="space-y-1">
-                <CardTitle className="text-3xl font-serif">Registration Disabled</CardTitle>
+                <CardTitle className="text-3xl font-serif">
+                  Registration Disabled
+                </CardTitle>
                 <CardDescription className="text-muted-foreground">
                   User sign up is currently disabled
                 </CardDescription>
@@ -81,7 +89,8 @@ export default function RegisterPage() {
                 <AlertCircle className="h-5 w-5 mt-0.5 text-muted-foreground" />
                 <div className="flex-1 text-sm">
                   <p className="text-muted-foreground">
-                    New account registration is not available at this time. Please contact an administrator to create an account.
+                    New account registration is not available at this time.
+                    Please contact an administrator to create an account.
                   </p>
                 </div>
               </div>
@@ -110,7 +119,9 @@ export default function RegisterPage() {
                 />
               </div>
               <div className="space-y-1">
-                <CardTitle className="text-3xl font-serif">Create Account</CardTitle>
+                <CardTitle className="text-3xl font-serif">
+                  Create Account
+                </CardTitle>
                 <CardDescription className="text-muted-foreground">
                   {registrationMode?.mode === "review"
                     ? "Register and wait for approval"
@@ -184,7 +195,9 @@ export default function RegisterPage() {
                   </div>
                 </div>
                 {error && (
-                  <p className="text-sm text-destructive text-center">{error}</p>
+                  <p className="text-sm text-destructive text-center">
+                    {error}
+                  </p>
                 )}
                 <Button
                   type="submit"
@@ -219,4 +232,3 @@ export default function RegisterPage() {
     </Card>
   );
 }
-

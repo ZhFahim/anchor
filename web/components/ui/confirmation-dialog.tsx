@@ -1,6 +1,7 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
+import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,7 +11,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ReactNode } from "react";
 
 interface ConfirmationDialogProps {
   open: boolean;
@@ -41,11 +41,21 @@ export function ConfirmationDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className={icon || (typeof title !== "string" && title) ? "flex items-center gap-3" : ""}>
+          <DialogTitle
+            className={
+              icon || (typeof title !== "string" && title)
+                ? "flex items-center gap-3"
+                : ""
+            }
+          >
             {icon}
             {title}
           </DialogTitle>
-          <DialogDescription className={icon || (typeof title !== "string" && title) ? "pt-2" : ""}>
+          <DialogDescription
+            className={
+              icon || (typeof title !== "string" && title) ? "pt-2" : ""
+            }
+          >
             {description}
           </DialogDescription>
         </DialogHeader>
@@ -76,4 +86,3 @@ export function ConfirmationDialog({
     </Dialog>
   );
 }
-

@@ -1,11 +1,16 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { Menu, Search, X, Command } from "lucide-react";
+import { Command, Menu, Search, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
-import { Sidebar } from "./sidebar";
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { Sidebar } from "./sidebar";
 
 interface HeaderProps {
   searchQuery: string;
@@ -15,7 +20,9 @@ interface HeaderProps {
 export function Header({ searchQuery, onSearchChange }: HeaderProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const isMac = typeof window !== "undefined" && navigator.userAgent.toLowerCase().includes("mac");
+  const isMac =
+    typeof window !== "undefined" &&
+    navigator.userAgent.toLowerCase().includes("mac");
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Keyboard shortcut: Cmd+K or Ctrl+K to focus search
@@ -43,7 +50,7 @@ export function Header({ searchQuery, onSearchChange }: HeaderProps) {
         "bg-background/60 backdrop-blur-2xl",
         "border-b border-border/30",
         "px-4 lg:px-6",
-        "transition-all duration-300"
+        "transition-all duration-300",
       )}
     >
       {/* Mobile menu */}
@@ -55,7 +62,7 @@ export function Header({ searchQuery, onSearchChange }: HeaderProps) {
             className={cn(
               "lg:hidden h-10 w-10 rounded-xl",
               "hover:bg-accent/80",
-              "transition-all duration-200"
+              "transition-all duration-200",
             )}
             aria-label="Open menu"
           >
@@ -78,17 +85,14 @@ export function Header({ searchQuery, onSearchChange }: HeaderProps) {
               "bg-muted/50",
               "border border-border/40",
               "transition-colors duration-200",
-              isSearchFocused && [
-                "bg-card",
-                "border-border",
-              ]
+              isSearchFocused && ["bg-card", "border-border"],
             )}
           >
             <Search
               className={cn(
                 "absolute left-4 h-4 w-4 pointer-events-none",
                 "transition-colors duration-200",
-                isSearchFocused ? "text-accent" : "text-muted-foreground"
+                isSearchFocused ? "text-accent" : "text-muted-foreground",
               )}
             />
             <input
@@ -104,7 +108,7 @@ export function Header({ searchQuery, onSearchChange }: HeaderProps) {
                 "bg-transparent",
                 "rounded-md",
                 "text-sm text-foreground",
-                "placeholder:text-muted-foreground/50"
+                "placeholder:text-muted-foreground/50",
               )}
             />
 
@@ -133,7 +137,7 @@ export function Header({ searchQuery, onSearchChange }: HeaderProps) {
                     "text-xs font-medium",
                     "hover:bg-muted hover:text-muted-foreground",
                     "transition-all duration-200",
-                    isSearchFocused && "opacity-0 pointer-events-none"
+                    isSearchFocused && "opacity-0 pointer-events-none",
                   )}
                 >
                   {isMac ? (

@@ -1,7 +1,7 @@
 import { Injectable, Logger, ConflictException } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
-import type { Prisma } from '../../generated/prisma/client';
+import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UserStatus } from '../../generated/prisma/enums';
 import type { OidcUserClaims } from './oidc.types';
@@ -16,7 +16,7 @@ import {
 export class OidcUserService {
   private readonly logger = new Logger(OidcUserService.name);
 
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * Find or create user based on OIDC claims.
@@ -32,9 +32,9 @@ export class OidcUserService {
           });
           if (existingBySubject) {
             const updateData: { name?: string; profileImage?: string | null } =
-            {
-              name: claims.name,
-            };
+              {
+                name: claims.name,
+              };
             const profileImage = await this.resolveProfileImage(
               claims.picture,
               existingBySubject.id,
@@ -105,7 +105,10 @@ export class OidcUserService {
         throw error;
       }
       // P2002 = unique constraint violation; concurrent create, re-fetch by subject
-      if (error?.code === 'P2002') {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
         const user = await this.prisma.user.findUnique({
           where: { oidcSubject: claims.subject },
           select: OIDC_USER_SELECT,

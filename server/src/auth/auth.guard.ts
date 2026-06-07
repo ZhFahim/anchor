@@ -7,15 +7,16 @@ import {
 import { ExtractJwt } from 'passport-jwt';
 import { UserStatus } from '../generated/prisma/enums';
 import { TokenResolverService } from './token-resolver.service';
+import { AuthenticatedRequest } from './authenticated-request';
 
 const extractBearerToken = ExtractJwt.fromAuthHeaderAsBearerToken();
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(private readonly tokenResolver: TokenResolverService) { }
+  constructor(private readonly tokenResolver: TokenResolverService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const token = extractBearerToken(request);
 
     if (!token) {

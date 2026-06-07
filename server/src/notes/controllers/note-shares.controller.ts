@@ -17,7 +17,7 @@ import { AuthGuard } from '../../auth/auth.guard';
 @Controller('api/notes')
 @UseGuards(AuthGuard)
 export class NoteSharesController {
-  constructor(private readonly noteSharesService: NoteSharesService) { }
+  constructor(private readonly noteSharesService: NoteSharesService) {}
 
   @Post(':id/shares')
   shareNote(

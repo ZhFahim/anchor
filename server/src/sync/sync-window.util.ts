@@ -10,6 +10,6 @@ export const withForcedSyncIds = (
 ) =>
   forceSyncIds.length
     ? {
-      OR: [{ updatedAt: updatedAtWindow }, { id: { in: forceSyncIds } }],
-    }
+        OR: [{ updatedAt: updatedAtWindow }, { id: { in: forceSyncIds } }],
+      }
     : { updatedAt: updatedAtWindow };

@@ -1,12 +1,17 @@
 "use client";
 
-import { useCallback, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useAuthStore, hasAccessToken, getRefreshToken } from "../store";
-import { login as loginApi, register as registerApi, getMe, revokeRefreshToken } from "../api";
-import type { LoginCredentials, RegisterCredentials } from "../types";
+import { useCallback, useEffect } from "react";
 import { toast } from "sonner";
+import {
+  getMe,
+  login as loginApi,
+  register as registerApi,
+  revokeRefreshToken,
+} from "../api";
+import { getRefreshToken, hasAccessToken, useAuthStore } from "../store";
+import type { LoginCredentials, RegisterCredentials } from "../types";
 
 export function useAuth() {
   const router = useRouter();
@@ -74,7 +79,10 @@ export function useAuth() {
         router.push("/");
       } else {
         // User is pending approval
-        toast.success(data.message || "Registration successful. Your account is pending approval.");
+        toast.success(
+          data.message ||
+            "Registration successful. Your account is pending approval.",
+        );
         router.push("/login");
       }
     },

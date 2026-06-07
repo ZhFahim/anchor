@@ -1,9 +1,10 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import { User } from 'src/generated/prisma/client';
+import type { AuthUser } from '../token-resolver.service';
+import { AuthenticatedRequest } from '../authenticated-request';
 
 export const CurrentUser = createParamDecorator(
-  (data: keyof Omit<User, 'password'> | undefined, ctx: ExecutionContext) => {
-    const request = ctx.switchToHttp().getRequest();
+  (data: keyof AuthUser | undefined, ctx: ExecutionContext) => {
+    const request = ctx.switchToHttp().getRequest<AuthenticatedRequest>();
     const payload = request.user;
 
     if (!payload) return null;

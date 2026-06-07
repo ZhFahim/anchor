@@ -1,10 +1,17 @@
 "use client";
 
-import { useRef, useState, useEffect, useCallback } from "react";
-import { Play, Pause, Trash2, AlertCircle, RefreshCw, Volume2 } from "lucide-react";
+import {
+  AlertCircle,
+  Pause,
+  Play,
+  RefreshCw,
+  Trash2,
+  Volume2,
+} from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
 import { useAttachmentBlob } from "../../hooks";
 import type { NoteAttachment } from "../../types";
-import { cn } from "@/lib/utils";
 
 interface AudioAttachmentPlayerProps {
   noteId: string;
@@ -14,7 +21,7 @@ interface AudioAttachmentPlayerProps {
 }
 
 function formatTime(seconds: number): string {
-  if (!isFinite(seconds) || isNaN(seconds)) return "0:00";
+  if (!Number.isFinite(seconds) || Number.isNaN(seconds)) return "0:00";
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
   return `${mins}:${secs.toString().padStart(2, "0")}`;
@@ -28,7 +35,7 @@ export function AudioAttachmentPlayer({
 }: AudioAttachmentPlayerProps) {
   const { blobUrl, isLoading, error, retry } = useAttachmentBlob(
     noteId,
-    attachment.id
+    attachment.id,
   );
   const audioRef = useRef<HTMLAudioElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
@@ -59,7 +66,7 @@ export function AudioAttachmentPlayer({
       const percentage = clickX / rect.width;
       audio.currentTime = percentage * duration;
     },
-    [duration]
+    [duration],
   );
 
   useEffect(() => {
@@ -88,13 +95,13 @@ export function AudioAttachmentPlayer({
       audio.removeEventListener("timeupdate", handleTimeUpdate);
       audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
     };
-  }, [blobUrl]);
+  }, []);
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   const truncatedName =
     attachment.originalFilename.length > 35
-      ? attachment.originalFilename.slice(0, 32) + "..."
+      ? `${attachment.originalFilename.slice(0, 32)}...`
       : attachment.originalFilename;
 
   if (isLoading) {
@@ -121,6 +128,7 @@ export function AudioAttachmentPlayer({
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium truncate">{truncatedName}</p>
           <button
+            type="button"
             onClick={retry}
             className="flex items-center gap-1 text-xs text-primary hover:underline mt-0.5"
           >
@@ -130,6 +138,7 @@ export function AudioAttachmentPlayer({
         </div>
         {canDelete && (
           <button
+            type="button"
             onClick={() => onDelete(attachment.id)}
             className="p-1.5 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors flex-shrink-0"
           >
@@ -147,12 +156,13 @@ export function AudioAttachmentPlayer({
 
       {/* Play/Pause button */}
       <button
+        type="button"
         onClick={togglePlay}
         className={cn(
           "w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 transition-colors",
           isPlaying
             ? "bg-primary text-primary-foreground"
-            : "bg-primary/10 text-primary hover:bg-primary/20"
+            : "bg-primary/10 text-primary hover:bg-primary/20",
         )}
       >
         {isPlaying ? (
@@ -186,7 +196,7 @@ export function AudioAttachmentPlayer({
           <div
             className={cn(
               "h-full rounded-full transition-all relative",
-              isPlaying ? "bg-primary" : "bg-primary/60"
+              isPlaying ? "bg-primary" : "bg-primary/60",
             )}
             style={{ width: `${progress}%` }}
           >
@@ -195,7 +205,7 @@ export function AudioAttachmentPlayer({
               className={cn(
                 "absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-primary shadow-sm",
                 "opacity-0 group-hover/progress:opacity-100 transition-opacity",
-                isPlaying && "opacity-100"
+                isPlaying && "opacity-100",
               )}
             />
           </div>
@@ -205,12 +215,13 @@ export function AudioAttachmentPlayer({
       {/* Delete button */}
       {canDelete && (
         <button
+          type="button"
           onClick={() => onDelete(attachment.id)}
           className={cn(
             "p-1.5 rounded-full flex-shrink-0",
             "bg-black/50 hover:bg-red-500 text-white",
             "opacity-0 group-hover:opacity-100 transition-all duration-200",
-            "hover:scale-110"
+            "hover:scale-110",
           )}
         >
           <Trash2 className="h-3.5 w-3.5" />

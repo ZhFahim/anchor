@@ -14,7 +14,7 @@ import {
 
 @Injectable()
 export class TagsService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   async create(userId: string, createTagDto: CreateTagDto) {
     // Check if tag with same name already exists for this user (not deleted)

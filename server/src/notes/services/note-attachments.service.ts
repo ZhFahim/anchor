@@ -6,7 +6,10 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NoteAccessService } from './note-access.service';
-import { NoteSharePermission, AttachmentType } from 'src/generated/prisma/enums';
+import {
+  NoteSharePermission,
+  AttachmentType,
+} from 'src/generated/prisma/enums';
 import {
   ATTACHMENT_MAX_FILE_SIZE,
   ATTACHMENT_ALLOWED_MIME_TYPES,
@@ -25,7 +28,7 @@ export class NoteAttachmentsService {
   constructor(
     private prisma: PrismaService,
     private noteAccessService: NoteAccessService,
-  ) { }
+  ) {}
 
   async upload(userId: string, noteId: string, file: Express.Multer.File) {
     // Require editor or owner access to upload
@@ -41,7 +44,9 @@ export class NoteAttachmentsService {
     }
 
     if (!ATTACHMENT_ALLOWED_MIME_TYPES.has(file.mimetype)) {
-      throw new BadRequestException(`File type ${file.mimetype} is not allowed`);
+      throw new BadRequestException(
+        `File type ${file.mimetype} is not allowed`,
+      );
     }
 
     if (file.size > ATTACHMENT_MAX_FILE_SIZE) {
@@ -94,12 +99,14 @@ export class NoteAttachmentsService {
       });
 
       return toAttachmentResponse(attachment);
-    } catch (error) {
+    } catch {
       if (fileSaved) {
         try {
           await fs.unlink(filePath);
-        } catch (deleteError) {
-          this.logger.error(`Failed to delete file after DB error: ${filePath}`);
+        } catch {
+          this.logger.error(
+            `Failed to delete file after DB error: ${filePath}`,
+          );
         }
       }
       throw new BadRequestException('Failed to upload attachment');

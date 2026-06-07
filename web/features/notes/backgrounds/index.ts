@@ -1,10 +1,10 @@
+export {
+  NOTE_BACKGROUND_STYLES,
+  PATTERNS,
+  SOLID_COLORS,
+} from "./data";
 export type { NoteBackgroundData } from "./types";
 export {
-  SOLID_COLORS,
-  PATTERNS,
-  NOTE_BACKGROUND_STYLES,
-} from "./data";
-export {
-  getBackgroundStyle,
   getBackgroundColor,
+  getBackgroundStyle,
 } from "./utils";

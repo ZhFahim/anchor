@@ -1,6 +1,13 @@
 import ky, { HTTPError } from "ky";
-import { getAccessToken, clearAccessToken, getRefreshToken, setAccessToken, setRefreshToken, clearRefreshToken } from "@/features/auth";
 import type { RefreshTokenResponse } from "@/features/auth";
+import {
+  clearAccessToken,
+  clearRefreshToken,
+  getAccessToken,
+  getRefreshToken,
+  setAccessToken,
+  setRefreshToken,
+} from "@/features/auth";
 
 // Flag to prevent multiple simultaneous refresh attempts
 let isRefreshing = false;
@@ -11,18 +18,18 @@ async function attemptTokenRefresh(): Promise<RefreshTokenResponse> {
   const storedRefreshToken = getRefreshToken();
 
   if (!storedRefreshToken) {
-    throw new Error('No refresh token available');
+    throw new Error("No refresh token available");
   }
 
   // Use fetch directly to avoid interceptor loops
-  const response = await fetch('/api/auth/refresh', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+  const response = await fetch("/api/auth/refresh", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ refresh_token: storedRefreshToken }),
   });
 
   if (!response.ok) {
-    throw new Error('Failed to refresh token');
+    throw new Error("Failed to refresh token");
   }
 
   return response.json();
@@ -69,7 +76,7 @@ export const api = ky.create({
         // Handle 401 errors - attempt token refresh
         if (response.status === 401) {
           // Don't try to refresh if we're already on the refresh endpoint
-          if (request.url.includes('/api/auth/refresh')) {
+          if (request.url.includes("/api/auth/refresh")) {
             clearAccessToken();
             clearRefreshToken();
             if (typeof window !== "undefined") {
@@ -86,7 +93,10 @@ export const api = ky.create({
               setRefreshToken(newTokens.refresh_token);
 
               // Retry the original request with new token
-              request.headers.set("Authorization", `Bearer ${newTokens.access_token}`);
+              request.headers.set(
+                "Authorization",
+                `Bearer ${newTokens.access_token}`,
+              );
               return ky(request);
             }
 
@@ -105,10 +115,12 @@ export const api = ky.create({
             refreshPromise = null;
 
             // Retry the original request with new token
-            request.headers.set("Authorization", `Bearer ${newTokens.access_token}`);
+            request.headers.set(
+              "Authorization",
+              `Bearer ${newTokens.access_token}`,
+            );
             return ky(request);
-
-          } catch (refreshError) {
+          } catch (_refreshError) {
             // Refresh failed, clear all tokens and trigger logout
             isRefreshing = false;
             refreshPromise = null;

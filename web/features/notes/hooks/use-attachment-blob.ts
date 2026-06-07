@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchAttachmentBlob } from "../api";
 
 interface UseAttachmentBlobResult {
@@ -12,12 +12,12 @@ interface UseAttachmentBlobResult {
 
 export function useAttachmentBlob(
   noteId: string,
-  attachmentId: string
+  attachmentId: string,
 ): UseAttachmentBlobResult {
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
+  const [_retryCount, setRetryCount] = useState(0);
   const urlRef = useRef<string | null>(null);
 
   const loadBlob = useCallback(async () => {
@@ -43,7 +43,7 @@ export function useAttachmentBlob(
 
   useEffect(() => {
     loadBlob();
-  }, [loadBlob, retryCount]);
+  }, [loadBlob]);
 
   useEffect(() => {
     return () => {
