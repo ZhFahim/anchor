@@ -34,13 +34,13 @@ interface NoteWithIncludes {
   id: string;
   title: string;
   content: string | null;
-  isPinned: boolean;
   isArchived: boolean;
   background: string | null;
   state: string;
   createdAt: Date;
   updatedAt: Date;
   userId: string;
+  pins?: Array<{ userId: string }>;
   tags?: Array<{ id: string; userId: string }>;
   sharedWith?: Array<{
     id: string;
@@ -63,10 +63,11 @@ export function transformNote(
   note: NoteWithIncludes,
   userId: string,
 ): TransformedNote {
-  const { tags, sharedWith, _count, attachments, ...rest } = note;
+  const { tags, sharedWith, _count, attachments, pins, ...rest } = note;
 
   // Determine if user is owner or shared user
   const isOwner = note.userId === userId;
+  const isPinned = (pins?.length ?? 0) > 0;
 
   // Filter tags to only include those owned by the requesting user
   const filteredTags = tags?.filter((t) => t.userId === userId) || [];
@@ -87,6 +88,7 @@ export function transformNote(
 
   const transformed: TransformedNote = {
     ...rest,
+    isPinned,
     tagIds: filteredTags.map((t) => t.id),
     createdAt: toISOString(rest.createdAt),
     updatedAt: toISOString(rest.updatedAt),

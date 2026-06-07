@@ -47,6 +47,7 @@ model User {
   notesSharedWithMe    NoteShare[]      @relation("SharedWith")
   refreshTokens        RefreshToken[]
   uploadedAttachments  NoteAttachment[]
+  notePins             NotePin[]
 }
 
 model Settings {
@@ -60,8 +61,7 @@ model Settings {
 model Note {
   id          String      @id @default(uuid())
   title       String
-  content     String?  
-  isPinned    Boolean     @default(false)
+  content     String?
   isArchived  Boolean     @default(false)
   background  String?
   state       NoteState   @default(active)
@@ -72,6 +72,18 @@ model Note {
   tags        Tag[]
   sharedWith  NoteShare[]
   attachments NoteAttachment[]
+  pins        NotePin[]
+}
+
+model NotePin {
+  userId    String
+  noteId    String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  note      Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@id([userId, noteId])
+  @@index([noteId])
 }
 
 model Tag {
