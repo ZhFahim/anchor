@@ -17,6 +17,7 @@ import {
   NOTE_INCLUDE_TAGS,
   NOTE_INCLUDE_SHARES,
   NOTE_INCLUDE_ATTACHMENT_COUNT,
+  notePinInclude,
 } from '../constants/notes.constants';
 
 @Injectable()
@@ -28,7 +29,7 @@ export class NotesService {
   ) {}
 
   async create(userId: string, createNoteDto: CreateNoteDto) {
-    const { tagIds, ...noteData } = createNoteDto;
+    const { tagIds, isPinned, ...noteData } = createNoteDto;
 
     const note = await this.prisma.note.create({
       data: {
@@ -44,7 +45,12 @@ export class NotesService {
       include: NOTE_INCLUDE_TAGS,
     });
 
-    return transformNote(note, userId);
+    await this.setNotePin(userId, note.id, isPinned);
+
+    return transformNote(
+      { ...note, pins: isPinned ? [{ userId }] : [] },
+      userId,
+    );
   }
 
   async findAll(
@@ -104,8 +110,9 @@ export class NotesService {
         ...NOTE_INCLUDE_TAGS,
         ...NOTE_INCLUDE_SHARES,
         ...NOTE_INCLUDE_ATTACHMENT_COUNT,
+        ...notePinInclude(userId),
       },
-      orderBy: [{ isPinned: 'desc' }, { updatedAt: 'desc' }],
+      orderBy: [{ updatedAt: 'desc' }],
       take: normalizedLimit,
     });
 
@@ -125,6 +132,7 @@ export class NotesService {
         ...NOTE_INCLUDE_TAGS,
         ...NOTE_INCLUDE_SHARES,
         ...NOTE_INCLUDE_ATTACHMENT_COUNT,
+        ...notePinInclude(userId),
       },
     });
 
@@ -147,7 +155,10 @@ export class NotesService {
       NoteSharePermission.editor,
     );
 
-    const { tagIds, ...noteData } = updateNoteDto;
+    const { tagIds, isPinned, ...noteData } = updateNoteDto;
+
+    // Apply the pin first so the include below reflects the new state.
+    await this.setNotePin(userId, id, isPinned);
 
     const note = await this.prisma.note.update({
       where: { id },
@@ -160,7 +171,7 @@ export class NotesService {
           },
         }),
       },
-      include: NOTE_INCLUDE_TAGS,
+      include: { ...NOTE_INCLUDE_TAGS, ...notePinInclude(userId) },
     });
 
     return transformNote(note, userId);
@@ -173,7 +184,7 @@ export class NotesService {
     const note = await this.prisma.note.update({
       where: { id },
       data: { state: NoteState.trashed },
-      include: NOTE_INCLUDE_TAGS,
+      include: { ...NOTE_INCLUDE_TAGS, ...notePinInclude(userId) },
     });
 
     return transformNote(note, userId);
@@ -194,7 +205,7 @@ export class NotesService {
     const restoredNote = await this.prisma.note.update({
       where: { id },
       data: { state: NoteState.active },
-      include: NOTE_INCLUDE_TAGS,
+      include: { ...NOTE_INCLUDE_TAGS, ...notePinInclude(userId) },
     });
 
     return transformNote(restoredNote, userId);
@@ -207,7 +218,7 @@ export class NotesService {
     const note = await this.prisma.note.update({
       where: { id },
       data: { state: NoteState.deleted },
-      include: NOTE_INCLUDE_TAGS,
+      include: { ...NOTE_INCLUDE_TAGS, ...notePinInclude(userId) },
     });
 
     return transformNote(note, userId);
@@ -224,6 +235,7 @@ export class NotesService {
       include: {
         ...NOTE_INCLUDE_TAGS,
         ...NOTE_INCLUDE_ATTACHMENT_COUNT,
+        ...notePinInclude(userId),
       },
     });
 
@@ -242,6 +254,7 @@ export class NotesService {
       include: {
         ...NOTE_INCLUDE_TAGS,
         ...NOTE_INCLUDE_ATTACHMENT_COUNT,
+        ...notePinInclude(userId),
       },
     });
 
@@ -443,7 +456,6 @@ export class NotesService {
         id: change.id,
         title: change.title,
         content: change.content,
-        isPinned: change.isPinned ?? false,
         isArchived: change.isArchived ?? false,
         background: change.background,
         state: (change.state as NoteState) ?? NoteState.active,
@@ -455,6 +467,8 @@ export class NotesService {
           : undefined,
       },
     });
+
+    await this.setNotePin(userId, change.id, change.isPinned);
   }
 
   private async processExistingSyncNote(
@@ -475,12 +489,16 @@ export class NotesService {
         change.id,
       );
       if (readAccess.hasAccess) {
+        await this.setNotePin(userId, change.id, change.isPinned);
         result.forceServerNoteIds.add(change.id);
         result.conflicts.push({ noteId: change.id, resolution: 'server' });
         result.processedIds.push(change.id);
       }
       return;
     }
+
+    // Pin state is per-user and conflict-free
+    await this.setNotePin(userId, change.id, change.isPinned);
 
     const clientUpdatedAt = new Date(change.updatedAt);
     const serverUpdatedAt = existingNote.updatedAt;
@@ -515,7 +533,6 @@ export class NotesService {
     const updateData: Prisma.NoteUpdateInput = {
       title: change.title,
       content: change.content,
-      isPinned: change.isPinned,
       background: change.background,
     };
 
@@ -563,6 +580,7 @@ export class NotesService {
         ...NOTE_INCLUDE_TAGS,
         ...NOTE_INCLUDE_SHARES,
         ...NOTE_INCLUDE_ATTACHMENT_COUNT,
+        ...notePinInclude(userId),
       },
     });
   }
@@ -590,10 +608,31 @@ export class NotesService {
             ...NOTE_INCLUDE_TAGS,
             ...NOTE_INCLUDE_SHARES,
             ...NOTE_INCLUDE_ATTACHMENT_COUNT,
+            ...notePinInclude(userId),
           },
         },
       },
     });
+  }
+
+  // undefined leaves the pin untouched; true pins, false unpins (per user).
+  private async setNotePin(
+    userId: string,
+    noteId: string,
+    isPinned: boolean | undefined,
+  ) {
+    if (isPinned === undefined) {
+      return;
+    }
+    if (isPinned) {
+      await this.prisma.notePin.upsert({
+        where: { userId_noteId: { userId, noteId } },
+        create: { userId, noteId },
+        update: {},
+      });
+    } else {
+      await this.prisma.notePin.deleteMany({ where: { userId, noteId } });
+    }
   }
 }
 

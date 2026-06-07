@@ -176,6 +176,10 @@ export class NoteSharesService {
       data: { isDeleted: true },
     });
 
+    await this.prisma.notePin.deleteMany({
+      where: { noteId, userId: share.sharedWithUserId },
+    });
+
     return { success: true };
   }
 }

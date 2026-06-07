@@ -40,6 +40,15 @@ export const NOTE_INCLUDE_ATTACHMENT_COUNT = {
   },
 } as const;
 
+// Include the requesting user's pin state.
+export const notePinInclude = (userId: string) =>
+  ({
+    pins: {
+      where: { userId },
+      select: { userId: true },
+    },
+  }) as const;
+
 // Include shares for notes (used in queries, filtered during transformation)
 export const NOTE_INCLUDE_SHARES = {
   sharedWith: {
