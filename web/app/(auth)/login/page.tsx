@@ -1,16 +1,28 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
+import { Loader2, Lock, LogIn, Mail } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Mail, Lock, Loader2, LogIn } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useQuery } from "@tanstack/react-query";
-import { useAuth, useOidcConfig, useOidcLogin, useOidcCallback, getRegistrationMode } from "@/features/auth";
+import {
+  getRegistrationMode,
+  useAuth,
+  useOidcCallback,
+  useOidcConfig,
+  useOidcLogin,
+} from "@/features/auth";
 import { getSafeRedirectUrl } from "@/features/auth/utils/redirect";
 
 export default function LoginPage() {
@@ -18,13 +30,18 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const searchParams = useSearchParams();
   const { login, isLoginPending } = useAuth();
-  const { data: oidcConfig, isLoading: oidcConfigLoading, error: oidcConfigError } = useOidcConfig();
+  const {
+    data: oidcConfig,
+    isLoading: oidcConfigLoading,
+    error: oidcConfigError,
+  } = useOidcConfig();
   const { initiate: initiateOidcLogin } = useOidcLogin();
   const { isProcessing: isOidcCallbackProcessing } = useOidcCallback();
-  const { data: registrationMode, isLoading: registrationModeLoading } = useQuery({
-    queryKey: ["registration-mode"],
-    queryFn: getRegistrationMode,
-  });
+  const { data: registrationMode, isLoading: registrationModeLoading } =
+    useQuery({
+      queryKey: ["registration-mode"],
+      queryFn: getRegistrationMode,
+    });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +55,8 @@ export default function LoginPage() {
   };
 
   const showLocalLogin = !oidcConfig?.disableInternalAuth;
-  const isLoading = oidcConfigLoading || isOidcCallbackProcessing || registrationModeLoading;
+  const isLoading =
+    oidcConfigLoading || isOidcCallbackProcessing || registrationModeLoading;
 
   return (
     <Card className="border-0 shadow-xl bg-card/80 backdrop-blur-sm overflow-hidden">
@@ -64,7 +82,9 @@ export default function LoginPage() {
                 />
               </div>
               <div className="space-y-1">
-                <CardTitle className="text-3xl font-serif">Welcome Back</CardTitle>
+                <CardTitle className="text-3xl font-serif">
+                  Welcome Back
+                </CardTitle>
                 <CardDescription className="text-muted-foreground">
                   Sign in to continue to Anchor
                 </CardDescription>

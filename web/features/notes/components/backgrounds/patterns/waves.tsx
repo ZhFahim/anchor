@@ -24,7 +24,7 @@ export function WavesPattern({ color }: { color: string }) {
         fill="none"
         stroke={color}
         strokeWidth="2"
-      />
+      />,
     );
   }
 

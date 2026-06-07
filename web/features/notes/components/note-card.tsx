@@ -1,17 +1,17 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { Pin, Paperclip } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Paperclip, Pin } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { cn } from "@/lib/utils";
 import type { Note } from "@/features/notes";
 import { QuillPreview } from "@/features/notes";
+import { cn } from "@/lib/utils";
 import { NoteBackground } from "./backgrounds";
+import { ListImageThumbnail, NoteCardImages } from "./note-card-images";
 import { SharedNoteIndicator } from "./shared-note-indicator";
-import { NoteCardImages, ListImageThumbnail } from "./note-card-images";
 
 type ViewMode = "masonry" | "grid" | "list";
 
@@ -64,13 +64,12 @@ export function NoteCard({
   };
 
   // Handle checkbox change
-  const handleCheckboxChange = (checked: boolean) => {
+  const handleCheckboxChange = (_checked: boolean) => {
     // Checkbox click is treated as a simple toggle (no modifiers, but in selection mode)
     onSelectChange?.(note.id, false, false);
   };
 
-  const previewMaxLines =
-    viewMode === "list" ? 2 : viewMode === "grid" ? 4 : 6;
+  const previewMaxLines = viewMode === "list" ? 2 : viewMode === "grid" ? 4 : 6;
 
   // Calculate stagger delay (max 500ms for first 10 items)
   const staggerDelay = Math.min(index * 50, 500);
@@ -98,20 +97,26 @@ export function NoteCard({
             "transition-all duration-200 ease-out",
             "hover:border-border",
             "animate-in fade-in-0 slide-in-from-left-4",
-            isSelected && "ring-1 ring-primary/50 ring-offset-1"
+            isSelected && "ring-1 ring-primary/50 ring-offset-1",
           )}
           style={{
             animationDelay: `${staggerDelay}ms`,
             animationFillMode: "backwards",
           }}
         >
-          <NoteBackground styleId={note.background} className="absolute inset-0" />
+          <NoteBackground
+            styleId={note.background}
+            className="absolute inset-0"
+          />
           <div className="relative">
             <CardContent>
               <div className="flex items-start gap-3">
                 {/* Checkbox for selection mode */}
                 {isSelectionMode && (
-                  <div className="flex-shrink-0 mt-0.5" onClick={(e) => e.stopPropagation()}>
+                  <div
+                    className="flex-shrink-0 mt-0.5"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <Checkbox
                       checked={isSelected}
                       onCheckedChange={handleCheckboxChange}
@@ -173,12 +178,14 @@ export function NoteCard({
                       <>
                         <SharedNoteIndicator note={note} />
                         {/* Only show paperclip count if no image previews */}
-                        {(note.attachmentCount ?? 0) > 0 && (!note.imagePreviewIds || note.imagePreviewIds.length === 0) && (
-                          <div className="flex items-center gap-1 text-muted-foreground">
-                            <Paperclip className="h-3 w-3" />
-                            <span>{note.attachmentCount}</span>
-                          </div>
-                        )}
+                        {(note.attachmentCount ?? 0) > 0 &&
+                          (!note.imagePreviewIds ||
+                            note.imagePreviewIds.length === 0) && (
+                            <div className="flex items-center gap-1 text-muted-foreground">
+                              <Paperclip className="h-3 w-3" />
+                              <span>{note.attachmentCount}</span>
+                            </div>
+                          )}
                         <span className="text-xs text-muted-foreground font-medium">
                           {format(new Date(note.updatedAt), "MMM d, yyyy")}
                         </span>
@@ -225,19 +232,27 @@ export function NoteCard({
           "hover:border-border hover:-translate-y-1",
           "animate-in fade-in-0 slide-in-from-bottom-4",
           viewMode === "grid" && "h-full",
-          isSelected && "ring-1 ring-primary/50 ring-offset-1"
+          isSelected && "ring-1 ring-primary/50 ring-offset-1",
         )}
         style={{
           animationDelay: `${staggerDelay}ms`,
           animationFillMode: "backwards",
         }}
       >
-        <NoteBackground styleId={note.background} className="absolute inset-0" />
+        <NoteBackground
+          styleId={note.background}
+          className="absolute inset-0"
+        />
         <div className="relative">
-          <CardContent className={cn(viewMode === "grid" && "flex flex-col h-full")}>
+          <CardContent
+            className={cn(viewMode === "grid" && "flex flex-col h-full")}
+          >
             {/* Checkbox for selection mode */}
             {isSelectionMode && (
-              <div className="absolute top-3 right-3 z-10" onClick={(e) => e.stopPropagation()}>
+              <div
+                className="absolute top-3 right-3 z-10"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <Checkbox
                   checked={isSelected}
                   onCheckedChange={handleCheckboxChange}
@@ -268,7 +283,7 @@ export function NoteCard({
             <h3
               className={cn(
                 "font-bold leading-tight mb-2 pr-8 line-clamp-2 group-hover:text-accent transition-colors duration-200",
-                viewMode === "grid" ? "text-base" : "text-lg"
+                viewMode === "grid" ? "text-base" : "text-lg",
               )}
             >
               {note.title || "Untitled"}
@@ -278,10 +293,7 @@ export function NoteCard({
             <QuillPreview
               content={note.content}
               maxLines={previewMaxLines}
-              className={cn(
-                "mb-3",
-                viewMode === "grid" && "flex-1 min-h-0",
-              )}
+              className={cn("mb-3", viewMode === "grid" && "flex-1 min-h-0")}
             />
 
             {/* Tags */}
@@ -293,9 +305,7 @@ export function NoteCard({
                     variant="secondary"
                     className="text-xs px-2 py-0.5 rounded-full font-medium"
                     style={{
-                      backgroundColor: tag.color
-                        ? `${tag.color}20`
-                        : undefined,
+                      backgroundColor: tag.color ? `${tag.color}20` : undefined,
                       color: tag.color || undefined,
                     }}
                   >

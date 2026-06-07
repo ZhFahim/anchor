@@ -3,9 +3,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { ThemeProvider } from "next-themes";
+import { type ReactNode, useState } from "react";
 import { Toaster } from "@/components/ui/sonner";
-import { useState, type ReactNode } from "react";
-
 
 interface ProvidersProps {
   children: ReactNode;
@@ -21,7 +20,7 @@ export function Providers({ children }: ProvidersProps) {
             refetchOnWindowFocus: false,
           },
         },
-      })
+      }),
   );
 
   return (

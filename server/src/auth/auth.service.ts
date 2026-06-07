@@ -30,7 +30,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private settingsService: SettingsService,
-  ) { }
+  ) {}
 
   async getRegistrationMode() {
     return {
@@ -144,7 +144,7 @@ export class AuthService {
     }
 
     // Remove password from user object
-    const { password: _, ...userWithoutPassword } = user;
+    const { password, ...userWithoutPassword } = user;
 
     const tokens = await this.createTokenPair(user.id, user.email);
     return {
@@ -342,7 +342,7 @@ export class AuthService {
       });
 
       return updatedUser;
-    } catch (error) {
+    } catch {
       throw new BadRequestException(
         'Failed to update profile. Please try again.',
       );
@@ -399,17 +399,19 @@ export class AuthService {
 
       // Delete old image only after successful database update
       if (oldImagePath && oldImagePath !== imagePath) {
-        await this.deleteProfileImage(oldImagePath);
+        this.deleteProfileImage(oldImagePath);
       }
 
       return updatedUser;
-    } catch (error) {
+    } catch {
       // If database update fails, delete the newly uploaded file
       if (fileSaved && fs.existsSync(filePath)) {
         try {
           fs.unlinkSync(filePath);
-        } catch (deleteError) {
-          this.logger.error(`Failed to delete newly uploaded file after DB error: ${filePath}`);
+        } catch {
+          this.logger.error(
+            `Failed to delete newly uploaded file after DB error: ${filePath}`,
+          );
         }
       }
       throw new BadRequestException(
@@ -448,18 +450,18 @@ export class AuthService {
 
       // Delete old image only after successful database update
       if (oldImagePath) {
-        await this.deleteProfileImage(oldImagePath);
+        this.deleteProfileImage(oldImagePath);
       }
 
       return updatedUser;
-    } catch (error) {
+    } catch {
       throw new BadRequestException(
         'Failed to remove profile image. Please try again.',
       );
     }
   }
 
-  private async deleteProfileImage(profileImagePath: string): Promise<void> {
+  private deleteProfileImage(profileImagePath: string): void {
     if (!profileImagePath) return;
 
     try {
@@ -472,8 +474,10 @@ export class AuthService {
       if (fs.existsSync(fullPath)) {
         fs.unlinkSync(fullPath);
       }
-    } catch (error) {
-      this.logger.error(`Failed to delete old profile image at ${profileImagePath}`);
+    } catch {
+      this.logger.error(
+        `Failed to delete old profile image at ${profileImagePath}`,
+      );
     }
   }
 

@@ -1,10 +1,10 @@
 "use client";
 
+import { Copy, ExternalLink, Pencil, Unlink } from "lucide-react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import type { LinkRange, QuillInstance } from "@/features/notes";
 import { cn } from "@/lib/utils";
-import { Copy, ExternalLink, Pencil, Unlink } from "lucide-react";
-import { useLayoutEffect, useRef, useState } from "react";
 
 interface LinkBubbleProps {
   getQuill: () => QuillInstance | null;
@@ -51,7 +51,6 @@ export function LinkBubble({
     if (left < margin) left = margin;
     if (left > maxLeft) left = Math.max(margin, maxLeft);
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- measure-then-position
     setPosition({ top, left });
   }, [getQuill, link.start, link.length, containerEl]);
 

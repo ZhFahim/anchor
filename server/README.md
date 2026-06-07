@@ -10,12 +10,14 @@ Nest.js backend for Anchor application.
 ## Setup
 
 1.  Install dependencies:
+
     ```bash
     pnpm install
     ```
 
 2.  Set up environment variables:
     Copy `.env.example` to `.env` (if it exists) or ensure `.env` has:
+
     ```env
     DATABASE_URL="postgresql://anchor:password@localhost:5432/anchor?schema=public"
     JWT_SECRET="supersecretkey"
@@ -24,11 +26,13 @@ Nest.js backend for Anchor application.
 
 3.  Start Database:
     From the project root:
+
     ```bash
     docker compose -f ../docker-compose.dev.yml up -d db
     ```
 
 4.  Generate Prisma Client:
+
     ```bash
     pnpm exec prisma generate
     ```
@@ -51,6 +55,15 @@ pnpm run start:dev
 pnpm run start:prod
 ```
 
+## Linting & Formatting
+
+This project uses ESLint (type-aware) + Prettier.
+
+```bash
+pnpm check        # ESLint + Prettier, read-only
+pnpm check:fix    # ESLint --fix + Prettier --write
+```
+
 ## Test
 
 ```bash
@@ -64,6 +77,7 @@ pnpm run test:e2e
 ## API Endpoints
 
 ### Auth
+
 - `GET /api/auth/registration-mode` - Get current registration mode (public)
 - `POST /api/auth/register` - Register a new user
 - `POST /api/auth/login` - Login
@@ -76,6 +90,7 @@ pnpm run test:e2e
 - `POST /api/auth/change-password` - Change password
 
 ### OIDC Authentication
+
 - `GET /api/auth/oidc/config` - Get OIDC configuration (public)
 - `GET /api/auth/oidc/initiate` - Initiate OIDC login flow (redirects to provider)
 - `GET /api/auth/oidc/callback` - OIDC callback (handles provider redirect)
@@ -83,6 +98,7 @@ pnpm run test:e2e
 - `POST /api/auth/oidc/exchange/mobile` - Exchange IdP access token for app tokens (mobile)
 
 ### Notes
+
 - `GET /api/notes` - Get all notes (supports `?search=term` and `?tagId=id`)
 - `GET /api/notes/trash` - Get all trashed notes
 - `GET /api/notes/archive` - Get all archived notes
@@ -97,6 +113,7 @@ pnpm run test:e2e
 - `POST /api/notes/bulk/archive` - Bulk archive notes
 
 ### Note Attachments
+
 - `POST /api/notes/:noteId/attachments` - Upload an attachment (multipart/form-data)
 - `GET /api/notes/:noteId/attachments` - List all attachments for a note
 - `GET /api/notes/:noteId/attachments/:id` - Get attachment file (stream)
@@ -104,12 +121,14 @@ pnpm run test:e2e
 - `PATCH /api/notes/:noteId/attachments/reorder` - Reorder attachments (body: `{ orderedIds: string[] }`)
 
 ### Note Sharing
+
 - `POST /api/notes/:id/shares` - Share a note with a user
 - `GET /api/notes/:id/shares` - Get all shares for a note
 - `PATCH /api/notes/:id/shares/:shareId` - Update share permission
 - `DELETE /api/notes/:id/shares/:shareId` - Revoke a share
 
 ### Tags
+
 - `GET /api/tags` - Get all tags
 - `POST /api/tags` - Create a tag
 - `GET /api/tags/:id` - Get a specific tag
@@ -119,6 +138,7 @@ pnpm run test:e2e
 - `POST /api/tags/sync` - Sync tags with client
 
 ### Admin (requires admin privileges)
+
 - `GET /api/admin/stats` - Get server statistics
 - `GET /api/admin/settings/registration` - Get registration settings
 - `PATCH /api/admin/settings/registration` - Update registration mode (disabled if locked by env)
@@ -134,4 +154,5 @@ pnpm run test:e2e
 - `POST /api/admin/users/:id/reject` - Reject and delete a pending user
 
 ### Health
+
 - `GET /api/health` - Health check endpoint

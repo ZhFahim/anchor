@@ -20,7 +20,7 @@ export class AdminService {
     private prisma: PrismaService,
     private settingsService: SettingsService,
     private oidcConfigService: OidcConfigService,
-  ) { }
+  ) {}
 
   async getStats() {
     const [totalUsers, totalNotes, totalTags] = await Promise.all([
@@ -151,7 +151,11 @@ export class AdminService {
     return user;
   }
 
-  async updateUser(id: string, updateUserDto: UpdateUserDto, currentUserId: string) {
+  async updateUser(
+    id: string,
+    updateUserDto: UpdateUserDto,
+    currentUserId: string,
+  ) {
     const user = await this.prisma.user.findUnique({
       where: { id },
     });
@@ -180,14 +184,17 @@ export class AdminService {
         where: { isAdmin: true },
       });
       if (adminCount === 1) {
-        throw new BadRequestException('Cannot remove admin status from the last admin user');
+        throw new BadRequestException(
+          'Cannot remove admin status from the last admin user',
+        );
       }
     }
 
     const data: Partial<UpdateUserDto> = {};
     if (updateUserDto.email !== undefined) data.email = updateUserDto.email;
     if (updateUserDto.name !== undefined) data.name = updateUserDto.name;
-    if (updateUserDto.isAdmin !== undefined) data.isAdmin = updateUserDto.isAdmin;
+    if (updateUserDto.isAdmin !== undefined)
+      data.isAdmin = updateUserDto.isAdmin;
 
     const updatedUser = await this.prisma.user.update({
       where: { id },

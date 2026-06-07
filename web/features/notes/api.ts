@@ -1,12 +1,12 @@
 import { api } from "@/lib/api/client";
 import type {
-  Note,
   CreateNoteDto,
-  UpdateNoteDto,
+  Note,
+  NoteAttachment,
   NoteShare,
   NoteSharePermission,
+  UpdateNoteDto,
   UserSearchResult,
-  NoteAttachment,
 } from "./types";
 
 interface NotesQueryParams {
@@ -33,7 +33,10 @@ export async function createNote(data: CreateNoteDto): Promise<Note> {
   return api.post("api/notes", { json: data }).json<Note>();
 }
 
-export async function updateNote(id: string, data: UpdateNoteDto): Promise<Note> {
+export async function updateNote(
+  id: string,
+  data: UpdateNoteDto,
+): Promise<Note> {
   return api.patch(`api/notes/${id}`, { json: data }).json<Note>();
 }
 
@@ -58,19 +61,31 @@ export async function getArchivedNotes(): Promise<Note[]> {
 }
 
 export async function archiveNote(id: string): Promise<Note> {
-  return api.patch(`api/notes/${id}`, { json: { isArchived: true } }).json<Note>();
+  return api
+    .patch(`api/notes/${id}`, { json: { isArchived: true } })
+    .json<Note>();
 }
 
 export async function unarchiveNote(id: string): Promise<Note> {
-  return api.patch(`api/notes/${id}`, { json: { isArchived: false } }).json<Note>();
+  return api
+    .patch(`api/notes/${id}`, { json: { isArchived: false } })
+    .json<Note>();
 }
 
-export async function bulkDeleteNotes(noteIds: string[]): Promise<{ count: number }> {
-  return api.post("api/notes/bulk/delete", { json: { noteIds } }).json<{ count: number }>();
+export async function bulkDeleteNotes(
+  noteIds: string[],
+): Promise<{ count: number }> {
+  return api
+    .post("api/notes/bulk/delete", { json: { noteIds } })
+    .json<{ count: number }>();
 }
 
-export async function bulkArchiveNotes(noteIds: string[]): Promise<{ count: number }> {
-  return api.post("api/notes/bulk/archive", { json: { noteIds } }).json<{ count: number }>();
+export async function bulkArchiveNotes(
+  noteIds: string[],
+): Promise<{ count: number }> {
+  return api
+    .post("api/notes/bulk/archive", { json: { noteIds } })
+    .json<{ count: number }>();
 }
 
 // Sharing APIs
@@ -132,19 +147,36 @@ export async function uploadAttachment(
     .json<NoteAttachment>();
 }
 
-export async function getNoteAttachments(noteId: string): Promise<NoteAttachment[]> {
+export async function getNoteAttachments(
+  noteId: string,
+): Promise<NoteAttachment[]> {
   return api.get(`api/notes/${noteId}/attachments`).json<NoteAttachment[]>();
 }
 
-export async function fetchAttachmentBlob(noteId: string, attachmentId: string): Promise<Blob> {
-  const response = await api.get(`api/notes/${noteId}/attachments/${attachmentId}`);
+export async function fetchAttachmentBlob(
+  noteId: string,
+  attachmentId: string,
+): Promise<Blob> {
+  const response = await api.get(
+    `api/notes/${noteId}/attachments/${attachmentId}`,
+  );
   return response.blob();
 }
 
-export async function deleteAttachment(noteId: string, attachmentId: string): Promise<{ success: boolean }> {
-  return api.delete(`api/notes/${noteId}/attachments/${attachmentId}`).json<{ success: boolean }>();
+export async function deleteAttachment(
+  noteId: string,
+  attachmentId: string,
+): Promise<{ success: boolean }> {
+  return api
+    .delete(`api/notes/${noteId}/attachments/${attachmentId}`)
+    .json<{ success: boolean }>();
 }
 
-export async function reorderAttachments(noteId: string, orderedIds: string[]): Promise<NoteAttachment[]> {
-  return api.patch(`api/notes/${noteId}/attachments/reorder`, { json: { orderedIds } }).json<NoteAttachment[]>();
+export async function reorderAttachments(
+  noteId: string,
+  orderedIds: string[],
+): Promise<NoteAttachment[]> {
+  return api
+    .patch(`api/notes/${noteId}/attachments/reorder`, { json: { orderedIds } })
+    .json<NoteAttachment[]>();
 }

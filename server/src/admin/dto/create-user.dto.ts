@@ -17,7 +17,7 @@ export class CreateUserDto {
 
   @IsNotEmpty()
   @IsString()
-  @Transform(({ value }) => value?.trim())
+  @Transform(({ value }: { value: string }) => value?.trim())
   @MaxLength(100)
   name: string;
 }

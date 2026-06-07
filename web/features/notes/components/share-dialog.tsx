@@ -1,8 +1,18 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Search, UserPlus, X, Loader2, Edit, Eye, ChevronDown } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  ChevronDown,
+  Edit,
+  Eye,
+  Loader2,
+  Search,
+  UserPlus,
+  X,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,25 +22,23 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 import {
-  shareNote,
   getNoteShares,
-  updateNoteSharePermission,
   revokeShare,
   searchUsers,
+  shareNote,
+  updateNoteSharePermission,
 } from "../api";
 import type { NoteSharePermission, UserSearchResult } from "../types";
-import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 
 interface ShareDialogProps {
   open: boolean;
@@ -139,7 +147,10 @@ export function ShareDialog({ open, onOpenChange, noteId }: ShareDialogProps) {
     });
   };
 
-  const handleUpdatePermission = (shareId: string, permission: NoteSharePermission) => {
+  const handleUpdatePermission = (
+    shareId: string,
+    permission: NoteSharePermission,
+  ) => {
     updatePermissionMutation.mutate({ shareId, permission });
   };
 
@@ -164,7 +175,8 @@ export function ShareDialog({ open, onOpenChange, noteId }: ShareDialogProps) {
             Share Note
           </DialogTitle>
           <DialogDescription className="pt-2">
-            Share this note with other users. Viewers can read, editors can edit.
+            Share this note with other users. Viewers can read, editors can
+            edit.
           </DialogDescription>
         </DialogHeader>
 
@@ -189,11 +201,12 @@ export function ShareDialog({ open, onOpenChange, noteId }: ShareDialogProps) {
               <div className="border rounded-md max-h-48 overflow-y-auto divide-y">
                 {availableUsers.map((user) => (
                   <button
+                    type="button"
                     key={user.id}
                     onClick={() => setSelectedUserId(user.id)}
                     className={cn(
                       "w-full px-3 py-2.5 text-left hover:bg-muted transition-colors flex items-center gap-3",
-                      selectedUserId === user.id && "bg-muted"
+                      selectedUserId === user.id && "bg-muted",
                     )}
                   >
                     <Avatar className="size-8">
@@ -219,8 +232,14 @@ export function ShareDialog({ open, onOpenChange, noteId }: ShareDialogProps) {
             {selectedUserId && (
               <div className="flex items-center gap-2">
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild className="hover:bg-primary/10 hover:text-primary">
-                    <Button variant="outline" className="flex-1 justify-between">
+                  <DropdownMenuTrigger
+                    asChild
+                    className="hover:bg-primary/10 hover:text-primary"
+                  >
+                    <Button
+                      variant="outline"
+                      className="flex-1 justify-between"
+                    >
                       <div className="flex items-center gap-2">
                         {selectedPermission === "viewer" ? (
                           <>
@@ -321,7 +340,10 @@ export function ShareDialog({ open, onOpenChange, noteId }: ShareDialogProps) {
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <DropdownMenu>
-                        <DropdownMenuTrigger asChild className="hover:bg-primary/10 hover:text-primary">
+                        <DropdownMenuTrigger
+                          asChild
+                          className="hover:bg-primary/10 hover:text-primary"
+                        >
                           <Button
                             variant="outline"
                             size="sm"

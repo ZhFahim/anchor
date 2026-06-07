@@ -20,7 +20,7 @@ import { AuthGuard } from '../../auth/auth.guard';
 @Controller('api/notes')
 @UseGuards(AuthGuard)
 export class NotesController {
-  constructor(private readonly notesService: NotesService) { }
+  constructor(private readonly notesService: NotesService) {}
 
   @Post()
   create(

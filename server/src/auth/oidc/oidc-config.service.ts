@@ -10,7 +10,7 @@ export class OidcConfigService {
   constructor(
     private configService: ConfigService,
     private prisma: PrismaService,
-  ) { }
+  ) {}
 
   /**
    * Check if OIDC is locked by environment variables.

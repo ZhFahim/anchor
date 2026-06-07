@@ -62,7 +62,7 @@ export function linkAtIndex(
     if (index >= pos && index <= pos + data.length) {
       const url =
         typeof ops[i].attributes?.link === "string"
-          ? (ops[i].attributes!.link as string)
+          ? (ops[i].attributes?.link as string)
           : null;
       if (url) {
         hitIndex = i;

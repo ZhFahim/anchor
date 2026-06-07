@@ -17,7 +17,7 @@ export class NoteSharesService {
   constructor(
     private prisma: PrismaService,
     private noteAccessService: NoteAccessService,
-  ) { }
+  ) {}
 
   async shareNote(ownerId: string, noteId: string, shareNoteDto: ShareNoteDto) {
     const { sharedWithUserId, permission } = shareNoteDto;

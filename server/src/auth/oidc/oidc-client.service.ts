@@ -28,7 +28,6 @@ const PublicClientAuth = (
   _as: unknown,
   client: { client_id: string },
   body: URLSearchParams,
-  _headers: Headers,
 ) => {
   body.set('client_id', client.client_id);
   body.set('client_secret', '');
@@ -38,7 +37,7 @@ const PublicClientAuth = (
 export class OidcClientService {
   private readonly logger = new Logger(OidcClientService.name);
 
-  constructor(private readonly oidcConfigService: OidcConfigService) { }
+  constructor(private readonly oidcConfigService: OidcConfigService) {}
 
   /**
    * Get OIDC client configuration via OpenID discovery.

@@ -1,6 +1,6 @@
 "use client";
 
-import { RotateCcw, Loader2 } from "lucide-react";
+import { Loader2, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -54,4 +54,3 @@ export function RestoreDialog({
     </Dialog>
   );
 }
-

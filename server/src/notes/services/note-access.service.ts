@@ -5,10 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import {
-  NoteSharePermission,
-  NoteState,
-} from 'src/generated/prisma/enums';
+import { NoteSharePermission, NoteState } from 'src/generated/prisma/enums';
 
 export interface NoteAccessResult {
   hasAccess: boolean;
@@ -18,7 +15,7 @@ export interface NoteAccessResult {
 
 @Injectable()
 export class NoteAccessService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   /**
    * Check if user has access to a note and return permission info

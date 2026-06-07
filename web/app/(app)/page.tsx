@@ -1,17 +1,15 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { Sparkles, Search, Loader2 } from "lucide-react";
-import { getNotes, deltaToFullPlainText } from "@/features/notes";
-import { getTags } from "@/features/tags";
+import { Loader2, Search, Sparkles, X } from "lucide-react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { useMemo, useState } from "react";
 import { Header } from "@/components/layout";
-import { NoteCard } from "@/features/notes";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
-import Link from "next/link";
+import { deltaToFullPlainText, getNotes, NoteCard } from "@/features/notes";
+import { getTags } from "@/features/tags";
 
 export default function NotesPage() {
   const searchParams = useSearchParams();
@@ -35,7 +33,9 @@ export default function NotesPage() {
     const query = searchQuery.toLowerCase();
     return notes.filter((note) => {
       const titleMatch = note.title.toLowerCase().includes(query);
-      const contentMatch = deltaToFullPlainText(note.content).toLowerCase().includes(query);
+      const contentMatch = deltaToFullPlainText(note.content)
+        .toLowerCase()
+        .includes(query);
       return titleMatch || contentMatch;
     });
   }, [notes, searchQuery]);
@@ -58,7 +58,9 @@ export default function NotesPage() {
         {selectedTag && (
           <div className="mb-4">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-muted/50">
-              <span className="text-sm text-muted-foreground">Filtering by</span>
+              <span className="text-sm text-muted-foreground">
+                Filtering by
+              </span>
               <Badge
                 variant="secondary"
                 className="gap-1.5"
@@ -71,12 +73,7 @@ export default function NotesPage() {
               >
                 {selectedTag.name}
               </Badge>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-5 w-5"
-                asChild
-              >
+              <Button variant="ghost" size="icon" className="h-5 w-5" asChild>
                 <Link href="/">
                   <X className="h-3 w-3" />
                 </Link>

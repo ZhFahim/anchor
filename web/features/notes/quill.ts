@@ -19,20 +19,52 @@ export type QuillDelta = {
  */
 export type QuillInstance = {
   getContents: () => QuillDelta;
-  updateContents: (delta: QuillDelta, source?: "user" | "api" | "silent") => void;
+  updateContents: (
+    delta: QuillDelta,
+    source?: "user" | "api" | "silent",
+  ) => void;
   getFormat: (index?: number, length?: number) => Record<string, unknown>;
-  format: (name: string, value: unknown, source?: "user" | "api" | "silent") => void;
-  formatText: (index: number, length: number, name: string, value: unknown, source?: "user" | "api" | "silent") => void;
+  format: (
+    name: string,
+    value: unknown,
+    source?: "user" | "api" | "silent",
+  ) => void;
+  formatText: (
+    index: number,
+    length: number,
+    name: string,
+    value: unknown,
+    source?: "user" | "api" | "silent",
+  ) => void;
   focus: () => void;
   getText: (index?: number, length?: number) => string;
-  insertText: (index: number, text: string, source?: "user" | "api" | "silent") => void;
-  deleteText: (index: number, length: number, source?: "user" | "api" | "silent") => void;
+  insertText: (
+    index: number,
+    text: string,
+    source?: "user" | "api" | "silent",
+  ) => void;
+  deleteText: (
+    index: number,
+    length: number,
+    source?: "user" | "api" | "silent",
+  ) => void;
   getSelection: (focus?: boolean) => { index: number; length: number } | null;
-  setSelection: (index: number, length: number, source?: "user" | "api" | "silent") => void;
+  setSelection: (
+    index: number,
+    length: number,
+    source?: "user" | "api" | "silent",
+  ) => void;
   getBounds: (
     index: number,
     length?: number,
-  ) => { top: number; left: number; width: number; height: number; bottom: number; right: number } | null;
+  ) => {
+    top: number;
+    left: number;
+    width: number;
+    height: number;
+    bottom: number;
+    right: number;
+  } | null;
   root: HTMLElement;
   history: {
     undo: () => void;
@@ -129,11 +161,15 @@ export function stringifyDelta(delta: unknown): string {
   return JSON.stringify(emptyDelta());
 }
 
-export function isStoredContentEmpty(content: string | null | undefined): boolean {
+export function isStoredContentEmpty(
+  content: string | null | undefined,
+): boolean {
   return deltaToFullPlainText(content).trim() === "";
 }
 
-export function deltaToFullPlainText(content: string | null | undefined): string {
+export function deltaToFullPlainText(
+  content: string | null | undefined,
+): string {
   const delta = parseStoredContent(content);
   return delta.ops
     .map((op) => (typeof op.insert === "string" ? op.insert : ""))
@@ -343,7 +379,7 @@ export function getToggledLinePosition(changeDelta: QuillDelta): number {
 /**
  * Create a delta for `updateContents` that moves a toggled checklist item
  * to its correct position. This preserves undo history as a single operation.
- * 
+ *
  * @param togglePosition - Position where the checkbox was toggled (from change delta)
  * @param currentDelta - Current document content
  * @returns A delta to pass to updateContents, or null if no move needed
@@ -402,7 +438,9 @@ export function createChecklistMoveDelta(
 
   if (lineIndex < targetIndex) {
     // Moving down: delete source, then insert at target (adjusted)
-    const targetStart = getLineStartPosition(lines, targetIndex) + getLineLength(lines[targetIndex]);
+    const targetStart =
+      getLineStartPosition(lines, targetIndex) +
+      getLineLength(lines[targetIndex]);
 
     // Retain to source start
     if (lineStart > 0) {

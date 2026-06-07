@@ -1,40 +1,47 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import Masonry from "react-masonry-css";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Sparkles,
-  Search,
-  Loader2,
-  X,
-  Plus,
-  Pin,
   Archive,
-  Trash2,
   CheckCircle2,
   Circle,
-  CircleCheck
+  CircleCheck,
+  Loader2,
+  Pin,
+  Plus,
+  Search,
+  Sparkles,
+  Trash2,
+  X,
 } from "lucide-react";
-import {
-  getNotes,
-  deltaToFullPlainText,
-  bulkDeleteNotes,
-  bulkArchiveNotes,
-  useSelectionMode
-} from "@/features/notes";
-import { getTags } from "@/features/tags";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import Masonry from "react-masonry-css";
+import { toast } from "sonner";
 import { Header } from "@/components/layout";
-import { NoteCard } from "@/features/notes";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { BulkDeleteDialog, BulkArchiveDialog, ViewSettings } from "@/features/notes";
-import { cn } from "@/lib/utils";
-import { toast } from "sonner";
-import Link from "next/link";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  BulkArchiveDialog,
+  BulkDeleteDialog,
+  bulkArchiveNotes,
+  bulkDeleteNotes,
+  deltaToFullPlainText,
+  getNotes,
+  NoteCard,
+  useSelectionMode,
+  ViewSettings,
+} from "@/features/notes";
 import { usePreferencesStore } from "@/features/preferences";
+import { getTags } from "@/features/tags";
+import { cn } from "@/lib/utils";
 
 const masonryBreakpoints = {
   default: 4,
@@ -53,14 +60,21 @@ export default function NotesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const { notes: notesPrefs, setNotesPreference } = usePreferencesStore();
   const { viewMode, sortBy, sortOrder } = notesPrefs;
-  const setViewMode = (value: typeof viewMode) => setNotesPreference("viewMode", value);
-  const setSortBy = (value: typeof sortBy) => setNotesPreference("sortBy", value);
-  const setSortOrder = (value: typeof sortOrder) => setNotesPreference("sortOrder", value);
+  const setViewMode = (value: typeof viewMode) =>
+    setNotesPreference("viewMode", value);
+  const setSortBy = (value: typeof sortBy) =>
+    setNotesPreference("sortBy", value);
+  const setSortOrder = (value: typeof sortOrder) =>
+    setNotesPreference("sortOrder", value);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
-  const [selectedNoteIds, setSelectedNoteIds] = useState<Set<string>>(new Set());
+  const [selectedNoteIds, setSelectedNoteIds] = useState<Set<string>>(
+    new Set(),
+  );
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
-  const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(null);
+  const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(
+    null,
+  );
 
   // Clear selection when exiting selection mode
   useEffect(() => {
@@ -96,8 +110,8 @@ export default function NotesPage() {
       ...note,
       tags: note.tagIds
         ? note.tagIds
-          .map((tagId) => tags.find((tag) => tag.id === tagId))
-          .filter((tag): tag is NonNullable<typeof tag> => tag !== undefined)
+            .map((tagId) => tags.find((tag) => tag.id === tagId))
+            .filter((tag): tag is NonNullable<typeof tag> => tag !== undefined)
         : [],
     }));
   }, [notes, tags]);
@@ -109,7 +123,9 @@ export default function NotesPage() {
     const query = searchQuery.toLowerCase();
     return notesWithTags.filter((note) => {
       const titleMatch = note.title.toLowerCase().includes(query);
-      const contentMatch = deltaToFullPlainText(note.content).toLowerCase().includes(query);
+      const contentMatch = deltaToFullPlainText(note.content)
+        .toLowerCase()
+        .includes(query);
       return titleMatch || contentMatch;
     });
   }, [notesWithTags, searchQuery]);
@@ -125,9 +141,11 @@ export default function NotesPage() {
       if (sortBy === "title") {
         comparison = a.title.localeCompare(b.title);
       } else if (sortBy === "updatedAt") {
-        comparison = new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
+        comparison =
+          new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
       } else if (sortBy === "createdAt") {
-        comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        comparison =
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
       }
       return sortOrder === "asc" ? comparison : -comparison;
     });
@@ -139,9 +157,11 @@ export default function NotesPage() {
       if (sortBy === "title") {
         comparison = a.title.localeCompare(b.title);
       } else if (sortBy === "updatedAt") {
-        comparison = new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
+        comparison =
+          new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
       } else if (sortBy === "createdAt") {
-        comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        comparison =
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
       }
       return sortOrder === "asc" ? comparison : -comparison;
     });
@@ -157,7 +177,7 @@ export default function NotesPage() {
     noteId: string,
     index: number,
     ctrlOrCmd: boolean,
-    shift: boolean
+    shift: boolean,
   ) => {
     if (shift && lastSelectedIndex !== null) {
       // Range selection
@@ -205,8 +225,10 @@ export default function NotesPage() {
     }
   };
 
-  const allSelected = allSortedNotes.length > 0 && selectedNoteIds.size === allSortedNotes.length;
-  const someSelected = selectedNoteIds.size > 0 && selectedNoteIds.size < allSortedNotes.length;
+  const allSelected =
+    allSortedNotes.length > 0 && selectedNoteIds.size === allSortedNotes.length;
+  const someSelected =
+    selectedNoteIds.size > 0 && selectedNoteIds.size < allSortedNotes.length;
 
   // Bulk delete mutation
   const bulkDeleteMutation = useMutation({
@@ -214,7 +236,9 @@ export default function NotesPage() {
     onSuccess: (_, noteIds) => {
       queryClient.invalidateQueries({ queryKey: ["notes"] });
       queryClient.invalidateQueries({ queryKey: ["tags"] });
-      toast.success(`${noteIds.length} note${noteIds.length > 1 ? "s" : ""} moved to trash`);
+      toast.success(
+        `${noteIds.length} note${noteIds.length > 1 ? "s" : ""} moved to trash`,
+      );
       setSelectedNoteIds(new Set());
       setIsSelectionMode(false);
       setDeleteDialogOpen(false);
@@ -230,7 +254,9 @@ export default function NotesPage() {
     onSuccess: (_, noteIds) => {
       queryClient.invalidateQueries({ queryKey: ["notes"] });
       queryClient.invalidateQueries({ queryKey: ["tags"] });
-      toast.success(`${noteIds.length} note${noteIds.length > 1 ? "s" : ""} archived`);
+      toast.success(
+        `${noteIds.length} note${noteIds.length > 1 ? "s" : ""} archived`,
+      );
       setSelectedNoteIds(new Set());
       setIsSelectionMode(false);
       setArchiveDialogOpen(false);
@@ -240,8 +266,10 @@ export default function NotesPage() {
     },
   });
 
-
-  const renderNotesGrid = (notesToRender: typeof filteredNotes, startIndex = 0) => {
+  const renderNotesGrid = (
+    notesToRender: typeof filteredNotes,
+    startIndex = 0,
+  ) => {
     if (viewMode === "list") {
       return (
         <div className="space-y-2">
@@ -343,23 +371,33 @@ export default function NotesPage() {
                     <CircleCheck className="h-5 w-5 text-primary" />
                   ) : someSelected ? (
                     <div className="relative">
-                      <Circle className="h-5 w-5 text-primary/70" strokeWidth={2} />
+                      <Circle
+                        className="h-5 w-5 text-primary/70"
+                        strokeWidth={2}
+                      />
                       <div className="absolute inset-0 flex items-center justify-center">
                         <div className="h-2 w-2 rounded-full bg-primary" />
                       </div>
                     </div>
                   ) : (
-                    <Circle className="h-5 w-5 text-muted-foreground" strokeWidth={2} />
+                    <Circle
+                      className="h-5 w-5 text-muted-foreground"
+                      strokeWidth={2}
+                    />
                   )}
-                  <span className={cn(
-                    "transition-colors",
-                    allSelected && "text-primary",
-                    someSelected && "text-foreground",
-                    !allSelected && !someSelected && "text-muted-foreground"
-                  )}>
+                  <span
+                    className={cn(
+                      "transition-colors",
+                      allSelected && "text-primary",
+                      someSelected && "text-foreground",
+                      !allSelected && !someSelected && "text-muted-foreground",
+                    )}
+                  >
                     {selectedNoteIds.size > 0 ? (
                       <>
-                        <span className="font-semibold">{selectedNoteIds.size}</span>{" "}
+                        <span className="font-semibold">
+                          {selectedNoteIds.size}
+                        </span>{" "}
                         <span className="text-muted-foreground">selected</span>
                       </>
                     ) : (
@@ -424,62 +462,65 @@ export default function NotesPage() {
           )}
 
           {/* Controls Bar */}
-          {(filteredNotes.length > 0 || searchQuery || selectedTag) && !isSelectionMode && (
-            <div className="max-w-7xl mx-auto mb-6 flex flex-col gap-4">
-              {/* Tag filter indicator */}
-              {selectedTag && (
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-muted/50 border border-border/40 w-fit">
-                  <span className="text-sm text-muted-foreground">Filtering by</span>
-                  <Badge
-                    variant="secondary"
-                    className="gap-1.5"
-                    style={{
-                      backgroundColor: selectedTag.color
-                        ? `${selectedTag.color}20`
-                        : undefined,
-                      color: selectedTag.color || undefined,
-                    }}
-                  >
-                    {selectedTag.name}
-                  </Badge>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6"
-                    asChild
-                  >
-                    <Link href="/notes">
-                      <X className="h-3.5 w-3.5" />
-                    </Link>
-                  </Button>
-                </div>
-              )}
+          {(filteredNotes.length > 0 || searchQuery || selectedTag) &&
+            !isSelectionMode && (
+              <div className="max-w-7xl mx-auto mb-6 flex flex-col gap-4">
+                {/* Tag filter indicator */}
+                {selectedTag && (
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-muted/50 border border-border/40 w-fit">
+                    <span className="text-sm text-muted-foreground">
+                      Filtering by
+                    </span>
+                    <Badge
+                      variant="secondary"
+                      className="gap-1.5"
+                      style={{
+                        backgroundColor: selectedTag.color
+                          ? `${selectedTag.color}20`
+                          : undefined,
+                        color: selectedTag.color || undefined,
+                      }}
+                    >
+                      {selectedTag.name}
+                    </Badge>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      asChild
+                    >
+                      <Link href="/notes">
+                        <X className="h-3.5 w-3.5" />
+                      </Link>
+                    </Button>
+                  </div>
+                )}
 
-              {/* View Settings and Selection Mode Toggle */}
-              {filteredNotes.length > 0 && (
-                <div className="flex items-center justify-end gap-2">
-                  <ViewSettings
-                    viewMode={viewMode}
-                    onViewModeChange={setViewMode}
-                    sortBy={sortBy}
-                    onSortByChange={setSortBy}
-                    sortOrder={sortOrder}
-                    onSortOrderChange={setSortOrder}
-                  />
+                {/* View Settings and Selection Mode Toggle */}
+                {filteredNotes.length > 0 && (
+                  <div className="flex items-center justify-end gap-2">
+                    <ViewSettings
+                      viewMode={viewMode}
+                      onViewModeChange={setViewMode}
+                      sortBy={sortBy}
+                      onSortByChange={setSortBy}
+                      sortOrder={sortOrder}
+                      onSortOrderChange={setSortOrder}
+                    />
 
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsSelectionMode(true)}
-                    className="h-8 px-3 gap-2 border-border/60 hover:border-primary/50 hover:bg-primary/5 hover:text-primary transition-all shadow-none rounded-full"
-                  >
-                    <CheckCircle2 className="h-4 w-4" />
-                    <span className="text-xs font-medium">Select</span>
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsSelectionMode(true)}
+                      className="h-8 px-3 gap-2 border-border/60 hover:border-primary/50 hover:bg-primary/5 hover:text-primary transition-all shadow-none rounded-full"
+                    >
+                      <CheckCircle2 className="h-4 w-4" />
+                      <span className="text-xs font-medium">Select</span>
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
 
           {/* Content */}
           {notesLoading ? (
@@ -504,6 +545,7 @@ export default function NotesPage() {
                   <p className="text-sm text-muted-foreground mb-6">
                     Try adjusting your search terms or{" "}
                     <button
+                      type="button"
                       onClick={() => setSearchQuery("")}
                       className="text-accent hover:underline"
                     >
@@ -578,7 +620,10 @@ export default function NotesPage() {
                       <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
                     </div>
                   )}
-                  {renderNotesGrid(sortedUnpinnedNotes, sortedPinnedNotes.length)}
+                  {renderNotesGrid(
+                    sortedUnpinnedNotes,
+                    sortedPinnedNotes.length,
+                  )}
                 </section>
               )}
             </div>

@@ -13,23 +13,9 @@ export function GridPattern({ color }: { color: string }) {
           patternUnits="userSpaceOnUse"
         >
           {/* Vertical line */}
-          <line
-            x1="0"
-            y1="0"
-            x2="0"
-            y2="24"
-            stroke={color}
-            strokeWidth="1"
-          />
+          <line x1="0" y1="0" x2="0" y2="24" stroke={color} strokeWidth="1" />
           {/* Horizontal line */}
-          <line
-            x1="0"
-            y1="0"
-            x2="24"
-            y2="0"
-            stroke={color}
-            strokeWidth="1"
-          />
+          <line x1="0" y1="0" x2="24" y2="0" stroke={color} strokeWidth="1" />
         </pattern>
       </defs>
       <rect width="100%" height="100%" fill="url(#grid-pattern)" />

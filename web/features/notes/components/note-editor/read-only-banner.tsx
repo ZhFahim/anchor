@@ -18,4 +18,3 @@ export function ReadOnlyBanner({ message }: ReadOnlyBannerProps) {
     </div>
   );
 }
-

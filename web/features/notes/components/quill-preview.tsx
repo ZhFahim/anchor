@@ -1,8 +1,8 @@
 "use client";
 
 import { CheckSquare, Square } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { deltaToPreviewLines } from "@/features/notes/quill";
+import { cn } from "@/lib/utils";
 
 interface QuillPreviewProps {
   content: string | null | undefined;

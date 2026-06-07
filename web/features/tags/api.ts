@@ -1,6 +1,6 @@
-import { api } from "@/lib/api/client";
-import type { Tag, CreateTagDto, UpdateTagDto } from "./types";
 import type { Note } from "@/features/notes/types";
+import { api } from "@/lib/api/client";
+import type { CreateTagDto, Tag, UpdateTagDto } from "./types";
 
 export async function getTags(): Promise<Tag[]> {
   return api.get("api/tags").json<Tag[]>();
@@ -25,4 +25,3 @@ export async function deleteTag(id: string): Promise<void> {
 export async function getNotesByTag(tagId: string): Promise<Note[]> {
   return api.get(`api/tags/${tagId}/notes`).json<Note[]>();
 }
-

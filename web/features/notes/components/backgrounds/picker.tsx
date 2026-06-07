@@ -1,7 +1,8 @@
 "use client";
 
+import { Check, Palette } from "lucide-react";
+import { useTheme } from "next-themes";
 import { useState } from "react";
-import { Palette, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -9,12 +10,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { PATTERNS, SOLID_COLORS } from "@/features/notes/backgrounds";
 import { cn } from "@/lib/utils";
-import {
-  SOLID_COLORS,
-  PATTERNS,
-} from "@/features/notes/backgrounds";
-import { useTheme } from "next-themes";
 import { NoteBackground } from "./background";
 
 interface NoteBackgroundPickerProps {
@@ -39,7 +36,10 @@ export function NoteBackgroundPicker({
   };
 
   return (
-    <Popover open={open && !disabled} onOpenChange={(open) => !disabled && setOpen(open)}>
+    <Popover
+      open={open && !disabled}
+      onOpenChange={(open) => !disabled && setOpen(open)}
+    >
       <PopoverTrigger asChild>
         <Button
           variant="ghost"
@@ -91,7 +91,7 @@ export function NoteBackgroundPicker({
                       "hover:scale-110 active:scale-95",
                       selectedBackground === null
                         ? "border-accent"
-                        : "border-border/40 hover:border-border"
+                        : "border-border/40 hover:border-border",
                     )}
                     style={{
                       backgroundColor: "var(--card)",
@@ -106,7 +106,9 @@ export function NoteBackgroundPicker({
                   {/* Solid Colors */}
                   {SOLID_COLORS.map((style) => {
                     const isSelected = selectedBackground === style.id;
-                    const backgroundColor = isDark ? style.darkColor : style.lightColor;
+                    const backgroundColor = isDark
+                      ? style.darkColor
+                      : style.lightColor;
                     return (
                       <button
                         key={style.id}
@@ -118,7 +120,7 @@ export function NoteBackgroundPicker({
                           "hover:scale-110 active:scale-95",
                           isSelected
                             ? "border-accent"
-                            : "border-transparent hover:border-border/60"
+                            : "border-transparent hover:border-border/60",
                         )}
                         style={{
                           backgroundColor,
@@ -161,7 +163,7 @@ export function NoteBackgroundPicker({
                           "hover:scale-110 active:scale-95",
                           isSelected
                             ? "border-accent"
-                            : "border-border/40 hover:border-border"
+                            : "border-border/40 hover:border-border",
                         )}
                         title={style.id
                           .replace("pattern_", "")
@@ -195,9 +197,7 @@ function getLuminance(hex: string): number {
   if (!rgb) return 0;
   const [r, g, b] = rgb.map((val) => {
     val = val / 255;
-    return val <= 0.03928
-      ? val / 12.92
-      : Math.pow((val + 0.055) / 1.055, 2.4);
+    return val <= 0.03928 ? val / 12.92 : ((val + 0.055) / 1.055) ** 2.4;
   });
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
@@ -206,9 +206,9 @@ function hexToRgb(hex: string): [number, number, number] | null {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result
     ? [
-      parseInt(result[1], 16),
-      parseInt(result[2], 16),
-      parseInt(result[3], 16),
-    ]
+        parseInt(result[1], 16),
+        parseInt(result[2], 16),
+        parseInt(result[3], 16),
+      ]
     : null;
 }

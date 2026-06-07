@@ -12,7 +12,7 @@ export class TasksService {
     private readonly notesService: NotesService,
     private readonly tagsService: TagsService,
     private readonly prisma: PrismaService,
-  ) { }
+  ) {}
 
   // Run daily at 2:00 AM to clean up expired refresh tokens
   @Cron(CronExpression.EVERY_DAY_AT_2AM)

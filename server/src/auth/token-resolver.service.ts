@@ -56,7 +56,9 @@ export class TokenResolverService {
     }
   }
 
-  private async resolveUserFromApiToken(token: string): Promise<AuthUser | null> {
+  private async resolveUserFromApiToken(
+    token: string,
+  ): Promise<AuthUser | null> {
     const user = await this.prisma.user.findUnique({
       where: { apiToken: token },
       select: AUTH_USER_SELECT,

@@ -21,7 +21,7 @@ import { OidcUserService } from './oidc/oidc-user.service';
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
+      useFactory: (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'),
         signOptions: { expiresIn: '15m' },
       }),
@@ -42,6 +42,12 @@ import { OidcUserService } from './oidc/oidc-user.service';
     OidcStateService,
     OidcUserService,
   ],
-  exports: [AuthService, OidcConfigService, JwtModule, TokenResolverService, AuthGuard],
+  exports: [
+    AuthService,
+    OidcConfigService,
+    JwtModule,
+    TokenResolverService,
+    AuthGuard,
+  ],
 })
-export class AuthModule { }
+export class AuthModule {}

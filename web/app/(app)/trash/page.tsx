@@ -1,33 +1,32 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Trash2, RotateCcw, Loader2 } from "lucide-react";
-import {
-  getTrashedNotes,
-  restoreNote,
-  permanentDeleteNote,
-  deltaToFullPlainText,
-  RestoreDialog,
-  PermanentDeleteDialog,
-  NoteCard,
-} from "@/features/notes";
-import type { Note } from "@/features/notes";
-import { getTags } from "@/features/tags";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { format } from "date-fns";
+import { Loader2, RotateCcw, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import * as React from "react";
+import { useMemo, useState } from "react";
+import Masonry from "react-masonry-css";
+import { toast } from "sonner";
 import { Header } from "@/components/layout";
 import { Button } from "@/components/ui/button";
-import { useMemo } from "react";
-import { useRouter } from "next/navigation";
-import Masonry from "react-masonry-css";
-import { format } from "date-fns";
-import { toast } from "sonner";
-import { useState } from "react";
-import * as React from "react";
 import {
   Tooltip,
   TooltipContent,
-  TooltipTrigger,
   TooltipProvider,
+  TooltipTrigger,
 } from "@/components/ui/tooltip";
+import type { Note } from "@/features/notes";
+import {
+  deltaToFullPlainText,
+  getTrashedNotes,
+  NoteCard,
+  PermanentDeleteDialog,
+  permanentDeleteNote,
+  RestoreDialog,
+  restoreNote,
+} from "@/features/notes";
+import { getTags } from "@/features/tags";
 
 const masonryBreakpoints = {
   default: 4,
@@ -59,8 +58,8 @@ export default function TrashPage() {
       ...note,
       tags: note.tagIds
         ? note.tagIds
-          .map((tagId) => tags.find((tag) => tag.id === tagId))
-          .filter((tag): tag is NonNullable<typeof tag> => tag !== undefined)
+            .map((tagId) => tags.find((tag) => tag.id === tagId))
+            .filter((tag): tag is NonNullable<typeof tag> => tag !== undefined)
         : [],
     }));
   }, [notes, tags]);
@@ -246,9 +245,15 @@ function TrashNoteCard({
         </span>
       }
       footerRight={
-        <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-2">
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="flex items-center gap-2"
+        >
           <TooltipProvider>
-            <Tooltip open={restoreTooltipOpen} onOpenChange={setRestoreTooltipOpen}>
+            <Tooltip
+              open={restoreTooltipOpen}
+              onOpenChange={setRestoreTooltipOpen}
+            >
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
@@ -262,7 +267,10 @@ function TrashNoteCard({
               </TooltipTrigger>
               <TooltipContent side="top">Restore</TooltipContent>
             </Tooltip>
-            <Tooltip open={deleteTooltipOpen && !deleteDialogOpen} onOpenChange={setDeleteTooltipOpen}>
+            <Tooltip
+              open={deleteTooltipOpen && !deleteDialogOpen}
+              onOpenChange={setDeleteTooltipOpen}
+            >
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"

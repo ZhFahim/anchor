@@ -28,7 +28,7 @@ import type { User } from 'src/generated/prisma/client';
 
 @Controller('api/auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) { }
+  constructor(private readonly authService: AuthService) {}
 
   @Get('registration-mode')
   getRegistrationMode() {

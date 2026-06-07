@@ -4,7 +4,7 @@ export type NoteState = "active" | "trashed" | "deleted";
 export type NoteSharePermission = "viewer" | "editor";
 export type NotePermission = "owner" | NoteSharePermission;
 
-export type AttachmentType = 'image' | 'audio';
+export type AttachmentType = "image" | "audio";
 
 export interface NoteAttachment {
   id: string;
@@ -80,4 +80,3 @@ export interface UpdateNoteDto {
   background?: string | null;
   tagIds?: string[];
 }
-

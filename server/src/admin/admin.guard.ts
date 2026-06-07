@@ -5,6 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { AuthenticatedRequest } from '../auth/authenticated-request';
 
 @Injectable()
 export class AdminGuard extends JwtAuthGuard implements CanActivate {
@@ -16,7 +17,7 @@ export class AdminGuard extends JwtAuthGuard implements CanActivate {
     }
 
     // Then check if user is admin
-    const request = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const user = request.user;
 
     if (!user || !user.isAdmin) {

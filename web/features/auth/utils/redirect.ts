@@ -4,7 +4,7 @@
  */
 export function getSafeRedirectUrl(
   redirectUrl: string | null | undefined,
-  fallback = "/"
+  fallback = "/",
 ): string {
   const trimmed = redirectUrl?.trim();
   if (!trimmed) {
@@ -21,7 +21,10 @@ export function getSafeRedirectUrl(
   // Allow same-origin absolute URLs
   try {
     const redirect = new URL(trimmed);
-    if (typeof window !== "undefined" && redirect.origin === window.location.origin) {
+    if (
+      typeof window !== "undefined" &&
+      redirect.origin === window.location.origin
+    ) {
       return trimmed;
     }
     // Server-side or different origin

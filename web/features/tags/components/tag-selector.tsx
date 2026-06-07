@@ -1,17 +1,17 @@
 "use client";
 
-import { useState, useMemo, useRef } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Hash, Loader2, Plus, Search, Tag as TagIcon, X } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Plus, X, Loader2, Search, Tag as TagIcon, Hash } from "lucide-react";
-import { getTags, createTag, generateRandomTagColor } from "@/features/tags";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { createTag, generateRandomTagColor, getTags } from "@/features/tags";
 
 interface TagSelectorProps {
   selectedTagIds: string[];
@@ -169,7 +169,6 @@ export function TagSelector({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={handleSearchKeyDown}
-                  autoFocus
                 />
               </div>
 
@@ -186,6 +185,7 @@ export function TagSelector({
                       <div className="space-y-0.5">
                         {filteredTags.map((tag) => (
                           <button
+                            type="button"
                             key={tag.id}
                             onClick={() => selectTag(tag.id)}
                             className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-sm text-sm hover:bg-muted/50 transition-colors text-left group"
@@ -207,6 +207,7 @@ export function TagSelector({
                     {filteredTags.length === 0 && searchQuery.trim() && (
                       <div className="p-1">
                         <button
+                          type="button"
                           onClick={handleCreateTag}
                           disabled={createTagMutation.isPending}
                           className="w-full flex items-center gap-2 px-2.5 py-2 rounded-sm text-sm hover:bg-accent/10 hover:text-accent transition-colors text-left"

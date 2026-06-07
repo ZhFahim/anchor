@@ -1,31 +1,49 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { AdminGuard } from "@/features/admin";
-import { useAuth } from "@/features/auth";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { format } from "date-fns";
 import {
-  getAdminStats,
-  getUsers,
-  createUser,
-  updateUser,
-  deleteUser,
-  resetPassword,
-  getRegistrationSettings,
-  updateRegistrationMode,
-  getPendingUsers,
-  approveUser,
-  rejectUser,
-  getOidcSettings,
-  updateOidcSettings,
-  type AdminUser,
-  type CreateUserDto,
-  type UpdateUserDto,
-  type RegistrationMode,
-  type UpdateOidcSettingsDto,
-} from "@/features/admin";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  FileText,
+  KeyRound,
+  Loader2,
+  Lock,
+  MoreVertical,
+  Plus,
+  Tag,
+  UserPlus,
+  Users,
+  XCircle,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
   Table,
@@ -35,41 +53,29 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  MoreVertical,
-  Plus,
-  Users,
-  FileText,
-  Tag,
-  AlertTriangle,
-  Loader2,
-  Lock,
-  CheckCircle,
-  XCircle,
-  UserPlus,
-  KeyRound,
-  Clock,
-} from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { toast } from "sonner";
-import { format } from "date-fns";
+import {
+  AdminGuard,
+  type AdminUser,
+  approveUser,
+  type CreateUserDto,
+  createUser,
+  deleteUser,
+  getAdminStats,
+  getOidcSettings,
+  getPendingUsers,
+  getRegistrationSettings,
+  getUsers,
+  type RegistrationMode,
+  rejectUser,
+  resetPassword,
+  type UpdateOidcSettingsDto,
+  type UpdateUserDto,
+  updateOidcSettings,
+  updateRegistrationMode,
+  updateUser,
+} from "@/features/admin";
+import { useAuth } from "@/features/auth";
 
 export default function AdminPage() {
   const queryClient = useQueryClient();
@@ -80,24 +86,31 @@ export default function AdminPage() {
   const [rejectUserDialogOpen, setRejectUserDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState<CreateUserDto & { isAdmin?: boolean }>({
+  const [formData, setFormData] = useState<
+    CreateUserDto & { isAdmin?: boolean }
+  >({
     email: "",
     password: "",
     name: "",
   });
-  const [resetPasswordResult, setResetPasswordResult] = useState<string | null>(null);
-  const [oidcFormData, setOidcFormData] = useState<UpdateOidcSettingsDto | null>(null);
-  const [oidcClearSecretRequested, setOidcClearSecretRequested] = useState(false);
+  const [resetPasswordResult, setResetPasswordResult] = useState<string | null>(
+    null,
+  );
+  const [oidcFormData, setOidcFormData] =
+    useState<UpdateOidcSettingsDto | null>(null);
+  const [oidcClearSecretRequested, setOidcClearSecretRequested] =
+    useState(false);
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["admin", "stats"],
     queryFn: getAdminStats,
   });
 
-  const { data: registrationSettings, isLoading: registrationSettingsLoading } = useQuery({
-    queryKey: ["admin", "settings", "registration"],
-    queryFn: getRegistrationSettings,
-  });
+  const { data: registrationSettings, isLoading: registrationSettingsLoading } =
+    useQuery({
+      queryKey: ["admin", "settings", "registration"],
+      queryFn: getRegistrationSettings,
+    });
 
   const { data: oidcSettings, isLoading: oidcSettingsLoading } = useQuery({
     queryKey: ["admin", "settings", "oidc"],
@@ -133,7 +146,9 @@ export default function AdminPage() {
     mutationFn: updateRegistrationMode,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "settings"] });
-      queryClient.invalidateQueries({ queryKey: ["admin", "users", "pending"] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "users", "pending"],
+      });
       toast.success("Registration mode updated successfully");
     },
     onError: (error: Error) => {
@@ -145,7 +160,9 @@ export default function AdminPage() {
     mutationFn: updateOidcSettings,
     onSuccess: () => {
       setOidcClearSecretRequested(false);
-      queryClient.invalidateQueries({ queryKey: ["admin", "settings", "oidc"] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "settings", "oidc"],
+      });
       queryClient.invalidateQueries({ queryKey: ["oidc-config"] });
       toast.success("OIDC settings updated successfully");
     },
@@ -162,7 +179,8 @@ export default function AdminPage() {
       (oidcFormData.providerName ?? "") !== (oidcSettings.providerName ?? "") ||
       (oidcFormData.issuerUrl ?? "") !== (oidcSettings.issuerUrl ?? "") ||
       (oidcFormData.clientId ?? "") !== (oidcSettings.clientId ?? "") ||
-      (oidcFormData.disableInternalAuth ?? false) !== oidcSettings.disableInternalAuth ||
+      (oidcFormData.disableInternalAuth ?? false) !==
+        oidcSettings.disableInternalAuth ||
       oidcClearSecretRequested ||
       (!!oidcFormData.clientSecret && oidcFormData.clientSecret.trim() !== ""));
 
@@ -172,7 +190,9 @@ export default function AdminPage() {
     // Validate required fields when enabling
     if (oidcFormData.enabled) {
       if (!oidcFormData.issuerUrl?.trim() || !oidcFormData.clientId?.trim()) {
-        toast.error("Issuer URL and Client ID are required when OIDC is enabled");
+        toast.error(
+          "Issuer URL and Client ID are required when OIDC is enabled",
+        );
         return;
       }
     }
@@ -182,7 +202,10 @@ export default function AdminPage() {
     if (oidcClearSecretRequested) {
       settingsToSave.clearClientSecret = true;
       delete settingsToSave.clientSecret;
-    } else if (oidcSettings?.hasClientSecret && (!oidcFormData.clientSecret || oidcFormData.clientSecret.trim() === "")) {
+    } else if (
+      oidcSettings?.hasClientSecret &&
+      (!oidcFormData.clientSecret || oidcFormData.clientSecret.trim() === "")
+    ) {
       // Leave existing secret unchanged
       delete settingsToSave.clientSecret;
     }
@@ -194,7 +217,9 @@ export default function AdminPage() {
     mutationFn: approveUser,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
-      queryClient.invalidateQueries({ queryKey: ["admin", "users", "pending"] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "users", "pending"],
+      });
       queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
       toast.success("User approved successfully");
     },
@@ -207,7 +232,9 @@ export default function AdminPage() {
     mutationFn: rejectUser,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
-      queryClient.invalidateQueries({ queryKey: ["admin", "users", "pending"] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "users", "pending"],
+      });
       queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
       setRejectUserDialogOpen(false);
       setSelectedUser(null);
@@ -217,7 +244,6 @@ export default function AdminPage() {
       toast.error(error.message || "Failed to reject user");
     },
   });
-
 
   const createUserMutation = useMutation({
     mutationFn: createUser,
@@ -416,7 +442,8 @@ export default function AdminPage() {
               <div>
                 <CardTitle>Registration Settings</CardTitle>
                 <CardDescription className="mt-1">
-                  Control who can create accounts and whether approval is required.
+                  Control who can create accounts and whether approval is
+                  required.
                 </CardDescription>
               </div>
             </div>
@@ -432,7 +459,11 @@ export default function AdminPage() {
                   <div className="flex items-start gap-2 p-3 border rounded-lg bg-muted/50">
                     <Lock className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
                     <p className="text-sm text-muted-foreground">
-                      Controlled by <code className="px-1 py-0.5 bg-background rounded text-xs font-mono">USER_SIGNUP</code> env variable. Remove it to manage from UI.
+                      Controlled by{" "}
+                      <code className="px-1 py-0.5 bg-background rounded text-xs font-mono">
+                        USER_SIGNUP
+                      </code>{" "}
+                      env variable. Remove it to manage from UI.
                     </p>
                   </div>
                 )}
@@ -444,16 +475,24 @@ export default function AdminPage() {
                       value={registrationSettings.mode}
                       onValueChange={(value) => {
                         if (value && !registrationSettings.isLocked) {
-                          updateRegistrationModeMutation.mutate({ mode: value as RegistrationMode });
+                          updateRegistrationModeMutation.mutate({
+                            mode: value as RegistrationMode,
+                          });
                         }
                       }}
-                      disabled={registrationSettings.isLocked || updateRegistrationModeMutation.isPending}
+                      disabled={
+                        registrationSettings.isLocked ||
+                        updateRegistrationModeMutation.isPending
+                      }
                       className="justify-start rounded-md border"
                     >
                       <ToggleGroupItem value="enabled" aria-label="Enabled">
                         Enabled
                       </ToggleGroupItem>
-                      <ToggleGroupItem value="review" aria-label="Require Review">
+                      <ToggleGroupItem
+                        value="review"
+                        aria-label="Require Review"
+                      >
                         Require Review
                       </ToggleGroupItem>
                       <ToggleGroupItem value="disabled" aria-label="Disabled">
@@ -462,9 +501,12 @@ export default function AdminPage() {
                     </ToggleGroup>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    {registrationSettings.mode === "disabled" && "Registration is disabled. Only admins can create users."}
-                    {registrationSettings.mode === "enabled" && "Users can register immediately without approval."}
-                    {registrationSettings.mode === "review" && "Users can register but require admin approval before they can log in."}
+                    {registrationSettings.mode === "disabled" &&
+                      "Registration is disabled. Only admins can create users."}
+                    {registrationSettings.mode === "enabled" &&
+                      "Users can register immediately without approval."}
+                    {registrationSettings.mode === "review" &&
+                      "Users can register but require admin approval before they can log in."}
                   </p>
                 </div>
               </>
@@ -496,7 +538,10 @@ export default function AdminPage() {
                       setOidcFormData({ ...oidcFormData, enabled: checked });
                     }
                   }}
-                  disabled={oidcSettings.isLocked || updateOidcSettingsMutation.isPending}
+                  disabled={
+                    oidcSettings.isLocked ||
+                    updateOidcSettingsMutation.isPending
+                  }
                 />
               )}
             </div>
@@ -512,7 +557,19 @@ export default function AdminPage() {
                   <div className="flex items-start gap-2 p-3 border rounded-lg bg-muted/50">
                     <Lock className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
                     <p className="text-sm text-muted-foreground">
-                      Controlled by <code className="px-1 py-0.5 bg-background rounded text-xs font-mono">OIDC_ENABLED</code>, <code className="px-1 py-0.5 bg-background rounded text-xs font-mono">OIDC_ISSUER_URL</code> and <code className="px-1 py-0.5 bg-background rounded text-xs font-mono">OIDC_CLIENT_ID</code> env variables. Remove them to manage from UI.
+                      Controlled by{" "}
+                      <code className="px-1 py-0.5 bg-background rounded text-xs font-mono">
+                        OIDC_ENABLED
+                      </code>
+                      ,{" "}
+                      <code className="px-1 py-0.5 bg-background rounded text-xs font-mono">
+                        OIDC_ISSUER_URL
+                      </code>{" "}
+                      and{" "}
+                      <code className="px-1 py-0.5 bg-background rounded text-xs font-mono">
+                        OIDC_CLIENT_ID
+                      </code>{" "}
+                      env variables. Remove them to manage from UI.
                     </p>
                   </div>
                 )}
@@ -521,20 +578,29 @@ export default function AdminPage() {
                   <>
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-2 sm:col-span-2">
-                        <Label htmlFor="oidc-provider-name">Provider name</Label>
+                        <Label htmlFor="oidc-provider-name">
+                          Provider name
+                        </Label>
                         <Input
                           id="oidc-provider-name"
                           value={oidcFormData?.providerName || ""}
                           onChange={(e) => {
                             if (!oidcSettings.isLocked && oidcFormData) {
-                              setOidcFormData({ ...oidcFormData, providerName: e.target.value });
+                              setOidcFormData({
+                                ...oidcFormData,
+                                providerName: e.target.value,
+                              });
                             }
                           }}
-                          disabled={oidcSettings.isLocked || updateOidcSettingsMutation.isPending}
+                          disabled={
+                            oidcSettings.isLocked ||
+                            updateOidcSettingsMutation.isPending
+                          }
                           placeholder="e.g. Pocket ID, Authelia"
                         />
                         <p className="text-xs text-muted-foreground">
-                          Shown on the login button: &quot;Login with {oidcFormData?.providerName || "Provider"}&quot;
+                          Shown on the login button: &quot;Login with{" "}
+                          {oidcFormData?.providerName || "Provider"}&quot;
                         </p>
                       </div>
                       <div className="space-y-2">
@@ -546,10 +612,16 @@ export default function AdminPage() {
                           value={oidcFormData?.issuerUrl || ""}
                           onChange={(e) => {
                             if (!oidcSettings.isLocked && oidcFormData) {
-                              setOidcFormData({ ...oidcFormData, issuerUrl: e.target.value });
+                              setOidcFormData({
+                                ...oidcFormData,
+                                issuerUrl: e.target.value,
+                              });
                             }
                           }}
-                          disabled={oidcSettings.isLocked || updateOidcSettingsMutation.isPending}
+                          disabled={
+                            oidcSettings.isLocked ||
+                            updateOidcSettingsMutation.isPending
+                          }
                           placeholder="https://auth.example.com"
                         />
                       </div>
@@ -562,56 +634,87 @@ export default function AdminPage() {
                           value={oidcFormData?.clientId || ""}
                           onChange={(e) => {
                             if (!oidcSettings.isLocked && oidcFormData) {
-                              setOidcFormData({ ...oidcFormData, clientId: e.target.value });
+                              setOidcFormData({
+                                ...oidcFormData,
+                                clientId: e.target.value,
+                              });
                             }
                           }}
-                          disabled={oidcSettings.isLocked || updateOidcSettingsMutation.isPending}
+                          disabled={
+                            oidcSettings.isLocked ||
+                            updateOidcSettingsMutation.isPending
+                          }
                           placeholder="your-client-id"
                         />
                       </div>
                       <div className="space-y-2 sm:col-span-2">
-                        <Label htmlFor="oidc-client-secret">Client secret (optional)</Label>
+                        <Label htmlFor="oidc-client-secret">
+                          Client secret (optional)
+                        </Label>
                         <div className="flex gap-2">
                           <Input
                             id="oidc-client-secret"
                             type="password"
                             autoComplete="off"
-                            value={oidcClearSecretRequested ? "" : (oidcFormData?.clientSecret ?? "")}
+                            value={
+                              oidcClearSecretRequested
+                                ? ""
+                                : (oidcFormData?.clientSecret ?? "")
+                            }
                             onChange={(e) => {
                               if (!oidcSettings.isLocked && oidcFormData) {
                                 setOidcClearSecretRequested(false);
-                                setOidcFormData({ ...oidcFormData, clientSecret: e.target.value });
+                                setOidcFormData({
+                                  ...oidcFormData,
+                                  clientSecret: e.target.value,
+                                });
                               }
                             }}
-                            disabled={oidcSettings.isLocked || updateOidcSettingsMutation.isPending}
+                            disabled={
+                              oidcSettings.isLocked ||
+                              updateOidcSettingsMutation.isPending
+                            }
                             placeholder={
-                              oidcSettings?.hasClientSecret && !oidcClearSecretRequested
+                              oidcSettings?.hasClientSecret &&
+                              !oidcClearSecretRequested
                                 ? "••••••••••••"
                                 : "Leave empty for public client (PKCE)"
                             }
                             className="flex-1"
                           />
-                          {oidcSettings?.hasClientSecret && !oidcSettings.isLocked && (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setOidcClearSecretRequested(true)}
-                              disabled={updateOidcSettingsMutation.isPending || oidcClearSecretRequested}
-                            >
-                              Clear secret
-                            </Button>
-                          )}
+                          {oidcSettings?.hasClientSecret &&
+                            !oidcSettings.isLocked && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  setOidcClearSecretRequested(true)
+                                }
+                                disabled={
+                                  updateOidcSettingsMutation.isPending ||
+                                  oidcClearSecretRequested
+                                }
+                              >
+                                Clear secret
+                              </Button>
+                            )}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          The Anchor mobile app requires a public client (no client secret). If users sign in from the app using OIDC, leave this empty and set Anchor as a public client in your OIDC provider.
+                          The Anchor mobile app requires a public client (no
+                          client secret). If users sign in from the app using
+                          OIDC, leave this empty and set Anchor as a public
+                          client in your OIDC provider.
                         </p>
                       </div>
                     </div>
 
                     <div className="flex items-center justify-between rounded-lg border p-4">
                       <div className="space-y-0.5">
-                        <Label htmlFor="oidc-disable-internal-auth" className="text-sm font-medium">
+                        <Label
+                          htmlFor="oidc-disable-internal-auth"
+                          className="text-sm font-medium"
+                        >
                           OIDC-only mode
                         </Label>
                         <p className="text-sm text-muted-foreground">
@@ -623,10 +726,16 @@ export default function AdminPage() {
                         checked={oidcFormData?.disableInternalAuth ?? false}
                         onCheckedChange={(checked) => {
                           if (!oidcSettings.isLocked && oidcFormData) {
-                            setOidcFormData({ ...oidcFormData, disableInternalAuth: checked });
+                            setOidcFormData({
+                              ...oidcFormData,
+                              disableInternalAuth: checked,
+                            });
                           }
                         }}
-                        disabled={oidcSettings.isLocked || updateOidcSettingsMutation.isPending}
+                        disabled={
+                          oidcSettings.isLocked ||
+                          updateOidcSettingsMutation.isPending
+                        }
                       />
                     </div>
 
@@ -636,8 +745,12 @@ export default function AdminPage() {
                         {oidcSettings.callbackUrl}
                       </code>
                       <p className="text-xs text-muted-foreground mt-2">
-                        Add this URL in your OIDC provider as the redirect/callback URL. It comes from the {" "}
-                        <code className="px-1 py-0.5 bg-background rounded text-[0.7rem] font-mono">APP_URL</code> env variable.
+                        Add this URL in your OIDC provider as the
+                        redirect/callback URL. It comes from the{" "}
+                        <code className="px-1 py-0.5 bg-background rounded text-[0.7rem] font-mono">
+                          APP_URL
+                        </code>{" "}
+                        env variable.
                       </p>
                     </div>
                   </>
@@ -650,7 +763,9 @@ export default function AdminPage() {
                       disabled={
                         updateOidcSettingsMutation.isPending ||
                         !oidcFormData ||
-                        (oidcFormData.enabled && (!oidcFormData.issuerUrl?.trim() || !oidcFormData.clientId?.trim()))
+                        (oidcFormData.enabled &&
+                          (!oidcFormData.issuerUrl?.trim() ||
+                            !oidcFormData.clientId?.trim()))
                       }
                     >
                       {updateOidcSettingsMutation.isPending ? (
@@ -709,10 +824,21 @@ export default function AdminPage() {
                   <TableBody>
                     {pendingUsers.map((user) => (
                       <TableRow key={user.id}>
-                        <TableCell className="font-medium">{user.name}</TableCell>
-                        <TableCell className="font-medium">{user.email}</TableCell>
+                        <TableCell className="font-medium">
+                          {user.name}
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {user.email}
+                        </TableCell>
                         <TableCell className="text-center">
-                          <Badge variant={user.authMethod === "oidc" ? "secondary" : "outline"} className="font-normal">
+                          <Badge
+                            variant={
+                              user.authMethod === "oidc"
+                                ? "secondary"
+                                : "outline"
+                            }
+                            className="font-normal"
+                          >
                             {user.authMethod === "oidc" ? "OIDC" : "Local"}
                           </Badge>
                         </TableCell>
@@ -724,7 +850,9 @@ export default function AdminPage() {
                             <Button
                               size="sm"
                               variant="default"
-                              onClick={() => approveUserMutation.mutate(user.id)}
+                              onClick={() =>
+                                approveUserMutation.mutate(user.id)
+                              }
                               disabled={approveUserMutation.isPending}
                             >
                               <CheckCircle className="h-4 w-4 mr-1" />
@@ -794,8 +922,12 @@ export default function AdminPage() {
                 <TableBody>
                   {usersData?.users.map((user) => (
                     <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.name || "-"}</TableCell>
-                      <TableCell className="font-medium">{user.email}</TableCell>
+                      <TableCell className="font-medium">
+                        {user.name || "-"}
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {user.email}
+                      </TableCell>
                       <TableCell className="text-center">
                         {user.isAdmin ? (
                           <Badge variant="default">Admin</Badge>
@@ -804,7 +936,12 @@ export default function AdminPage() {
                         )}
                       </TableCell>
                       <TableCell className="text-center">
-                        <Badge variant={user.authMethod === "oidc" ? "secondary" : "outline"} className="font-normal">
+                        <Badge
+                          variant={
+                            user.authMethod === "oidc" ? "secondary" : "outline"
+                          }
+                          className="font-normal"
+                        >
                           {user.authMethod === "oidc" ? "OIDC" : "Local"}
                         </Badge>
                       </TableCell>
@@ -815,8 +952,12 @@ export default function AdminPage() {
                           <Badge variant="outline">Active</Badge>
                         )}
                       </TableCell>
-                      <TableCell className="text-center">{user._count?.notes || 0}</TableCell>
-                      <TableCell className="text-center">{user._count?.tags || 0}</TableCell>
+                      <TableCell className="text-center">
+                        {user._count?.notes || 0}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {user._count?.tags || 0}
+                      </TableCell>
                       <TableCell>
                         {format(new Date(user.createdAt), "MMM d, yyyy")}
                       </TableCell>
@@ -1108,7 +1249,8 @@ export default function AdminPage() {
                 <span className="font-semibold text-foreground">
                   {selectedUser?.email}
                 </span>
-                ? This will permanently delete their account and they will need to register again.
+                ? This will permanently delete their account and they will need
+                to register again.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter className="gap-2">

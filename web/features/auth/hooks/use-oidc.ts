@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { getOidcConfig, exchangeOidcCode } from "../api";
+import { exchangeOidcCode, getOidcConfig } from "../api";
 import { useAuthStore } from "../store";
-import { getSafeRedirectUrl } from "../utils/redirect";
 import type { OidcConfig } from "../types";
+import { getSafeRedirectUrl } from "../utils/redirect";
 
 /**
  * Hook to get OIDC configuration

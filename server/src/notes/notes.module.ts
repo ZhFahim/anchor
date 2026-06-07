@@ -11,13 +11,23 @@ import { UsersModule } from '../users/users.module';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [
-    UsersModule,
-    AuthModule,
-    MulterModule.register({ dest: '/tmp' }),
+  imports: [UsersModule, AuthModule, MulterModule.register({ dest: '/tmp' })],
+  controllers: [
+    NotesController,
+    NoteSharesController,
+    NoteAttachmentsController,
   ],
-  controllers: [NotesController, NoteSharesController, NoteAttachmentsController],
-  providers: [NotesService, NoteSharesService, NoteAccessService, NoteAttachmentsService],
-  exports: [NotesService, NoteSharesService, NoteAccessService, NoteAttachmentsService],
+  providers: [
+    NotesService,
+    NoteSharesService,
+    NoteAccessService,
+    NoteAttachmentsService,
+  ],
+  exports: [
+    NotesService,
+    NoteSharesService,
+    NoteAccessService,
+    NoteAttachmentsService,
+  ],
 })
-export class NotesModule { }
+export class NotesModule {}

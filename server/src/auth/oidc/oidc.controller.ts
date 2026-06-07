@@ -19,7 +19,7 @@ export class OidcController {
   constructor(
     private readonly oidcService: OidcService,
     private readonly oidcConfigService: OidcConfigService,
-  ) { }
+  ) {}
 
   /**
    * Get OIDC configuration (public endpoint)
@@ -90,7 +90,10 @@ export class OidcController {
         `${frontendUrl}/login?code=${encodeURIComponent(exchangeCode)}&redirect=${encodeURIComponent(redirectUrl)}`,
       );
     } catch (error) {
-      const errorMsg = getErrorMessage(error, 'Failed to process OIDC callback');
+      const errorMsg = getErrorMessage(
+        error,
+        'Failed to process OIDC callback',
+      );
       return res.redirect(
         `${frontendUrl}/login?error=${encodeURIComponent(errorMsg)}`,
       );
@@ -101,7 +104,7 @@ export class OidcController {
    * Exchange a one-time code for access token and user
    */
   @Post('exchange')
-  async exchange(@Body('code') code: string | undefined) {
+  exchange(@Body('code') code: string | undefined) {
     if (!code || typeof code !== 'string') {
       throw new BadRequestException('Missing or invalid code');
     }

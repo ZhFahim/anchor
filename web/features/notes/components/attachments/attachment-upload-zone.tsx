@@ -1,9 +1,12 @@
 "use client";
 
-import { useRef, useState, useCallback } from "react";
 import { Paperclip } from "lucide-react";
+import { useCallback, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { ACCEPTED_TYPES_STRING, isAcceptedAttachmentType } from "../../constants";
+import {
+  ACCEPTED_TYPES_STRING,
+  isAcceptedAttachmentType,
+} from "../../constants";
 
 interface AttachmentUploadZoneProps {
   onFiles: (files: File[]) => void;
@@ -19,7 +22,7 @@ export function AttachmentUploadZone({ onFiles }: AttachmentUploadZoneProps) {
       const files = Array.from(fileList).filter(isAcceptedAttachmentType);
       if (files.length > 0) onFiles(files);
     },
-    [onFiles]
+    [onFiles],
   );
 
   const onDragOver = (e: React.DragEvent) => {
@@ -42,7 +45,7 @@ export function AttachmentUploadZone({ onFiles }: AttachmentUploadZoneProps) {
         "text-muted-foreground text-sm transition-colors duration-150",
         isDragging
           ? "border-primary bg-primary/5 text-primary"
-          : "border-border/60 hover:border-border hover:bg-muted/30"
+          : "border-border/60 hover:border-border hover:bg-muted/30",
       )}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
