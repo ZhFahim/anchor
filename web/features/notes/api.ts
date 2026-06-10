@@ -88,6 +88,24 @@ export async function bulkArchiveNotes(
     .json<{ count: number }>();
 }
 
+export async function bulkPinNotes(
+  noteIds: string[],
+  isPinned: boolean,
+): Promise<{ count: number }> {
+  return api
+    .post("api/notes/bulk/pin", { json: { noteIds, isPinned } })
+    .json<{ count: number }>();
+}
+
+export async function bulkAddTagsToNotes(
+  noteIds: string[],
+  tagIds: string[],
+): Promise<{ count: number }> {
+  return api
+    .post("api/notes/bulk/tags", { json: { noteIds, tagIds } })
+    .json<{ count: number }>();
+}
+
 // Sharing APIs
 export async function shareNote(
   noteId: string,

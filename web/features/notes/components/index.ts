@@ -3,6 +3,7 @@ export {
   ArchiveDialog,
   BulkArchiveDialog,
   BulkDeleteDialog,
+  BulkTagDialog,
   DeleteDialog,
   PermanentDeleteDialog,
   RestoreDialog,

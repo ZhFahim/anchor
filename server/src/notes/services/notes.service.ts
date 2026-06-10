@@ -373,6 +373,87 @@ export class NotesService {
     return { count: noteIds.length };
   }
 
+  // Bulk pin/unpin - per-user, works for owned and shared notes
+  async bulkSetPin(userId: string, noteIds: string[], isPinned: boolean) {
+    // Only act on notes the user can actually see (own or shared with them).
+    const accessibleNotes = await this.prisma.note.findMany({
+      where: {
+        id: { in: noteIds },
+        OR: [
+          { userId },
+          {
+            sharedWith: {
+              some: { sharedWithUserId: userId, isDeleted: false },
+            },
+          },
+        ],
+      },
+      select: { id: true },
+    });
+
+    const accessibleIds = accessibleNotes.map((note) => note.id);
+    if (accessibleIds.length === 0) {
+      return { count: 0 };
+    }
+
+    if (isPinned) {
+      await this.prisma.notePin.createMany({
+        data: accessibleIds.map((noteId) => ({ userId, noteId })),
+        skipDuplicates: true,
+      });
+    } else {
+      await this.prisma.notePin.deleteMany({
+        where: { userId, noteId: { in: accessibleIds } },
+      });
+    }
+
+    return { count: accessibleIds.length };
+  }
+
+  // Bulk add tags - merges the given tags into each note (owner only)
+  async bulkAddTags(userId: string, noteIds: string[], tagIds: string[]) {
+    // Verify all notes belong to user (owner only)
+    const notes = await this.prisma.note.findMany({
+      where: {
+        id: { in: noteIds },
+        userId,
+      },
+      select: { id: true },
+    });
+
+    if (notes.length !== noteIds.length) {
+      throw new NotFoundException(
+        'One or more notes not found or you do not have permission',
+      );
+    }
+
+    // Only attach tags the user owns and that aren't deleted.
+    const tags = await this.prisma.tag.findMany({
+      where: { id: { in: tagIds }, userId, isDeleted: false },
+      select: { id: true },
+    });
+    const validTagIds = tags.map((tag) => tag.id);
+
+    if (validTagIds.length === 0) {
+      return { count: 0 };
+    }
+
+    // `connect` is idempotent, so each note keeps its existing tags (merge).
+    // Each update bumps updatedAt so sync clients learn about the change.
+    await this.prisma.$transaction(
+      noteIds.map((id) =>
+        this.prisma.note.update({
+          where: { id },
+          data: {
+            tags: { connect: validTagIds.map((tagId) => ({ id: tagId })) },
+          },
+        }),
+      ),
+    );
+
+    return { count: noteIds.length };
+  }
+
   // Sync endpoint - handles bi-directional sync with conflict resolution
   async sync(userId: string, syncDto: SyncNotesDto) {
     const { lastSyncedAt, changes } = syncDto;

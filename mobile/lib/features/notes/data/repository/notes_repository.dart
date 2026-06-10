@@ -467,6 +467,60 @@ class NotesRepository {
     return ids.length;
   }
 
+  // Bulk pin/unpin notes (pin state lives on the note row, synced per-user)
+  Future<int> bulkSetPinned(List<String> ids, bool isPinned) async {
+    if (ids.isEmpty) return 0;
+    final now = DateTime.now().toUtc();
+
+    await (_db.update(_db.notes)..where((tbl) => tbl.id.isIn(ids))).write(
+      NotesCompanion(
+        isPinned: drift.Value(isPinned),
+        updatedAt: drift.Value(now),
+        isSynced: const drift.Value(false),
+      ),
+    );
+
+    scheduleAppSync(trigger: 'NotesRepo.bulkSetPinned');
+    return ids.length;
+  }
+
+  // Bulk add tags to notes (merge — each note keeps its existing tags)
+  Future<int> bulkAddTags(List<String> ids, List<String> tagIds) async {
+    if (ids.isEmpty || tagIds.isEmpty) return 0;
+    final now = DateTime.now().toUtc();
+
+    await _db.transaction(() async {
+      // insertOrReplace on the (noteId, tagId) key makes this idempotent.
+      await _db.batch((batch) {
+        for (final noteId in ids) {
+          batch.insertAll(
+            _db.noteTags,
+            tagIds
+                .map(
+                  (tagId) => NoteTagsCompanion(
+                    noteId: drift.Value(noteId),
+                    tagId: drift.Value(tagId),
+                  ),
+                )
+                .toList(),
+            mode: drift.InsertMode.insertOrReplace,
+          );
+        }
+      });
+
+      // Bump the notes so the tag change is uploaded on the next sync.
+      await (_db.update(_db.notes)..where((tbl) => tbl.id.isIn(ids))).write(
+        NotesCompanion(
+          updatedAt: drift.Value(now),
+          isSynced: const drift.Value(false),
+        ),
+      );
+    });
+
+    scheduleAppSync(trigger: 'NotesRepo.bulkAddTags');
+    return ids.length;
+  }
+
   // Permanent delete - sets state to deleted (tombstone)
   // The note will be removed locally after sync confirms server received it
   Future<void> permanentDelete(String id) async {

@@ -8,9 +8,11 @@ import {
   CircleCheck,
   Loader2,
   Pin,
+  PinOff,
   Plus,
   Search,
   Sparkles,
+  Tag as TagIcon,
   Trash2,
   X,
 } from "lucide-react";
@@ -31,8 +33,11 @@ import {
 import {
   BulkArchiveDialog,
   BulkDeleteDialog,
+  BulkTagDialog,
+  bulkAddTagsToNotes,
   bulkArchiveNotes,
   bulkDeleteNotes,
+  bulkPinNotes,
   deltaToFullPlainText,
   getNotes,
   NoteCard,
@@ -72,6 +77,7 @@ export default function NotesPage() {
   );
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
+  const [tagDialogOpen, setTagDialogOpen] = useState(false);
   const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(
     null,
   );
@@ -230,6 +236,13 @@ export default function NotesPage() {
   const someSelected =
     selectedNoteIds.size > 0 && selectedNoteIds.size < allSortedNotes.length;
 
+  // When every selected note is already pinned, the toggle unpins instead.
+  const allSelectedPinned =
+    selectedNoteIds.size > 0 &&
+    allSortedNotes
+      .filter((note) => selectedNoteIds.has(note.id))
+      .every((note) => note.isPinned);
+
   // Bulk delete mutation
   const bulkDeleteMutation = useMutation({
     mutationFn: (noteIds: string[]) => bulkDeleteNotes(noteIds),
@@ -263,6 +276,54 @@ export default function NotesPage() {
     },
     onError: () => {
       toast.error("Failed to archive notes");
+    },
+  });
+
+  // Bulk pin/unpin mutation
+  const bulkPinMutation = useMutation({
+    mutationFn: ({
+      noteIds,
+      isPinned,
+    }: {
+      noteIds: string[];
+      isPinned: boolean;
+    }) => bulkPinNotes(noteIds, isPinned),
+    onSuccess: (_, { noteIds, isPinned }) => {
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      toast.success(
+        `${noteIds.length} note${noteIds.length > 1 ? "s" : ""} ${
+          isPinned ? "pinned" : "unpinned"
+        }`,
+      );
+      setSelectedNoteIds(new Set());
+      setIsSelectionMode(false);
+    },
+    onError: () => {
+      toast.error("Failed to update pins");
+    },
+  });
+
+  // Bulk add tags mutation
+  const bulkAddTagsMutation = useMutation({
+    mutationFn: ({
+      noteIds,
+      tagIds,
+    }: {
+      noteIds: string[];
+      tagIds: string[];
+    }) => bulkAddTagsToNotes(noteIds, tagIds),
+    onSuccess: (_, { noteIds }) => {
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      queryClient.invalidateQueries({ queryKey: ["tags"] });
+      toast.success(
+        `Tagged ${noteIds.length} note${noteIds.length > 1 ? "s" : ""}`,
+      );
+      setSelectedNoteIds(new Set());
+      setIsSelectionMode(false);
+      setTagDialogOpen(false);
+    },
+    onError: () => {
+      toast.error("Failed to add tags");
     },
   });
 
@@ -409,6 +470,47 @@ export default function NotesPage() {
                   <TooltipProvider delayDuration={0}>
                     {selectedNoteIds.size > 0 && (
                       <>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              onClick={() => setTagDialogOpen(true)}
+                              disabled={bulkAddTagsMutation.isPending}
+                              className="h-8 w-8 rounded-md hover:bg-accent"
+                            >
+                              <TagIcon className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Add tags</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              onClick={() =>
+                                bulkPinMutation.mutate({
+                                  noteIds: Array.from(selectedNoteIds),
+                                  isPinned: !allSelectedPinned,
+                                })
+                              }
+                              disabled={bulkPinMutation.isPending}
+                              className="h-8 w-8 rounded-md hover:bg-accent"
+                            >
+                              {allSelectedPinned ? (
+                                <PinOff className="h-4 w-4" />
+                              ) : (
+                                <Pin className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {allSelectedPinned
+                              ? "Unpin selected"
+                              : "Pin selected"}
+                          </TooltipContent>
+                        </Tooltip>
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
@@ -653,6 +755,20 @@ export default function NotesPage() {
         }}
         count={selectedNoteIds.size}
         isPending={bulkArchiveMutation.isPending}
+      />
+
+      {/* Add Tags Dialog */}
+      <BulkTagDialog
+        open={tagDialogOpen}
+        onOpenChange={setTagDialogOpen}
+        onConfirm={(tagIds) => {
+          bulkAddTagsMutation.mutate({
+            noteIds: Array.from(selectedNoteIds),
+            tagIds,
+          });
+        }}
+        count={selectedNoteIds.size}
+        isPending={bulkAddTagsMutation.isPending}
       />
     </div>
   );
