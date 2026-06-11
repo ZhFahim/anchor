@@ -15,4 +15,9 @@ export class UsersController {
   ) {
     return this.usersService.searchUsers(searchQuery || '', userId);
   }
+
+  @Get('recent-contacts')
+  getRecentContacts(@CurrentUser('id') userId: string) {
+    return this.usersService.getRecentContacts(userId);
+  }
 }

@@ -24,6 +24,7 @@ class _ShareNoteSheetState extends ConsumerState<ShareNoteSheet> {
   final _searchController = TextEditingController();
   final _searchFocus = FocusNode();
   List<UserSearchResult> _searchResults = [];
+  List<UserSearchResult> _recentContacts = [];
   List<NoteShare> _shares = [];
   bool _isSearching = false;
   bool _isLoadingShares = true;
@@ -33,7 +34,14 @@ class _ShareNoteSheetState extends ConsumerState<ShareNoteSheet> {
   void initState() {
     super.initState();
     _loadShares();
+    _loadRecentContacts();
     _searchController.addListener(_onSearchChanged);
+  }
+
+  /// Recent contacts that aren't already collaborators on this note.
+  List<UserSearchResult> get _availableRecentContacts {
+    final sharedUserIds = _shares.map((s) => s.sharedWithUser.id).toSet();
+    return _recentContacts.where((u) => !sharedUserIds.contains(u.id)).toList();
   }
 
   @override
@@ -74,6 +82,18 @@ class _ShareNoteSheetState extends ConsumerState<ShareNoteSheet> {
         setState(() => _isLoadingShares = false);
         AppSnackbar.showError(context, message: 'Failed to load shares');
       }
+    }
+  }
+
+  Future<void> _loadRecentContacts() async {
+    try {
+      final repository = ref.read(usersRepositoryProvider);
+      final contacts = await repository.getRecentContacts();
+      if (mounted) {
+        setState(() => _recentContacts = contacts);
+      }
+    } catch (_) {
+      // Recent contacts are a nice-to-have; ignore failures silently.
     }
   }
 
@@ -281,7 +301,7 @@ class _ShareNoteSheetState extends ConsumerState<ShareNoteSheet> {
                 focusNode: _searchFocus,
                 style: theme.textTheme.bodyLarge,
                 decoration: InputDecoration(
-                  hintText: 'Search by email...',
+                  hintText: 'Search by name or email...',
                   hintStyle: TextStyle(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                   ),
@@ -337,7 +357,7 @@ class _ShareNoteSheetState extends ConsumerState<ShareNoteSheet> {
             Flexible(
               child: _searchResults.isNotEmpty
                   ? _buildSearchResults(theme, serverUrl)
-                  : _buildSharesList(theme, serverUrl),
+                  : _buildDefaultContent(theme, serverUrl),
             ),
           ],
         ),
@@ -396,17 +416,7 @@ class _ShareNoteSheetState extends ConsumerState<ShareNoteSheet> {
               email: user.email,
               profileImage: user.profileImage,
               serverUrl: serverUrl,
-              trailing: IconButton(
-                icon: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.secondary,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(LucideIcons.plus, size: 16),
-                ),
-                onPressed: () => _showPermissionPicker(user),
-              ),
+              trailing: _addButton(theme, user),
               onTap: () => _showPermissionPicker(user),
             );
           },
@@ -415,13 +425,79 @@ class _ShareNoteSheetState extends ConsumerState<ShareNoteSheet> {
     );
   }
 
-  Widget _buildSharesList(ThemeData theme, String? serverUrl) {
+  /// Trailing "+" button used to start sharing with a searched/recent user.
+  Widget _addButton(ThemeData theme, UserSearchResult user) {
+    return IconButton(
+      icon: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.secondary,
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(LucideIcons.plus, size: 16),
+      ),
+      onPressed: () => _showPermissionPicker(user),
+    );
+  }
+
+  /// Default (non-search) content: recent contacts followed by collaborators.
+  Widget _buildDefaultContent(ThemeData theme, String? serverUrl) {
     if (_isLoadingShares) {
       return const Center(heightFactor: 3, child: CircularProgressIndicator());
     }
 
+    final recent = _searchController.text.trim().length < 2
+        ? _availableRecentContacts
+        : <UserSearchResult>[];
+
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (recent.isNotEmpty) _buildRecentContacts(theme, serverUrl, recent),
+          _buildSharesContent(theme, serverUrl),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecentContacts(
+    ThemeData theme,
+    String? serverUrl,
+    List<UserSearchResult> recent,
+  ) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionLabel('Recently shared with', theme),
+        const SizedBox(height: 12),
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          itemCount: recent.length,
+          itemBuilder: (context, index) {
+            final user = recent[index];
+            return _UserTile(
+              name: user.name,
+              email: user.email,
+              profileImage: user.profileImage,
+              serverUrl: serverUrl,
+              trailing: _addButton(theme, user),
+              onTap: () => _showPermissionPicker(user),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSharesContent(ThemeData theme, String? serverUrl) {
     if (_shares.isEmpty) {
-      return Padding(
+      return Container(
+        width: double.infinity,
         padding: const EdgeInsets.all(40),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -448,7 +524,7 @@ class _ShareNoteSheetState extends ConsumerState<ShareNoteSheet> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Search by email to invite collaborators',
+              'Search by name or email to invite collaborators',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
               ),
@@ -466,6 +542,7 @@ class _ShareNoteSheetState extends ConsumerState<ShareNoteSheet> {
         const SizedBox(height: 12),
         ListView.builder(
           shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
           itemCount: _shares.length,
           itemBuilder: (context, index) {

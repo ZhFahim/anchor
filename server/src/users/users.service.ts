@@ -18,12 +18,32 @@ export class UsersService {
         AND: [
           { id: { not: currentUserId } },
           { status: 'active' },
-          { email: { equals: query, mode: 'insensitive' } },
+          {
+            OR: [
+              { email: { contains: query, mode: 'insensitive' } },
+              { name: { contains: query, mode: 'insensitive' } },
+            ],
+          },
         ],
       },
       select: USER_SELECT_FIELDS,
       take: 10,
       orderBy: { name: 'asc' },
     });
+  }
+
+  async getRecentContacts(currentUserId: string) {
+    const shares = await this.prisma.noteShare.findMany({
+      where: {
+        sharedByUserId: currentUserId,
+        sharedWithUser: { status: 'active' },
+      },
+      distinct: ['sharedWithUserId'],
+      orderBy: { updatedAt: 'desc' },
+      take: 5,
+      select: { sharedWithUser: { select: USER_SELECT_FIELDS } },
+    });
+
+    return shares.map((share) => share.sharedWithUser);
   }
 }

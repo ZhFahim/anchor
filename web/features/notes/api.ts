@@ -153,6 +153,10 @@ export async function searchUsers(query: string): Promise<UserSearchResult[]> {
     .json<UserSearchResult[]>();
 }
 
+export async function getRecentContacts(): Promise<UserSearchResult[]> {
+  return api.get("api/users/recent-contacts").json<UserSearchResult[]>();
+}
+
 export async function uploadAttachment(
   noteId: string,
   file: File,
