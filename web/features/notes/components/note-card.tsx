@@ -11,6 +11,7 @@ import { QuillPreview } from "@/features/notes";
 import { cn } from "@/lib/utils";
 import { NoteBackground } from "./backgrounds";
 import { ListImageThumbnail, NoteCardImages } from "./note-card-images";
+import { SharedByMeIndicator } from "./shared-by-me-indicator";
 import { SharedNoteIndicator } from "./shared-note-indicator";
 
 type ViewMode = "masonry" | "grid" | "list";
@@ -114,7 +115,7 @@ export function NoteCard({
                 {/* Checkbox for selection mode */}
                 {isSelectionMode && (
                   <div
-                    className="flex-shrink-0 mt-0.5"
+                    className="shrink-0 mt-0.5"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <Checkbox
@@ -127,7 +128,7 @@ export function NoteCard({
 
                 {/* Pin indicator */}
                 {note.isPinned && !isSelectionMode && (
-                  <div className="flex-shrink-0 mt-0.5">
+                  <div className="shrink-0 mt-0.5">
                     <Pin className="h-4 w-4 text-accent fill-accent" />
                   </div>
                 )}
@@ -177,6 +178,7 @@ export function NoteCard({
                     {footerLeft ?? (
                       <>
                         <SharedNoteIndicator note={note} />
+                        <SharedByMeIndicator note={note} />
                         {/* Only show paperclip count if no image previews */}
                         {(note.attachmentCount ?? 0) > 0 &&
                           (!note.imagePreviewIds ||
@@ -329,6 +331,7 @@ export function NoteCard({
                 {footerLeft ?? (
                   <>
                     <SharedNoteIndicator note={note} />
+                    <SharedByMeIndicator note={note} />
                     {(note.attachmentCount ?? 0) > 0 && (
                       <div className="flex items-center gap-1 text-muted-foreground">
                         <Paperclip className="h-3 w-3" />

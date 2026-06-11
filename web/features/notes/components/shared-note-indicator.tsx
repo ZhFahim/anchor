@@ -39,7 +39,7 @@ export function SharedNoteIndicator({
           </Avatar>
         </div>
       </TooltipTrigger>
-      <TooltipContent side="top">{sharedBy.name}</TooltipContent>
+      <TooltipContent side="top">Shared by {sharedBy.name}</TooltipContent>
     </Tooltip>
   );
 }

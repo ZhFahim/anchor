@@ -15,6 +15,7 @@ import 'package:anchor/core/network/server_config_provider.dart';
 import 'package:anchor/features/tags/presentation/tags_controller.dart';
 import 'package:anchor/features/tags/presentation/widgets/tag_chip.dart';
 import 'package:anchor/features/notes/presentation/widgets/note_background.dart';
+import 'package:anchor/features/notes/presentation/widgets/share_note_sheet.dart';
 
 class NoteCard extends ConsumerWidget {
   final Note note;
@@ -183,6 +184,22 @@ class NoteCard extends ConsumerWidget {
                                       serverUrl: serverUrl,
                                       size: 20,
                                     ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                ],
+                                if (note.isOwner && note.hasShares) ...[
+                                  _SharedByMeIndicator(
+                                    count: note.shareIds!.length,
+                                    onTap: isSelectionMode
+                                        ? null
+                                        : () => showModalBottomSheet(
+                                            context: context,
+                                            backgroundColor: Colors.transparent,
+                                            isScrollControlled: true,
+                                            builder: (_) => ShareNoteSheet(
+                                              noteId: note.id,
+                                            ),
+                                          ),
                                   ),
                                   const SizedBox(width: 8),
                                 ],
@@ -512,6 +529,45 @@ class _ThumbState extends ConsumerState<_Thumb> {
           LucideIcons.image,
           size: 20,
           color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.35),
+        ),
+      ),
+    );
+  }
+}
+
+/// Indicator shown on notes the current user owns and has shared with others.
+/// Displays a people icon with the collaborator count and opens the share
+/// sheet when tapped.
+class _SharedByMeIndicator extends StatelessWidget {
+  final int count;
+  final VoidCallback? onTap;
+
+  const _SharedByMeIndicator({required this.count, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Tooltip(
+      message: 'Shared with $count ${count == 1 ? 'person' : 'people'}',
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(LucideIcons.users, size: 14, color: theme.hintColor),
+              const SizedBox(width: 4),
+              Text(
+                '$count',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.hintColor,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
