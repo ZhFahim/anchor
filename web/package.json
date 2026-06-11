@@ -1,6 +1,6 @@
 {
   "name": "anchor-web",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "private": true,
   "packageManager": "pnpm@11.0.9",
   "scripts": {
