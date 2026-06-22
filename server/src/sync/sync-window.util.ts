@@ -4,12 +4,14 @@ export const getSyncUpdatedAtWindow = (
 ) =>
   lastSyncedAt ? { gt: new Date(lastSyncedAt), lte: cutoff } : { lte: cutoff };
 
+// Watermark column to filter on: 'syncedAt' for notes, 'updatedAt' for tags.
 export const withForcedSyncIds = (
-  updatedAtWindow: ReturnType<typeof getSyncUpdatedAtWindow>,
+  field: 'syncedAt' | 'updatedAt',
+  window: ReturnType<typeof getSyncUpdatedAtWindow>,
   forceSyncIds: string[],
 ) =>
   forceSyncIds.length
     ? {
-        OR: [{ updatedAt: updatedAtWindow }, { id: { in: forceSyncIds } }],
+        OR: [{ [field]: window }, { id: { in: forceSyncIds } }],
       }
-    : { updatedAt: updatedAtWindow };
+    : { [field]: window };

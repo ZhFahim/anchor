@@ -67,12 +67,15 @@ model Note {
   state       NoteState   @default(active)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
+  syncedAt    DateTime    @default(now())
   userId      String
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   tags        Tag[]
   sharedWith  NoteShare[]
   attachments NoteAttachment[]
   pins        NotePin[]
+
+  @@index([userId, syncedAt])
 }
 
 model NotePin {

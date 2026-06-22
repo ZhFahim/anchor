@@ -270,7 +270,7 @@ export class NotesService {
     const result = await this.prisma.note.updateMany({
       where: {
         state: NoteState.trashed,
-        updatedAt: { lt: cutoffDate },
+        syncedAt: { lt: cutoffDate },
       },
       data: { state: NoteState.deleted },
     });
@@ -287,7 +287,7 @@ export class NotesService {
     const notesToPurge = await this.prisma.note.findMany({
       where: {
         state: NoteState.deleted,
-        updatedAt: { lt: cutoffDate },
+        syncedAt: { lt: cutoffDate },
       },
       select: { id: true },
     });
@@ -301,7 +301,7 @@ export class NotesService {
     const deletedNotes = await this.prisma.note.deleteMany({
       where: {
         state: NoteState.deleted,
-        updatedAt: { lt: cutoffDate },
+        syncedAt: { lt: cutoffDate },
       },
     });
 
@@ -439,7 +439,7 @@ export class NotesService {
     }
 
     // `connect` is idempotent, so each note keeps its existing tags (merge).
-    // Each update bumps updatedAt so sync clients learn about the change.
+    // Each update bumps syncedAt (via the DB trigger) so sync clients learn about the change.
     await this.prisma.$transaction(
       noteIds.map((id) =>
         this.prisma.note.update({
@@ -464,18 +464,18 @@ export class NotesService {
 
     const syncCutoff = new Date();
     const forceServerIds = Array.from(incoming.forceServerNoteIds);
-    const updatedAtWindow = getSyncUpdatedAtWindow(lastSyncedAt, syncCutoff);
+    const syncWindow = getSyncUpdatedAtWindow(lastSyncedAt, syncCutoff);
 
     const ownNotes = await this.findOwnSyncNotes(
       userId,
-      updatedAtWindow,
+      syncWindow,
       forceServerIds,
     );
     const sharedShares = await this.findSharedSyncShares(
       userId,
       lastSyncedAt,
       syncCutoff,
-      updatedAtWindow,
+      syncWindow,
       forceServerIds,
     );
 
@@ -649,13 +649,13 @@ export class NotesService {
 
   private findOwnSyncNotes(
     userId: string,
-    updatedAtWindow: ReturnType<typeof getSyncUpdatedAtWindow>,
+    syncWindow: ReturnType<typeof getSyncUpdatedAtWindow>,
     forceServerIds: string[],
   ) {
     return this.prisma.note.findMany({
       where: {
         userId,
-        ...withForcedSyncIds(updatedAtWindow, forceServerIds),
+        ...withForcedSyncIds('syncedAt', syncWindow, forceServerIds),
       },
       include: {
         ...NOTE_INCLUDE_TAGS,
@@ -670,7 +670,7 @@ export class NotesService {
     userId: string,
     lastSyncedAt: string | undefined,
     syncCutoff: Date,
-    updatedAtWindow: ReturnType<typeof getSyncUpdatedAtWindow>,
+    syncWindow: ReturnType<typeof getSyncUpdatedAtWindow>,
     forceServerIds: string[],
   ) {
     return this.prisma.noteShare.findMany({
@@ -679,7 +679,7 @@ export class NotesService {
         ...buildSharedSyncWhere(
           lastSyncedAt,
           syncCutoff,
-          updatedAtWindow,
+          syncWindow,
           forceServerIds,
         ),
       },
@@ -728,14 +728,15 @@ interface IncomingNoteSyncResult {
 const buildSharedSyncWhere = (
   lastSyncedAt: string | undefined,
   syncCutoff: Date,
-  updatedAtWindow: ReturnType<typeof getSyncUpdatedAtWindow>,
+  syncWindow: ReturnType<typeof getSyncUpdatedAtWindow>,
   forceServerIds: string[],
 ) => {
   if (lastSyncedAt) {
     return {
       OR: [
-        { updatedAt: updatedAtWindow },
-        { isDeleted: false, note: { updatedAt: updatedAtWindow } },
+        // Share row filters on updatedAt (never backdated); the note on its syncedAt watermark.
+        { updatedAt: syncWindow },
+        { isDeleted: false, note: { syncedAt: syncWindow } },
         ...activeForcedNoteIds(forceServerIds),
       ],
     };
@@ -744,7 +745,7 @@ const buildSharedSyncWhere = (
   const initialActiveShares = {
     isDeleted: false,
     updatedAt: { lte: syncCutoff },
-    note: { updatedAt: { lte: syncCutoff } },
+    note: { syncedAt: { lte: syncCutoff } },
   };
 
   return forceServerIds.length
