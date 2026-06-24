@@ -1,14 +1,8 @@
-import {
-  IsBoolean,
-  IsOptional,
-  IsString,
-  IsNotEmpty,
-  IsArray,
-} from 'class-validator';
+import { IsBoolean, IsOptional, IsString, IsArray } from 'class-validator';
 
 export class CreateNoteDto {
+  // Blank is allowed and canonical for "no title"; clients render an "Untitled" placeholder.
   @IsString()
-  @IsNotEmpty()
   title: string;
 
   @IsString()

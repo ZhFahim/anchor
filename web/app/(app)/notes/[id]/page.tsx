@@ -134,8 +134,9 @@ export default function NoteEditorPage() {
   const isReadOnly = note ? note.state === "trashed" || isViewer : false;
   const canUpload = isOwner || isEditor;
 
+  // Persist the trimmed title; blank stays blank (cards render the "Untitled" placeholder).
   const getTitleForSave = useCallback(() => {
-    return title.trim() === "" ? "Untitled" : title;
+    return title.trim();
   }, [title]);
 
   const capturePendingFocusRestore =

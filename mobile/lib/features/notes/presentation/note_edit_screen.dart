@@ -106,7 +106,8 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
   }
 
   void _initializeLastSavedState(Note note) {
-    _lastSavedTitle = note.title;
+    // Trimmed to match the trimmed editor text, so stray whitespace isn't a false change.
+    _lastSavedTitle = note.title.trim();
     _lastSavedContent = note.content;
     _lastSavedTagIds = note.tagIds.toSet();
     _lastSavedBackground = note.background;
@@ -180,14 +181,8 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
           currentTagIds.isNotEmpty;
     }
 
-    // For existing notes, compare with last saved state
-    // Normalize empty title to 'Untitled' for comparison
-    final normalizedCurrentTitle = currentTitle.isNotEmpty
-        ? currentTitle
-        : 'Untitled';
-    final normalizedLastSavedTitle = _lastSavedTitle ?? 'Untitled';
-
-    return normalizedCurrentTitle != normalizedLastSavedTitle ||
+    // For existing notes, compare with last saved state (blank title stays blank).
+    return currentTitle != (_lastSavedTitle ?? '') ||
         currentContent != (_lastSavedContent ?? '') ||
         !_setEquals(currentTagIds, _lastSavedTagIds ?? {}) ||
         _selectedBackground != _lastSavedBackground ||
@@ -213,9 +208,9 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
   }
 
   void _updateLastSavedState() {
-    // Update last saved state (track actual saved title, which is 'Untitled' if empty)
+    // Track the saved title as-is; blank stays blank.
     final title = _titleController.text.trim();
-    _lastSavedTitle = title.isNotEmpty ? title : 'Untitled';
+    _lastSavedTitle = title;
     final editorState = _editorKey.currentState;
     _lastSavedContent = editorState?.getContent() ?? '';
     _lastSavedTagIds = _selectedTagIds.toSet();
@@ -477,7 +472,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
     if (_isNew) {
       final newNote = Note(
         id: const Uuid().v4(),
-        title: title.isNotEmpty ? title : 'Untitled',
+        title: title,
         content: content,
         isPinned: _isPinned,
         tagIds: _selectedTagIds,
@@ -497,12 +492,9 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
         });
       }
     } else if (_existingNote != null) {
-      // Ensure empty titles become 'Untitled'
-      final actualTitle = title.isNotEmpty ? title : 'Untitled';
-
       // Check if anything changed
       final tagsChanged = !_listEquals(_existingNote!.tagIds, _selectedTagIds);
-      final titleChanged = _existingNote!.title != actualTitle;
+      final titleChanged = _existingNote!.title != title;
       final contentChanged = _existingNote!.content != content;
       final pinChanged = _existingNote!.isPinned != _isPinned;
       final bgChanged = _existingNote!.background != _selectedBackground;
@@ -527,7 +519,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
       );
 
       final updatedNote = _existingNote!.copyWith(
-        title: actualTitle,
+        title: title,
         content: content,
         isPinned: _isPinned,
         isArchived: _isArchived,
@@ -807,10 +799,17 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
                 color: theme.colorScheme.onSurface,
               ),
               decoration: InputDecoration(
-                hintText: _isEditing && !isReadOnly ? 'Title' : null,
-                hintStyle: TextStyle(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
-                ),
+                hintText: isReadOnly ? 'Untitled' : 'Title',
+                hintStyle: isReadOnly
+                    ? theme.textTheme.displaySmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface,
+                      )
+                    : TextStyle(
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.3,
+                        ),
+                      ),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(vertical: 16),
                 filled: false,
