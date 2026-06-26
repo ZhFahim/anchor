@@ -13,6 +13,8 @@ import {
 import {
   ATTACHMENT_MAX_FILE_SIZE,
   ATTACHMENT_ALLOWED_MIME_TYPES,
+  ATTACHMENTS_BASE_DIR,
+  attachmentFilePath,
 } from '../constants/notes.constants';
 import { toAttachmentResponse } from '../dto/attachment-response.dto';
 import * as crypto from 'crypto';
@@ -23,7 +25,6 @@ import { createReadStream, existsSync } from 'fs';
 @Injectable()
 export class NoteAttachmentsService {
   private readonly logger = new Logger(NoteAttachmentsService.name);
-  private readonly baseDir = '/data/uploads/attachments';
 
   constructor(
     private prisma: PrismaService,
@@ -55,7 +56,7 @@ export class NoteAttachmentsService {
       );
     }
 
-    const noteDir = path.join(this.baseDir, noteId);
+    const noteDir = path.join(ATTACHMENTS_BASE_DIR, noteId);
     await fs.mkdir(noteDir, { recursive: true });
 
     const ext = path.extname(file.originalname).toLowerCase();
@@ -141,7 +142,7 @@ export class NoteAttachmentsService {
       throw new NotFoundException('Attachment not found');
     }
 
-    const filePath = path.join(this.baseDir, noteId, attachment.storedFilename);
+    const filePath = attachmentFilePath(noteId, attachment.storedFilename);
     if (!existsSync(filePath)) {
       throw new NotFoundException('Attachment file not found');
     }
@@ -184,7 +185,7 @@ export class NoteAttachmentsService {
       data: { updatedAt: new Date() },
     });
 
-    const filePath = path.join(this.baseDir, noteId, attachment.storedFilename);
+    const filePath = attachmentFilePath(noteId, attachment.storedFilename);
     try {
       await fs.unlink(filePath);
     } catch (error) {
@@ -240,7 +241,7 @@ export class NoteAttachmentsService {
   }
 
   async deleteAllForNote(noteId: string) {
-    const noteDir = path.join(this.baseDir, noteId);
+    const noteDir = path.join(ATTACHMENTS_BASE_DIR, noteId);
     try {
       await fs.rm(noteDir, { recursive: true, force: true });
     } catch (error) {
