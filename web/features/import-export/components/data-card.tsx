@@ -66,7 +66,7 @@ export function DataImportExportCard() {
           <div className="space-y-0.5">
             <p className="text-sm font-medium">Import</p>
             <p className="text-sm text-muted-foreground">
-              Restore an Anchor backup
+              Restore an Anchor backup or import from Google Keep
             </p>
           </div>
           <Button variant="outline" onClick={() => setImportOpen(true)}>

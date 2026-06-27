@@ -60,7 +60,9 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Import notes</DialogTitle>
-          <DialogDescription>Restore an Anchor backup (zip).</DialogDescription>
+          <DialogDescription>
+            Restore an Anchor backup or migrate from Google Keep (Takeout zip).
+          </DialogDescription>
         </DialogHeader>
 
         {step === "pick" && (

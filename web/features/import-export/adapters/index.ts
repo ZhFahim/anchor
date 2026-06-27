@@ -1,10 +1,11 @@
 import { anchorAdapter } from "./anchor";
+import { googleKeepAdapter } from "./google-keep";
 import type { ImportAdapter } from "./types";
 import { readZip, type ZipArchive } from "./zip";
 
 // Detection runs in order; anchor's manifest check is the cheapest and
 // most specific. New formats (markdown, ...) register here.
-const ADAPTERS: ImportAdapter[] = [anchorAdapter];
+const ADAPTERS: ImportAdapter[] = [anchorAdapter, googleKeepAdapter];
 
 export async function detectFormat(
   file: File,

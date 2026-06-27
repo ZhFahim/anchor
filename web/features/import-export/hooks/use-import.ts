@@ -87,7 +87,9 @@ export function useImport() {
     try {
       const detected = await detectFormat(file);
       if (!detected) {
-        setPickError("Unrecognized file. Use an Anchor backup zip.");
+        setPickError(
+          "Unrecognized file. Use an Anchor backup zip or a Google Takeout zip containing Keep notes.",
+        );
         return;
       }
       const result = await detected.adapter.parse(detected.zip);
