@@ -65,10 +65,11 @@ describe("anchorAdapter.parse", () => {
 
     expect(parsed.formatId).toBe("anchor");
     expect(parsed.notes).toHaveLength(3);
-    // Referenced tags carry their colors for restore
+    // Every manifest tag survives with its color, even ones no note references.
     expect(
       [...parsed.tags].sort((a, b) => a.name.localeCompare(b.name)),
     ).toEqual([
+      { name: "Empty tag", color: "#00ff00" },
       { name: "Personal", color: null },
       { name: "Work", color: "#ff0000" },
     ]);
@@ -99,6 +100,14 @@ describe("anchorAdapter.parse", () => {
           JSON.stringify({ ...anchorManifestFixture, version: 2 }),
         ),
       }),
+    );
+    await expect(anchorAdapter.parse(zip)).rejects.toThrow(/newer version/);
+  });
+
+  it("rejects manifests with a missing version field", async () => {
+    const { version: _dropped, ...versionless } = anchorManifestFixture;
+    const zip = readZip(
+      zipSync({ "manifest.json": strToU8(JSON.stringify(versionless)) }),
     );
     await expect(anchorAdapter.parse(zip)).rejects.toThrow(/newer version/);
   });

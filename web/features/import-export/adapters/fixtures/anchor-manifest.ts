@@ -5,10 +5,12 @@ export const anchorManifestFixture = {
   exportedAt: "2026-06-01T00:00:00.000Z",
   server: { version: "0.12.0" },
   user: { id: "user-1", email: "me@example.com" },
-  counts: { notes: 3, tags: 2, attachments: 1 },
+  counts: { notes: 3, tags: 3, attachments: 1 },
   tags: [
     { id: "tag-1", name: "Work", color: "#ff0000" },
     { id: "tag-2", name: "Personal", color: null },
+    // Not referenced by any note — must still survive a restore.
+    { id: "tag-3", name: "Empty tag", color: "#00ff00" },
   ],
   notes: [
     {

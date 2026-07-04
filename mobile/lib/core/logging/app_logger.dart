@@ -76,6 +76,10 @@ class AppLogger {
   final StreamController<LogEntry> _controller =
       StreamController<LogEntry>.broadcast();
 
+  /// Minimum level echoed to the console; buffer and file always get
+  /// everything. Tests raise this to [LogLevel.warn] to keep output quiet.
+  LogLevel consoleLevel = LogLevel.debug;
+
   File? _file;
   Future<void> _writeChain = Future.value();
   bool _initialized = false;
@@ -162,7 +166,7 @@ class AppLogger {
     if (!_controller.isClosed) {
       _controller.add(entry);
     }
-    if (kDebugMode) {
+    if (kDebugMode && level.index >= consoleLevel.index) {
       debugPrint(entry.format());
     }
     _enqueueWrite(entry);
