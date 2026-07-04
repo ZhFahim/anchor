@@ -30,15 +30,16 @@ export class NotesService {
 
   async create(userId: string, createNoteDto: CreateNoteDto) {
     const { tagIds, isPinned, ...noteData } = createNoteDto;
+    const validTagIds = await this.filterOwnedTagIds(userId, tagIds);
 
     const note = await this.prisma.note.create({
       data: {
         ...noteData,
         state: NoteState.active,
         userId,
-        tags: tagIds?.length
+        tags: validTagIds.length
           ? {
-              connect: tagIds.map((id) => ({ id })),
+              connect: validTagIds.map((id) => ({ id })),
             }
           : undefined,
       },
@@ -532,6 +533,8 @@ export class NotesService {
   }
 
   private async createMissingSyncNote(userId: string, change: SyncNoteDto) {
+    const validTagIds = await this.filterOwnedTagIds(userId, change.tagIds);
+
     await this.prisma.note.create({
       data: {
         id: change.id,
@@ -541,15 +544,28 @@ export class NotesService {
         background: change.background,
         state: (change.state as NoteState) ?? NoteState.active,
         userId,
-        tags: change.tagIds?.length
+        tags: validTagIds.length
           ? {
-              connect: change.tagIds.map((id) => ({ id })),
+              connect: validTagIds.map((id) => ({ id })),
             }
           : undefined,
       },
     });
 
     await this.setNotePin(userId, change.id, change.isPinned);
+  }
+
+  // Only tags the caller owns (and hasn't deleted) may be attached; unknown
+  // or foreign ids are dropped instead of failing the whole request.
+  private async filterOwnedTagIds(userId: string, tagIds?: string[]) {
+    if (!tagIds?.length) {
+      return [];
+    }
+    const tags = await this.prisma.tag.findMany({
+      where: { id: { in: tagIds }, userId, isDeleted: false },
+      select: { id: true },
+    });
+    return tags.map((tag) => tag.id);
   }
 
   private async processExistingSyncNote(
@@ -759,7 +775,8 @@ interface IncomingNoteSyncResult {
   forceServerNoteIds: Set<string>;
 }
 
-const buildSharedSyncWhere = (
+// Exported for tests.
+export const buildSharedSyncWhere = (
   lastSyncedAt: string | undefined,
   syncCutoff: Date,
   syncWindow: ReturnType<typeof getSyncUpdatedAtWindow>,

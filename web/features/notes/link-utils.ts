@@ -13,6 +13,15 @@ const SCHEMES = [
 ];
 
 const HOST_LIKE = /^(?:[\w-]+(?:\.[\w-]+)+|localhost)(?::\d+)?(?:[/?#].*)?$/i;
+const IPV4_HOST = /^(?:\d{1,3}\.){3}\d{1,3}$/;
+
+// Dotted-but-all-numeric strings like "3.14" or "192.168" are prose, not
+// hosts; only a full dotted quad counts as a numeric host.
+function isHostLike(trimmed: string): boolean {
+  if (!HOST_LIKE.test(trimmed)) return false;
+  const host = trimmed.split(/[/?#:]/, 1)[0];
+  return /[a-z]/i.test(host) || IPV4_HOST.test(host);
+}
 
 export function normalizeUrl(raw: string): string {
   const trimmed = raw.trim();
@@ -21,7 +30,7 @@ export function normalizeUrl(raw: string): string {
   for (const scheme of SCHEMES) {
     if (lower.startsWith(scheme)) return trimmed;
   }
-  if (HOST_LIKE.test(trimmed)) return `https://${trimmed}`;
+  if (isHostLike(trimmed)) return `https://${trimmed}`;
   return trimmed;
 }
 
@@ -32,7 +41,7 @@ export function isLikelyUrl(raw: string): boolean {
   for (const scheme of SCHEMES) {
     if (lower.startsWith(scheme)) return true;
   }
-  return HOST_LIKE.test(trimmed);
+  return isHostLike(trimmed);
 }
 
 export type LinkRange = {

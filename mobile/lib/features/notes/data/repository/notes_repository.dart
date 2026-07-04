@@ -546,8 +546,19 @@ class NotesRepository {
 
   // One time migrations when sync protocol version changes (e.g. new feature
   // added server-side that older clients didn't know about).
-  Future<void> _runProtocolMigrations() async {
+  Future<void> _runProtocolMigrations({required bool isFirstSync}) async {
     final raw = await _storage.read(key: _syncProtocolVersionKey);
+
+    // A fresh install has no version key but nothing to migrate either —
+    // stamp it current instead of running upgrade backfills.
+    if (raw == null && isFirstSync) {
+      await _storage.write(
+        key: _syncProtocolVersionKey,
+        value: _currentSyncProtocolVersion.toString(),
+      );
+      return;
+    }
+
     final storedVersion = raw != null ? int.tryParse(raw) ?? 1 : 1;
 
     if (storedVersion < 2) {
@@ -599,7 +610,7 @@ class NotesRepository {
         applyResult.postApplySnapshot,
       );
       await _storage.write(key: _lastSyncKey, value: response.syncedAt);
-      await _runProtocolMigrations();
+      await _runProtocolMigrations(isFirstSync: payload.lastSyncedAt == null);
       AppLogger.instance.info(
         'Notes',
         'Notes sync done in '
@@ -762,7 +773,7 @@ class NotesRepository {
             'Notes',
             'Server overrode local edit for ${serverNote.id}: '
                 'server.updatedAt=${serverNote.updatedAt?.toIso8601String()} '
-                'local.updatedAt=${localNote?.updatedAt?.toIso8601String()} ',
+                'local.updatedAt=${localNote?.updatedAt?.toUtc().toIso8601String()} ',
           );
         }
 

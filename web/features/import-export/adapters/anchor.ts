@@ -67,7 +67,10 @@ export const anchorAdapter: ImportAdapter = {
     if (!manifest) {
       throw new Error("Not a valid Anchor backup: manifest.json missing");
     }
-    if (manifest.version > SUPPORTED_VERSION) {
+    if (
+      typeof manifest.version !== "number" ||
+      manifest.version > SUPPORTED_VERSION
+    ) {
       throw new Error(
         `This backup was created by a newer version of Anchor (format v${manifest.version}). Please update your server.`,
       );
@@ -76,7 +79,6 @@ export const anchorAdapter: ImportAdapter = {
     const tagById = new Map(manifest.tags.map((tag) => [tag.id, tag]));
     const skipped: ImportSkippedItem[] = [];
     const notes: CanonicalNote[] = [];
-    const referencedTagIds = new Set<string>();
 
     for (const note of manifest.notes) {
       const attachments: CanonicalAttachment[] = [];
@@ -108,10 +110,7 @@ export const anchorAdapter: ImportAdapter = {
         isTrashed: note.state === "trashed",
         background: note.background,
         tagNames: note.tagIds
-          .map((id) => {
-            referencedTagIds.add(id);
-            return tagById.get(id)?.name;
-          })
+          .map((id) => tagById.get(id)?.name)
           .filter((name): name is string => Boolean(name)),
         createdAt: note.createdAt,
         updatedAt: note.updatedAt,
@@ -119,10 +118,11 @@ export const anchorAdapter: ImportAdapter = {
       });
     }
 
-    const tags = [...referencedTagIds]
-      .map((id) => tagById.get(id))
-      .filter((tag): tag is NonNullable<typeof tag> => Boolean(tag))
-      .map((tag) => ({ name: tag.name, color: tag.color }));
+    // A full backup restore must not drop tags that have no notes.
+    const tags = manifest.tags.map((tag) => ({
+      name: tag.name,
+      color: tag.color,
+    }));
 
     return {
       formatId: "anchor",
