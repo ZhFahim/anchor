@@ -46,19 +46,19 @@ export class ImportService {
       dto.tags ?? [],
     );
 
-    // One lookup for the whole batch to classify incoming IDs
-    const incomingIds = dto.notes
-      .map((note) => note.id)
-      .filter((id): id is string => Boolean(id));
+    const skipExisting = dto.skipExisting === true;
+    const incomingIds = skipExisting
+      ? dto.notes
+          .map((note) => note.id)
+          .filter((id): id is string => Boolean(id))
+      : [];
     const existingNotes = incomingIds.length
       ? await this.prisma.note.findMany({
           where: { id: { in: incomingIds } },
-          select: { id: true, userId: true },
+          select: { id: true, userId: true, state: true },
         })
       : [];
-    const existingOwners = new Map(
-      existingNotes.map((note) => [note.id, note.userId]),
-    );
+    const existingById = new Map(existingNotes.map((note) => [note.id, note]));
 
     const results: ImportNoteResult[] = [];
     for (const item of dto.notes) {
@@ -66,7 +66,8 @@ export class ImportService {
         await this.importSingleNote(
           userId,
           item,
-          existingOwners,
+          skipExisting,
+          existingById,
           tagResolution.idByName,
         ),
       );
@@ -81,20 +82,30 @@ export class ImportService {
   private async importSingleNote(
     userId: string,
     item: ImportNoteItemDto,
-    existingOwners: Map<string, string>,
+    skipExisting: boolean,
+    existingById: Map<string, { userId: string; state: string }>,
     tagIdByName: Map<string, string>,
   ): Promise<ImportNoteResult> {
     let status: ImportNoteResult['status'] = 'created';
-    let noteId = item.id;
+    let noteId: string | undefined;
 
-    if (item.id && existingOwners.has(item.id)) {
-      if (existingOwners.get(item.id) === userId) {
+    if (skipExisting && item.id) {
+      const existing = existingById.get(item.id);
+      if (!existing) {
+        // Keep the backup's identity so a later skip-existing import
+        // recognizes this note.
+        noteId = item.id;
+      } else if (
+        existing.userId === userId &&
+        existing.state !== NoteState.deleted
+      ) {
         return { ref: item.ref, status: 'skipped', noteId: item.id };
+      } else {
+        // Foreign-owned ID, or the user's own permanently deleted note:
+        // permanently deleted means gone, so the backup comes in as a
+        // fresh copy rather than resurrecting the old identity.
+        status = 'remapped';
       }
-      // ID belongs to another user's note (e.g. re-importing a backup that
-      // contains shared-with-me notes onto the same server): new identity.
-      status = 'remapped';
-      noteId = undefined;
     }
 
     const prepared = this.prepareNote(item);

@@ -455,7 +455,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
     final content = _editorKey.currentState?.getContent() ?? '';
     final newNote = Note(
       id: const Uuid().v4(),
-      title: title.isNotEmpty ? title : 'Untitled',
+      title: title,
       content: content,
       isPinned: _isPinned,
       tagIds: _selectedTagIds,

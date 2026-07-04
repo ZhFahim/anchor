@@ -99,6 +99,10 @@ export class ImportNotesDto {
   @Type(() => ImportTagDto)
   @IsOptional()
   tags?: ImportTagDto[];
+
+  @IsBoolean()
+  @IsOptional()
+  skipExisting?: boolean;
 }
 
 export type ImportNoteStatus = 'created' | 'skipped' | 'remapped' | 'failed';

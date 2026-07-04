@@ -81,6 +81,7 @@ export type ImportNoteItem = {
 export type ImportNotesRequest = {
   notes: ImportNoteItem[];
   tags?: { name: string; color?: string }[];
+  skipExisting?: boolean;
 };
 
 export type ImportNoteStatus = "created" | "skipped" | "remapped" | "failed";

@@ -66,8 +66,22 @@ describe('ImportService.importNotes', () => {
     service = moduleRef.get(ImportService);
   });
 
-  it('creates a note preserving id and second-truncated timestamps', async () => {
+  it('imports as a fresh copy by default, ignoring the backup id entirely', async () => {
     const response = await service.importNotes(USER_ID, {
+      notes: [makeItem({ id: '0b54f5e9-8f51-4be9-a72f-3bd693466b2f' })],
+    });
+
+    expect(response.results).toEqual([
+      { ref: 'ref-1', status: 'created', noteId: 'generated-id' },
+    ]);
+    expect(noteCreateData(prisma).id).toBeUndefined();
+    // No existence lookup in default mode
+    expect(prisma.note.findMany).not.toHaveBeenCalled();
+  });
+
+  it('preserves id and second-truncated timestamps when skipping existing', async () => {
+    const response = await service.importNotes(USER_ID, {
+      skipExisting: true,
       notes: [
         makeItem({
           id: '0b54f5e9-8f51-4be9-a72f-3bd693466b2f',
@@ -97,12 +111,17 @@ describe('ImportService.importNotes', () => {
     expect(data.updatedAt).toEqual(new Date('2025-03-01T10:00:00.000Z'));
   });
 
-  it('skips notes whose id already belongs to the importer', async () => {
+  it('skips notes whose id already belongs to the importer when skipping existing', async () => {
     prisma.note.findMany.mockResolvedValue([
-      { id: '0b54f5e9-8f51-4be9-a72f-3bd693466b2f', userId: USER_ID },
+      {
+        id: '0b54f5e9-8f51-4be9-a72f-3bd693466b2f',
+        userId: USER_ID,
+        state: 'active',
+      },
     ]);
 
     const response = await service.importNotes(USER_ID, {
+      skipExisting: true,
       notes: [makeItem({ id: '0b54f5e9-8f51-4be9-a72f-3bd693466b2f' })],
     });
 
@@ -114,12 +133,39 @@ describe('ImportService.importNotes', () => {
     expect(prisma.note.create).not.toHaveBeenCalled();
   });
 
-  it('remaps notes whose id belongs to another user', async () => {
+  it('remaps notes whose id belongs to another user when skipping existing', async () => {
     prisma.note.findMany.mockResolvedValue([
-      { id: '0b54f5e9-8f51-4be9-a72f-3bd693466b2f', userId: OTHER_USER_ID },
+      {
+        id: '0b54f5e9-8f51-4be9-a72f-3bd693466b2f',
+        userId: OTHER_USER_ID,
+        state: 'active',
+      },
     ]);
 
     const response = await service.importNotes(USER_ID, {
+      skipExisting: true,
+      notes: [makeItem({ id: '0b54f5e9-8f51-4be9-a72f-3bd693466b2f' })],
+    });
+
+    expect(response.results[0]).toEqual({
+      ref: 'ref-1',
+      status: 'remapped',
+      noteId: 'generated-id',
+    });
+    expect(noteCreateData(prisma).id).toBeUndefined();
+  });
+
+  it('never skips a permanently deleted note: the backup comes in as a fresh copy', async () => {
+    prisma.note.findMany.mockResolvedValue([
+      {
+        id: '0b54f5e9-8f51-4be9-a72f-3bd693466b2f',
+        userId: USER_ID,
+        state: 'deleted',
+      },
+    ]);
+
+    const response = await service.importNotes(USER_ID, {
+      skipExisting: true,
       notes: [makeItem({ id: '0b54f5e9-8f51-4be9-a72f-3bd693466b2f' })],
     });
 

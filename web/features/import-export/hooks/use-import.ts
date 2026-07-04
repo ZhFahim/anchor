@@ -62,6 +62,7 @@ export function useImport() {
   const [runError, setRunError] = useState<string | null>(null);
   const [progress, setProgress] = useState<ImportProgress | null>(null);
   const [report, setReport] = useState<ImportReport | null>(null);
+  const [skipExisting, setSkipExisting] = useState(false);
 
   // Retry resumes from the last unprocessed batch
   const batchIndexRef = useRef(0);
@@ -76,6 +77,7 @@ export function useImport() {
     setRunError(null);
     setProgress(null);
     setReport(null);
+    setSkipExisting(false);
     batchIndexRef.current = 0;
     resultsRef.current = [];
     isRunningRef.current = false;
@@ -178,6 +180,7 @@ export function useImport() {
         const response = await importNotes(
           batches[i].map(toImportNoteItem),
           batchTags,
+          skipExisting,
         );
         resultsRef.current.push(...response.results);
         batchIndexRef.current = i + 1;
@@ -261,7 +264,7 @@ export function useImport() {
 
     isRunningRef.current = false;
     finishRun(parsed, uploaded, attachmentFailures);
-  }, [parsed, finishRun]);
+  }, [parsed, finishRun, skipExisting]);
 
   return {
     step,
@@ -272,6 +275,8 @@ export function useImport() {
     progress,
     report,
     isRunning: step === "running" && !runError,
+    skipExisting,
+    setSkipExisting,
     selectFile,
     start: run,
     retry: run,

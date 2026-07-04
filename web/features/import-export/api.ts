@@ -48,6 +48,7 @@ export function toImportNoteItem(note: CanonicalNote): ImportNoteItem {
 export async function importNotes(
   notes: ImportNoteItem[],
   tags: ImportTag[],
+  skipExisting: boolean,
 ): Promise<ImportNotesResponse> {
   const palette = tags.map((tag) => ({
     name: tag.name,
@@ -55,7 +56,7 @@ export async function importNotes(
   }));
   return api
     .post("api/import/notes", {
-      json: { notes, tags: palette },
+      json: { notes, tags: palette, skipExisting },
       timeout: false,
     })
     .json<ImportNotesResponse>();
