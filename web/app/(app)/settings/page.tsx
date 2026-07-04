@@ -40,6 +40,7 @@ import {
   uploadProfileImage,
 } from "@/features/auth/api";
 import { useAuthStore } from "@/features/auth/store";
+import { DataImportExportCard } from "@/features/import-export";
 import { usePreferencesStore } from "@/features/preferences";
 import { cn } from "@/lib/utils";
 import packageJson from "../../../package.json";
@@ -660,6 +661,9 @@ export default function SettingsPage() {
         variant="destructive"
         isPending={revokeApiTokenMutation.isPending}
       />
+
+      {/* Export & Import Section */}
+      <DataImportExportCard />
 
       {/* Change Password Section */}
       <Card className="border-0 shadow-xl bg-card/80 backdrop-blur-sm mb-6">

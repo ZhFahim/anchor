@@ -52,6 +52,9 @@ jobs:
       - name: Lint & format check
         run: pnpm check
 
+      - name: Test
+        run: pnpm test
+
   web-lint:
     runs-on: ubuntu-latest
     defaults:
@@ -78,6 +81,9 @@ jobs:
 
       - name: Lint & format check
         run: pnpm check
+
+      - name: Test
+        run: pnpm test
 
   docker:
     permissions:

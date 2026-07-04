@@ -74,6 +74,10 @@ pnpm run test
 pnpm run test:e2e
 ```
 
+Unit specs are co-located with the code as `*.spec.ts`; e2e specs live in
+`test/` as `*.e2e-spec.ts`. Shared unit-test helpers (e.g. the Prisma mock)
+go in `test/` and are reused across specs.
+
 ## API Endpoints
 
 ### Auth

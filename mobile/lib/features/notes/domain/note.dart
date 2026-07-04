@@ -93,6 +93,9 @@ abstract class Note with _$Note {
 
   factory Note.fromJson(Map<String, dynamic> json) => _$NoteFromJson(json);
 
+  /// Title for display; blank stored titles fall back to the 'Untitled' placeholder.
+  String get displayTitle => title.trim().isEmpty ? 'Untitled' : title;
+
   bool get isActive => state == NoteState.active;
   bool get isTrashed => state == NoteState.trashed;
   bool get isDeleted => state == NoteState.deleted;

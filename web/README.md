@@ -155,6 +155,17 @@ pnpm check       # lint + format + imports, read-only
 pnpm check:fix   # fix everything (safe lint fixes + format + import sort)
 ```
 
+### Testing
+
+[Vitest](https://vitest.dev/) for unit tests. Co-locate test files next to the
+code they cover as `*.test.ts` / `*.test.tsx`, with shared test data under a
+`fixtures/` folder.
+
+```bash
+pnpm test        # run once
+pnpm test:watch  # watch mode
+```
+
 ## Contributing
 
 1. Create a feature branch

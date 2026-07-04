@@ -187,7 +187,7 @@ export class TagsService {
     const serverChanges = await this.prisma.tag.findMany({
       where: {
         userId,
-        ...withForcedSyncIds(updatedAtWindow, forceServerIds),
+        ...withForcedSyncIds('updatedAt', updatedAtWindow, forceServerIds),
       },
       orderBy: { updatedAt: 'desc' },
       include: {

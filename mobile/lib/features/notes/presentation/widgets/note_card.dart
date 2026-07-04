@@ -100,7 +100,7 @@ class NoteCard extends ConsumerWidget {
                             ],
                             Expanded(
                               child: Text(
-                                note.title,
+                                note.displayTitle,
                                 style: theme.textTheme.titleLarge,
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,

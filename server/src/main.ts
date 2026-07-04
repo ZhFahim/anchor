@@ -8,6 +8,8 @@ import * as fs from 'fs';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
+  app.useBodyParser('json', { limit: '30mb' });
+
   app.use(helmet());
   app.enableCors(); // Allow mobile/web to connect
 

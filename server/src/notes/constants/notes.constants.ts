@@ -2,6 +2,7 @@
  * Constants for notes module
  * Centralized query patterns, user selections, and error messages
  */
+import * as path from 'path';
 
 // Standard user fields for queries
 export const USER_SELECT_FIELDS = {
@@ -68,6 +69,11 @@ export const NOTE_INCLUDE_SHARES = {
 
 // Attachment constants
 export const ATTACHMENT_MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+
+export const ATTACHMENTS_BASE_DIR = '/data/uploads/attachments';
+
+export const attachmentFilePath = (noteId: string, storedFilename: string) =>
+  path.join(ATTACHMENTS_BASE_DIR, noteId, storedFilename);
 
 export const ATTACHMENT_ALLOWED_MIME_TYPES = new Set([
   // Image
