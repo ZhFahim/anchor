@@ -160,18 +160,18 @@ export class NotesService {
     // Apply the pin first so the include below reflects the new state.
     await this.setNotePin(userId, id, isPinned);
 
-    const note = await this.prisma.note.update({
-      where: { id },
-      data: {
-        ...noteData,
-        // Use 'set' to replace all tags at once (implicit many-to-many)
-        ...(tagIds !== undefined && {
-          tags: {
-            set: tagIds.map((tagId) => ({ id: tagId })),
-          },
-        }),
-      },
-      include: { ...NOTE_INCLUDE_TAGS, ...notePinInclude(userId) },
+    const note = await this.prisma.$transaction(async (tx) => {
+      await tx.note.update({ where: { id }, data: noteData });
+
+      // Only update the caller's own tags so other users' tags aren't removed.
+      if (tagIds !== undefined) {
+        await this.reconcileUserTags(tx, id, userId, tagIds);
+      }
+
+      return tx.note.findUniqueOrThrow({
+        where: { id },
+        include: { ...NOTE_INCLUDE_TAGS, ...notePinInclude(userId) },
+      });
     });
 
     return transformNote(note, userId);
@@ -592,6 +592,7 @@ export class NotesService {
     }
 
     const didUpdate = await this.updateSyncNoteIfUnchanged(
+      userId,
       change,
       existingNote,
       access.isOwner,
@@ -607,6 +608,7 @@ export class NotesService {
   }
 
   private async updateSyncNoteIfUnchanged(
+    userId: string,
     change: SyncNoteDto,
     existingNote: Note,
     isOwner: boolean,
@@ -632,18 +634,50 @@ export class NotesService {
         return false;
       }
 
+      // Only update the caller's own tags so other users' tags aren't removed.
       if (change.tagIds !== undefined) {
-        await tx.note.update({
-          where: { id: change.id },
-          data: {
-            tags: {
-              set: change.tagIds.map((id) => ({ id })),
-            },
-          },
-        });
+        await this.reconcileUserTags(tx, change.id, userId, change.tagIds);
       }
 
       return true;
+    });
+  }
+
+  // Sync the caller's own tags on a note to `desiredTagIds`, leaving other
+  // users' tags untouched. Only tags the caller owns (and hasn't deleted).
+  private async reconcileUserTags(
+    tx: Prisma.TransactionClient,
+    noteId: string,
+    userId: string,
+    desiredTagIds: string[],
+  ) {
+    const ownableTags = await tx.tag.findMany({
+      where: { id: { in: desiredTagIds }, userId, isDeleted: false },
+      select: { id: true },
+    });
+    const desired = new Set(ownableTags.map((t) => t.id));
+
+    const attached = await tx.tag.findMany({
+      where: { userId, notes: { some: { id: noteId } } },
+      select: { id: true },
+    });
+    const current = new Set(attached.map((t) => t.id));
+
+    const toConnect = [...desired].filter((id) => !current.has(id));
+    const toDisconnect = [...current].filter((id) => !desired.has(id));
+
+    if (toConnect.length === 0 && toDisconnect.length === 0) {
+      return;
+    }
+
+    await tx.note.update({
+      where: { id: noteId },
+      data: {
+        tags: {
+          connect: toConnect.map((id) => ({ id })),
+          disconnect: toDisconnect.map((id) => ({ id })),
+        },
+      },
     });
   }
 
