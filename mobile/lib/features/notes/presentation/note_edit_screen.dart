@@ -336,8 +336,9 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
   }
 
   void _showColorPicker() {
-    // Don't allow changing background if note is not active
-    if (_existingNote?.isActive != true) {
+    // Don't allow changing background if an existing note is not active.
+    // New notes have no _existingNote yet but are always editable.
+    if (!_isNew && _existingNote?.isActive != true) {
       return;
     }
     showModalBottomSheet(
@@ -378,9 +379,6 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
   }
 
   void _showAttachmentSheet() {
-    final noteId = widget.noteId ?? _existingNote?.id;
-    if (noteId == null) return;
-
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -388,6 +386,14 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
       builder: (context) => NoteAttachmentSheet(
         onFileSelected: (filePath, mimeType, filename) async {
           try {
+            // Attachments are keyed to a persisted note. For a brand-new note
+            // the user may start by adding an attachment, so create the note
+            // now that there's something to attach to.
+            var noteId = widget.noteId ?? _existingNote?.id;
+            if (noteId == null) {
+              noteId = await _createNote();
+              _updateLastSavedState();
+            }
             final repo = ref.read(noteAttachmentsRepositoryProvider);
             await repo.addAttachment(noteId, filePath, mimeType, filename);
             if (!context.mounted) return;
@@ -442,6 +448,35 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
     super.dispose();
   }
 
+  /// Creates and persists a note from the current editor fields, flipping the
+  /// screen out of "new" mode. Returns the created note's id.
+  Future<String> _createNote() async {
+    final title = _titleController.text.trim();
+    final content = _editorKey.currentState?.getContent() ?? '';
+    final newNote = Note(
+      id: const Uuid().v4(),
+      title: title.isNotEmpty ? title : 'Untitled',
+      content: content,
+      isPinned: _isPinned,
+      tagIds: _selectedTagIds,
+      background: _selectedBackground,
+      isSynced: false,
+    );
+    AppLogger.instance.info(
+      'NoteEdit',
+      '_createNote: id=${newNote.id} title.len=${newNote.title.length} '
+          'content.len=${content.length} tags=${_selectedTagIds.length}',
+    );
+    await ref.read(notesRepositoryProvider).createNote(newNote);
+    if (mounted) {
+      setState(() {
+        _isNew = false;
+        _existingNote = newNote;
+      });
+    }
+    return newNote.id;
+  }
+
   Future<void> _saveNote() async {
     // Don't save if note is not active or user can't edit.
     // New notes (_existingNote == null) are always treated as active/editable.
@@ -470,27 +505,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
     final repository = ref.read(notesRepositoryProvider);
 
     if (_isNew) {
-      final newNote = Note(
-        id: const Uuid().v4(),
-        title: title,
-        content: content,
-        isPinned: _isPinned,
-        tagIds: _selectedTagIds,
-        background: _selectedBackground,
-        isSynced: false,
-      );
-      AppLogger.instance.info(
-        'NoteEdit',
-        '_saveNote create: id=${newNote.id} title.len=${newNote.title.length} '
-            'content.len=${content.length} tags=${_selectedTagIds.length}',
-      );
-      await repository.createNote(newNote);
-      if (mounted) {
-        setState(() {
-          _isNew = false;
-          _existingNote = newNote;
-        });
-      }
+      await _createNote();
     } else if (_existingNote != null) {
       // Check if anything changed
       final tagsChanged = !_listEquals(_existingNote!.tagIds, _selectedTagIds);
