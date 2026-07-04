@@ -125,7 +125,7 @@ class NoteOptionsSheet extends StatelessWidget {
                         },
                       ),
 
-                    if (!isReadOnly && !isNew)
+                    if (!isReadOnly)
                       _GridOptionTile(
                         icon: LucideIcons.paperclip,
                         title: 'Attachment',
