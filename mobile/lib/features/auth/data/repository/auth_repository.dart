@@ -52,8 +52,6 @@ class AuthRepository {
 
     await _storage.write(key: 'access_token', value: token);
     await _storage.write(key: 'refresh_token', value: refreshToken);
-    await _storage.write(key: 'user_id', value: userJson['id']);
-    await _storage.write(key: 'user_email', value: userJson['email']);
     await _saveUser(user);
     return user;
   }
@@ -69,8 +67,6 @@ class AuthRepository {
 
       await _storage.write(key: 'access_token', value: token);
       await _storage.write(key: 'refresh_token', value: refreshToken);
-      await _storage.write(key: 'user_id', value: userJson['id']);
-      await _storage.write(key: 'user_email', value: userJson['email']);
       await _saveUser(user);
     }
   }
@@ -82,8 +78,6 @@ class AuthRepository {
     }
     await _storage.delete(key: 'access_token');
     await _storage.delete(key: 'refresh_token');
-    await _storage.delete(key: 'user_id');
-    await _storage.delete(key: 'user_email');
     await _storage.delete(key: 'user_data');
   }
 
@@ -95,24 +89,7 @@ class AuthRepository {
     return _storage.read(key: 'refresh_token');
   }
 
-  Future<User?> getCurrentUser() async {
-    // Try to load full user data from storage
-    final user = await _loadUser();
-    if (user != null) {
-      return user;
-    }
-
-    // Fallback to legacy storage (for backward compatibility)
-    final id = await _storage.read(key: 'user_id');
-    final email = await _storage.read(key: 'user_email');
-    if (id != null && email != null) {
-      final fallbackUser = User(id: id, email: email, name: 'User');
-      // Save as full user data for next time
-      await _saveUser(fallbackUser);
-      return fallbackUser;
-    }
-    return null;
-  }
+  Future<User?> getCurrentUser() => _loadUser();
 
   Future<void> changePassword(
     String currentPassword,

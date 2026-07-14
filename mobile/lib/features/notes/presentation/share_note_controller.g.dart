@@ -54,7 +54,7 @@ final class ShareNoteControllerProvider
 }
 
 String _$shareNoteControllerHash() =>
-    r'b08043bdc50b1c4ee25be89ff07b281d4dacb906';
+    r'cf2d65dd05043ce2aa42034989fec195f586fe83';
 
 /// Controller for managing note shares for a specific note
 

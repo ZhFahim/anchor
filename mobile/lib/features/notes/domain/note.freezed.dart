@@ -288,7 +288,7 @@ as String?,
 mixin _$Note {
 
  String get id; String get title; String? get content; bool get isPinned; bool get isArchived; String? get background; NoteState get state; DateTime? get updatedAt; List<String> get tagIds; NotePermission get permission; List<String>? get shareIds; SharedByUser? get sharedBy;// Local only - not serialized
-@JsonKey(includeFromJson: false, includeToJson: false) bool get isSynced;// Local only - up to 4 image attachment previews for card thumbnails
+@JsonKey(includeFromJson: false, includeToJson: false) bool get isSynced;// Local only - image attachment previews for card thumbnails
 @JsonKey(includeFromJson: false, includeToJson: false) List<NoteImagePreview> get imagePreviewData;
 /// Create a copy of Note
 /// with the given fields replaced by the non-null parameter values.
@@ -539,9 +539,9 @@ class _Note extends Note {
 @override final  SharedByUser? sharedBy;
 // Local only - not serialized
 @override@JsonKey(includeFromJson: false, includeToJson: false) final  bool isSynced;
-// Local only - up to 4 image attachment previews for card thumbnails
+// Local only - image attachment previews for card thumbnails
  final  List<NoteImagePreview> _imagePreviewData;
-// Local only - up to 4 image attachment previews for card thumbnails
+// Local only - image attachment previews for card thumbnails
 @override@JsonKey(includeFromJson: false, includeToJson: false) List<NoteImagePreview> get imagePreviewData {
   if (_imagePreviewData is EqualUnmodifiableListView) return _imagePreviewData;
   // ignore: implicit_dynamic_type

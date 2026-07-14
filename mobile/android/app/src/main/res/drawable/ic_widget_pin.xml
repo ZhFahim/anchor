@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lucide "pin", matching the app's icon set (LucideIcons.pin). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:pathData="M12,17v5 M15,9.34V6h1a2,2 0 0,0 0,-4H8a2,2 0 0,0 0,4h1v3.34a2,2 0 0,1 -0.86,1.64l-1.79,1.25A1,1 0 0,0 6,15h12a1,1 0 0,0 0.65,-1.77l-1.79,-1.25A2,2 0 0,1 15,9.34z"
+        android:strokeColor="@color/widget_accent"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>
