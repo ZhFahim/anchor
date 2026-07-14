@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Mirrors the app's "Deep Ocean & Sand" light palette (lib/core/theme/app_theme.dart). -->
+<resources>
+    <color name="widget_bg">#F0F4F8</color>
+    <color name="widget_item_bg">#FFFFFF</color>
+    <color name="widget_text_primary">#2D3142</color>
+    <color name="widget_text_secondary">#992D3142</color>
+    <color name="widget_accent">#EF8354</color>
+    <color name="widget_on_accent">#FFFFFF</color>
+    <color name="widget_ripple">#1F2D3142</color>
+</resources>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_label">Notes</string>
+    <string name="widget_description">View your notes and capture new ones right from the home screen.</string>
+    <string name="widget_app_name">Anchor</string>
+    <string name="widget_new_note">New note</string>
+    <string name="widget_untitled">Untitled</string>
+    <string name="widget_empty">No notes yet.\nTap + to capture a thought.</string>
+    <string name="widget_logged_out">Open Anchor and sign in\nto see your notes here.</string>
+</resources>

@@ -693,6 +693,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.3.2"
+  home_widget:
+    dependency: "direct main"
+    description:
+      name: home_widget
+      sha256: fece84c7464099873c3ace38394ad7053509a4b0e36e57a1105a6aa31f47f23c
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.9.3"
   hooks:
     dependency: transitive
     description:

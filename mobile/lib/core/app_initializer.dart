@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:ui';
 
@@ -53,8 +54,16 @@ Future<void> initializeApp() async {
     );
   }
 
-  // Load saved user ID for per-user database selection
-  initialUserId = await _storage.read(key: 'user_id');
+  // User id for per-user database selection, read from the persisted user json.
+  final userData = await _storage.read(key: 'user_data');
+  if (userData != null) {
+    try {
+      initialUserId =
+          (jsonDecode(userData) as Map<String, dynamic>)['id'] as String?;
+    } catch (_) {
+      // Corrupt cache; treat as logged out until auth resolves.
+    }
+  }
 }
 
 /// Logs a one-line environment summary so copied logs always include

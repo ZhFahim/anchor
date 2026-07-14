@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'core/app_initializer.dart';
+import 'core/home_widget/home_widget_service.dart';
 import 'core/network/connectivity_provider.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
@@ -23,6 +24,10 @@ class AnchorApp extends ConsumerWidget {
 
     // Initialize sync manager to listen for connectivity changes
     ref.watch(syncManagerProvider);
+
+    // Keep the Android home-screen widget fed and handle its taps
+    ref.watch(homeWidgetSyncProvider);
+    ref.watch(homeWidgetLaunchHandlerProvider);
 
     return MaterialApp.router(
       title: 'Anchor Notes',

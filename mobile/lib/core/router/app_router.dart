@@ -78,10 +78,13 @@ GoRouter goRouter(Ref ref) {
           ),
           GoRoute(
             path: AppRoutes.noteEdit,
-            builder: (context, state) {
+            pageBuilder: (context, state) {
               final id = state.pathParameters['id'];
               final note = state.extra as Note?;
-              return NoteEditScreen(noteId: id, note: note);
+              return MaterialPage(
+                key: ValueKey('note/$id'),
+                child: NoteEditScreen(noteId: id, note: note),
+              );
             },
           ),
           GoRoute(

@@ -33,7 +33,7 @@ final class TagsControllerProvider
   TagsController create() => TagsController();
 }
 
-String _$tagsControllerHash() => r'e9edc2f0aa7aa4514471bbc433f056fe8944e69e';
+String _$tagsControllerHash() => r'2f621b92ed550bc3cd335daa57f42ad7eab6f802';
 
 abstract class _$TagsController extends $StreamNotifier<List<Tag>> {
   Stream<List<Tag>> build();
