@@ -4,8 +4,10 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:home_widget/home_widget.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import 'home_widget/home_widget_payload.dart';
 import 'logging/app_logger.dart';
 import 'router/app_routes.dart';
 
@@ -79,7 +81,19 @@ Future<void> initializeApp() async {
   } else if (accessToken == null) {
     initialRoute = AppRoutes.login;
   } else {
-    initialRoute = AppRoutes.home;
+    initialRoute = await _widgetLaunchRoute() ?? AppRoutes.home;
+  }
+}
+
+/// The route for a cold start from a home-widget tap, or null when the app
+/// was launched normally.
+Future<String?> _widgetLaunchRoute() async {
+  if (!Platform.isAndroid) return null;
+  try {
+    final uri = await HomeWidget.initiallyLaunchedFromHomeWidget();
+    return homeWidgetRouteForUri(uri);
+  } catch (_) {
+    return null;
   }
 }
 

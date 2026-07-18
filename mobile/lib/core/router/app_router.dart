@@ -119,6 +119,25 @@ GoRouter goRouter(Ref ref) {
         path: AppRoutes.register,
         builder: (context, state) => const RegisterScreen(),
       ),
+      GoRoute(
+        path: AppRoutes.widgetNoteNew,
+        pageBuilder: (context, state) {
+          return MaterialPage(
+            key: ValueKey('widget-note-new/${state.uri.query}'),
+            child: const NoteEditScreen(),
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.widgetNote,
+        pageBuilder: (context, state) {
+          final id = state.pathParameters['id'];
+          return MaterialPage(
+            key: ValueKey('widget-note/$id'),
+            child: NoteEditScreen(noteId: id),
+          );
+        },
+      ),
     ],
     redirect: (context, state) {
       final authState = ref.read(authControllerProvider);

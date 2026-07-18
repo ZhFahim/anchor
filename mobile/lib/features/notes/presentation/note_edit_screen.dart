@@ -18,6 +18,7 @@ import 'package:anchor/features/settings/presentation/controllers/editor_prefere
 import 'package:anchor/features/tags/presentation/widgets/tag_selector.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -229,6 +230,16 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
     }
   }
 
+  /// Leaves the editor: pops when there is a screen beneath, or exits the
+  /// app when the editor is the root (opened from the home widget).
+  void _popOrExit([Object? result]) {
+    if (context.canPop()) {
+      context.pop(result);
+    } else {
+      SystemNavigator.pop();
+    }
+  }
+
   Future<void> _saveAndPop([Object? result]) async {
     if (_isHandlingPop) return;
 
@@ -245,7 +256,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
         setState(() {
           _allowPop = true;
         });
-        context.pop(result);
+        _popOrExit(result);
       }
     }
   }
@@ -318,7 +329,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
           // Small delay to ensure snackbar is visible
           await Future.delayed(const Duration(milliseconds: 300));
           if (mounted) {
-            context.pop();
+            _popOrExit();
           }
         }
       }
@@ -556,7 +567,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
 
   Future<void> _deleteNote() async {
     if (_isNew) {
-      context.pop();
+      _popOrExit();
       return;
     }
 
@@ -582,7 +593,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
 
         if (mounted) {
           AppSnackbar.showSuccess(context, message: 'Note moved to trash');
-          context.pop();
+          _popOrExit();
         }
       } catch (e) {
         if (mounted) {
@@ -651,7 +662,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
 
         if (mounted) {
           AppSnackbar.showSuccess(context, message: 'Note permanently deleted');
-          context.pop();
+          _popOrExit();
         }
       } catch (e) {
         if (mounted) {

@@ -9,14 +9,13 @@ import '../../features/notes/data/repository/notes_repository.dart';
 import '../logging/app_logger.dart';
 import '../providers/active_user_id_provider.dart';
 import '../router/app_router.dart';
+import '../router/app_routes.dart';
 import 'home_widget_payload.dart';
 
 part 'home_widget_service.g.dart';
 
 const _widgetProviderQualifiedName =
     'com.zhfahim.anchor.widget.NotesWidgetProvider';
-
-const _widgetUriScheme = 'anchorwidget';
 
 /// Mirrors the active notes list into the Android home-screen widget.
 ///
@@ -74,8 +73,11 @@ class HomeWidgetSync extends _$HomeWidgetSync {
   }
 }
 
-/// Routes home-screen widget taps into the app:
+/// Routes home-screen widget taps into the app while it is running:
 /// `anchorwidget://note/new`, `anchorwidget://note/<id>`, `anchorwidget://open`.
+///
+/// Cold-start taps never reach this handler; [initializeApp] turns them into
+/// the app's initial route before the first frame.
 @Riverpod(keepAlive: true)
 class HomeWidgetLaunchHandler extends _$HomeWidgetLaunchHandler {
   String? _pendingRoute;
@@ -84,11 +86,11 @@ class HomeWidgetLaunchHandler extends _$HomeWidgetLaunchHandler {
   void build() {
     if (!Platform.isAndroid) return;
 
-    HomeWidget.initiallyLaunchedFromHomeWidget().then(_queue);
     final subscription = HomeWidget.widgetClicked.listen(_queue);
     ref.onDispose(subscription.cancel);
 
-    // Cold-start launch URIs arrive before auth settles; hold and flush then.
+    // A tap can land while auth is transitioning (login/logout); hold and
+    // flush once it settles.
     ref.listen(authControllerProvider, (_, _) => _flush());
   }
 
@@ -108,16 +110,11 @@ class HomeWidgetLaunchHandler extends _$HomeWidgetLaunchHandler {
     // No active user: let the normal config/login flow take over.
     if (ref.read(activeUserIdProvider) == null) return;
 
-    ref.read(goRouterProvider).go(route);
+    // The nonce gives each new-note tap a distinct location (and page key),
+    // so a draft already open from a previous tap is replaced by a fresh one.
+    final target = route == AppRoutes.widgetNoteNew
+        ? '$route?tap=${DateTime.now().microsecondsSinceEpoch}'
+        : route;
+    ref.read(goRouterProvider).go(target);
   }
-}
-
-/// Maps a widget launch URI to a router location, or null to ignore it.
-String? homeWidgetRouteForUri(Uri? uri) {
-  if (uri == null || uri.scheme != _widgetUriScheme) return null;
-  if (uri.host == 'note' && uri.pathSegments.isNotEmpty) {
-    final target = uri.pathSegments.first;
-    return target == 'new' ? '/note/new' : '/note/$target';
-  }
-  return '/';
 }

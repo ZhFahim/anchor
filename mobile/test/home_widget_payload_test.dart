@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:anchor/core/home_widget/home_widget_payload.dart';
-import 'package:anchor/core/home_widget/home_widget_service.dart';
 import 'package:anchor/features/notes/domain/note.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -130,11 +129,11 @@ void main() {
     test('maps widget URIs to router locations', () {
       expect(
         homeWidgetRouteForUri(Uri.parse('anchorwidget://note/new')),
-        '/note/new',
+        '/widget/note/new',
       );
       expect(
         homeWidgetRouteForUri(Uri.parse('anchorwidget://note/abc-123')),
-        '/note/abc-123',
+        '/widget/note/abc-123',
       );
       expect(homeWidgetRouteForUri(Uri.parse('anchorwidget://open')), '/');
     });

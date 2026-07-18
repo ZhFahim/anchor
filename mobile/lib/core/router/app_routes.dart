@@ -12,4 +12,8 @@ class AppRoutes {
   static const changePassword = 'change-password';
   static const editProfile = 'edit-profile';
   static const viewLogs = 'logs';
+
+  // Home widget deep links
+  static const widgetNoteNew = '/widget/note/new';
+  static const widgetNote = '/widget/note/:id';
 }
