@@ -1,0 +1,20 @@
+# Native (OS-level) splash screens, matching the app's light/dark backgrounds.
+#
+# The splash logos are derived from assets/icons/anchor_icon.png:
+#   - splash_logo.png: 512px, shown at a fixed logo size on iOS/older Android/web
+#   - splash_logo_android12*.png: 1152px canvas with the icon inside the 768px
+#     safe circle that Android 12+ masks, padded with the splash background color
+#
+# Regenerate after changes: dart run flutter_native_splash:create
+flutter_native_splash:
+  color: "#F0F4F8"
+  color_dark: "#1C1E26"
+  image: assets/icons/splash_logo.png
+
+  android_12:
+    color: "#F0F4F8"
+    color_dark: "#1C1E26"
+    image: assets/icons/splash_logo_android12.png
+    image_dark: assets/icons/splash_logo_android12_dark.png
+
+  web: false

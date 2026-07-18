@@ -7,8 +7,11 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import 'logging/app_logger.dart';
+import 'router/app_routes.dart';
 
 const _themeModeKey = 'theme_mode';
+const _serverUrlKey = 'server_url';
+const _accessTokenKey = 'access_token';
 const _storage = FlutterSecureStorage();
 
 /// Holds the initial theme mode loaded before the app starts
@@ -18,6 +21,10 @@ ThemeMode initialThemeMode = ThemeMode.system;
 /// Holds the initial user ID loaded before the app starts
 /// This is set by [initializeApp] and read by [ActiveUserId] provider
 String? initialUserId;
+
+/// The route the app starts on, decided from local storage alone so the
+/// native splash hands off straight to the right screen.
+String initialRoute = AppRoutes.home;
 
 /// Load app initialization data before the app starts
 /// This prevents theme flash and other initialization issues
@@ -63,6 +70,16 @@ Future<void> initializeApp() async {
     } catch (_) {
       // Corrupt cache; treat as logged out until auth resolves.
     }
+  }
+
+  final serverUrl = await _storage.read(key: _serverUrlKey);
+  final accessToken = await _storage.read(key: _accessTokenKey);
+  if (serverUrl == null || serverUrl.isEmpty) {
+    initialRoute = AppRoutes.serverConfig;
+  } else if (accessToken == null) {
+    initialRoute = AppRoutes.login;
+  } else {
+    initialRoute = AppRoutes.home;
   }
 }
 

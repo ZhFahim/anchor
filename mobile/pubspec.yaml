@@ -112,6 +112,9 @@ dev_dependencies:
   # Icons
   flutter_launcher_icons: ^0.14.4
 
+  # Native splash screens
+  flutter_native_splash: ^2.4.6
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 

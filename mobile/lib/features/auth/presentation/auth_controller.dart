@@ -25,17 +25,37 @@ class AuthController extends _$AuthController {
       return null;
     }
 
+    // Offline-first: trust the cached profile so startup never waits on the
+    // network, then refresh it in the background.
+    final cachedUser = await authRepo.getCurrentUser();
+    if (cachedUser != null) {
+      ref.read(activeUserIdProvider.notifier).set(cachedUser.id);
+      _refreshProfileInBackground(authRepo);
+      return cachedUser;
+    }
+
+    // No cached profile (e.g. corrupt cache); fall back to the server.
     try {
       final freshUser = await authRepo.getProfile();
       ref.read(activeUserIdProvider.notifier).set(freshUser.id);
       return freshUser;
     } catch (e) {
-      final cachedUser = await authRepo.getCurrentUser();
-      if (cachedUser != null) {
-        ref.read(activeUserIdProvider.notifier).set(cachedUser.id);
-      }
-      return cachedUser;
+      return null;
     }
+  }
+
+  void _refreshProfileInBackground(AuthRepository authRepo) {
+    Future(() async {
+      try {
+        final freshUser = await authRepo.getProfile();
+        if (!ref.mounted) return;
+        if (state.value?.id == freshUser.id) {
+          state = AsyncData(freshUser);
+        }
+      } catch (_) {
+        // Server unreachable; keep the cached profile.
+      }
+    });
   }
 
   Future<void> login(String email, String password) async {
