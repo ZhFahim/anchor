@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../../../core/widgets/confirm_dialog.dart';
+import '../../../core/widgets/editor/link_utils.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/network/server_config_provider.dart';
 import '../../auth/presentation/auth_controller.dart';
@@ -246,6 +247,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
                     const SizedBox(height: 32),
 
+                    // Support Section
+                    _buildSectionHeader(context, 'Support', LucideIcons.heart),
+                    const SizedBox(height: 12),
+                    _buildSettingsCard(
+                      context,
+                      child: _buildActionItem(
+                        context,
+                        title: 'Buy me a coffee',
+                        subtitle: 'Support the development of Anchor',
+                        icon: LucideIcons.coffee,
+                        onTap: () => launchExternal(
+                          context,
+                          'https://www.buymeacoffee.com/zahid',
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 32),
+
                     // About Section
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -277,92 +297,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           if (serverUrl != null) ...[
                             const SizedBox(height: 6),
                             serverInfoAsync.when(
-                              data: (serverInfo) => Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    LucideIcons.package,
-                                    size: 12,
-                                    color: theme.colorScheme.onSurface
-                                        .withValues(alpha: 0.4),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'Server v${serverInfo?.version ?? 'Unknown'}',
-                                    style: theme.textTheme.labelSmall?.copyWith(
-                                      color: theme.colorScheme.onSurface
-                                          .withValues(alpha: 0.5),
-                                      fontFamily: 'monospace',
-                                    ),
-                                  ),
-                                ],
+                              loading: () => _buildAboutInfoRow(
+                                context,
+                                LucideIcons.package,
+                                'Server v...',
                               ),
-                              loading: () => Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    LucideIcons.package,
-                                    size: 12,
-                                    color: theme.colorScheme.onSurface
-                                        .withValues(alpha: 0.4),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'Server v...',
-                                    style: theme.textTheme.labelSmall?.copyWith(
-                                      color: theme.colorScheme.onSurface
-                                          .withValues(alpha: 0.5),
-                                      fontFamily: 'monospace',
-                                    ),
-                                  ),
-                                ],
+                              error: (_, _) => _buildServerStatusRows(
+                                context,
+                                serverInfo: null,
+                                serverUrl: serverUrl,
                               ),
-                              error: (_, _) => Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    LucideIcons.package,
-                                    size: 12,
-                                    color: theme.colorScheme.onSurface
-                                        .withValues(alpha: 0.4),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'Server v—',
-                                    style: theme.textTheme.labelSmall?.copyWith(
-                                      color: theme.colorScheme.onSurface
-                                          .withValues(alpha: 0.5),
-                                      fontFamily: 'monospace',
-                                    ),
-                                  ),
-                                ],
+                              data: (serverInfo) => _buildServerStatusRows(
+                                context,
+                                serverInfo: serverInfo,
+                                serverUrl: serverUrl,
                               ),
-                            ),
-                            const SizedBox(height: 6),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  LucideIcons.server,
-                                  size: 12,
-                                  color: theme.colorScheme.onSurface.withValues(
-                                    alpha: 0.4,
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                Flexible(
-                                  child: Text(
-                                    'Connected to $serverUrl',
-                                    style: theme.textTheme.labelSmall?.copyWith(
-                                      color: theme.colorScheme.onSurface
-                                          .withValues(alpha: 0.5),
-                                      fontFamily: 'monospace',
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ),
-                              ],
                             ),
                           ],
                         ],
@@ -401,6 +350,61 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildAboutInfoRow(BuildContext context, IconData icon, String text) {
+    final theme = Theme.of(context);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          icon,
+          size: 12,
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+        ),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text(
+            text,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+              fontFamily: 'monospace',
+            ),
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildServerStatusRows(
+    BuildContext context, {
+    required ServerInfo? serverInfo,
+    required String serverUrl,
+  }) {
+    if (serverInfo == null) {
+      return _buildAboutInfoRow(
+        context,
+        LucideIcons.serverOff,
+        "Can't reach $serverUrl",
+      );
+    }
+    return Column(
+      children: [
+        _buildAboutInfoRow(
+          context,
+          LucideIcons.package,
+          'Server v${serverInfo.version}',
+        ),
+        const SizedBox(height: 6),
+        _buildAboutInfoRow(
+          context,
+          LucideIcons.server,
+          'Connected to $serverUrl',
+        ),
+      ],
     );
   }
 
