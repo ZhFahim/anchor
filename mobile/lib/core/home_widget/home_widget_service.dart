@@ -24,7 +24,8 @@ const _widgetProviderQualifiedName =
 /// login/logout via the active user id.
 @Riverpod(keepAlive: true)
 class HomeWidgetSync extends _$HomeWidgetSync {
-  Timer? _debounce;
+  Timer? _throttle;
+  String? _pending;
 
   @override
   void build() {
@@ -40,19 +41,32 @@ class HomeWidgetSync extends _$HomeWidgetSync {
       return;
     }
 
-    final subscription = ref
-        .watch(notesRepositoryProvider)
-        .watchNotes()
-        .listen((notes) {
-          _debounce?.cancel();
-          _debounce = Timer(const Duration(milliseconds: 300), () {
-            _push(buildHomeWidgetPayload(notes, loggedIn: true));
-          });
-        });
+    final subscription = ref.watch(notesRepositoryProvider).watchNotes().listen(
+      (notes) {
+        _schedule(buildHomeWidgetPayload(notes, loggedIn: true));
+      },
+    );
 
     ref.onDispose(() {
-      _debounce?.cancel();
+      _throttle?.cancel();
+      _throttle = null;
+      _pending = null;
       subscription.cancel();
+    });
+  }
+
+  // Push immediately and only coalesce bursts behind the throttle window;
+  void _schedule(String payload) {
+    if (_throttle != null) {
+      _pending = payload;
+      return;
+    }
+    _push(payload);
+    _throttle = Timer(const Duration(milliseconds: 300), () {
+      _throttle = null;
+      final pending = _pending;
+      _pending = null;
+      if (pending != null) _schedule(pending);
     });
   }
 
