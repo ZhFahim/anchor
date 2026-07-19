@@ -28,6 +28,8 @@ Anchor focuses on speed, privacy, simplicity, and reliability across mobile and 
 - **Search** - Search notes locally by title or content
 - **Trash** - Soft delete notes with recovery period
 - **Automatic Sync** - Sync changes across devices when online
+- **Import & Export** - Export your full library, and import it back or bring notes in from Google Keep
+- **Home Screen Widget** - Quick access to your notes from the Android home screen
 - **Admin Panel** - User management, registration control, and system statistics
 - **OIDC Authentication** - Sign in with OpenID Connect providers (Pocket ID, Authelia, Keycloak, etc.)
 

@@ -10,6 +10,7 @@ A modern, feature-rich note-taking web application built with Next.js, React, an
 - **Pin Notes** - Pin important notes for quick access
 - **Archive Notes** - Archive notes for later reference
 - **Attachments** - Attach images and audio to notes with drag & drop
+- **Import & Export** - Bring notes in from another Anchor instance or Google Keep and export your full library
 - **Search** - Quickly find notes by title or content
 - **Trash** - Soft delete notes with 30-day recovery period
 - **Dark Mode** - Beautiful dark and light themes
@@ -115,8 +116,14 @@ web/
 │   │   ├── constants.ts    # Accepted MIME types, validation
 │   │   ├── types.ts
 │   │   └── quill.ts         # Editor utilities
-│   └── tags/                # Tags feature
-│       ├── components/      # TagSelector
+│   ├── tags/                # Tags feature
+│   │   ├── components/      # TagSelector
+│   │   ├── api.ts
+│   │   └── types.ts
+│   └── import-export/       # Import (Google Keep, Anchor) & export
+│       ├── adapters/        # Format detection & mapping (google-keep, anchor)
+│       ├── components/      # ImportDialog, DataCard
+│       ├── hooks/           # useImport
 │       ├── api.ts
 │       └── types.ts
 │

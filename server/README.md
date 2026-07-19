@@ -131,6 +131,12 @@ go in `test/` and are reused across specs.
 - `PATCH /api/notes/:id/shares/:shareId` - Update share permission
 - `DELETE /api/notes/:id/shares/:shareId` - Revoke a share
 
+### Import & Export
+
+- `GET /api/export` - Export the user's full library (notes, tags, attachments) as a streamed zip
+- `POST /api/import/notes` - Import notes from a parsed manifest (also used for Google Keep imports)
+- `POST /api/import/notes/:noteId/attachments` - Upload an attachment for an imported note (multipart/form-data)
+
 ### Tags
 
 - `GET /api/tags` - Get all tags

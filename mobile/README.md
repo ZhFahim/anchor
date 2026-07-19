@@ -8,6 +8,7 @@ This is the Flutter mobile application for Anchor, a self-hosted note-taking pla
 -   **Attachments**: Attach images and audio recordings to notes.
 -   **Rich Text Editor**: Format your thoughts with bold, italic, lists, and more using Flutter Quill.
 -   **Sync**: Automatic bidirectional sync with the self-hosted server when online.
+-   **Home Screen Widget**: View your notes from the Android home screen, and tap to open one or start a new note.
 -   **Secure**: JWT authentication and secure local storage.
 -   **Theming**: Beautiful light and dark mode support.
 -   **Search**: Instant local search.
