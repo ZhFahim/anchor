@@ -6,3 +6,4 @@ export * from "./hooks";
 export * from "./link-utils";
 export * from "./quill";
 export * from "./types";
+export * from "./undo-shortcuts";

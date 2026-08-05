@@ -1,5 +1,6 @@
 "use client";
 
+import { GripVertical } from "lucide-react";
 import dynamic from "next/dynamic";
 import {
   forwardRef,
@@ -11,7 +12,7 @@ import {
 } from "react";
 import type { LinkRange, QuillDelta, QuillInstance } from "@/features/notes";
 import {
-  createChecklistMoveDelta,
+  createChecklistSortDelta,
   didChangeChecklistItemState,
   getToggledLinePosition,
   isLikelyUrl,
@@ -21,11 +22,14 @@ import {
   QUILL_FORMATS,
   QUILL_MODULES,
   stringifyDelta,
+  targetHandlesOwnUndo,
+  undoRedoActionForKeyEvent,
 } from "@/features/notes";
 import { usePreferencesStore } from "@/features/preferences";
 import { LinkBubble } from "./link-bubble";
 import { LinkDialog } from "./link-dialog";
 import { QuillToolbar } from "./quill-toolbar";
+import { useChecklistDrag } from "./use-checklist-drag";
 
 // Dynamic import for SSR compatibility
 const ReactQuill = dynamic(() => import("react-quill-new"), {
@@ -77,7 +81,6 @@ export const RichTextEditor = forwardRef<
     ref,
   ) => {
     const quillRef = useRef<{ getEditor: () => QuillInstance }>(null);
-    const quillInstanceRef = useRef<QuillInstance | null>(null);
     const [editorContainerEl, setEditorContainerEl] =
       useState<HTMLDivElement | null>(null);
     const [isFocused, setIsFocused] = useState(false);
@@ -99,15 +102,21 @@ export const RichTextEditor = forwardRef<
     const reorderTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
       null,
     );
-
-    // Editor preferences
     const sortChecklistItems = usePreferencesStore(
       (state) => state.editor.sortChecklistItems,
     );
 
-    const deltaValue: QuillDelta = parseStoredContent(value);
+    const getQuill = useCallback(
+      () => (quillRef.current?.getEditor?.() as QuillInstance | null) ?? null,
+      [],
+    );
+    const checklistDrag = useChecklistDrag({
+      containerEl: editorContainerEl,
+      getQuill,
+      enabled: !readOnly,
+    });
 
-    // Cleanup timeout on unmount
+    const deltaValue: QuillDelta = parseStoredContent(value);
     useEffect(() => {
       return () => {
         if (reorderTimeoutRef.current) {
@@ -115,11 +124,6 @@ export const RichTextEditor = forwardRef<
         }
       };
     }, []);
-
-    // Get quill instance - callable by toolbar
-    const getQuillInstance = useCallback(() => quillInstanceRef.current, []);
-
-    // Handle editor content changes
     const handleChange = useCallback(
       (
         _html: string,
@@ -132,18 +136,13 @@ export const RichTextEditor = forwardRef<
 
         const currentDelta = editor.getContents() as QuillDelta;
         const currentStr = stringifyDelta(currentDelta);
-
-        // Handle checklist reordering if enabled
         if (
           sortChecklistItems &&
           didChangeChecklistItemState(changeDelta as QuillDelta)
         ) {
-          // Clear any pending reorder
           if (reorderTimeoutRef.current) {
             clearTimeout(reorderTimeoutRef.current);
           }
-
-          // Get the position of the toggled line from the change delta
           const togglePosition = getToggledLinePosition(
             changeDelta as QuillDelta,
           );
@@ -156,37 +155,28 @@ export const RichTextEditor = forwardRef<
               if (!quill) return;
 
               const latestDelta = quill.getContents();
-              const moveDelta = createChecklistMoveDelta(
+              const moveDelta = createChecklistSortDelta(
                 togglePosition,
                 latestDelta,
               );
 
               if (moveDelta) {
-                // Use updateContents to preserve undo history as single operation
                 quill.updateContents(moveDelta, "user");
-
-                // Update parent with new content
                 const newDelta = quill.getContents();
                 onChange(stringifyDelta(newDelta));
                 setToolbarUpdateKey((k) => k + 1);
               }
             }, 50);
           }
-
-          // Notify parent of immediate change
           onChange(currentStr);
           setToolbarUpdateKey((k) => k + 1);
           return;
         }
-
-        // Normal change
         onChange(currentStr);
         setToolbarUpdateKey((k) => k + 1);
       },
       [onChange, readOnly, sortChecklistItems],
     );
-
-    // Handle selection changes for toolbar state
     const handleSelectionChange = useCallback(
       (range: { index: number; length: number } | null) => {
         if (isFocused) {
@@ -310,18 +300,10 @@ export const RichTextEditor = forwardRef<
       setLinkDialogState((s) => ({ ...s, open: false }));
       setActiveLink(null);
     }, [linkDialogState.editingRange]);
-
-    // Handle editor focus
     const handleFocus = useCallback(() => {
       if (readOnly) return;
-      const quill = quillRef.current?.getEditor?.() as QuillInstance | null;
-      if (quill) {
-        quillInstanceRef.current = quill;
-        setIsFocused(true);
-      }
+      setIsFocused(true);
     }, [readOnly]);
-
-    // Handle editor blur
     const handleBlur = useCallback(() => {
       setIsFocused(false);
     }, []);
@@ -334,7 +316,6 @@ export const RichTextEditor = forwardRef<
           const quill = quillRef.current?.getEditor?.() as QuillInstance | null;
           if (!quill) return;
           quill.focus();
-          quillInstanceRef.current = quill;
           setIsFocused(true);
         },
         getSelection: () => {
@@ -347,7 +328,6 @@ export const RichTextEditor = forwardRef<
           if (!quill) return;
           quill.focus();
           quill.setSelection(index, length, "silent");
-          quillInstanceRef.current = quill;
           setIsFocused(true);
         },
       }),
@@ -388,12 +368,30 @@ export const RichTextEditor = forwardRef<
       return () => el.removeEventListener("paste", handler, { capture: true });
     }, [editorContainerEl, readOnly]);
 
+    // Quill only hears the undo shortcut when the editor is focused;
+    // checkbox clicks and handle drags never focus it.
+    useEffect(() => {
+      if (readOnly) return;
+      const handler = (e: KeyboardEvent) => {
+        if (e.defaultPrevented || linkDialogState.open) return;
+        if (targetHandlesOwnUndo(e.target)) return;
+        const action = undoRedoActionForKeyEvent(e);
+        if (!action) return;
+        const quill = quillRef.current?.getEditor?.() as QuillInstance | null;
+        if (!quill) return;
+        e.preventDefault();
+        quill.history[action]();
+      };
+      document.addEventListener("keydown", handler);
+      return () => document.removeEventListener("keydown", handler);
+    }, [readOnly, linkDialogState.open]);
+
     return (
       <div className={className}>
         {!readOnly && (
           <div className="sticky top-16 z-30 mb-2 px-4 py-1.5 lg:-mx-3 lg:px-6 rounded-2xl backdrop-blur-sm bg-white/5 dark:bg-white/5">
             <QuillToolbar
-              getQuill={getQuillInstance}
+              getQuill={getQuill}
               isFocused={isFocused}
               updateKey={toolbarUpdateKey}
               onOpenLinkDialog={openLinkDialog}
@@ -418,9 +416,49 @@ export const RichTextEditor = forwardRef<
             placeholder={placeholder}
             readOnly={readOnly}
           />
+          {!readOnly && checklistDrag.handle && !checklistDrag.drag && (
+            <button
+              type="button"
+              className="anchor-checklist-handle"
+              style={{
+                top: checklistDrag.handle.top,
+                left: checklistDrag.handle.left,
+              }}
+              onPointerDown={checklistDrag.startDrag}
+              aria-label="Drag to reorder"
+            >
+              <GripVertical size={15} />
+            </button>
+          )}
+          {checklistDrag.drag && checklistDrag.drag.indicatorTop !== null && (
+            <div
+              className="anchor-checklist-drag-indicator"
+              style={{ top: checklistDrag.drag.indicatorTop - 1 }}
+            />
+          )}
+          {checklistDrag.drag && (
+            <div
+              className="anchor-checklist-ghost"
+              style={{
+                top: checklistDrag.drag.ghostTop - 16,
+                left: checklistDrag.drag.ghostLeft,
+              }}
+            >
+              <span
+                className="anchor-checklist-ghost-box"
+                data-checked={checklistDrag.drag.checked}
+              />
+              <span
+                className="anchor-checklist-ghost-text"
+                data-checked={checklistDrag.drag.checked}
+              >
+                {checklistDrag.drag.text || " "}
+              </span>
+            </div>
+          )}
           {!readOnly && isFocused && activeLink && (
             <LinkBubble
-              getQuill={getQuillInstance}
+              getQuill={getQuill}
               link={activeLink}
               containerEl={editorContainerEl}
               onOpen={openLinkExternal}

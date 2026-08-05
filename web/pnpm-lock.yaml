@@ -126,6 +126,9 @@ importers:
       '@types/react-dom':
         specifier: ^19.2.3
         version: 19.2.3(@types/react@19.2.7)
+      quill-delta:
+        specifier: ^5.1.0
+        version: 5.1.0
       tailwindcss:
         specifier: ^4.1.18
         version: 4.1.18

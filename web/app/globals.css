@@ -328,6 +328,127 @@
   text-decoration-color: var(--muted-foreground);
 }
 
+/* ===== Checklist Drag Reorder ===== */
+.anchor-checklist-handle {
+  position: absolute;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted-foreground);
+  opacity: 0.55;
+  cursor: grab;
+  touch-action: none;
+  animation: anchor-checklist-handle-in 120ms ease-out;
+  transition:
+    top 90ms ease-out,
+    left 90ms ease-out;
+}
+
+@keyframes anchor-checklist-handle-in {
+  from {
+    opacity: 0;
+    transform: translateX(-3px);
+  }
+  to {
+    opacity: 0.55;
+    transform: translateX(0);
+  }
+}
+
+.anchor-checklist-handle:hover {
+  opacity: 1;
+  background: color-mix(in srgb, var(--muted-foreground) 12%, transparent);
+}
+
+.anchor-checklist-handle:active {
+  cursor: grabbing;
+}
+
+.anchor-quill .ql-editor li.anchor-checklist-dragging {
+  opacity: 0.35;
+}
+
+.anchor-checklist-drag-indicator {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--accent);
+  pointer-events: none;
+  transition: top 70ms ease-out;
+}
+
+.anchor-checklist-drag-indicator::before {
+  content: "";
+  position: absolute;
+  left: -3px;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  transform: translateY(-50%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anchor-checklist-drag-indicator {
+    transition: none;
+  }
+}
+
+.anchor-checklist-ghost {
+  position: absolute;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 300px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+  box-shadow:
+    0 6px 18px rgb(0 0 0 / 0.16),
+    0 2px 5px rgb(0 0 0 / 0.1);
+  pointer-events: none;
+}
+
+.anchor-checklist-ghost-box {
+  flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+  border-radius: 4px;
+  border: 2px solid var(--muted-foreground);
+  box-sizing: border-box;
+}
+
+.anchor-checklist-ghost-box[data-checked="true"] {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.anchor-checklist-ghost-text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-family: var(--font-dm-sans);
+  font-size: 14px;
+  color: var(--foreground);
+}
+
+.anchor-checklist-ghost-text[data-checked="true"] {
+  color: var(--muted-foreground);
+  text-decoration: line-through;
+}
+
 /* Quill Bullet List Styling */
 .anchor-quill .ql-editor li[data-list="bullet"] {
   padding-left: 16px;

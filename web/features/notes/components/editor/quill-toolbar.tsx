@@ -73,21 +73,18 @@ export function QuillToolbar({
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
 
-  // Update toolbar state when parent signals a change (via updateKey)
-  // This avoids subscribing to Quill events directly, which caused focus issues
   // biome-ignore lint/correctness/useExhaustiveDependencies: `updateKey` is an intentional re-sync signal bumped by the parent on every Quill change; it has no in-body reference by design
   useEffect(() => {
     const quill = getQuill();
-    if (!quill || !isFocused) {
-      if (!isFocused) {
-        setFormat({});
-        setCanUndo(false);
-        setCanRedo(false);
-      }
+    if (!quill) {
+      setFormat({});
+      setCanUndo(false);
+      setCanRedo(false);
       return;
     }
 
-    setFormat(quill.getFormat() ?? {});
+    // Format highlights need a cursor; undo/redo must work unfocused.
+    setFormat(isFocused ? (quill.getFormat() ?? {}) : {});
     const hist = quill.history;
     setCanUndo(Boolean(hist?.stack?.undo?.length));
     setCanRedo(Boolean(hist?.stack?.redo?.length));

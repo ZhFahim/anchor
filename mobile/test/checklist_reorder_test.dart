@@ -118,6 +118,33 @@ void main() {
     ]);
   });
 
+  testWidgets('toggling in a mixed group heals the whole group', (
+    tester,
+  ) async {
+    // A group that was never sorted.
+    final initial = <(String, String?)>[
+      ('observing', 'unchecked'),
+      ('jsjshs', 'checked'),
+      ('test', 'checked'),
+      ('pretty', 'unchecked'),
+      ('leggy', 'unchecked'),
+      ('patio', 'unchecked'),
+    ];
+    final controller = await pumpHost(tester, initial);
+
+    controller.formatText(lineStart(initial, 4), 0, Attribute.checked);
+    await tester.pump();
+
+    expect(docLines(controller), [
+      ('observing', 'unchecked'),
+      ('pretty', 'unchecked'),
+      ('patio', 'unchecked'),
+      ('jsjshs', 'checked'),
+      ('test', 'checked'),
+      ('leggy', 'checked'),
+    ]);
+  });
+
   testWidgets('unchecking an item moves it above the first checked item', (
     tester,
   ) async {

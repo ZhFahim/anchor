@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import 'app_snackbar.dart';
+import 'editor/checklist_drag_mixin.dart';
 import 'editor/checklist_reorder_mixin.dart';
 import 'editor/editor_styles.dart';
 import 'editor/editor_toolbar.dart';
@@ -69,21 +70,33 @@ class RichTextEditor extends StatefulWidget {
 }
 
 class RichTextEditorState extends State<RichTextEditor>
-    with ChecklistReorderMixin {
+    with ChecklistReorderMixin, ChecklistDragReorderMixin {
   late QuillController _controller;
   late FocusNode _focusNode;
   late ScrollController _scrollController;
   StreamSubscription<DocChange>? _onChangedSub;
+  final GlobalKey<EditorState> _editorKey = GlobalKey<EditorState>();
+  final GlobalKey _dragStackKey = GlobalKey();
   bool _isInternalFocusNode = false;
   bool _isEditing = false;
   bool _consumeEditorTapUp = false;
 
-  // ChecklistReorderMixin requirements
+  // ChecklistReorderMixin / ChecklistDragReorderMixin requirements
   @override
   QuillController get controller => _controller;
 
   @override
   bool get sortChecklistItems => widget.sortChecklistItems;
+
+  @override
+  RenderEditor? get renderEditor => _editorKey.currentState?.renderEditor;
+
+  @override
+  ScrollController get dragScrollController => _scrollController;
+
+  @override
+  RenderBox? get dragOverlayBox =>
+      _dragStackKey.currentContext?.findRenderObject() as RenderBox?;
 
   @override
   void initState() {
@@ -122,6 +135,7 @@ class RichTextEditorState extends State<RichTextEditor>
     if (incoming.toDelta() == _controller.document.toDelta()) return;
 
     final previousOffset = _controller.selection.extentOffset;
+    cancelChecklistDrag();
     // controller.changes is a stream on the document itself; both
     // subscriptions die with the old one.
     detachChecklistSorting();
@@ -150,6 +164,7 @@ class RichTextEditorState extends State<RichTextEditor>
 
   @override
   void dispose() {
+    disposeChecklistDrag();
     detachChecklistSorting();
     _onChangedSub?.cancel();
     _focusNode.removeListener(_onFocusChanged);
@@ -370,6 +385,12 @@ class RichTextEditorState extends State<RichTextEditor>
       onTap: enabled
           ? () => _handleCheckboxTap(node.documentOffset, !config.value)
           : null,
+      onLongPressStart: enabled
+          ? (details) => startChecklistDrag(node.documentOffset, details)
+          : null,
+      onLongPressMoveUpdate: enabled ? updateChecklistDrag : null,
+      onLongPressEnd: enabled ? (_) => endChecklistDrag() : null,
+      onLongPressCancel: enabled ? cancelChecklistDrag : null,
       child: AbsorbPointer(
         child: QuillCheckboxPoint(
           size: config.lineSize!,
@@ -430,40 +451,108 @@ class RichTextEditorState extends State<RichTextEditor>
   }
 
   Widget _buildScrollableEditor(BuildContext context) {
-    return GestureDetector(
-      onTap: widget.canEdit ? _handleBackgroundTap : null,
-      behavior: HitTestBehavior.opaque,
-      child: SingleChildScrollView(
-        controller: _scrollController,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ?widget.header,
-            QuillEditor.basic(
-              controller: _controller,
-              focusNode: _focusNode,
-              scrollController: _scrollController,
-              config: QuillEditorConfig(
-                placeholder: widget.hintText,
-                padding: widget.contentPadding,
-                autoFocus: false,
-                expands: false,
-                scrollable: false,
-                showCursor: _isEditing && widget.canEdit,
-                enableInteractiveSelection: true,
-                customStyles: getEditorStyles(context),
-                customStyleBuilder: (attribute) =>
-                    getCheckedListStyle(attribute, context),
-                // ignore: experimental_member_use
-                customLeadingBlockBuilder: _buildLeading,
-                onTapUp: _onEditorTapUp,
-                onLaunchUrl: _handleLaunchUrl,
-                linkActionPickerDelegate: _onLinkLongPress,
+    return Stack(
+      key: _dragStackKey,
+      fit: StackFit.expand,
+      children: [
+        GestureDetector(
+          onTap: widget.canEdit ? _handleBackgroundTap : null,
+          behavior: HitTestBehavior.opaque,
+          child: SingleChildScrollView(
+            controller: _scrollController,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ?widget.header,
+                QuillEditor.basic(
+                  controller: _controller,
+                  focusNode: _focusNode,
+                  scrollController: _scrollController,
+                  config: QuillEditorConfig(
+                    placeholder: widget.hintText,
+                    padding: widget.contentPadding,
+                    autoFocus: false,
+                    expands: false,
+                    scrollable: false,
+                    showCursor: _isEditing && widget.canEdit,
+                    enableInteractiveSelection: true,
+                    customStyles: getEditorStyles(context),
+                    customStyleBuilder: (attribute) =>
+                        getCheckedListStyle(attribute, context),
+                    // ignore: experimental_member_use
+                    customLeadingBlockBuilder: _buildLeading,
+                    editorKey: _editorKey,
+                    onTapUp: _onEditorTapUp,
+                    onLaunchUrl: _handleLaunchUrl,
+                    linkActionPickerDelegate: _onLinkLongPress,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (isDraggingChecklistItem)
+          Positioned.fill(
+            child: IgnorePointer(
+              child: ValueListenableBuilder<int>(
+                valueListenable: dragRepaint,
+                builder: (context, _, _) => _buildDragOverlay(context),
               ),
             ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildDragOverlay(BuildContext context) {
+    final theme = Theme.of(context);
+    final indicatorTop = dragIndicatorTop;
+    final feedback = dragFeedbackPosition;
+    final sourceRect = dragSourceRect;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxChipLeft = (constraints.maxWidth - 272).clamp(
+          12.0,
+          double.infinity,
+        );
+        return Stack(
+          children: [
+            if (sourceRect != null)
+              Positioned.fromRect(
+                key: const Key('checklist-drag-dim'),
+                rect: sourceRect,
+                child: ColoredBox(
+                  color: theme.scaffoldBackgroundColor.withValues(alpha: 0.6),
+                ),
+              ),
+            if (indicatorTop != null)
+              AnimatedPositioned(
+                key: const Key('checklist-drag-indicator'),
+                duration: const Duration(milliseconds: 80),
+                curve: Curves.easeOut,
+                left: 20,
+                right: 20,
+                top: indicatorTop - 4,
+                height: 8,
+                child: const _DragIndicator(),
+              ),
+            if (feedback != null)
+              Positioned(
+                key: const Key('checklist-drag-ghost'),
+                left: (feedback.dx + 16).clamp(12.0, maxChipLeft),
+                top: (feedback.dy - 52).clamp(4.0, double.infinity),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 260),
+                  child: _ChecklistDragChip(
+                    text: dragFeedbackText,
+                    checked: dragFeedbackChecked,
+                  ),
+                ),
+              ),
           ],
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -512,6 +601,97 @@ class RichTextEditorState extends State<RichTextEditor>
                 : const SizedBox(width: double.infinity),
           ),
       ],
+    );
+  }
+}
+
+/// Accent line with a dot cap marking the drop gap.
+class _DragIndicator extends StatelessWidget {
+  const _DragIndicator();
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.primary;
+
+    return SizedBox(
+      height: 8,
+      child: Stack(
+        children: [
+          Positioned(
+            left: 3,
+            right: 0,
+            top: 3,
+            child: Container(
+              height: 2,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(1),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 0,
+            top: 0.5,
+            child: Container(
+              width: 7,
+              height: 7,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Compact floating chip showing the item being dragged.
+class _ChecklistDragChip extends StatelessWidget {
+  final String text;
+  final bool checked;
+
+  const _ChecklistDragChip({required this.text, required this.checked});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final textColor = checked
+        ? theme.colorScheme.onSurface.withValues(alpha: 0.5)
+        : theme.colorScheme.onSurface;
+
+    return Material(
+      elevation: 4,
+      borderRadius: BorderRadius.circular(10),
+      color: theme.colorScheme.surfaceContainerLow,
+      shadowColor: Colors.black.withValues(alpha: 0.25),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              checked ? LucideIcons.squareCheck : LucideIcons.square,
+              size: 16,
+              color: checked
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.onSurface.withValues(alpha: 0.6),
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                text.isEmpty ? ' ' : text,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.dmSans(
+                  fontSize: 15,
+                  color: textColor,
+                  decoration: checked ? TextDecoration.lineThrough : null,
+                  decorationColor: textColor,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
