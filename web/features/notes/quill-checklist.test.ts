@@ -1,13 +1,12 @@
 import Delta from "quill-delta";
 import { describe, expect, it } from "vitest";
+import type { QuillDelta, QuillOp } from "./quill";
 import {
   buildChecklistDropDelta,
   checklistLineIndexFromOrdinal,
   createChecklistSortDelta,
   getChecklistDragPlan,
-  type QuillDelta,
-  type QuillOp,
-} from "./quill";
+} from "./quill-checklist";
 
 function doc(lines: [string, string | null][]): QuillDelta {
   const ops: QuillOp[] = [];
