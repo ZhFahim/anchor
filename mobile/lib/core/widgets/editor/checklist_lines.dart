@@ -34,30 +34,66 @@ int checklistBlockEnd(List<ParsedLine> lines, int index, int rangeEnd) {
   return end;
 }
 
-/// Gaps where the block [blockStart..blockEnd] can drop while keeping its
-/// indent: never inside itself, never where it would sit deeper than one
-/// level below the line above, and never between another line and that
-/// line's indented children. Includes the block's own boundaries (a no-op
-/// drop). In flat groups this is every gap in the group.
-List<int> checklistDropGaps(
+/// A valid insertion gap and the indent range the dropped block's head line
+/// may take there.
+class ChecklistGap {
+  /// Insertion point: the block drops before line [gap].
+  final int gap;
+  final int minIndent;
+  final int maxIndent;
+
+  const ChecklistGap(this.gap, this.minIndent, this.maxIndent);
+
+  @override
+  bool operator ==(Object other) =>
+      other is ChecklistGap &&
+      other.gap == gap &&
+      other.minIndent == minIndent &&
+      other.maxIndent == maxIndent;
+
+  @override
+  int get hashCode => Object.hash(gap, minIndent, maxIndent);
+
+  @override
+  String toString() => 'ChecklistGap($gap, $minIndent..$maxIndent)';
+}
+
+/// Gaps where the block [blockStart..blockEnd] can drop, with the indent
+/// range its head line may take at each: at most one level below the line
+/// above the gap, deep enough that the line below the gap keeps a parent,
+/// and capped so the block's deepest child stays within [maxListIndent].
+/// Includes the block's own boundaries (a no-op unless the indent changes).
+/// In flat groups this is every gap in the group.
+List<ChecklistGap> checklistDropGaps(
   List<ParsedLine> lines,
   int groupStart,
   int groupEnd,
   int blockStart,
   int blockEnd,
 ) {
-  final depth = lines[blockStart].indent;
-  final gaps = <int>[];
+  final head = lines[blockStart].indent;
+  var relMax = 0;
+  for (var i = blockStart; i <= blockEnd; i++) {
+    if (lines[i].indent - head > relMax) relMax = lines[i].indent - head;
+  }
+  final relLast = lines[blockEnd].indent - head;
+
+  final gaps = <ChecklistGap>[];
   for (var g = groupStart; g <= groupEnd + 1; g++) {
     if (g > blockStart && g <= blockEnd) continue;
-    if (g == blockStart || g == blockEnd + 1) {
-      gaps.add(g);
-      continue;
-    }
-    final prevIndent = g == groupStart ? -1 : lines[g - 1].indent;
-    if (depth > prevIndent + 1) continue;
-    if (g <= groupEnd && lines[g].indent > depth) continue;
-    gaps.add(g);
+    // Both own boundaries are the same position once the block is taken out.
+    final own = g >= blockStart && g <= blockEnd + 1;
+    final aboveIndex = own ? blockStart - 1 : g - 1;
+    final belowIndex = own ? blockEnd + 1 : g;
+    final above = aboveIndex >= groupStart ? lines[aboveIndex].indent : null;
+    final below = belowIndex <= groupEnd ? lines[belowIndex].indent : null;
+    var maxIndent = maxListIndent - relMax;
+    final aboveCap = above == null ? 0 : above + 1;
+    if (aboveCap < maxIndent) maxIndent = aboveCap;
+    var minIndent = below == null ? 0 : below - 1 - relLast;
+    if (minIndent < 0) minIndent = 0;
+    if (minIndent > maxIndent) continue;
+    gaps.add(ChecklistGap(g, minIndent, maxIndent));
   }
   return gaps;
 }
@@ -136,8 +172,38 @@ Delta _buildLineMoveDelta(
   );
 }
 
+/// Retain-only delta that shifts the indent of lines [fromStart..fromEnd]
+/// by [indentDelta].
+Delta buildBlockReindentDelta(
+  List<ParsedLine> lines,
+  int fromStart,
+  int fromEnd,
+  int indentDelta,
+) {
+  final delta = Delta();
+  var cursor = 0;
+  for (var i = fromStart; i <= fromEnd; i++) {
+    final newlineOffset = lines[i].startOffset + lines[i].length - 1;
+    if (newlineOffset > cursor) delta.retain(newlineOffset - cursor);
+    final indent = lines[i].indent + indentDelta;
+    delta.retain(1, {'indent': indent == 0 ? null : indent});
+    cursor = newlineOffset + 1;
+  }
+  return delta;
+}
+
+Map<String, dynamic>? _withIndent(
+  Map<String, dynamic>? attributes,
+  int indent,
+) {
+  final next = {...?attributes}..remove(Attribute.indent.key);
+  if (indent > 0) next[Attribute.indent.key] = indent;
+  return next.isEmpty ? null : next;
+}
+
 /// Delta that moves the contiguous lines [fromStart..fromEnd] into [gap]
-/// (the position before line [gap], which must lie outside the span).
+/// (the position before line [gap], which must lie outside the span),
+/// shifting each moved line's indent by [indentDelta].
 ///
 /// Document.compose (and the history inverses of deltas) cannot delete the
 /// final newline or insert after it; end-of-document moves retain it and
@@ -147,16 +213,47 @@ Delta buildBlockMoveDelta(
   List<ParsedLine> lines,
   int fromStart,
   int fromEnd,
-  int gap,
-) {
-  return _buildSpanMoveDelta(
-    document.toDelta(),
-    document.length,
+  int gap, {
+  int indentDelta = 0,
+}) {
+  if (indentDelta == 0) {
+    return _buildSpanMoveDelta(
+      document.toDelta(),
+      document.length,
+      lines,
+      fromStart,
+      fromEnd,
+      gap,
+    );
+  }
+
+  // The re-indent is retain-only, so the line offsets stay valid for the move.
+  final reindent = buildBlockReindentDelta(
     lines,
+    fromStart,
+    fromEnd,
+    indentDelta,
+  );
+  final patched = [...lines];
+  for (var i = fromStart; i <= fromEnd; i++) {
+    patched[i] = ParsedLine(
+      startOffset: lines[i].startOffset,
+      length: lines[i].length,
+      newlineAttributes: _withIndent(
+        lines[i].newlineAttributes,
+        lines[i].indent + indentDelta,
+      ),
+    );
+  }
+  final move = _buildSpanMoveDelta(
+    document.toDelta().compose(reindent),
+    document.length,
+    patched,
     fromStart,
     fromEnd,
     gap,
   );
+  return reindent.compose(move);
 }
 
 Delta _buildSpanMoveDelta(

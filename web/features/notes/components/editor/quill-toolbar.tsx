@@ -26,6 +26,16 @@ import { applyListIndent, LIST_FORMATS } from "@/features/notes";
 import { MAX_LIST_INDENT } from "@/features/notes/quill-lines";
 import { cn } from "@/lib/utils";
 
+/**
+ * Formats at the selection without argument-less getFormat()'s
+ * focus-and-scroll side effect. Button handlers keep getFormat(): its
+ * focus-first read sees the cursor's formats after a click steals focus.
+ */
+function selectionFormat(quill: QuillInstance): Record<string, unknown> {
+  const sel = quill.getSelection();
+  return sel ? (quill.getFormat(sel.index, sel.length) ?? {}) : {};
+}
+
 function toggleInlineFormat(quill: QuillInstance, key: string) {
   const current = quill.getFormat() ?? {};
   quill.format(key, !current[key], "user");
@@ -87,7 +97,7 @@ export function QuillToolbar({
     }
 
     // Format highlights need a cursor; undo/redo must work unfocused.
-    setFormat(isFocused ? (quill.getFormat() ?? {}) : {});
+    setFormat(isFocused ? selectionFormat(quill) : {});
     const hist = quill.history;
     setCanUndo(Boolean(hist?.stack?.undo?.length));
     setCanRedo(Boolean(hist?.stack?.redo?.length));

@@ -427,6 +427,60 @@ void main() {
     ]);
   });
 
+  testWidgets('dragging sideways re-indents the item in place', (tester) async {
+    final (state, _) = await pumpEditor(tester, content: checklist(abcd));
+
+    final gesture = await lift(tester, checkboxSlot(1));
+    expect(state.dragIndicatorTop, isNull);
+    await dragTo(
+      tester,
+      gesture,
+      tester.getCenter(checkboxSlot(1)) + const Offset(30, 0),
+    );
+
+    // The indicator previews the new level: the indent-1 checkbox column.
+    expect(state.dragIndicatorTop, isNotNull);
+    final editorLeft = tester.getTopLeft(find.byType(RichTextEditor)).dx;
+    final indicatorLeft = tester
+        .getTopLeft(find.byKey(const Key('checklist-drag-indicator')))
+        .dx;
+    expect(indicatorLeft, editorLeft + 36 + 24 - 27);
+
+    await gesture.up();
+    await tester.pump();
+
+    expect(nestedLines(state), [
+      ('a', 'unchecked', 0),
+      ('b', 'unchecked', 1),
+      ('c', 'unchecked', 0),
+      ('d', 'unchecked', 0),
+    ]);
+  });
+
+  testWidgets('a drop can re-indent the block to the hovered gap level', (
+    tester,
+  ) async {
+    final (state, _) = await pumpEditor(
+      tester,
+      content: nestedChecklist(nestedAbcd),
+    );
+
+    final gesture = await lift(tester, checkboxSlot(3));
+    final start = tester.getCenter(checkboxSlot(3));
+    // The seam between a and a1, shifted one indent step to the right.
+    final gapY = tester.getTopLeft(checkboxSlot(1)).dy;
+    await dragTo(tester, gesture, Offset(start.dx + 30, gapY));
+    await gesture.up();
+    await tester.pump();
+
+    expect(nestedLines(state), [
+      ('a', 'unchecked', 0),
+      ('b', 'unchecked', 1),
+      ('a1', 'unchecked', 1),
+      ('a2', 'unchecked', 1),
+    ]);
+  });
+
   testWidgets('a parent whose subtree fills the group does not lift', (
     tester,
   ) async {

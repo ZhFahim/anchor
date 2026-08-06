@@ -384,7 +384,9 @@
   border-radius: 1px;
   background: var(--accent);
   pointer-events: none;
-  transition: top 70ms ease-out;
+  transition:
+    top 70ms ease-out,
+    left 70ms ease-out;
 }
 
 .anchor-checklist-drag-indicator::before {

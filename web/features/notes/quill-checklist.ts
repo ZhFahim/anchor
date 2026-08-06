@@ -11,6 +11,7 @@ import {
   indentOf,
   isCheckedLine,
   isChecklistLine,
+  MAX_LIST_INDENT,
 } from "./quill-lines";
 
 // ============================================================================
@@ -199,22 +200,38 @@ export function createChecklistSortDelta(
 // Checklist Drag Reorder
 // ============================================================================
 
+/** The line's newline op with its indent shifted by [indentDelta]. */
+function shiftedNewlineOp(line: DeltaLine, indentDelta: number): QuillOp {
+  if (indentDelta === 0) return line.newlineOp;
+  const { indent: _, ...rest } = line.newlineOp.attributes ?? {};
+  const indent = indentOf(line) + indentDelta;
+  const attributes = { ...rest, ...(indent > 0 ? { indent } : {}) };
+  return Object.keys(attributes).length
+    ? { insert: "\n", attributes }
+    : { insert: "\n" };
+}
+
 /**
  * Delta that moves the contiguous lines [fromStart..fromEnd] into [gap]
- * (the position before line [gap], which must lie outside the span).
+ * (the position before line [gap], which must lie outside the span),
+ * shifting each moved line's indent by [indentDelta].
  */
 function buildSpanMoveDelta(
   lines: DeltaLine[],
   fromStart: number,
   fromEnd: number,
   gap: number,
+  indentDelta: number,
 ): QuillDelta {
   const spanStart = getLineStartPosition(lines, fromStart);
   let spanLength = 0;
   const spanOps: QuillOp[] = [];
   for (let i = fromStart; i <= fromEnd; i++) {
     spanLength += getLineLength(lines[i]);
-    spanOps.push(...lines[i].contentOps, lines[i].newlineOp);
+    spanOps.push(
+      ...lines[i].contentOps,
+      shiftedNewlineOp(lines[i], indentDelta),
+    );
   }
   const ops: QuillOp[] = [];
 
@@ -247,20 +264,30 @@ function buildSpanMoveDelta(
   return { ops };
 }
 
+export type ChecklistDropGap = {
+  /** Insertion point: the block drops before line [gap]. */
+  gap: number;
+  /** Lowest indent the block's head line may take at this gap. */
+  minIndent: number;
+  /** Highest indent the block's head line may take at this gap. */
+  maxIndent: number;
+};
+
 export type ChecklistDragPlan = {
   lineIndex: number;
   /** Last line of the dragged block (the line plus its indented children). */
   blockEnd: number;
-  /** Nesting level of the dragged line; drops keep it unchanged. */
+  /** Nesting level of the dragged line at drag start. */
   indent: number;
   groupStart: number;
   groupEnd: number;
   /**
-   * Valid insertion gaps, sorted: gap g drops the block before line g.
-   * Includes the block's own boundaries (a no-op drop). In flat groups this
-   * is every gap in the group.
+   * Valid insertion gaps, sorted by gap, each with the indent range the
+   * dropped block may take there. Includes the block's own boundaries
+   * (a no-op unless the indent changes). In flat groups this is every gap
+   * in the group.
    */
-  gaps: number[];
+  gaps: ChecklistDropGap[];
   /** Ordinal of the group's first line among all checklist lines. */
   groupOrdinal: number;
   text: string;
@@ -268,10 +295,10 @@ export type ChecklistDragPlan = {
 };
 
 /**
- * Gaps where the block [blockStart..blockEnd] can drop while keeping its
- * indent: never inside itself, never where it would sit deeper than one
- * level below the line above, and never between another line and that
- * line's indented children.
+ * Gaps where the block [blockStart..blockEnd] can drop, with the indent
+ * range its head line may take at each: at most one level below the line
+ * above the gap, deep enough that the line below the gap keeps a parent,
+ * and capped so the block's deepest child stays within MAX_LIST_INDENT.
  */
 function checklistDropGaps(
   lines: DeltaLine[],
@@ -279,19 +306,30 @@ function checklistDropGaps(
   groupEnd: number,
   blockStart: number,
   blockEnd: number,
-): number[] {
-  const depth = indentOf(lines[blockStart]);
-  const gaps: number[] = [];
+): ChecklistDropGap[] {
+  const head = indentOf(lines[blockStart]);
+  let relMax = 0;
+  for (let i = blockStart; i <= blockEnd; i++) {
+    relMax = Math.max(relMax, indentOf(lines[i]) - head);
+  }
+  const relLast = indentOf(lines[blockEnd]) - head;
+
+  const gaps: ChecklistDropGap[] = [];
   for (let g = groupStart; g <= groupEnd + 1; g++) {
     if (g > blockStart && g <= blockEnd) continue;
-    if (g === blockStart || g === blockEnd + 1) {
-      gaps.push(g);
-      continue;
-    }
-    const prevIndent = g === groupStart ? -1 : indentOf(lines[g - 1]);
-    if (depth > prevIndent + 1) continue;
-    if (g <= groupEnd && indentOf(lines[g]) > depth) continue;
-    gaps.push(g);
+    // Both own boundaries are the same position once the block is taken out.
+    const own = g >= blockStart && g <= blockEnd + 1;
+    const aboveIndex = own ? blockStart - 1 : g - 1;
+    const belowIndex = own ? blockEnd + 1 : g;
+    const above = aboveIndex >= groupStart ? indentOf(lines[aboveIndex]) : null;
+    const below = belowIndex <= groupEnd ? indentOf(lines[belowIndex]) : null;
+    const maxIndent = Math.min(
+      above === null ? 0 : above + 1,
+      MAX_LIST_INDENT - relMax,
+    );
+    const minIndent = below === null ? 0 : Math.max(0, below - 1 - relLast);
+    if (minIndent > maxIndent) continue;
+    gaps.push({ gap: g, minIndent, maxIndent });
   }
   return gaps;
 }
@@ -327,8 +365,17 @@ export function getChecklistDragPlan(
     lineIndex,
     blockEnd,
   );
-  // Without a gap outside the block's own boundaries there is nothing to do.
-  if (gaps.every((g) => g >= lineIndex && g <= blockEnd + 1)) return null;
+  // Without a real move or a possible indent change there is nothing to do.
+  if (
+    gaps.every(
+      (g) =>
+        g.gap >= lineIndex &&
+        g.gap <= blockEnd + 1 &&
+        g.minIndent === g.maxIndent,
+    )
+  ) {
+    return null;
+  }
 
   let groupOrdinal = 0;
   for (let i = 0; i < groupStart; i++) {
@@ -369,13 +416,15 @@ export function checklistLineIndexFromOrdinal(
 
 /**
  * Delta for `updateContents` that drops the dragged line — together with its
- * indented children — into [gap]. Null when the drop is a no-op or the gap
- * falls inside the dragged block.
+ * indented children, all shifted to put the head at [targetIndent] — into
+ * [gap]. A gap at the block's own boundaries re-indents in place. Null when
+ * the drop changes nothing or the gap falls inside the dragged block.
  */
 export function buildChecklistDropDelta(
   currentDelta: QuillDelta,
   lineIndex: number,
   gap: number,
+  targetIndent?: number,
 ): QuillDelta | null {
   const lines = deltaToLines(currentDelta.ops);
   if (lineIndex < 0 || lineIndex >= lines.length) return null;
@@ -393,6 +442,26 @@ export function buildChecklistDropDelta(
     blockEnd = blockEndIndex(lines, lineIndex, groupEnd);
   }
 
-  if (gap >= lineIndex && gap <= blockEnd + 1) return null;
-  return buildSpanMoveDelta(lines, lineIndex, blockEnd, gap);
+  const indentDelta =
+    (targetIndent ?? indentOf(lines[lineIndex])) - indentOf(lines[lineIndex]);
+  if (gap >= lineIndex && gap <= blockEnd + 1) {
+    if (indentDelta === 0) return null;
+    const ops: QuillOp[] = [];
+    let cursor = 0;
+    for (let i = lineIndex; i <= blockEnd; i++) {
+      const newlineOffset =
+        getLineStartPosition(lines, i) + getLineLength(lines[i]) - 1;
+      if (newlineOffset > cursor) {
+        ops.push({ retain: newlineOffset - cursor });
+      }
+      const indent = indentOf(lines[i]) + indentDelta;
+      ops.push({
+        retain: 1,
+        attributes: { indent: indent > 0 ? indent : null },
+      });
+      cursor = newlineOffset + 1;
+    }
+    return { ops };
+  }
+  return buildSpanMoveDelta(lines, lineIndex, blockEnd, gap, indentDelta);
 }

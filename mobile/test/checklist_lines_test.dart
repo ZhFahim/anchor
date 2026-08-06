@@ -399,25 +399,16 @@ void main() {
         ('c', 'unchecked'),
       ]);
       final lines = parseDocumentLines(doc);
-      expect(checklistDropGaps(lines, 0, 2, 1, 1), [0, 1, 2, 3]);
-    });
-
-    test('drop gaps: a top-level block cannot split another parent', () {
-      final doc = nestedDoc([
-        ('a', 'unchecked', 0),
-        ('a1', 'unchecked', 1),
-        ('a2', 'unchecked', 1),
-        ('b', 'unchecked', 0),
+      expect(checklistDropGaps(lines, 0, 2, 1, 1), const [
+        ChecklistGap(0, 0, 0),
+        ChecklistGap(1, 0, 1),
+        ChecklistGap(2, 0, 1),
+        ChecklistGap(3, 0, 1),
       ]);
-      final lines = parseDocumentLines(doc);
-      // Dragging b: gaps 1 and 2 sit inside a's subtree.
-      expect(checklistDropGaps(lines, 0, 3, 3, 3), [0, 3, 4]);
-      // Dragging a's whole block skips its own inside gaps.
-      expect(checklistDropGaps(lines, 0, 3, 0, 2), [0, 3, 4]);
     });
 
     test(
-      'drop gaps: a child moves within and between parents, never to the top',
+      'drop gaps: every gap carries the indent range the block may take',
       () {
         final doc = nestedDoc([
           ('a', 'unchecked', 0),
@@ -426,9 +417,109 @@ void main() {
           ('b', 'unchecked', 0),
         ]);
         final lines = parseDocumentLines(doc);
-        expect(checklistDropGaps(lines, 0, 3, 1, 1), [1, 2, 3, 4]);
+        // Dragging b.
+        expect(checklistDropGaps(lines, 0, 3, 3, 3), const [
+          ChecklistGap(0, 0, 0),
+          ChecklistGap(1, 0, 1),
+          ChecklistGap(2, 0, 2),
+          ChecklistGap(3, 0, 2),
+          ChecklistGap(4, 0, 2),
+        ]);
+        // Dragging a's block: the deepest child caps the range at
+        // maxListIndent - 1.
+        expect(checklistDropGaps(lines, 0, 3, 0, 2), const [
+          ChecklistGap(0, 0, 0),
+          ChecklistGap(3, 0, 0),
+          ChecklistGap(4, 0, 1),
+        ]);
       },
     );
+
+    test('drop gaps: a child may move between parents or out to the top', () {
+      final doc = nestedDoc([
+        ('a', 'unchecked', 0),
+        ('a1', 'unchecked', 1),
+        ('a2', 'unchecked', 1),
+        ('b', 'unchecked', 0),
+      ]);
+      final lines = parseDocumentLines(doc);
+      expect(checklistDropGaps(lines, 0, 3, 1, 1), const [
+        ChecklistGap(0, 0, 0),
+        ChecklistGap(1, 0, 1),
+        ChecklistGap(2, 0, 1),
+        ChecklistGap(3, 0, 2),
+        ChecklistGap(4, 0, 1),
+      ]);
+    });
+
+    test('a moved block re-indents to the target level with its subtree', () {
+      final doc = nestedDoc([
+        ('p', 'unchecked', 0),
+        ('c1', 'unchecked', 1),
+        ('g1', 'unchecked', 2),
+        ('c2', 'unchecked', 1),
+      ]);
+      final before = doc.toDelta();
+      final lines = parseDocumentLines(doc);
+      final move = buildBlockMoveDelta(doc, lines, 1, 2, 0, indentDelta: -1);
+      final inverted = move.invert(before);
+
+      doc.compose(move, ChangeSource.local);
+      expect(nestedLinesOf(doc), [
+        ('c1', 'unchecked', 0),
+        ('g1', 'unchecked', 1),
+        ('p', 'unchecked', 0),
+        ('c2', 'unchecked', 1),
+      ]);
+      doc.compose(inverted, ChangeSource.local);
+      expect(doc.toDelta(), before);
+    });
+
+    test('a re-indented move into the end of the document round-trips', () {
+      final doc = nestedDoc([
+        ('a', 'unchecked', 0),
+        ('a1', 'unchecked', 1),
+        ('a2', 'unchecked', 1),
+        ('b', 'unchecked', 0),
+      ]);
+      final before = doc.toDelta();
+      final lines = parseDocumentLines(doc);
+      final move = buildBlockMoveDelta(doc, lines, 1, 1, 4, indentDelta: -1);
+      final inverted = move.invert(before);
+
+      doc.compose(move, ChangeSource.local);
+      expect(nestedLinesOf(doc), [
+        ('a', 'unchecked', 0),
+        ('a2', 'unchecked', 1),
+        ('b', 'unchecked', 0),
+        ('a1', 'unchecked', 0),
+      ]);
+      doc.compose(inverted, ChangeSource.local);
+      expect(doc.toDelta(), before);
+    });
+
+    test('buildBlockReindentDelta shifts a block in place', () {
+      final doc = nestedDoc([
+        ('a', 'unchecked', 0),
+        ('a1', 'unchecked', 1),
+        ('a2', 'unchecked', 1),
+        ('b', 'unchecked', 0),
+      ]);
+      final before = doc.toDelta();
+      final lines = parseDocumentLines(doc);
+      final reindent = buildBlockReindentDelta(lines, 3, 3, 1);
+      final inverted = reindent.invert(before);
+
+      doc.compose(reindent, ChangeSource.local);
+      expect(nestedLinesOf(doc), [
+        ('a', 'unchecked', 0),
+        ('a1', 'unchecked', 1),
+        ('a2', 'unchecked', 1),
+        ('b', 'unchecked', 1),
+      ]);
+      doc.compose(inverted, ChangeSource.local);
+      expect(doc.toDelta(), before);
+    });
   });
 
   group('buildListIndentDelta', () {

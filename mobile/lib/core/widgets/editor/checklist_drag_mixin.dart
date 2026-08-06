@@ -31,11 +31,17 @@ mixin ChecklistDragReorderMixin<T extends StatefulWidget> on State<T> {
   static const double _edgeExtent = 56;
   static const double _maxScrollSpeed = 14;
 
+  /// Horizontal finger travel per nesting level, matching the editor's
+  /// indent width.
+  static const double _indentStep = 24;
+
   List<ParsedLine>? _dragLines;
   int? _dragLineIndex;
   int _dragBlockEnd = 0;
-  List<int> _validGaps = const [];
+  List<ChecklistGap> _validGaps = const [];
   int? _hoverGap;
+  int? _hoverIndent;
+  double _dragStartX = 0;
   Offset? _dragGlobalPosition;
   String _dragText = '';
   bool _dragChecked = false;
@@ -60,7 +66,7 @@ mixin ChecklistDragReorderMixin<T extends StatefulWidget> on State<T> {
   static const double _checkboxColumnInset = 27;
 
   /// Left of the insertion indicator in overlay coordinates: the checkbox
-  /// column of the dragged line's nesting level.
+  /// column of the nesting level the drop would give the dragged line.
   double get dragIndicatorLeft {
     final lines = _dragLines;
     final index = _dragLineIndex;
@@ -75,7 +81,9 @@ mixin ChecklistDragReorderMixin<T extends StatefulWidget> on State<T> {
     final left = box
         .globalToLocal(editor.localToGlobal(Offset(caret.left, 0)))
         .dx;
-    return left - _checkboxColumnInset;
+    final head = lines[index].indent;
+    final shift = _indentStep * ((_hoverIndent ?? head) - head);
+    return left - _checkboxColumnInset + shift;
   }
 
   /// Finger position in overlay coordinates, or null when not dragging.
@@ -103,7 +111,7 @@ mixin ChecklistDragReorderMixin<T extends StatefulWidget> on State<T> {
   }
 
   /// Top of the insertion indicator in overlay coordinates. Null while the
-  /// drop would put the block back where it started.
+  /// drop would change nothing.
   double? get dragIndicatorTop {
     final gap = _hoverGap;
     final lines = _dragLines;
@@ -112,7 +120,11 @@ mixin ChecklistDragReorderMixin<T extends StatefulWidget> on State<T> {
     final box = dragOverlayBox;
     if (gap == null || lines == null || index == null) return null;
     if (editor == null || box == null) return null;
-    if (gap >= index && gap <= _dragBlockEnd + 1) return null;
+    if (gap >= index &&
+        gap <= _dragBlockEnd + 1 &&
+        _hoverIndent == lines[index].indent) {
+      return null;
+    }
 
     final y = _gapY(editor, lines, gap);
     return box.globalToLocal(editor.localToGlobal(Offset(0, y))).dy;
@@ -151,8 +163,12 @@ mixin ChecklistDragReorderMixin<T extends StatefulWidget> on State<T> {
       index,
       blockEnd,
     );
-    // Without a gap outside the block's own boundaries there is nothing to do.
-    if (gaps.every((g) => g >= index && g <= blockEnd + 1)) return;
+    // Without a real move or a possible indent change there is nothing to do.
+    final pointless = gaps.every(
+      (g) =>
+          g.gap >= index && g.gap <= blockEnd + 1 && g.minIndent == g.maxIndent,
+    );
+    if (pointless) return;
 
     final line = lines[index];
     final text = controller.document.toPlainText().substring(
@@ -167,6 +183,8 @@ mixin ChecklistDragReorderMixin<T extends StatefulWidget> on State<T> {
       _dragBlockEnd = blockEnd;
       _validGaps = gaps;
       _hoverGap = null;
+      _hoverIndent = null;
+      _dragStartX = details.globalPosition.dx;
       _dragText = text;
       _dragChecked = line.isChecked;
       _dragGlobalPosition = details.globalPosition;
@@ -184,14 +202,17 @@ mixin ChecklistDragReorderMixin<T extends StatefulWidget> on State<T> {
     final index = _dragLineIndex;
     final blockEnd = _dragBlockEnd;
     final gap = _hoverGap;
+    final indent = _hoverIndent;
     final snapshot = _dragLines;
     _stopAutoScroll();
 
-    if (index == null || gap == null || snapshot == null) {
+    if (index == null || gap == null || indent == null || snapshot == null) {
       _resetDrag();
       return;
     }
-    if (gap >= index && gap <= blockEnd + 1) {
+    final ownBoundary = gap >= index && gap <= blockEnd + 1;
+    final indentDelta = indent - snapshot[index].indent;
+    if (ownBoundary && indentDelta == 0) {
       _resetDrag();
       return;
     }
@@ -211,13 +232,16 @@ mixin ChecklistDragReorderMixin<T extends StatefulWidget> on State<T> {
       return;
     }
 
-    final move = buildBlockMoveDelta(
-      controller.document,
-      lines,
-      index,
-      blockEnd,
-      gap,
-    );
+    final move = ownBoundary
+        ? buildBlockReindentDelta(lines, index, blockEnd, indentDelta)
+        : buildBlockMoveDelta(
+            controller.document,
+            lines,
+            index,
+            blockEnd,
+            gap,
+            indentDelta: indentDelta,
+          );
     _composeGuarded(move);
     HapticFeedback.lightImpact();
     _resetDrag();
@@ -242,18 +266,26 @@ mixin ChecklistDragReorderMixin<T extends StatefulWidget> on State<T> {
 
     // Snap to the nearest structurally valid gap.
     final localY = editor.globalToLocal(globalPosition).dy;
-    var gap = _validGaps.first;
+    var entry = _validGaps.first;
     var bestDistance = double.infinity;
     for (final g in _validGaps) {
-      final distance = (localY - _gapY(editor, lines, g)).abs();
+      final distance = (localY - _gapY(editor, lines, g.gap)).abs();
       if (distance < bestDistance) {
         bestDistance = distance;
-        gap = g;
+        entry = g;
       }
     }
-    if (gap != _hoverGap) {
+    // Horizontal travel from the grab point picks the indent at this gap.
+    final head = lines[_dragLineIndex!].indent;
+    var indent =
+        head + ((globalPosition.dx - _dragStartX) / _indentStep).round();
+    if (indent < entry.minIndent) indent = entry.minIndent;
+    if (indent > entry.maxIndent) indent = entry.maxIndent;
+
+    if (entry.gap != _hoverGap || indent != _hoverIndent) {
       if (_hoverGap != null) HapticFeedback.selectionClick();
-      _hoverGap = gap;
+      _hoverGap = entry.gap;
+      _hoverIndent = indent;
     }
     _dragGlobalPosition = globalPosition;
     dragRepaint.value++;
@@ -312,6 +344,7 @@ mixin ChecklistDragReorderMixin<T extends StatefulWidget> on State<T> {
       _dragBlockEnd = 0;
       _validGaps = const [];
       _hoverGap = null;
+      _hoverIndent = null;
       _dragGlobalPosition = null;
       _dragText = '';
     });
@@ -355,5 +388,6 @@ mixin ChecklistDragReorderMixin<T extends StatefulWidget> on State<T> {
   bool _sameLine(ParsedLine a, ParsedLine b) =>
       a.startOffset == b.startOffset &&
       a.length == b.length &&
-      a.listType == b.listType;
+      a.listType == b.listType &&
+      a.indent == b.indent;
 }

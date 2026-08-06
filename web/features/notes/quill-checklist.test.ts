@@ -190,7 +190,7 @@ describe("getChecklistDragPlan", () => {
       lineIndex: 1,
       groupStart: 1,
       groupEnd: 2,
-      gaps: [1, 2, 3],
+      gaps: [{ gap: 1 }, { gap: 2 }, { gap: 3 }],
       groupOrdinal: 0,
       text: "a",
       checked: false,
@@ -205,10 +205,10 @@ describe("getChecklistDragPlan", () => {
       ["d", "checked"],
     ]);
     expect(getChecklistDragPlan(sorted, 0)).toMatchObject({
-      gaps: [0, 1, 2, 3, 4],
+      gaps: [{ gap: 0 }, { gap: 1 }, { gap: 2 }, { gap: 3 }, { gap: 4 }],
     });
     expect(getChecklistDragPlan(sorted, 3)).toMatchObject({
-      gaps: [0, 1, 2, 3, 4],
+      gaps: [{ gap: 0 }, { gap: 1 }, { gap: 2 }, { gap: 3 }, { gap: 4 }],
       checked: true,
     });
   });
@@ -277,26 +277,42 @@ describe("nested checklists", () => {
     expect(getChecklistDragPlan(grouped, 0)).toMatchObject({ blockEnd: 1 });
   });
 
-  it("a top-level block cannot drop between a parent and its children", () => {
-    // Gaps 1 and 2 sit inside a's subtree; b may only go above a or stay.
+  it("every gap carries the indent range the block may take there", () => {
     expect(getChecklistDragPlan(nested, 3)).toMatchObject({
-      gaps: [0, 3, 4],
+      gaps: [
+        { gap: 0, minIndent: 0, maxIndent: 0 },
+        { gap: 1, minIndent: 0, maxIndent: 1 },
+        { gap: 2, minIndent: 0, maxIndent: 2 },
+        { gap: 3, minIndent: 0, maxIndent: 2 },
+        { gap: 4, minIndent: 0, maxIndent: 2 },
+      ],
     });
   });
 
   it("a parent block skips its own inside gaps", () => {
+    // The deepest child caps the range at MAX_LIST_INDENT - 1.
     expect(getChecklistDragPlan(nested, 0)).toMatchObject({
       lineIndex: 0,
       blockEnd: 2,
       indent: 0,
-      gaps: [0, 3, 4],
+      gaps: [
+        { gap: 0, minIndent: 0, maxIndent: 0 },
+        { gap: 3, minIndent: 0, maxIndent: 0 },
+        { gap: 4, minIndent: 0, maxIndent: 1 },
+      ],
     });
   });
 
-  it("a child may move within and between parents but not to the top level", () => {
+  it("a child may move between parents or out to the top level", () => {
     expect(getChecklistDragPlan(nested, 1)).toMatchObject({
       indent: 1,
-      gaps: [1, 2, 3, 4],
+      gaps: [
+        { gap: 0, minIndent: 0, maxIndent: 0 },
+        { gap: 1, minIndent: 0, maxIndent: 1 },
+        { gap: 2, minIndent: 0, maxIndent: 1 },
+        { gap: 3, minIndent: 0, maxIndent: 2 },
+        { gap: 4, minIndent: 0, maxIndent: 1 },
+      ],
     });
   });
 
@@ -330,6 +346,49 @@ describe("nested checklists", () => {
       ["a2", "unchecked", 1],
       ["a1", "unchecked", 1],
       ["b", "unchecked"],
+    ]);
+  });
+
+  it("a drop can re-indent the block to the gap's level", () => {
+    expectApplied(nested, buildChecklistDropDelta(nested, 3, 1, 1), [
+      ["a", "unchecked"],
+      ["b", "unchecked", 1],
+      ["a1", "unchecked", 1],
+      ["a2", "unchecked", 1],
+    ]);
+  });
+
+  it("a shallow drop adopts the children below the gap", () => {
+    expectApplied(nested, buildChecklistDropDelta(nested, 3, 1, 0), [
+      ["a", "unchecked"],
+      ["b", "unchecked"],
+      ["a1", "unchecked", 1],
+      ["a2", "unchecked", 1],
+    ]);
+  });
+
+  it("an own-boundary drop with a new indent re-indents in place", () => {
+    expectApplied(nested, buildChecklistDropDelta(nested, 3, 4, 1), [
+      ["a", "unchecked"],
+      ["a1", "unchecked", 1],
+      ["a2", "unchecked", 1],
+      ["b", "unchecked", 1],
+    ]);
+    expect(buildChecklistDropDelta(nested, 3, 4, 0)).toBeNull();
+  });
+
+  it("children shift with the head and keep their relative depth", () => {
+    const deep = doc([
+      ["p", "unchecked"],
+      ["c1", "unchecked", 1],
+      ["g1", "unchecked", 2],
+      ["c2", "unchecked", 1],
+    ]);
+    expectApplied(deep, buildChecklistDropDelta(deep, 1, 0, 0), [
+      ["c1", "unchecked"],
+      ["g1", "unchecked", 1],
+      ["p", "unchecked"],
+      ["c2", "unchecked", 1],
     ]);
   });
 
