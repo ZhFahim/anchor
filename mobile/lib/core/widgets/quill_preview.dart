@@ -10,7 +10,10 @@ class _PreviewLine {
   final String?
   listType; // 'checked' | 'unchecked' | 'ordered' | 'bullet' | null
 
-  const _PreviewLine({required this.text, this.listType});
+  /// Nesting level (0 = top level).
+  final int indent;
+
+  const _PreviewLine({required this.text, this.listType, this.indent = 0});
 
   bool get isChecklist => listType == 'checked' || listType == 'unchecked';
   bool get isChecked => listType == 'checked';
@@ -58,17 +61,24 @@ class QuillPreview extends StatelessWidget {
         .take(maxLines)
         .toList();
 
-    var orderedListIndex = 0;
+    // Ordered counters per nesting level: deeper levels reset when the list
+    // returns to a shallower one; a level's own count continues across
+    // nested runs, matching the editor's numbering.
+    final orderedCounters = <int, int>{};
     final children = <Widget>[];
 
     for (final line in displayLines) {
       final lineText = line.text.trim();
+      if (line.listType == null) {
+        orderedCounters.clear();
+      } else {
+        orderedCounters.removeWhere((level, _) => level > line.indent);
+      }
 
       if (line.isChecklist) {
-        orderedListIndex = 0;
         children.add(
           Padding(
-            padding: const EdgeInsets.only(bottom: 2),
+            padding: EdgeInsets.only(bottom: 2, left: line.indent * 12.0),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -108,17 +118,18 @@ class QuillPreview extends StatelessWidget {
           ),
         );
       } else if (line.isOrderedList) {
-        orderedListIndex++;
+        final count = (orderedCounters[line.indent] ?? 0) + 1;
+        orderedCounters[line.indent] = count;
         children.add(
           Padding(
-            padding: const EdgeInsets.only(bottom: 2),
+            padding: EdgeInsets.only(bottom: 2, left: line.indent * 12.0),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(
                   width: 20,
                   child: Text(
-                    '$orderedListIndex.',
+                    _orderedMarker(count, line.indent),
                     style: effectiveStyle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -138,10 +149,9 @@ class QuillPreview extends StatelessWidget {
           ),
         );
       } else if (line.isBulletList) {
-        orderedListIndex = 0;
         children.add(
           Padding(
-            padding: const EdgeInsets.only(bottom: 2),
+            padding: EdgeInsets.only(bottom: 2, left: line.indent * 12.0),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -162,10 +172,9 @@ class QuillPreview extends StatelessWidget {
           ),
         );
       } else {
-        orderedListIndex = 0;
         children.add(
           Padding(
-            padding: const EdgeInsets.only(bottom: 2),
+            padding: EdgeInsets.only(bottom: 2, left: line.indent * 12.0),
             child: Text(
               lineText,
               style: effectiveStyle,
@@ -183,6 +192,45 @@ class QuillPreview extends StatelessWidget {
       children: children,
     );
   }
+}
+
+/// Marker for an ordered item, cycling number styles by depth like the
+/// editor: 1. at the top level, then a., then i.
+String _orderedMarker(int count, int indent) {
+  return switch (indent % 3) {
+    1 => '${_alpha(count)}.',
+    2 => '${_roman(count)}.',
+    _ => '$count.',
+  };
+}
+
+String _alpha(int count) => String.fromCharCode(97 + (count - 1) % 26);
+
+String _roman(int count) {
+  const pairs = [
+    (1000, 'm'),
+    (900, 'cm'),
+    (500, 'd'),
+    (400, 'cd'),
+    (100, 'c'),
+    (90, 'xc'),
+    (50, 'l'),
+    (40, 'xl'),
+    (10, 'x'),
+    (9, 'ix'),
+    (5, 'v'),
+    (4, 'iv'),
+    (1, 'i'),
+  ];
+  var value = count;
+  final buffer = StringBuffer();
+  for (final (threshold, numeral) in pairs) {
+    while (value >= threshold) {
+      buffer.write(numeral);
+      value -= threshold;
+    }
+  }
+  return buffer.toString();
 }
 
 /// Parses Quill Delta JSON into preview lines with checklist state.
@@ -213,7 +261,10 @@ List<_PreviewLine> _parseQuillContentToPreviewLines(String? content) {
         if (i < parts.length - 1) {
           final lineText = currentLineParts.join();
           final listType = op.attributes?['list'] as String?;
-          result.add(_PreviewLine(text: lineText, listType: listType));
+          final indent = op.attributes?['indent'] as int? ?? 0;
+          result.add(
+            _PreviewLine(text: lineText, listType: listType, indent: indent),
+          );
           currentLineParts = [];
         }
       }

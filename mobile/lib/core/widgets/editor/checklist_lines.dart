@@ -18,6 +18,48 @@ class ParsedLine {
   String? get listType => newlineAttributes?[Attribute.list.key] as String?;
   bool get isChecklist => listType == 'checked' || listType == 'unchecked';
   bool get isChecked => listType == 'checked';
+
+  /// Nesting level (0 = top level).
+  int get indent => (newlineAttributes?[Attribute.indent.key] as int?) ?? 0;
+}
+
+/// Last line of the block headed by [index]: the line plus the contiguous
+/// run of following lines (up to [rangeEnd]) with deeper indent.
+int checklistBlockEnd(List<ParsedLine> lines, int index, int rangeEnd) {
+  final base = lines[index].indent;
+  var end = index;
+  while (end < rangeEnd && lines[end + 1].indent > base) {
+    end++;
+  }
+  return end;
+}
+
+/// Gaps where the block [blockStart..blockEnd] can drop while keeping its
+/// indent: never inside itself, never where it would sit deeper than one
+/// level below the line above, and never between another line and that
+/// line's indented children. Includes the block's own boundaries (a no-op
+/// drop). In flat groups this is every gap in the group.
+List<int> checklistDropGaps(
+  List<ParsedLine> lines,
+  int groupStart,
+  int groupEnd,
+  int blockStart,
+  int blockEnd,
+) {
+  final depth = lines[blockStart].indent;
+  final gaps = <int>[];
+  for (var g = groupStart; g <= groupEnd + 1; g++) {
+    if (g > blockStart && g <= blockEnd) continue;
+    if (g == blockStart || g == blockEnd + 1) {
+      gaps.add(g);
+      continue;
+    }
+    final prevIndent = g == groupStart ? -1 : lines[g - 1].indent;
+    if (depth > prevIndent + 1) continue;
+    if (g <= groupEnd && lines[g].indent > depth) continue;
+    gaps.add(g);
+  }
+  return gaps;
 }
 
 List<ParsedLine> parseDocumentLines(Document document) {
@@ -84,39 +126,81 @@ Delta _buildLineMoveDelta(
   int toIndex,
 ) {
   assert(fromIndex != toIndex);
-  final line = lines[fromIndex];
-  final srcStart = line.startOffset;
-  final srcLength = line.length;
+  return _buildSpanMoveDelta(
+    delta,
+    docLength,
+    lines,
+    fromIndex,
+    fromIndex,
+    toIndex > fromIndex ? toIndex + 1 : toIndex,
+  );
+}
+
+/// Delta that moves the contiguous lines [fromStart..fromEnd] into [gap]
+/// (the position before line [gap], which must lie outside the span).
+///
+/// Document.compose (and the history inverses of deltas) cannot delete the
+/// final newline or insert after it; end-of-document moves retain it and
+/// patch its attributes.
+Delta buildBlockMoveDelta(
+  Document document,
+  List<ParsedLine> lines,
+  int fromStart,
+  int fromEnd,
+  int gap,
+) {
+  return _buildSpanMoveDelta(
+    document.toDelta(),
+    document.length,
+    lines,
+    fromStart,
+    fromEnd,
+    gap,
+  );
+}
+
+Delta _buildSpanMoveDelta(
+  Delta delta,
+  int docLength,
+  List<ParsedLine> lines,
+  int fromStart,
+  int fromEnd,
+  int gap,
+) {
+  assert(gap < fromStart || gap > fromEnd + 1);
+  final srcStart = lines[fromStart].startOffset;
+  final srcEnd = lines[fromEnd].startOffset + lines[fromEnd].length;
+  final srcLength = srcEnd - srcStart;
 
   final move = Delta();
-  if (toIndex > fromIndex) {
-    // Move down = pull the lines below it up in front of it.
-    final blockLast = lines[toIndex];
-    final blockStart = srcStart + srcLength;
-    final blockEnd = blockLast.startOffset + blockLast.length;
-    if (blockEnd < docLength) {
+  if (gap > fromEnd + 1) {
+    // Move down = pull the lines below the span up in front of it.
+    final belowLast = lines[gap - 1];
+    final belowStart = srcEnd;
+    final belowEnd = belowLast.startOffset + belowLast.length;
+    if (belowEnd < docLength) {
       move.retain(srcStart);
-      delta.slice(blockStart, blockEnd).toList().forEach(move.push);
+      delta.slice(belowStart, belowEnd).toList().forEach(move.push);
       move
         ..retain(srcLength)
-        ..delete(blockEnd - blockStart);
+        ..delete(belowEnd - belowStart);
     } else {
       move
         ..retain(srcStart)
         ..delete(srcLength)
-        ..retain(blockEnd - blockStart - 1)
-        ..insert('\n', blockLast.newlineAttributes);
-      delta.slice(srcStart, srcStart + srcLength - 1).toList().forEach(
-        move.push,
-      );
+        ..retain(belowEnd - belowStart - 1)
+        ..insert('\n', belowLast.newlineAttributes);
+      delta.slice(srcStart, srcEnd - 1).toList().forEach(move.push);
       move.retain(
         1,
-        _attributeDiff(blockLast.newlineAttributes, line.newlineAttributes),
+        _attributeDiff(
+          belowLast.newlineAttributes,
+          lines[fromEnd].newlineAttributes,
+        ),
       );
     }
   } else {
-    final insertAt = lines[toIndex].startOffset;
-    final srcEnd = srcStart + srcLength;
+    final insertAt = lines[gap].startOffset;
     if (srcEnd < docLength) {
       move.retain(insertAt);
       delta.slice(srcStart, srcEnd).toList().forEach(move.push);
@@ -124,50 +208,77 @@ Delta _buildLineMoveDelta(
         ..retain(srcStart - insertAt)
         ..delete(srcLength);
     } else {
-      // Moved line is the last line of the document.
-      final lineAbove = lines[fromIndex - 1];
+      // The span ends the document.
+      final lineAbove = lines[fromStart - 1];
       move.retain(insertAt);
       delta.slice(srcStart, srcEnd - 1).toList().forEach(move.push);
       move
-        ..insert('\n', line.newlineAttributes)
+        ..insert('\n', lines[fromEnd].newlineAttributes)
         ..retain(srcStart - insertAt - 1)
         ..delete(srcLength)
         ..retain(
           1,
-          _attributeDiff(line.newlineAttributes, lineAbove.newlineAttributes),
+          _attributeDiff(
+            lines[fromEnd].newlineAttributes,
+            lineAbove.newlineAttributes,
+          ),
         );
     }
   }
   return move;
 }
 
-/// Order of the group's line indices after a toggle: a stable partition —
-/// unchecked lines first, checked lines last, each keeping document order,
-/// with the toggled line at the end of its own section. Null when the group
-/// is already in that order.
+/// Order of the group's line indices after a toggle: at each nesting level a
+/// stable partition of sibling blocks (a line plus its indented children) —
+/// unchecked blocks first, checked blocks last, each keeping document order,
+/// with the toggled block at the end of its own section — applied recursively
+/// within each block. Null when the group is already in that order.
 List<int>? checklistSortOrder(
   List<ParsedLine> lines,
   int groupStart,
   int groupEnd,
   int toggledIndex,
 ) {
-  final unchecked = <int>[];
-  final checked = <int>[];
-  for (var i = groupStart; i <= groupEnd; i++) {
-    if (i == toggledIndex) continue;
-    (lines[i].isChecked ? checked : unchecked).add(i);
-  }
-  if (lines[toggledIndex].isChecked) {
-    checked.add(toggledIndex);
-  } else {
-    unchecked.add(toggledIndex);
-  }
-
-  final order = [...unchecked, ...checked];
+  final order = <int>[];
+  _orderSiblingBlocks(lines, groupStart, groupEnd, toggledIndex, order);
   for (var k = 0; k < order.length; k++) {
     if (order[k] != groupStart + k) return order;
   }
   return null;
+}
+
+void _orderSiblingBlocks(
+  List<ParsedLine> lines,
+  int start,
+  int end,
+  int toggledIndex,
+  List<int> out,
+) {
+  final unchecked = <(int, int)>[];
+  final checked = <(int, int)>[];
+  (int, int)? toggled;
+
+  var i = start;
+  while (i <= end) {
+    final blockEnd = checklistBlockEnd(lines, i, end);
+    final block = (i, blockEnd);
+    if (i == toggledIndex) {
+      toggled = block;
+    } else {
+      (lines[i].isChecked ? checked : unchecked).add(block);
+    }
+    i = blockEnd + 1;
+  }
+  if (toggled != null) {
+    (lines[toggled.$1].isChecked ? checked : unchecked).add(toggled);
+  }
+
+  for (final (blockStart, blockEnd) in [...unchecked, ...checked]) {
+    out.add(blockStart);
+    if (blockEnd > blockStart) {
+      _orderSiblingBlocks(lines, blockStart + 1, blockEnd, toggledIndex, out);
+    }
+  }
 }
 
 /// Delta that rewrites the group's lines into [order] (indices into
@@ -217,6 +328,54 @@ Delta buildGroupReorderDelta(
   }
 
   return total!;
+}
+
+const int maxListIndent = 3;
+
+/// Delta that indents ([increase]) or outdents the list lines intersecting
+/// the selection [start]..[end]. Indenting is clamped to [maxListIndent] and
+/// to one level deeper than the line above, which must be a list line
+/// itself. Null when nothing changes.
+Delta? buildListIndentDelta(
+  List<ParsedLine> lines,
+  int start,
+  int end, {
+  required bool increase,
+}) {
+  final selEnd = end > start ? end : start + 1;
+  final effective = <int>[];
+  final delta = Delta();
+  var cursor = 0;
+
+  for (var i = 0; i < lines.length; i++) {
+    final line = lines[i];
+    final newlineOffset = line.startOffset + line.length - 1;
+    final inRange = line.startOffset < selEnd && start <= newlineOffset;
+    var newIndent = line.indent;
+
+    if (inRange && line.listType != null) {
+      if (increase) {
+        final prevIsList = i > 0 && lines[i - 1].listType != null;
+        var cap = prevIsList ? effective[i - 1] + 1 : 0;
+        if (cap > maxListIndent) cap = maxListIndent;
+        final proposed = newIndent + 1;
+        if (proposed <= cap) newIndent = proposed;
+      } else if (newIndent > 0) {
+        newIndent -= 1;
+      }
+    }
+    effective.add(newIndent);
+
+    if (newIndent != line.indent) {
+      if (newlineOffset > cursor) {
+        delta.retain(newlineOffset - cursor);
+      }
+      delta.retain(1, {'indent': newIndent == 0 ? null : newIndent});
+      cursor = newlineOffset + 1;
+    }
+  }
+
+  return cursor > 0 ? delta : null;
 }
 
 /// Attribute map that turns [from] into [to] when applied via retain.

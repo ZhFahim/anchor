@@ -168,10 +168,7 @@ void main() {
   testWidgets('checking the last unchecked item leaves it in place', (
     tester,
   ) async {
-    final initial = <(String, String?)>[
-      ('a', 'unchecked'),
-      ('b', 'unchecked'),
-    ];
+    final initial = <(String, String?)>[('a', 'unchecked'), ('b', 'unchecked')];
     final controller = await pumpHost(tester, initial);
 
     controller.formatText(lineStart(initial, 1), 0, Attribute.checked);
@@ -346,10 +343,7 @@ void main() {
 
   testWidgets('typing does not trigger sorting', (tester) async {
     // Checked item above an unchecked one: only a toggle may reorder.
-    final initial = <(String, String?)>[
-      ('a', 'checked'),
-      ('b', 'unchecked'),
-    ];
+    final initial = <(String, String?)>[('a', 'checked'), ('b', 'unchecked')];
     final controller = await pumpHost(tester, initial);
 
     controller.replaceText(1, 0, 'x', null);
@@ -358,13 +352,8 @@ void main() {
     expect(docLines(controller), [('ax', 'checked'), ('b', 'unchecked')]);
   });
 
-  testWidgets('sorting disabled leaves toggled items in place', (
-    tester,
-  ) async {
-    final initial = <(String, String?)>[
-      ('a', 'unchecked'),
-      ('b', 'unchecked'),
-    ];
+  testWidgets('sorting disabled leaves toggled items in place', (tester) async {
+    final initial = <(String, String?)>[('a', 'unchecked'), ('b', 'unchecked')];
     final controller = await pumpHost(tester, initial, sortEnabled: false);
 
     controller.formatText(lineStart(initial, 0), 0, Attribute.checked);

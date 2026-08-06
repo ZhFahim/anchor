@@ -6,6 +6,8 @@ import {
   Heading1,
   Heading2,
   Heading3,
+  IndentDecrease,
+  IndentIncrease,
   Italic,
   Link as LinkIcon,
   List,
@@ -20,7 +22,8 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import type { QuillInstance } from "@/features/notes";
-import { LIST_FORMATS } from "@/features/notes";
+import { applyListIndent, LIST_FORMATS } from "@/features/notes";
+import { MAX_LIST_INDENT } from "@/features/notes/quill-lines";
 import { cn } from "@/lib/utils";
 
 function toggleInlineFormat(quill: QuillInstance, key: string) {
@@ -93,6 +96,12 @@ export function QuillToolbar({
   // Get quill instance for button handlers
   const quill = getQuill();
 
+  const changeIndent = (direction: 1 | -1) => {
+    const sel = quill?.getSelection();
+    if (!quill || !sel) return;
+    applyListIndent(quill, sel, direction);
+  };
+
   const headerLevel = useMemo(() => {
     const h = format.header;
     return typeof h === "number" ? h : 0;
@@ -103,6 +112,11 @@ export function QuillToolbar({
     listValue === LIST_FORMATS.CHECKED || listValue === LIST_FORMATS.UNCHECKED;
   const isOrdered = listValue === LIST_FORMATS.ORDERED;
   const isBullet = listValue === LIST_FORMATS.BULLET;
+  // Bound check for the buttons; the handler applies the exact
+  // one-level-below-the-line-above rule.
+  const indentLevel = typeof format.indent === "number" ? format.indent : 0;
+  const canIndent = Boolean(listValue) && indentLevel < MAX_LIST_INDENT;
+  const canOutdent = Boolean(listValue) && indentLevel > 0;
 
   const isBold = Boolean(format.bold);
   const isItalic = Boolean(format.italic);
@@ -258,6 +272,26 @@ export function QuillToolbar({
           onClick={() => quill && toggleList(quill, "bullet")}
         >
           <List className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          className={btnClass(false)}
+          disabled={!quill || !canOutdent}
+          title="Outdent"
+          onClick={() => changeIndent(-1)}
+        >
+          <IndentDecrease className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          className={btnClass(false)}
+          disabled={!quill || !canIndent}
+          title="Indent"
+          onClick={() => changeIndent(1)}
+        >
+          <IndentIncrease className="h-4 w-4" />
         </Button>
       </div>
 

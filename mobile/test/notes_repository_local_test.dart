@@ -72,9 +72,7 @@ void main() {
   Future<void> linkTag(String noteId, String tagId) {
     return db
         .into(db.noteTags)
-        .insert(
-          NoteTagsCompanion(noteId: Value(noteId), tagId: Value(tagId)),
-        );
+        .insert(NoteTagsCompanion(noteId: Value(noteId), tagId: Value(tagId)));
   }
 
   Future<void> insertImageAttachment(
@@ -155,10 +153,12 @@ void main() {
       final note = (await repo.watchNotes().first).single;
 
       expect(note.imagePreviewData, hasLength(4));
-      expect(
-        note.imagePreviewData.map((p) => p.attachmentId),
-        ['img-0', 'img-1', 'img-2', 'img-3'],
-      );
+      expect(note.imagePreviewData.map((p) => p.attachmentId), [
+        'img-0',
+        'img-1',
+        'img-2',
+        'img-3',
+      ]);
     });
   });
 
@@ -178,7 +178,11 @@ void main() {
     test('shows only archived active notes', () async {
       await insertNote(id: 'archived', isArchived: true);
       await insertNote(id: 'plain');
-      await insertNote(id: 'archived-trashed', isArchived: true, state: 'trashed');
+      await insertNote(
+        id: 'archived-trashed',
+        isArchived: true,
+        state: 'trashed',
+      );
 
       final notes = await repo.watchArchivedNotes().first;
 

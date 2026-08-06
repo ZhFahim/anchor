@@ -69,10 +69,20 @@ DefaultStyles getEditorStyles(BuildContext context) {
       const VerticalSpacing(0, 0),
       null,
     ),
+    // Every indented run is its own block and pulls spacing from `indent`,
+    // not `lists`; keeping bottom+top across any seam equal to the in-block
+    // line gap (8) makes the rhythm uniform at every nesting boundary.
+    indent: DefaultTextBlockStyle(
+      baseStyle.copyWith(height: 1.2),
+      const HorizontalSpacing(0, 0),
+      const VerticalSpacing(0, 8),
+      const VerticalSpacing(8, 0),
+      null,
+    ),
     lists: DefaultListBlockStyle(
       baseStyle.copyWith(height: 1.2),
       const HorizontalSpacing(0, 0),
-      const VerticalSpacing(0, 10),
+      const VerticalSpacing(0, 8),
       const VerticalSpacing(8, 0),
       null,
       null,
@@ -81,18 +91,22 @@ DefaultStyles getEditorStyles(BuildContext context) {
         final listAttr = attrs[Attribute.list.key];
         final isOrdered = listAttr?.value == 'ordered';
         final isBullet = listAttr?.value == 'bullet';
+        // Lines with an indent attribute form their own block; the nesting
+        // offset must come from this builder.
+        final indentLevel = attrs[Attribute.indent.key]?.value as int? ?? 0;
+        final nesting = 24.0 * indentLevel;
 
         if (attrs.containsKey(Attribute.blockQuote.key)) {
-          return HorizontalSpacing(16, 0);
+          return HorizontalSpacing(16 + nesting, 0);
         }
         if (isOrdered) {
           final base = widthBuilder(16, count);
-          return HorizontalSpacing(base, 0);
+          return HorizontalSpacing(base + nesting, 0);
         }
         if (isBullet) {
-          return HorizontalSpacing(24, 0);
+          return HorizontalSpacing(24 + nesting, 0);
         }
-        return HorizontalSpacing(36, 0);
+        return HorizontalSpacing(36 + nesting, 0);
       },
     ),
     quote: DefaultTextBlockStyle(

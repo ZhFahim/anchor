@@ -98,9 +98,8 @@ void main() {
     await tester.pump();
   }
 
-  QuillController editorController(WidgetTester tester) => tester
-      .state<RichTextEditorState>(find.byType(RichTextEditor))
-      .controller;
+  QuillController editorController(WidgetTester tester) =>
+      tester.state<RichTextEditorState>(find.byType(RichTextEditor)).controller;
 
   testWidgets('typing in a new note autosaves it after the idle window', (
     tester,
@@ -113,9 +112,7 @@ void main() {
 
     await tester.pump(const Duration(seconds: 3));
 
-    final captured = verify(
-      () => notesRepo.createNote(captureAny()),
-    ).captured;
+    final captured = verify(() => notesRepo.createNote(captureAny())).captured;
     expect(captured, hasLength(1));
     final note = captured.single as Note;
     expect(note.content, contains('hello'));
@@ -142,9 +139,7 @@ void main() {
     await tester.enterText(titleField, 'My title');
     await tester.pump(const Duration(seconds: 3));
 
-    final captured = verify(
-      () => notesRepo.createNote(captureAny()),
-    ).captured;
+    final captured = verify(() => notesRepo.createNote(captureAny())).captured;
     expect(captured, hasLength(1));
     expect((captured.single as Note).title, 'My title');
   });
@@ -217,9 +212,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(seconds: 3));
 
-    final captured = verify(
-      () => notesRepo.updateNote(captureAny()),
-    ).captured;
+    final captured = verify(() => notesRepo.updateNote(captureAny())).captured;
     expect(captured, hasLength(1));
     final saved = captured.single as Note;
     expect(saved.id, 'n1');

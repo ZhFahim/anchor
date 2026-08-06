@@ -12,13 +12,19 @@ void main() {
   test('permission gates editing', () {
     expect(const Note(id: 'n1', title: '').canEdit, isTrue); // owner default
     expect(
-      const Note(id: 'n1', title: '', permission: NotePermission.editor)
-          .canEdit,
+      const Note(
+        id: 'n1',
+        title: '',
+        permission: NotePermission.editor,
+      ).canEdit,
       isTrue,
     );
     expect(
-      const Note(id: 'n1', title: '', permission: NotePermission.viewer)
-          .canEdit,
+      const Note(
+        id: 'n1',
+        title: '',
+        permission: NotePermission.viewer,
+      ).canEdit,
       isFalse,
     );
   });

@@ -42,9 +42,7 @@ class NotesController extends _$NotesController {
   }
 
   Future<int> bulkSetPinned(List<String> ids, bool isPinned) async {
-    return await ref
-        .read(notesRepositoryProvider)
-        .bulkSetPinned(ids, isPinned);
+    return await ref.read(notesRepositoryProvider).bulkSetPinned(ids, isPinned);
   }
 
   Future<int> bulkAddTags(List<String> ids, List<String> tagIds) async {

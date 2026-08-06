@@ -1,4 +1,9 @@
-import { deltaToLines, getLineText } from "./quill-lines";
+import {
+  buildListIndentDelta,
+  deltaToLines,
+  getLineText,
+  indentOf,
+} from "./quill-lines";
 
 // ============================================================================
 // Types
@@ -90,13 +95,32 @@ export const QUILL_FORMATS = [
   "strike",
   "header",
   "list", // ordered, bullet, checked/unchecked
+  "indent",
   "blockquote",
   "code-block",
   "link",
 ] as const;
 
 /**
- * Quill modules configuration.
+ * Applies a clamped list indent change at [range]; no-op when not allowed.
+ */
+export function applyListIndent(
+  quill: QuillInstance,
+  range: { index: number; length: number },
+  direction: 1 | -1,
+): void {
+  const delta = buildListIndentDelta(
+    quill.getContents(),
+    range.index,
+    range.length,
+    direction,
+  );
+  if (delta) quill.updateContents(delta as QuillDelta, "user");
+}
+
+/**
+ * Quill modules configuration. The named `indent`/`outdent` bindings replace
+ * Quill's defaults so Tab and Shift+Tab go through the clamped indent path.
  */
 export const QUILL_MODULES = {
   toolbar: false,
@@ -104,6 +128,33 @@ export const QUILL_MODULES = {
     delay: 1000,
     maxStack: 200,
     userOnly: true,
+  },
+  keyboard: {
+    bindings: {
+      indent: {
+        key: "Tab",
+        format: ["list"],
+        handler(
+          this: { quill: QuillInstance },
+          range: { index: number; length: number },
+        ) {
+          applyListIndent(this.quill, range, 1);
+          return false;
+        },
+      },
+      outdent: {
+        key: "Tab",
+        shiftKey: true,
+        format: ["list"],
+        handler(
+          this: { quill: QuillInstance },
+          range: { index: number; length: number },
+        ) {
+          applyListIndent(this.quill, range, -1);
+          return false;
+        },
+      },
+    },
   },
 } as const;
 
@@ -205,7 +256,52 @@ export function deltaToPreviewText(
 export type PreviewLine = {
   text: string;
   listType: "checked" | "unchecked" | "ordered" | "bullet" | null;
+  /** Nesting level (0 = top level). */
+  indent: number;
 };
+
+/**
+ * Marker for an ordered item, cycling number styles by depth like the
+ * editor: 1. at the top level, then a., then i.
+ */
+export function orderedPreviewMarker(count: number, indent: number): string {
+  switch (indent % 3) {
+    case 1:
+      return `${String.fromCharCode(97 + ((count - 1) % 26))}.`;
+    case 2:
+      return `${toRoman(count)}.`;
+    default:
+      return `${count}.`;
+  }
+}
+
+const ROMAN_PAIRS: [number, string][] = [
+  [1000, "m"],
+  [900, "cm"],
+  [500, "d"],
+  [400, "cd"],
+  [100, "c"],
+  [90, "xc"],
+  [50, "l"],
+  [40, "xl"],
+  [10, "x"],
+  [9, "ix"],
+  [5, "v"],
+  [4, "iv"],
+  [1, "i"],
+];
+
+function toRoman(count: number): string {
+  let value = count;
+  let result = "";
+  for (const [threshold, numeral] of ROMAN_PAIRS) {
+    while (value >= threshold) {
+      result += numeral;
+      value -= threshold;
+    }
+  }
+  return result;
+}
 
 /**
  * Parse delta into preview lines with list type for rendering checklists, bullets, and numbers.
@@ -228,7 +324,7 @@ export function deltaToPreviewLines(
         list === "bullet"
           ? (list as PreviewLine["listType"])
           : null;
-      return { text, listType };
+      return { text, listType, indent: indentOf(line) };
     })
     .filter((l) => l.text.trim().length > 0)
     .slice(0, maxLines);

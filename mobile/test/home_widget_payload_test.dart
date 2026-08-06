@@ -26,7 +26,12 @@ void main() {
   group('buildHomeWidgetPayload', () {
     test('serializes notes with id, title, snippet and pinned flag', () {
       final payload = buildHomeWidgetPayload([
-        _note(id: 'a', title: 'Groceries', content: _quill('Milk'), isPinned: true),
+        _note(
+          id: 'a',
+          title: 'Groceries',
+          content: _quill('Milk'),
+          isPinned: true,
+        ),
         _note(id: 'b', title: 'Ideas'),
       ], loggedIn: true);
 
@@ -40,7 +45,12 @@ void main() {
         'snippet': 'Milk',
         'pinned': true,
       });
-      expect(notes[1], {'id': 'b', 'title': 'Ideas', 'snippet': '', 'pinned': false});
+      expect(notes[1], {
+        'id': 'b',
+        'title': 'Ideas',
+        'snippet': '',
+        'pinned': false,
+      });
     });
 
     test('preserves the given note order', () {
@@ -54,13 +64,16 @@ void main() {
       expect(ids, ['pinned', 'recent', 'older']);
     });
 
-    test('keeps blank titles empty so the native side applies the fallback', () {
-      final payload = buildHomeWidgetPayload([
-        _note(title: '   '),
-      ], loggedIn: true);
+    test(
+      'keeps blank titles empty so the native side applies the fallback',
+      () {
+        final payload = buildHomeWidgetPayload([
+          _note(title: '   '),
+        ], loggedIn: true);
 
-      expect((_decode(payload)['notes'] as List).single['title'], '');
-    });
+        expect((_decode(payload)['notes'] as List).single['title'], '');
+      },
+    );
 
     test('turns multi-line quill content into a newline-joined snippet', () {
       final content = jsonEncode({
@@ -119,7 +132,9 @@ void main() {
     });
 
     test('marks logged-out payloads', () {
-      final decoded = _decode(buildHomeWidgetPayload(const [], loggedIn: false));
+      final decoded = _decode(
+        buildHomeWidgetPayload(const [], loggedIn: false),
+      );
       expect(decoded['loggedIn'], isFalse);
       expect(decoded['notes'], isEmpty);
     });

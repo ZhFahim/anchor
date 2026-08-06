@@ -449,9 +449,30 @@
   text-decoration: line-through;
 }
 
+.anchor-checklist-ghost-count {
+  flex-shrink: 0;
+  font-family: var(--font-dm-sans);
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+
 /* Quill Bullet List Styling */
 .anchor-quill .ql-editor li[data-list="bullet"] {
   padding-left: 16px;
+}
+
+/* Nesting depth. Our gutter rules above override snow.css's padding-left
+   based .ql-indent-N sizing, so depth is applied as margin instead. */
+.anchor-quill .ql-editor li.ql-indent-1 {
+  margin-left: 24px;
+}
+
+.anchor-quill .ql-editor li.ql-indent-2 {
+  margin-left: 48px;
+}
+
+.anchor-quill .ql-editor li.ql-indent-3 {
+  margin-left: 72px;
 }
 
 .anchor-quill .ql-editor li[data-list="ordered"] {

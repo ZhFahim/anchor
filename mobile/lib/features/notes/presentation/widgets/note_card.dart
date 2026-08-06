@@ -196,9 +196,8 @@ class NoteCard extends ConsumerWidget {
                                             context: context,
                                             backgroundColor: Colors.transparent,
                                             isScrollControlled: true,
-                                            builder: (_) => ShareNoteSheet(
-                                              noteId: note.id,
-                                            ),
+                                            builder: (_) =>
+                                                ShareNoteSheet(noteId: note.id),
                                           ),
                                   ),
                                   const SizedBox(width: 8),

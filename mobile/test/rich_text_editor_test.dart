@@ -299,9 +299,7 @@ void main() {
     await pumpEditor(tester, content: jsonEncode({'ops': ops}));
 
     final scrollController = tester
-        .widget<SingleChildScrollView>(
-          find.byType(SingleChildScrollView).first,
-        )
+        .widget<SingleChildScrollView>(find.byType(SingleChildScrollView).first)
         .controller!;
     scrollController.jumpTo(200);
     await tester.pump();

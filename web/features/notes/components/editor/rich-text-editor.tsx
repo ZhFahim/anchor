@@ -433,7 +433,10 @@ export const RichTextEditor = forwardRef<
           {checklistDrag.drag && checklistDrag.drag.indicatorTop !== null && (
             <div
               className="anchor-checklist-drag-indicator"
-              style={{ top: checklistDrag.drag.indicatorTop - 1 }}
+              style={{
+                top: checklistDrag.drag.indicatorTop - 1,
+                left: checklistDrag.drag.indicatorLeft,
+              }}
             />
           )}
           {checklistDrag.drag && (
@@ -454,6 +457,11 @@ export const RichTextEditor = forwardRef<
               >
                 {checklistDrag.drag.text || " "}
               </span>
+              {checklistDrag.drag.childCount > 0 && (
+                <span className="anchor-checklist-ghost-count">
+                  +{checklistDrag.drag.childCount}
+                </span>
+              )}
             </div>
           )}
           {!readOnly && isFocused && activeLink && (

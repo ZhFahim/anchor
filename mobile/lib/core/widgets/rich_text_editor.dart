@@ -531,7 +531,7 @@ class RichTextEditorState extends State<RichTextEditor>
                 key: const Key('checklist-drag-indicator'),
                 duration: const Duration(milliseconds: 80),
                 curve: Curves.easeOut,
-                left: 20,
+                left: dragIndicatorLeft,
                 right: 20,
                 top: indicatorTop - 4,
                 height: 8,
@@ -547,6 +547,7 @@ class RichTextEditorState extends State<RichTextEditor>
                   child: _ChecklistDragChip(
                     text: dragFeedbackText,
                     checked: dragFeedbackChecked,
+                    childCount: dragFeedbackChildCount,
                   ),
                 ),
               ),
@@ -648,8 +649,13 @@ class _DragIndicator extends StatelessWidget {
 class _ChecklistDragChip extends StatelessWidget {
   final String text;
   final bool checked;
+  final int childCount;
 
-  const _ChecklistDragChip({required this.text, required this.checked});
+  const _ChecklistDragChip({
+    required this.text,
+    required this.checked,
+    required this.childCount,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -689,6 +695,16 @@ class _ChecklistDragChip extends StatelessWidget {
                 ),
               ),
             ),
+            if (childCount > 0) ...[
+              const SizedBox(width: 8),
+              Text(
+                '+$childCount',
+                style: GoogleFonts.dmSans(
+                  fontSize: 12,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                ),
+              ),
+            ],
           ],
         ),
       ),

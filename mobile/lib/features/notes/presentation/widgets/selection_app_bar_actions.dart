@@ -201,7 +201,8 @@ class SelectionAppBarActions extends ConsumerWidget {
         if (selectedNoteIds.isNotEmpty)
           IconButton(
             icon: const Icon(LucideIcons.tag),
-            onPressed: () => _handleTags(context, ref, selectedNoteIds.toList()),
+            onPressed: () =>
+                _handleTags(context, ref, selectedNoteIds.toList()),
             tooltip: 'Add tags',
           ),
         // Pin / unpin toggle

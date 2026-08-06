@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import 'checklist_lines.dart';
 import 'link_utils.dart';
 
 /// Formatting state for the editor toolbar
@@ -17,6 +18,7 @@ class EditorFormattingState {
   final bool isQuote;
   final bool isCode;
   final int headerLevel;
+  final int indentLevel;
   final bool canUndo;
   final bool canRedo;
   final String? linkUrl;
@@ -34,12 +36,20 @@ class EditorFormattingState {
     this.isQuote = false,
     this.isCode = false,
     this.headerLevel = 0,
+    this.indentLevel = 0,
     this.canUndo = false,
     this.canRedo = false,
     this.linkUrl,
     this.linkStart = 0,
     this.linkLength = 0,
   });
+
+  bool get isList => isBulletList || isNumberedList || isChecklist;
+
+  /// Buttons show the cheap bound check; the tap handler applies the exact
+  /// one-level-below-the-line-above rule.
+  bool get canIndent => isList && indentLevel < maxListIndent;
+  bool get canOutdent => isList && indentLevel > 0;
 
   /// Create formatting state from QuillController
   factory EditorFormattingState.fromController(QuillController controller) {
@@ -64,6 +74,7 @@ class EditorFormattingState {
       isQuote: style.attributes.containsKey(Attribute.blockQuote.key),
       isCode: style.attributes.containsKey(Attribute.codeBlock.key),
       headerLevel: header?.value is int ? header!.value as int : 0,
+      indentLevel: style.attributes[Attribute.indent.key]?.value as int? ?? 0,
       canUndo: controller.hasUndo,
       canRedo: controller.hasRedo,
       linkUrl: link?.url,
@@ -218,6 +229,18 @@ class EditorToolbar extends StatelessWidget {
                   onTap: () => _toggleList(Attribute.ul),
                   tooltip: 'Bullet List',
                 ),
+                _ToolbarButtonData(
+                  icon: LucideIcons.indentDecrease,
+                  isEnabled: state.canOutdent,
+                  onTap: () => _changeIndent(increase: false),
+                  tooltip: 'Outdent',
+                ),
+                _ToolbarButtonData(
+                  icon: LucideIcons.indentIncrease,
+                  isEnabled: state.canIndent,
+                  onTap: () => _changeIndent(increase: true),
+                  tooltip: 'Indent',
+                ),
               ],
             ),
             _buildDivider(theme),
@@ -324,6 +347,19 @@ class EditorToolbar extends StatelessWidget {
     controller.formatSelection(
       isActive ? Attribute.clone(attribute, null) : attribute,
     );
+  }
+
+  void _changeIndent({required bool increase}) {
+    final selection = controller.selection;
+    if (!selection.isValid) return;
+    final delta = buildListIndentDelta(
+      parseDocumentLines(controller.document),
+      selection.start,
+      selection.end,
+      increase: increase,
+    );
+    if (delta == null) return;
+    controller.compose(delta, selection, ChangeSource.local);
   }
 }
 

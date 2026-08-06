@@ -82,6 +82,31 @@ export function isCheckedLine(line: DeltaLine): boolean {
 }
 
 /**
+ * Nesting level of a line (0 = top level).
+ */
+export function indentOf(line: DeltaLine): number {
+  const value = line.newlineOp.attributes?.indent;
+  return typeof value === "number" ? value : 0;
+}
+
+/**
+ * Last line of the block headed by [index]: the line plus the contiguous
+ * run of following lines (up to [rangeEnd]) with deeper indent.
+ */
+export function blockEndIndex(
+  lines: DeltaLine[],
+  index: number,
+  rangeEnd: number,
+): number {
+  const base = indentOf(lines[index]);
+  let end = index;
+  while (end < rangeEnd && indentOf(lines[end + 1]) > base) {
+    end++;
+  }
+  return end;
+}
+
+/**
  * Get the character length of a line (content + newline).
  */
 export function getLineLength(line: DeltaLine): number {
@@ -126,4 +151,63 @@ export function findLineIndexAtPosition(
     pos += lineLen;
   }
   return lines.length - 1;
+}
+
+export const MAX_LIST_INDENT = 3;
+
+/**
+ * Delta that indents (direction 1) or outdents (direction -1) the list lines
+ * intersecting the selection [index, index+length]. Indenting is clamped to
+ * MAX_LIST_INDENT and to one level deeper than the line above, which must be
+ * a list line itself. Null when nothing changes.
+ */
+export function buildListIndentDelta(
+  currentDelta: { ops: QuillOp[] },
+  index: number,
+  length: number,
+  direction: 1 | -1,
+): { ops: QuillOp[] } | null {
+  const lines = deltaToLines(currentDelta.ops);
+  const selEnd = length > 0 ? index + length : index + 1;
+  const effective: number[] = [];
+  const ops: QuillOp[] = [];
+  let cursor = 0;
+  let position = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const lineLength = getLineLength(line);
+    const newlineOffset = position + lineLength - 1;
+    const inRange = position < selEnd && index <= newlineOffset;
+    const isList = line.newlineOp.attributes?.list !== undefined;
+    let newIndent = indentOf(line);
+
+    if (inRange && isList) {
+      if (direction === 1) {
+        const prevIsList =
+          i > 0 && lines[i - 1].newlineOp.attributes?.list !== undefined;
+        let cap = prevIsList ? effective[i - 1] + 1 : 0;
+        if (cap > MAX_LIST_INDENT) cap = MAX_LIST_INDENT;
+        const proposed = newIndent + 1;
+        if (proposed <= cap) newIndent = proposed;
+      } else if (newIndent > 0) {
+        newIndent -= 1;
+      }
+    }
+    effective.push(newIndent);
+
+    if (newIndent !== indentOf(line)) {
+      if (newlineOffset > cursor) {
+        ops.push({ retain: newlineOffset - cursor });
+      }
+      ops.push({
+        retain: 1,
+        attributes: { indent: newIndent === 0 ? null : newIndent },
+      });
+      cursor = newlineOffset + 1;
+    }
+    position += lineLength;
+  }
+
+  return cursor > 0 ? { ops } : null;
 }

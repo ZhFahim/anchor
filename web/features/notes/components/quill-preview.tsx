@@ -1,7 +1,10 @@
 "use client";
 
 import { CheckSquare, Square } from "lucide-react";
-import { deltaToPreviewLines } from "@/features/notes/quill";
+import {
+  deltaToPreviewLines,
+  orderedPreviewMarker,
+} from "@/features/notes/quill";
 import { cn } from "@/lib/utils";
 
 interface QuillPreviewProps {
@@ -18,19 +21,32 @@ export function QuillPreview({
   const lines = deltaToPreviewLines(content, maxLines);
   if (lines.length === 0) return null;
 
-  let orderedIndex = 0;
+  // Ordered counters per nesting level: deeper levels reset when the list
+  // returns to a shallower one; a level's own count continues across
+  // nested runs, matching the editor's numbering.
+  const orderedCounters = new Map<number, number>();
 
   return (
     <div className={cn("flex flex-col gap-0.5", className)}>
       {lines.map((line, i) => {
         const text = line.text.trim();
         if (!text) return null;
+        const indentStyle = line.indent
+          ? { paddingLeft: line.indent * 16 }
+          : undefined;
+        if (line.listType === null) {
+          orderedCounters.clear();
+        } else {
+          for (const level of [...orderedCounters.keys()]) {
+            if (level > line.indent) orderedCounters.delete(level);
+          }
+        }
 
         if (line.listType === "checked" || line.listType === "unchecked") {
           const checked = line.listType === "checked";
           return (
-            <div key={i} className="flex items-start gap-2">
-              <span className="mt-0.5 flex-shrink-0 text-muted-foreground">
+            <div key={i} className="flex items-start gap-2" style={indentStyle}>
+              <span className="mt-0.5 shrink-0 text-muted-foreground">
                 {checked ? (
                   <CheckSquare className="h-4 w-4 text-primary" />
                 ) : (
@@ -50,11 +66,12 @@ export function QuillPreview({
         }
 
         if (line.listType === "ordered") {
-          orderedIndex += 1;
+          const count = (orderedCounters.get(line.indent) ?? 0) + 1;
+          orderedCounters.set(line.indent, count);
           return (
-            <div key={i} className="flex items-start gap-2">
-              <span className="w-3 text-center flex-shrink-0 text-sm text-muted-foreground">
-                {orderedIndex}.
+            <div key={i} className="flex items-start gap-2" style={indentStyle}>
+              <span className="w-3 text-center shrink-0 text-sm text-muted-foreground">
+                {orderedPreviewMarker(count, line.indent)}
               </span>
               <span className="truncate text-sm text-muted-foreground">
                 {text}
@@ -64,10 +81,9 @@ export function QuillPreview({
         }
 
         if (line.listType === "bullet") {
-          orderedIndex = 0;
           return (
-            <div key={i} className="flex items-start gap-2">
-              <span className="w-3 text-center flex-shrink-0 text-sm text-muted-foreground">
+            <div key={i} className="flex items-start gap-2" style={indentStyle}>
+              <span className="w-3 text-center shrink-0 text-sm text-muted-foreground">
                 •
               </span>
               <span className="truncate text-sm text-muted-foreground">
@@ -77,11 +93,11 @@ export function QuillPreview({
           );
         }
 
-        orderedIndex = 0;
         return (
           <span
             key={i}
             className="block truncate text-sm text-muted-foreground"
+            style={indentStyle}
           >
             {text}
           </span>

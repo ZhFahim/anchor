@@ -43,7 +43,10 @@ void main() {
       return null;
     });
     when(
-      () => storage.write(key: any(named: 'key'), value: any(named: 'value')),
+      () => storage.write(
+        key: any(named: 'key'),
+        value: any(named: 'value'),
+      ),
     ).thenAnswer((_) async {});
 
     when(() => attachments.sync()).thenAnswer((_) async {});
@@ -86,8 +89,9 @@ void main() {
         );
   }
 
-  Future<Note?> localNote(String id) =>
-      (db.select(db.notes)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
+  Future<Note?> localNote(String id) => (db.select(
+    db.notes,
+  )..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
 
   Map<String, dynamic> serverNoteJson(
     String id, {
@@ -128,9 +132,7 @@ void main() {
     Map<String, dynamic> response, {
     Future<void> Function()? whileInFlight,
   }) {
-    when(() => dio.post(any(), data: any(named: 'data'))).thenAnswer((
-      _,
-    ) async {
+    when(() => dio.post(any(), data: any(named: 'data'))).thenAnswer((_) async {
       await whileInFlight?.call();
       return Response(
         requestOptions: RequestOptions(path: '/api/notes/sync'),
@@ -172,9 +174,7 @@ void main() {
   test('applies a newer server change to a clean local note', () async {
     await insertLocalNote(id: 'n1', isSynced: true, updatedAt: localAt);
     stubSync(
-      syncResponse(
-        serverChanges: [serverNoteJson('n1', title: 'Server edit')],
-      ),
+      syncResponse(serverChanges: [serverNoteJson('n1', title: 'Server edit')]),
     );
 
     await repo.sync();
@@ -255,7 +255,10 @@ void main() {
     stubSync(
       syncResponse(
         serverChanges: [
-          {...serverNoteJson('fresh', title: 'From server'), 'tagIds': ['t1']},
+          {
+            ...serverNoteJson('fresh', title: 'From server'),
+            'tagIds': ['t1'],
+          },
         ],
       ),
     );
@@ -274,9 +277,7 @@ void main() {
   test('removes the local note when the server reports it deleted', () async {
     await insertLocalNote(id: 'n1', isSynced: true);
     stubSync(
-      syncResponse(
-        serverChanges: [serverNoteJson('n1', state: 'deleted')],
-      ),
+      syncResponse(serverChanges: [serverNoteJson('n1', state: 'deleted')]),
     );
 
     await repo.sync();
@@ -294,7 +295,10 @@ void main() {
       return null;
     });
     when(
-      () => storage.write(key: any(named: 'key'), value: any(named: 'value')),
+      () => storage.write(
+        key: any(named: 'key'),
+        value: any(named: 'value'),
+      ),
     ).thenAnswer((inv) async {
       writes[inv.namedArguments[#key] as String] =
           inv.namedArguments[#value] as String?;

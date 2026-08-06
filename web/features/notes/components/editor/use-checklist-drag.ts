@@ -25,10 +25,14 @@ export type ChecklistDragHandle = {
 export type ChecklistDragState = {
   /** Null while the drop would put the item back where it started. */
   indicatorTop: number | null;
+  /** Left edge of the dragged block's row, so the indicator sits at its nesting level. */
+  indicatorLeft: number;
   ghostTop: number;
   ghostLeft: number;
   text: string;
   checked: boolean;
+  /** Indented children travelling with the dragged line. */
+  childCount: number;
 };
 
 type ActiveDrag = {
@@ -38,6 +42,8 @@ type ActiveDrag = {
    * coordinates so it stays valid across auto-scroll.
    */
   bands: { top: number; height: number }[];
+  /** Left of the dragged block's row relative to the container. */
+  blockLeft: number;
   gap: number | null;
   pointer: { x: number; y: number };
   cleanup: () => void;
@@ -133,29 +139,38 @@ export function useChecklistDrag({
 
       // Bands are in document coordinates, so they survive auto-scroll.
       const docY = y + window.scrollY;
-      let gap = plan.groupEnd + 1;
-      for (let i = 0; i < bands.length; i++) {
-        if (docY < bands[i].top + bands[i].height / 2) {
-          gap = plan.groupStart + i;
-          break;
+      // Y of a gap, centered in the visual seam between the two rows.
+      const gapEdge = (g: number) => {
+        const rel = g - plan.groupStart;
+        if (rel <= 0) return bands[0].top;
+        if (rel >= bands.length) {
+          const last = bands[bands.length - 1];
+          return last.top + last.height;
+        }
+        const prev = bands[rel - 1];
+        return (prev.top + prev.height + bands[rel].top) / 2;
+      };
+      // Snap to the nearest structurally valid gap.
+      let gap = plan.gaps[0];
+      let bestDistance = Number.POSITIVE_INFINITY;
+      for (const g of plan.gaps) {
+        const distance = Math.abs(docY - gapEdge(g));
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          gap = g;
         }
       }
-      gap = Math.min(Math.max(gap, plan.minGap), plan.maxGap);
       active.gap = gap;
 
       const containerRect = containerEl.getBoundingClientRect();
       let indicatorTop: number | null = null;
-      if (gap !== plan.lineIndex && gap !== plan.lineIndex + 1) {
-        const rel = gap - plan.groupStart;
-        const edgeDocY =
-          rel < bands.length
-            ? bands[rel].top
-            : bands[bands.length - 1].top + bands[bands.length - 1].height;
-        indicatorTop = edgeDocY - window.scrollY - containerRect.top;
+      if (gap < plan.lineIndex || gap > plan.blockEnd + 1) {
+        indicatorTop = gapEdge(gap) - window.scrollY - containerRect.top;
       }
 
       setDrag({
         indicatorTop,
+        indicatorLeft: active.blockLeft,
         ghostTop: y - containerRect.top,
         ghostLeft: Math.min(
           x - containerRect.left + 14,
@@ -163,6 +178,7 @@ export function useChecklistDrag({
         ),
         text: plan.text,
         checked: plan.checked,
+        childCount: plan.blockEnd - plan.lineIndex,
       });
     },
     [containerEl],
@@ -253,8 +269,14 @@ export function useChecklistDrag({
         const rect = el.getBoundingClientRect();
         return { top: rect.top + window.scrollY, height: rect.height };
       });
+      const blockEls = items.slice(
+        plan.lineIndex - plan.groupStart,
+        plan.blockEnd - plan.groupStart + 1,
+      );
 
-      item.classList.add("anchor-checklist-dragging");
+      for (const el of blockEls) {
+        el.classList.add("anchor-checklist-dragging");
+      }
       document.body.style.userSelect = "none";
       document.body.style.cursor = "grabbing";
 
@@ -268,6 +290,9 @@ export function useChecklistDrag({
       dragRef.current = {
         plan,
         bands,
+        blockLeft:
+          blockEls[0].getBoundingClientRect().left -
+          containerEl.getBoundingClientRect().left,
         gap: null,
         pointer: { x: e.clientX, y: e.clientY },
         cleanup: () => {
@@ -276,7 +301,9 @@ export function useChecklistDrag({
           window.removeEventListener("pointercancel", onCancel);
           // Before updateContents: quill reuses li nodes across renders and
           // the class would stick to whichever line ends up in this one.
-          item.classList.remove("anchor-checklist-dragging");
+          for (const el of blockEls) {
+            el.classList.remove("anchor-checklist-dragging");
+          }
           document.body.style.userSelect = "";
           document.body.style.cursor = "";
           if (scrollFrameRef.current !== null) {

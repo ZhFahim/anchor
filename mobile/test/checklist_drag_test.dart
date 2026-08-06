@@ -19,6 +19,18 @@ String checklist(List<(String, String)> items) => jsonEncode({
   ],
 });
 
+String nestedChecklist(List<(String, String, int)> items) => jsonEncode({
+  'ops': [
+    for (final (text, state, indent) in items) ...[
+      {'insert': text},
+      {
+        'insert': '\n',
+        'attributes': {'list': state, if (indent > 0) 'indent': indent},
+      },
+    ],
+  ],
+});
+
 Widget wrap(Widget child) {
   return MaterialApp(
     localizationsDelegates: FlutterQuillLocalizations.localizationsDelegates,
@@ -69,6 +81,19 @@ void main() {
         (
           text.substring(line.startOffset, line.startOffset + line.length - 1),
           line.listType,
+        ),
+    ];
+  }
+
+  List<(String, String?, int)> nestedLines(RichTextEditorState state) {
+    final doc = state.controller.document;
+    final text = doc.toPlainText();
+    return [
+      for (final line in parseDocumentLines(doc))
+        (
+          text.substring(line.startOffset, line.startOffset + line.length - 1),
+          line.listType,
+          line.indent,
         ),
     ];
   }
@@ -321,6 +346,105 @@ void main() {
       ]);
     },
   );
+
+  const nestedAbcd = [
+    ('a', 'unchecked', 0),
+    ('a1', 'unchecked', 1),
+    ('a2', 'unchecked', 1),
+    ('b', 'unchecked', 0),
+  ];
+
+  testWidgets('dragging a parent carries its indented children', (
+    tester,
+  ) async {
+    final (state, _) = await pumpEditor(
+      tester,
+      content: nestedChecklist(nestedAbcd),
+    );
+
+    final gesture = await lift(tester, checkboxSlot(0));
+    expect(state.dragFeedbackChildCount, 2);
+
+    // The dim scrim covers the whole block, not just the parent line.
+    final dimRect = tester.getRect(find.byKey(const Key('checklist-drag-dim')));
+    final a2Top = tester
+        .getTopLeft(
+          find.descendant(
+            of: find.byType(QuillEditor),
+            matching: find.text('a2', findRichText: true),
+          ),
+        )
+        .dy;
+    expect(dimRect.bottom, greaterThan(a2Top));
+
+    await dragTo(
+      tester,
+      gesture,
+      tester.getCenter(checkboxSlot(3)) + const Offset(0, 5),
+    );
+    await gesture.up();
+    await tester.pump();
+
+    expect(nestedLines(state), [
+      ('b', 'unchecked', 0),
+      ('a', 'unchecked', 0),
+      ('a1', 'unchecked', 1),
+      ('a2', 'unchecked', 1),
+    ]);
+  });
+
+  testWidgets('a child reorders within its parent keeping its indent', (
+    tester,
+  ) async {
+    final (state, _) = await pumpEditor(
+      tester,
+      content: nestedChecklist(nestedAbcd),
+    );
+
+    final gesture = await lift(tester, checkboxSlot(1));
+    expect(state.dragFeedbackChildCount, 0);
+    await dragTo(
+      tester,
+      gesture,
+      tester.getCenter(checkboxSlot(2)) + const Offset(0, 5),
+    );
+
+    // Checkbox column of an indent-1 line: 36 slot + 24 nesting - 27 inset.
+    final editorLeft = tester.getTopLeft(find.byType(RichTextEditor)).dx;
+    final indicatorLeft = tester
+        .getTopLeft(find.byKey(const Key('checklist-drag-indicator')))
+        .dx;
+    expect(indicatorLeft, editorLeft + 36 + 24 - 27);
+
+    await gesture.up();
+    await tester.pump();
+
+    expect(nestedLines(state), [
+      ('a', 'unchecked', 0),
+      ('a2', 'unchecked', 1),
+      ('a1', 'unchecked', 1),
+      ('b', 'unchecked', 0),
+    ]);
+  });
+
+  testWidgets('a parent whose subtree fills the group does not lift', (
+    tester,
+  ) async {
+    final (state, _) = await pumpEditor(
+      tester,
+      content: nestedChecklist(const [
+        ('p', 'unchecked', 0),
+        ('c1', 'unchecked', 1),
+        ('c2', 'unchecked', 1),
+      ]),
+    );
+
+    final gesture = await lift(tester, checkboxSlot(0));
+    expect(state.isDraggingChecklistItem, isFalse);
+    await gesture.up();
+    await tester.pump();
+    expect(nestedLines(state).map((l) => l.$1), ['p', 'c1', 'c2']);
+  });
 
   testWidgets('an item alone in its group does not lift', (tester) async {
     const loneItem =
