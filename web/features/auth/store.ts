@@ -2,25 +2,20 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { User } from "@/features/auth";
 
-const TOKEN_KEY = "access_token";
-const REFRESH_TOKEN_KEY = "refresh_token";
+let accessToken: string | null = null;
+let refreshToken: string | null = null;
 
 // Standalone token functions for use by API client (avoids circular deps)
 export function getAccessToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(TOKEN_KEY);
+  return accessToken;
 }
 
 export function setAccessToken(token: string): void {
-  if (typeof window !== "undefined") {
-    localStorage.setItem(TOKEN_KEY, token);
-  }
+  accessToken = token;
 }
 
 export function clearAccessToken(): void {
-  if (typeof window !== "undefined") {
-    localStorage.removeItem(TOKEN_KEY);
-  }
+  accessToken = null;
 }
 
 export function hasAccessToken(): boolean {
@@ -29,20 +24,15 @@ export function hasAccessToken(): boolean {
 
 // Refresh token functions
 export function getRefreshToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(REFRESH_TOKEN_KEY);
+  return refreshToken;
 }
 
 export function setRefreshToken(token: string): void {
-  if (typeof window !== "undefined") {
-    localStorage.setItem(REFRESH_TOKEN_KEY, token);
-  }
+  refreshToken = token;
 }
 
 export function clearRefreshToken(): void {
-  if (typeof window !== "undefined") {
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
-  }
+  refreshToken = null;
 }
 
 export function hasRefreshToken(): boolean {
