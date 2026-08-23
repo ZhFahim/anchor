@@ -13,7 +13,9 @@ import {
 import type { LinkRange, QuillDelta, QuillInstance } from "@/features/notes";
 import {
   createChecklistSortDelta,
+  createChecklistUntickDelta,
   didChangeChecklistItemState,
+  getChecklistGroups,
   getToggledLinePosition,
   isLikelyUrl,
   linkAtIndex,
@@ -66,6 +68,13 @@ export interface RichTextEditorHandle {
   setSelection: (index: number, length: number) => void;
 }
 
+type ChecklistUntickButton = {
+  groupIndex: number;
+  top: number;
+  left: number;
+  hasChecked: boolean;
+};
+
 export const RichTextEditor = forwardRef<
   RichTextEditorHandle,
   RichTextEditorProps
@@ -83,6 +92,9 @@ export const RichTextEditor = forwardRef<
     const quillRef = useRef<{ getEditor: () => QuillInstance }>(null);
     const [editorContainerEl, setEditorContainerEl] =
       useState<HTMLDivElement | null>(null);
+    const [untickButtons, setUntickButtons] = useState<ChecklistUntickButton[]>(
+      [],
+    );
     const [isFocused, setIsFocused] = useState(false);
     const [toolbarUpdateKey, setToolbarUpdateKey] = useState(0);
     const [activeLink, setActiveLink] = useState<LinkRange | null>(null);
@@ -308,6 +320,71 @@ export const RichTextEditor = forwardRef<
       setIsFocused(false);
     }, []);
 
+    const updateUntickButtons = useCallback(() => {
+      if (readOnly || !editorContainerEl) {
+        setUntickButtons([]);
+        return;
+      }
+      const quill = getQuill();
+      if (!quill) {
+        setUntickButtons([]);
+        return;
+      }
+
+      const groups = getChecklistGroups(quill.getContents());
+      if (groups.length === 0) {
+        setUntickButtons([]);
+        return;
+      }
+
+      const checklistItems = Array.from(
+        quill.root.querySelectorAll(
+          'li[data-list="checked"], li[data-list="unchecked"]',
+        ),
+      ) as HTMLLIElement[];
+
+      const containerRect = editorContainerEl.getBoundingClientRect();
+      const next: ChecklistUntickButton[] = [];
+      let checklistItemIndex = 0;
+
+      for (let i = 0; i < groups.length; i++) {
+        const group = groups[i];
+        const lastItemIndex =
+          checklistItemIndex + group.endLine - group.startLine;
+        const firstItem = checklistItems[checklistItemIndex];
+        const lastItem = checklistItems[lastItemIndex];
+        if (!firstItem || !lastItem) break;
+        const itemRect = lastItem.getBoundingClientRect();
+        const firstItemRect = firstItem.getBoundingClientRect();
+        next.push({
+          groupIndex: i,
+          top: itemRect.bottom - containerRect.top + 6,
+          left: firstItemRect.left - containerRect.left + 1,
+          hasChecked: group.hasChecked,
+        });
+        checklistItemIndex += group.endLine - group.startLine + 1;
+      }
+
+      setUntickButtons(next);
+    }, [editorContainerEl, getQuill, readOnly]);
+
+    const handleUntickAllItems = useCallback(
+      (groupIndex: number) => {
+        const quill = getQuill();
+        if (!quill) return;
+        const delta = createChecklistUntickDelta(
+          quill.getContents(),
+          groupIndex,
+        );
+        if (!delta) return;
+
+        quill.history.cutoff();
+        quill.updateContents(delta, "user");
+        quill.history.cutoff();
+      },
+      [getQuill],
+    );
+
     useImperativeHandle(
       ref,
       () => ({
@@ -386,6 +463,65 @@ export const RichTextEditor = forwardRef<
       return () => document.removeEventListener("keydown", handler);
     }, [readOnly, linkDialogState.open]);
 
+    // biome-ignore lint/correctness/useExhaustiveDependencies: value isn't read directly, but changes must re-run updateUntickButtons since it reads quill's current contents
+    useEffect(() => {
+      updateUntickButtons();
+    }, [updateUntickButtons, value]);
+
+    useEffect(() => {
+      if (readOnly || !editorContainerEl) return;
+
+      let mutationObserver: MutationObserver | null = null;
+      let resizeObserver: ResizeObserver | null = null;
+      let pollId: ReturnType<typeof setInterval> | null = null;
+
+      // ReactQuill loads async (ssr: false), so retry until the editor instance exists.
+      const attach = () => {
+        const quill = getQuill();
+        if (!quill) return false;
+
+        const root = quill.root;
+        mutationObserver = new MutationObserver(() => {
+          updateUntickButtons();
+        });
+        mutationObserver.observe(root, {
+          childList: true,
+          subtree: true,
+          characterData: true,
+          attributes: true,
+        });
+
+        resizeObserver =
+          typeof ResizeObserver !== "undefined"
+            ? new ResizeObserver(() => {
+                updateUntickButtons();
+              })
+            : null;
+        resizeObserver?.observe(editorContainerEl);
+        resizeObserver?.observe(root);
+        updateUntickButtons();
+        return true;
+      };
+
+      if (!attach()) {
+        pollId = setInterval(() => {
+          if (attach() && pollId) {
+            clearInterval(pollId);
+            pollId = null;
+          }
+        }, 50);
+      }
+
+      window.addEventListener("resize", updateUntickButtons);
+
+      return () => {
+        mutationObserver?.disconnect();
+        resizeObserver?.disconnect();
+        if (pollId) clearInterval(pollId);
+        window.removeEventListener("resize", updateUntickButtons);
+      };
+    }, [editorContainerEl, getQuill, readOnly, updateUntickButtons]);
+
     return (
       <div className={className}>
         {!readOnly && (
@@ -400,7 +536,7 @@ export const RichTextEditor = forwardRef<
         )}
         <div
           ref={setEditorContainerEl}
-          className="anchor-quill relative"
+          className={`anchor-quill relative${readOnly ? "" : " anchor-quill-with-untick"}`}
           onClick={handleEditorClick}
         >
           <ReactQuill
@@ -464,6 +600,33 @@ export const RichTextEditor = forwardRef<
               )}
             </div>
           )}
+          {!readOnly &&
+            !checklistDrag.drag &&
+            untickButtons.map((button) => (
+              <button
+                key={`untick-all-${button.groupIndex}`}
+                type="button"
+                className="anchor-checklist-untick"
+                style={{
+                  position: "absolute",
+                  zIndex: 9,
+                  top: button.top,
+                  left: button.left,
+                }}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleUntickAllItems(button.groupIndex);
+                }}
+                disabled={!button.hasChecked}
+              >
+                Untick all items
+              </button>
+            ))}
           {!readOnly && isFocused && activeLink && (
             <LinkBubble
               getQuill={getQuill}

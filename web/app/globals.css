@@ -328,6 +328,42 @@
   text-decoration-color: var(--muted-foreground);
 }
 
+.anchor-quill-with-untick .ql-editor ol:has(> li[data-list="checked"]),
+.anchor-quill-with-untick .ql-editor ol:has(> li[data-list="unchecked"]) {
+  margin-bottom: 34px;
+}
+
+.anchor-checklist-untick {
+  position: absolute;
+  z-index: 9;
+  padding: 4px 10px;
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--card) 85%, transparent);
+  color: var(--muted-foreground);
+  font-family: var(--font-dm-sans);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition:
+    color 120ms ease,
+    border-color 120ms ease,
+    background-color 120ms ease;
+}
+
+.anchor-checklist-untick:hover:not(:disabled) {
+  color: var(--foreground);
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  background: color-mix(in srgb, var(--accent) 16%, var(--card));
+}
+
+.anchor-checklist-untick:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
 /* ===== Checklist Drag Reorder ===== */
 .anchor-checklist-handle {
   position: absolute;

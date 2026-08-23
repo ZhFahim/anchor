@@ -5,7 +5,9 @@ import {
   buildChecklistDropDelta,
   checklistLineIndexFromOrdinal,
   createChecklistSortDelta,
+  createChecklistUntickDelta,
   getChecklistDragPlan,
+  getChecklistGroups,
 } from "./quill-checklist";
 
 function doc(lines: [string, string | null, number?][]): QuillDelta {
@@ -537,5 +539,54 @@ describe("createChecklistSortDelta", () => {
     // First op must retain past the intro untouched.
     const first = (sortDelta as QuillDelta).ops[0];
     expect(first.retain).toBeGreaterThanOrEqual("intro paragraph\n".length);
+  });
+});
+
+describe("getChecklistGroups", () => {
+  it("splits contiguous checklist blocks into groups", () => {
+    const mixed = doc([
+      ["a", "unchecked"],
+      ["b", "checked"],
+      ["gap", null],
+      ["c", "unchecked"],
+      ["d", "unchecked"],
+    ]);
+    expect(getChecklistGroups(mixed)).toEqual([
+      { startLine: 0, endLine: 1, hasChecked: true },
+      { startLine: 3, endLine: 4, hasChecked: false },
+    ]);
+  });
+});
+
+describe("createChecklistUntickDelta", () => {
+  it("unticks only checked items in the selected checklist group", () => {
+    const grouped = doc([
+      ["a", "checked"],
+      ["b", "unchecked"],
+      ["gap", null],
+      ["c", "checked"],
+      ["d", "checked"],
+    ]);
+    expect(applied(grouped, createChecklistUntickDelta(grouped, 1))).toEqual([
+      ["a", "checked"],
+      ["b", "unchecked"],
+      ["gap", null],
+      ["c", "unchecked"],
+      ["d", "unchecked"],
+    ]);
+  });
+
+  it("returns null when the chosen group has nothing checked", () => {
+    const grouped = doc([
+      ["a", "unchecked"],
+      ["b", "unchecked"],
+      ["gap", null],
+      ["c", "checked"],
+    ]);
+    expect(createChecklistUntickDelta(grouped, 0)).toBeNull();
+  });
+
+  it("returns null for an out-of-range group", () => {
+    expect(createChecklistUntickDelta(abcd, 99)).toBeNull();
   });
 });

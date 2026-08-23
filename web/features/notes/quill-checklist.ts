@@ -197,6 +197,77 @@ export function createChecklistSortDelta(
 }
 
 // ============================================================================
+// Checklist Bulk Actions
+// ============================================================================
+
+export type ChecklistGroup = {
+  startLine: number;
+  endLine: number;
+  hasChecked: boolean;
+};
+
+/**
+ * Contiguous checklist blocks in document order.
+ */
+export function getChecklistGroups(currentDelta: QuillDelta): ChecklistGroup[] {
+  const lines = deltaToLines(currentDelta.ops);
+  const groups: ChecklistGroup[] = [];
+
+  for (let i = 0; i < lines.length; ) {
+    if (!isChecklistLine(lines[i])) {
+      i++;
+      continue;
+    }
+
+    const startLine = i;
+    let endLine = i;
+    let hasChecked = isCheckedLine(lines[i]);
+    while (endLine < lines.length - 1 && isChecklistLine(lines[endLine + 1])) {
+      endLine++;
+      hasChecked = hasChecked || isCheckedLine(lines[endLine]);
+    }
+
+    groups.push({ startLine, endLine, hasChecked });
+    i = endLine + 1;
+  }
+
+  return groups;
+}
+
+/**
+ * Turns every checked line in one checklist group into unchecked.
+ */
+export function createChecklistUntickDelta(
+  currentDelta: QuillDelta,
+  groupIndex: number,
+): QuillDelta | null {
+  const groups = getChecklistGroups(currentDelta);
+  const group = groups[groupIndex];
+  if (!group?.hasChecked) return null;
+
+  const lines = deltaToLines(currentDelta.ops);
+  const ops: QuillOp[] = [];
+  let cursor = 0;
+
+  for (let i = group.startLine; i <= group.endLine; i++) {
+    if (!isCheckedLine(lines[i])) continue;
+
+    const newlineOffset =
+      getLineStartPosition(lines, i) + getLineLength(lines[i]) - 1;
+    if (newlineOffset > cursor) {
+      ops.push({ retain: newlineOffset - cursor });
+    }
+    ops.push({
+      retain: 1,
+      attributes: { list: LIST_FORMATS.UNCHECKED },
+    });
+    cursor = newlineOffset + 1;
+  }
+
+  return ops.length > 0 ? { ops } : null;
+}
+
+// ============================================================================
 // Checklist Drag Reorder
 // ============================================================================
 
