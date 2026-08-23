@@ -1,8 +1,79 @@
 "use client";
 
-import { ImageIcon, Paperclip } from "lucide-react";
+import { Download, ImageIcon, Paperclip, X } from "lucide-react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { useAttachmentBlob } from "../hooks";
+
+// Full-size preview popup shown when an image thumbnail is clicked
+function ImageLightbox({
+  open,
+  onOpenChange,
+  blobUrl,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  blobUrl: string | null;
+}) {
+  const handleDownload = () => {
+    if (!blobUrl) return;
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = "";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  return (
+    // Stop clicks anywhere in the dialog (incl. the overlay) from bubbling
+    // through the React tree to the thumbnail/card click handlers below.
+    <div onClick={(e) => e.stopPropagation()}>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent
+          showCloseButton={false}
+          className={cn(
+            "max-w-[95vw] sm:max-w-[95vw] w-full min-w-0 p-0 gap-0 overflow-hidden",
+            "bg-background/95 backdrop-blur-sm border-border/50",
+          )}
+        >
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
+            <DialogTitle className="text-sm font-medium">
+              Attachment
+            </DialogTitle>
+            <DialogClose className="p-1.5 rounded-md hover:bg-foreground/10 transition-colors">
+              <X className="h-4 w-4" />
+            </DialogClose>
+          </div>
+
+          <div className="flex items-center justify-center p-4 bg-black/5 min-w-0">
+            {blobUrl && (
+              <img
+                src={blobUrl}
+                alt=""
+                className="max-w-[95vw] max-h-[85vh] object-contain rounded min-w-0"
+              />
+            )}
+          </div>
+
+          <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-border/50">
+            <Button variant="outline" size="sm" onClick={handleDownload}>
+              <Download className="h-4 w-4 mr-2" />
+              Download
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
 
 // Small thumbnail for list view
 export function ListImageThumbnail({
@@ -15,10 +86,21 @@ export function ListImageThumbnail({
   count: number;
 }) {
   const { blobUrl, isLoading } = useAttachmentBlob(noteId, attachmentId);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   return (
     <div className="flex-shrink-0 relative">
-      <div className="w-14 h-14 rounded-lg overflow-hidden bg-muted">
+      <div
+        className={cn(
+          "w-14 h-14 rounded-lg overflow-hidden bg-muted",
+          blobUrl && "cursor-pointer",
+        )}
+        onClick={(e) => {
+          if (!blobUrl) return;
+          e.stopPropagation();
+          setLightboxOpen(true);
+        }}
+      >
         {isLoading ? (
           <div className="w-full h-full animate-pulse bg-muted-foreground/10" />
         ) : blobUrl ? (
@@ -35,6 +117,11 @@ export function ListImageThumbnail({
           <span>{count}</span>
         </div>
       )}
+      <ImageLightbox
+        open={lightboxOpen}
+        onOpenChange={setLightboxOpen}
+        blobUrl={blobUrl}
+      />
     </div>
   );
 }
@@ -135,9 +222,21 @@ function ImageThumbnail({
   overlay?: string;
 }) {
   const { blobUrl, isLoading, error } = useAttachmentBlob(noteId, attachmentId);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   return (
-    <div className={cn("relative bg-muted overflow-hidden", className)}>
+    <div
+      className={cn(
+        "relative bg-muted overflow-hidden",
+        blobUrl && "cursor-pointer",
+        className,
+      )}
+      onClick={(e) => {
+        if (!blobUrl) return;
+        e.stopPropagation();
+        setLightboxOpen(true);
+      }}
+    >
       {isLoading ? (
         <div className="w-full h-full animate-pulse bg-muted-foreground/10" />
       ) : error ? (
@@ -156,6 +255,12 @@ function ImageThumbnail({
           <span className="text-white font-semibold text-sm">{overlay}</span>
         </div>
       )}
+
+      <ImageLightbox
+        open={lightboxOpen}
+        onOpenChange={setLightboxOpen}
+        blobUrl={blobUrl}
+      />
     </div>
   );
 }
