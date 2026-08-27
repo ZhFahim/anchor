@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'tag.dart';
@@ -9,15 +9,14 @@ part of 'tag.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
 /// @nodoc
 mixin _$Tag {
 
- String get id; String get name; String? get color; DateTime? get updatedAt;// Note count from server (optional, not stored locally)
-@JsonKey(name: '_count') TagCount? get count;// Local only - not serialized
-@JsonKey(includeFromJson: false, includeToJson: false) bool get isSynced;@JsonKey(includeFromJson: true, includeToJson: false) bool get isDeleted;
+ String get id; String get name; String? get color; DateTime? get updatedAt;@JsonKey(name: '_count') TagCount? get count;@JsonKey(includeFromJson: false, includeToJson: false) bool get isSynced;@JsonKey(includeFromJson: true, includeToJson: false) bool get isDeleted;
 /// Create a copy of Tag
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -68,7 +67,7 @@ class _$TagCopyWithImpl<$Res>
 /// Create a copy of Tag
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? color = freezed,Object? updatedAt = freezed,Object? count = freezed,Object? isSynced = null,Object? isDeleted = null,}) {
-  return _then(_self.copyWith(
+  return _then(Tag(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,color: freezed == color ? _self.color : color // ignore: cast_nullable_to_non_nullable
@@ -236,9 +235,7 @@ class _Tag extends Tag {
 @override final  String name;
 @override final  String? color;
 @override final  DateTime? updatedAt;
-// Note count from server (optional, not stored locally)
 @override@JsonKey(name: '_count') final  TagCount? count;
-// Local only - not serialized
 @override@JsonKey(includeFromJson: false, includeToJson: false) final  bool isSynced;
 @override@JsonKey(includeFromJson: true, includeToJson: false) final  bool isDeleted;
 
@@ -375,7 +372,7 @@ class _$TagCountCopyWithImpl<$Res>
 /// Create a copy of TagCount
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? notes = null,}) {
-  return _then(_self.copyWith(
+  return _then(TagCount(
 notes: null == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
 as int,
   ));

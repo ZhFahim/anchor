@@ -10,11 +10,11 @@ part of 'tags_controller.dart';
 // ignore_for_file: type=lint, type=warning
 
 @ProviderFor(TagsController)
-const tagsControllerProvider = TagsControllerProvider._();
+final tagsControllerProvider = TagsControllerProvider._();
 
 final class TagsControllerProvider
     extends $StreamNotifierProvider<TagsController, List<Tag>> {
-  const TagsControllerProvider._()
+  TagsControllerProvider._()
     : super(
         from: null,
         argument: null,
@@ -39,8 +39,7 @@ abstract class _$TagsController extends $StreamNotifier<List<Tag>> {
   Stream<List<Tag>> build();
   @$mustCallSuper
   @override
-  void runBuild() {
-    final created = build();
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<AsyncValue<List<Tag>>, List<Tag>>;
     final element =
         ref.element
@@ -50,18 +49,18 @@ abstract class _$TagsController extends $StreamNotifier<List<Tag>> {
               Object?,
               Object?
             >;
-    element.handleValue(ref, created);
+    return element.handleCreate(ref, build);
   }
 }
 
 @ProviderFor(noteTagsStream)
-const noteTagsStreamProvider = NoteTagsStreamFamily._();
+final noteTagsStreamProvider = NoteTagsStreamFamily._();
 
 final class NoteTagsStreamProvider
     extends
         $FunctionalProvider<AsyncValue<List<Tag>>, List<Tag>, Stream<List<Tag>>>
     with $FutureModifier<List<Tag>>, $StreamProvider<List<Tag>> {
-  const NoteTagsStreamProvider._({
+  NoteTagsStreamProvider._({
     required NoteTagsStreamFamily super.from,
     required String super.argument,
   }) : super(
@@ -108,7 +107,7 @@ String _$noteTagsStreamHash() => r'56ba32fd63952655cd16a240b9f028b930cf816e';
 
 final class NoteTagsStreamFamily extends $Family
     with $FunctionalFamilyOverride<Stream<List<Tag>>, String> {
-  const NoteTagsStreamFamily._()
+  NoteTagsStreamFamily._()
     : super(
         retry: null,
         name: r'noteTagsStreamProvider',
@@ -125,7 +124,7 @@ final class NoteTagsStreamFamily extends $Family
 }
 
 @ProviderFor(availableTags)
-const availableTagsProvider = AvailableTagsProvider._();
+final availableTagsProvider = AvailableTagsProvider._();
 
 final class AvailableTagsProvider
     extends
@@ -135,7 +134,7 @@ final class AvailableTagsProvider
           FutureOr<List<Tag>>
         >
     with $FutureModifier<List<Tag>>, $FutureProvider<List<Tag>> {
-  const AvailableTagsProvider._()
+  AvailableTagsProvider._()
     : super(
         from: null,
         argument: null,
@@ -163,11 +162,11 @@ final class AvailableTagsProvider
 String _$availableTagsHash() => r'42399dbbe1aa46c35fcaade2a1aa49d57a4ee7c2';
 
 @ProviderFor(SelectedTagFilter)
-const selectedTagFilterProvider = SelectedTagFilterProvider._();
+final selectedTagFilterProvider = SelectedTagFilterProvider._();
 
 final class SelectedTagFilterProvider
     extends $NotifierProvider<SelectedTagFilter, String?> {
-  const SelectedTagFilterProvider._()
+  SelectedTagFilterProvider._()
     : super(
         from: null,
         argument: null,
@@ -200,8 +199,7 @@ abstract class _$SelectedTagFilter extends $Notifier<String?> {
   String? build();
   @$mustCallSuper
   @override
-  void runBuild() {
-    final created = build();
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<String?, String?>;
     final element =
         ref.element
@@ -211,6 +209,6 @@ abstract class _$SelectedTagFilter extends $Notifier<String?> {
               Object?,
               Object?
             >;
-    element.handleValue(ref, created);
+    return element.handleCreate(ref, build);
   }
 }

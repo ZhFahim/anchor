@@ -10,12 +10,12 @@ part of 'sync_service.dart';
 // ignore_for_file: type=lint, type=warning
 
 @ProviderFor(syncService)
-const syncServiceProvider = SyncServiceProvider._();
+final syncServiceProvider = SyncServiceProvider._();
 
 final class SyncServiceProvider
     extends $FunctionalProvider<SyncService, SyncService, SyncService>
     with $Provider<SyncService> {
-  const SyncServiceProvider._()
+  SyncServiceProvider._()
     : super(
         from: null,
         argument: null,

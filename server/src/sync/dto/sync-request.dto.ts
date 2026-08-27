@@ -136,9 +136,7 @@ export class SyncPinChangeDto extends SyncChangeBaseDto {
 }
 
 export type SyncChange =
-  | SyncNoteChangeDto
-  | SyncTagChangeDto
-  | SyncPinChangeDto;
+  SyncNoteChangeDto | SyncTagChangeDto | SyncPinChangeDto;
 
 export class SyncRequestDto {
   @IsString()

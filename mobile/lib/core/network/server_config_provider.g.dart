@@ -10,11 +10,11 @@ part of 'server_config_provider.dart';
 // ignore_for_file: type=lint, type=warning
 
 @ProviderFor(ServerConfig)
-const serverConfigProvider = ServerConfigProvider._();
+final serverConfigProvider = ServerConfigProvider._();
 
 final class ServerConfigProvider
     extends $AsyncNotifierProvider<ServerConfig, String?> {
-  const ServerConfigProvider._()
+  ServerConfigProvider._()
     : super(
         from: null,
         argument: null,
@@ -39,8 +39,7 @@ abstract class _$ServerConfig extends $AsyncNotifier<String?> {
   FutureOr<String?> build();
   @$mustCallSuper
   @override
-  void runBuild() {
-    final created = build();
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<AsyncValue<String?>, String?>;
     final element =
         ref.element
@@ -50,7 +49,7 @@ abstract class _$ServerConfig extends $AsyncNotifier<String?> {
               Object?,
               Object?
             >;
-    element.handleValue(ref, created);
+    return element.handleCreate(ref, build);
   }
 }
 
@@ -58,7 +57,7 @@ abstract class _$ServerConfig extends $AsyncNotifier<String?> {
 /// Use this when you need immediate access without async.
 
 @ProviderFor(serverUrl)
-const serverUrlProvider = ServerUrlProvider._();
+final serverUrlProvider = ServerUrlProvider._();
 
 /// Synchronous provider that returns the current server URL or null.
 /// Use this when you need immediate access without async.
@@ -68,7 +67,7 @@ final class ServerUrlProvider
     with $Provider<String?> {
   /// Synchronous provider that returns the current server URL or null.
   /// Use this when you need immediate access without async.
-  const ServerUrlProvider._()
+  ServerUrlProvider._()
     : super(
         from: null,
         argument: null,

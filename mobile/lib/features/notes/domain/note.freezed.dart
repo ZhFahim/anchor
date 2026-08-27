@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'note.dart';
@@ -9,6 +9,7 @@ part of 'note.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -66,7 +67,7 @@ class _$SharedByUserCopyWithImpl<$Res>
 /// Create a copy of SharedByUser
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? email = null,Object? profileImage = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(SharedByUser(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,email: null == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
@@ -287,9 +288,7 @@ as String?,
 /// @nodoc
 mixin _$Note {
 
- String get id; String get title; String? get content; bool get isPinned; bool get isArchived; String? get background; NoteState get state; DateTime? get updatedAt; List<String> get tagIds; NotePermission get permission; List<String>? get shareIds; SharedByUser? get sharedBy;// Local only - not serialized
-@JsonKey(includeFromJson: false, includeToJson: false) bool get isSynced;// Local only - image attachment previews for card thumbnails
-@JsonKey(includeFromJson: false, includeToJson: false) List<NoteImagePreview> get imagePreviewData;
+ String get id; String get title; String? get content; bool get isPinned; bool get isArchived; String? get background; NoteState get state; DateTime? get updatedAt; List<String> get tagIds; NotePermission get permission; List<String>? get shareIds; SharedByUser? get sharedBy;@JsonKey(includeFromJson: false, includeToJson: false) bool get isSynced;@JsonKey(includeFromJson: false, includeToJson: false) List<NoteImagePreview> get imagePreviewData;
 /// Create a copy of Note
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -340,7 +339,7 @@ class _$NoteCopyWithImpl<$Res>
 /// Create a copy of Note
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? title = null,Object? content = freezed,Object? isPinned = null,Object? isArchived = null,Object? background = freezed,Object? state = null,Object? updatedAt = freezed,Object? tagIds = null,Object? permission = null,Object? shareIds = freezed,Object? sharedBy = freezed,Object? isSynced = null,Object? imagePreviewData = null,}) {
-  return _then(_self.copyWith(
+  return _then(Note(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,content: freezed == content ? _self.content : content // ignore: cast_nullable_to_non_nullable
@@ -508,7 +507,7 @@ return $default(_that.id,_that.title,_that.content,_that.isPinned,_that.isArchiv
 @JsonSerializable()
 
 class _Note extends Note {
-  const _Note({required this.id, required this.title, this.content, this.isPinned = false, this.isArchived = false, this.background, this.state = NoteState.active, this.updatedAt, final  List<String> tagIds = const [], this.permission = NotePermission.owner, final  List<String>? shareIds, this.sharedBy, @JsonKey(includeFromJson: false, includeToJson: false) this.isSynced = true, @JsonKey(includeFromJson: false, includeToJson: false) final  List<NoteImagePreview> imagePreviewData = const []}): _tagIds = tagIds,_shareIds = shareIds,_imagePreviewData = imagePreviewData,super._();
+  const _Note({required this.id, required this.title, this.content, this.isPinned = false, this.isArchived = false, this.background, this.state = NoteState.active, this.updatedAt,  List<String> tagIds = const [], this.permission = NotePermission.owner,  List<String>? shareIds, this.sharedBy, @JsonKey(includeFromJson: false, includeToJson: false) this.isSynced = true, @JsonKey(includeFromJson: false, includeToJson: false)  List<NoteImagePreview> imagePreviewData = const []}): _tagIds = tagIds,_shareIds = shareIds,_imagePreviewData = imagePreviewData,super._();
   factory _Note.fromJson(Map<String, dynamic> json) => _$NoteFromJson(json);
 
 @override final  String id;
@@ -537,11 +536,8 @@ class _Note extends Note {
 }
 
 @override final  SharedByUser? sharedBy;
-// Local only - not serialized
 @override@JsonKey(includeFromJson: false, includeToJson: false) final  bool isSynced;
-// Local only - image attachment previews for card thumbnails
  final  List<NoteImagePreview> _imagePreviewData;
-// Local only - image attachment previews for card thumbnails
 @override@JsonKey(includeFromJson: false, includeToJson: false) List<NoteImagePreview> get imagePreviewData {
   if (_imagePreviewData is EqualUnmodifiableListView) return _imagePreviewData;
   // ignore: implicit_dynamic_type

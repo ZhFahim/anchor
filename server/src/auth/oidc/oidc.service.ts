@@ -243,8 +243,7 @@ export class OidcService {
       email?.split('@')[0]) as string;
     const subject = (userinfo?.sub ?? idTokenClaims.sub) as string;
     const picture = (userinfo?.picture ?? idTokenClaims.picture) as
-      | string
-      | undefined;
+      string | undefined;
 
     if (!email || !subject) {
       throw new BadRequestException(

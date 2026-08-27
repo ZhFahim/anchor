@@ -216,6 +216,7 @@ DioException _transformError(DioException e) {
       message = 'Request timeout. Please try again.';
       break;
     case DioExceptionType.receiveTimeout:
+    case DioExceptionType.transformTimeout:
       message = 'Response timeout. Please try again.';
       break;
     case DioExceptionType.connectionError:

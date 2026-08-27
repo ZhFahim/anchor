@@ -10,7 +10,7 @@ part of 'note_revisions_store.dart';
 // ignore_for_file: type=lint, type=warning
 
 @ProviderFor(noteRevisionsStore)
-const noteRevisionsStoreProvider = NoteRevisionsStoreProvider._();
+final noteRevisionsStoreProvider = NoteRevisionsStoreProvider._();
 
 final class NoteRevisionsStoreProvider
     extends
@@ -20,7 +20,7 @@ final class NoteRevisionsStoreProvider
           NoteRevisionsStore
         >
     with $Provider<NoteRevisionsStore> {
-  const NoteRevisionsStoreProvider._()
+  NoteRevisionsStoreProvider._()
     : super(
         from: null,
         argument: null,

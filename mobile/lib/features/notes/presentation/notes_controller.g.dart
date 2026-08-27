@@ -11,12 +11,12 @@ part of 'notes_controller.dart';
 /// Provider to track syncing state globally
 
 @ProviderFor(SyncingState)
-const syncingStateProvider = SyncingStateProvider._();
+final syncingStateProvider = SyncingStateProvider._();
 
 /// Provider to track syncing state globally
 final class SyncingStateProvider extends $NotifierProvider<SyncingState, bool> {
   /// Provider to track syncing state globally
-  const SyncingStateProvider._()
+  SyncingStateProvider._()
     : super(
         from: null,
         argument: null,
@@ -51,8 +51,7 @@ abstract class _$SyncingState extends $Notifier<bool> {
   bool build();
   @$mustCallSuper
   @override
-  void runBuild() {
-    final created = build();
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<bool, bool>;
     final element =
         ref.element
@@ -62,16 +61,16 @@ abstract class _$SyncingState extends $Notifier<bool> {
               Object?,
               Object?
             >;
-    element.handleValue(ref, created);
+    return element.handleCreate(ref, build);
   }
 }
 
 @ProviderFor(NotesController)
-const notesControllerProvider = NotesControllerProvider._();
+final notesControllerProvider = NotesControllerProvider._();
 
 final class NotesControllerProvider
     extends $StreamNotifierProvider<NotesController, List<Note>> {
-  const NotesControllerProvider._()
+  NotesControllerProvider._()
     : super(
         from: null,
         argument: null,
@@ -96,8 +95,7 @@ abstract class _$NotesController extends $StreamNotifier<List<Note>> {
   Stream<List<Note>> build();
   @$mustCallSuper
   @override
-  void runBuild() {
-    final created = build();
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<AsyncValue<List<Note>>, List<Note>>;
     final element =
         ref.element
@@ -107,15 +105,15 @@ abstract class _$NotesController extends $StreamNotifier<List<Note>> {
               Object?,
               Object?
             >;
-    element.handleValue(ref, created);
+    return element.handleCreate(ref, build);
   }
 }
 
 @ProviderFor(SearchQuery)
-const searchQueryProvider = SearchQueryProvider._();
+final searchQueryProvider = SearchQueryProvider._();
 
 final class SearchQueryProvider extends $NotifierProvider<SearchQuery, String> {
-  const SearchQueryProvider._()
+  SearchQueryProvider._()
     : super(
         from: null,
         argument: null,
@@ -148,8 +146,7 @@ abstract class _$SearchQuery extends $Notifier<String> {
   String build();
   @$mustCallSuper
   @override
-  void runBuild() {
-    final created = build();
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<String, String>;
     final element =
         ref.element
@@ -159,20 +156,20 @@ abstract class _$SearchQuery extends $Notifier<String> {
               Object?,
               Object?
             >;
-    element.handleValue(ref, created);
+    return element.handleCreate(ref, build);
   }
 }
 
 /// Provider to track selection mode state
 
 @ProviderFor(SelectionMode)
-const selectionModeProvider = SelectionModeProvider._();
+final selectionModeProvider = SelectionModeProvider._();
 
 /// Provider to track selection mode state
 final class SelectionModeProvider
     extends $NotifierProvider<SelectionMode, bool> {
   /// Provider to track selection mode state
-  const SelectionModeProvider._()
+  SelectionModeProvider._()
     : super(
         from: null,
         argument: null,
@@ -207,8 +204,7 @@ abstract class _$SelectionMode extends $Notifier<bool> {
   bool build();
   @$mustCallSuper
   @override
-  void runBuild() {
-    final created = build();
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<bool, bool>;
     final element =
         ref.element
@@ -218,20 +214,20 @@ abstract class _$SelectionMode extends $Notifier<bool> {
               Object?,
               Object?
             >;
-    element.handleValue(ref, created);
+    return element.handleCreate(ref, build);
   }
 }
 
 /// Provider to track selected note IDs
 
 @ProviderFor(SelectedNoteIds)
-const selectedNoteIdsProvider = SelectedNoteIdsProvider._();
+final selectedNoteIdsProvider = SelectedNoteIdsProvider._();
 
 /// Provider to track selected note IDs
 final class SelectedNoteIdsProvider
     extends $NotifierProvider<SelectedNoteIds, Set<String>> {
   /// Provider to track selected note IDs
-  const SelectedNoteIdsProvider._()
+  SelectedNoteIdsProvider._()
     : super(
         from: null,
         argument: null,
@@ -266,8 +262,7 @@ abstract class _$SelectedNoteIds extends $Notifier<Set<String>> {
   Set<String> build();
   @$mustCallSuper
   @override
-  void runBuild() {
-    final created = build();
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<Set<String>, Set<String>>;
     final element =
         ref.element
@@ -277,16 +272,16 @@ abstract class _$SelectedNoteIds extends $Notifier<Set<String>> {
               Object?,
               Object?
             >;
-    element.handleValue(ref, created);
+    return element.handleCreate(ref, build);
   }
 }
 
 @ProviderFor(TrashController)
-const trashControllerProvider = TrashControllerProvider._();
+final trashControllerProvider = TrashControllerProvider._();
 
 final class TrashControllerProvider
     extends $StreamNotifierProvider<TrashController, List<Note>> {
-  const TrashControllerProvider._()
+  TrashControllerProvider._()
     : super(
         from: null,
         argument: null,
@@ -311,8 +306,7 @@ abstract class _$TrashController extends $StreamNotifier<List<Note>> {
   Stream<List<Note>> build();
   @$mustCallSuper
   @override
-  void runBuild() {
-    final created = build();
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<AsyncValue<List<Note>>, List<Note>>;
     final element =
         ref.element
@@ -322,16 +316,16 @@ abstract class _$TrashController extends $StreamNotifier<List<Note>> {
               Object?,
               Object?
             >;
-    element.handleValue(ref, created);
+    return element.handleCreate(ref, build);
   }
 }
 
 @ProviderFor(ArchiveController)
-const archiveControllerProvider = ArchiveControllerProvider._();
+final archiveControllerProvider = ArchiveControllerProvider._();
 
 final class ArchiveControllerProvider
     extends $StreamNotifierProvider<ArchiveController, List<Note>> {
-  const ArchiveControllerProvider._()
+  ArchiveControllerProvider._()
     : super(
         from: null,
         argument: null,
@@ -356,8 +350,7 @@ abstract class _$ArchiveController extends $StreamNotifier<List<Note>> {
   Stream<List<Note>> build();
   @$mustCallSuper
   @override
-  void runBuild() {
-    final created = build();
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<AsyncValue<List<Note>>, List<Note>>;
     final element =
         ref.element
@@ -367,6 +360,6 @@ abstract class _$ArchiveController extends $StreamNotifier<List<Note>> {
               Object?,
               Object?
             >;
-    element.handleValue(ref, created);
+    return element.handleCreate(ref, build);
   }
 }

@@ -10,7 +10,7 @@ part of 'note_shares_repository.dart';
 // ignore_for_file: type=lint, type=warning
 
 @ProviderFor(noteSharesRepository)
-const noteSharesRepositoryProvider = NoteSharesRepositoryProvider._();
+final noteSharesRepositoryProvider = NoteSharesRepositoryProvider._();
 
 final class NoteSharesRepositoryProvider
     extends
@@ -20,7 +20,7 @@ final class NoteSharesRepositoryProvider
           NoteSharesRepository
         >
     with $Provider<NoteSharesRepository> {
-  const NoteSharesRepositoryProvider._()
+  NoteSharesRepositoryProvider._()
     : super(
         from: null,
         argument: null,

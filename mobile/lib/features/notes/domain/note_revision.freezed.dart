@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'note_revision.dart';
@@ -9,6 +9,7 @@ part of 'note_revision.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -66,7 +67,7 @@ class _$NoteRevisionAuthorCopyWithImpl<$Res>
 /// Create a copy of NoteRevisionAuthor
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? email = null,Object? profileImage = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(NoteRevisionAuthor(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,email: null == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
@@ -338,7 +339,7 @@ class _$NoteRevisionCopyWithImpl<$Res>
 /// Create a copy of NoteRevision
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? noteId = null,Object? version = null,Object? title = null,Object? cause = null,Object? createdAt = null,Object? author = freezed,Object? content = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(NoteRevision(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,noteId: null == noteId ? _self.noteId : noteId // ignore: cast_nullable_to_non_nullable
 as String,version: null == version ? _self.version : version // ignore: cast_nullable_to_non_nullable
@@ -646,7 +647,7 @@ class _$NoteRevisionPageCopyWithImpl<$Res>
 /// Create a copy of NoteRevisionPage
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? revisions = null,Object? nextCursor = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(NoteRevisionPage(
 revisions: null == revisions ? _self.revisions : revisions // ignore: cast_nullable_to_non_nullable
 as List<NoteRevision>,nextCursor: freezed == nextCursor ? _self.nextCursor : nextCursor // ignore: cast_nullable_to_non_nullable
 as String?,
@@ -790,7 +791,7 @@ return $default(_that.revisions,_that.nextCursor);case _:
 @JsonSerializable()
 
 class _NoteRevisionPage implements NoteRevisionPage {
-  const _NoteRevisionPage({final  List<NoteRevision> revisions = const <NoteRevision>[], this.nextCursor}): _revisions = revisions;
+  const _NoteRevisionPage({ List<NoteRevision> revisions = const <NoteRevision>[], this.nextCursor}): _revisions = revisions;
   factory _NoteRevisionPage.fromJson(Map<String, dynamic> json) => _$NoteRevisionPageFromJson(json);
 
  final  List<NoteRevision> _revisions;

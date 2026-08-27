@@ -50,7 +50,7 @@ export class TokenResolverService {
         where: { id: payload.sub },
         select: AUTH_USER_SELECT,
       });
-      return user as AuthUser | null;
+      return user;
     } catch {
       return null;
     }
@@ -63,6 +63,6 @@ export class TokenResolverService {
       where: { apiToken: token },
       select: AUTH_USER_SELECT,
     });
-    return user as AuthUser | null;
+    return user;
   }
 }

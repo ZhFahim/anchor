@@ -15,7 +15,7 @@ part of 'home_widget_service.dart';
 /// login/logout via the active user id.
 
 @ProviderFor(HomeWidgetSync)
-const homeWidgetSyncProvider = HomeWidgetSyncProvider._();
+final homeWidgetSyncProvider = HomeWidgetSyncProvider._();
 
 /// Mirrors the active notes list into the Android home-screen widget.
 ///
@@ -29,7 +29,7 @@ final class HomeWidgetSyncProvider
   /// Watched from [AnchorApp] so it lives for the whole app session. Reacts to
   /// every local notes change (edits, sync results) via the drift stream and to
   /// login/logout via the active user id.
-  const HomeWidgetSyncProvider._()
+  HomeWidgetSyncProvider._()
     : super(
         from: null,
         argument: null,
@@ -68,8 +68,7 @@ abstract class _$HomeWidgetSync extends $Notifier<void> {
   void build();
   @$mustCallSuper
   @override
-  void runBuild() {
-    build();
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<void, void>;
     final element =
         ref.element
@@ -79,7 +78,7 @@ abstract class _$HomeWidgetSync extends $Notifier<void> {
               Object?,
               Object?
             >;
-    element.handleValue(ref, null);
+    return element.handleCreate(ref, build);
   }
 }
 
@@ -90,7 +89,7 @@ abstract class _$HomeWidgetSync extends $Notifier<void> {
 /// the app's initial route before the first frame.
 
 @ProviderFor(HomeWidgetLaunchHandler)
-const homeWidgetLaunchHandlerProvider = HomeWidgetLaunchHandlerProvider._();
+final homeWidgetLaunchHandlerProvider = HomeWidgetLaunchHandlerProvider._();
 
 /// Routes home-screen widget taps into the app while it is running:
 /// `anchorwidget://note/new`, `anchorwidget://note/<id>`, `anchorwidget://open`.
@@ -104,7 +103,7 @@ final class HomeWidgetLaunchHandlerProvider
   ///
   /// Cold-start taps never reach this handler; [initializeApp] turns them into
   /// the app's initial route before the first frame.
-  const HomeWidgetLaunchHandlerProvider._()
+  HomeWidgetLaunchHandlerProvider._()
     : super(
         from: null,
         argument: null,
@@ -144,8 +143,7 @@ abstract class _$HomeWidgetLaunchHandler extends $Notifier<void> {
   void build();
   @$mustCallSuper
   @override
-  void runBuild() {
-    build();
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<void, void>;
     final element =
         ref.element
@@ -155,6 +153,6 @@ abstract class _$HomeWidgetLaunchHandler extends $Notifier<void> {
               Object?,
               Object?
             >;
-    element.handleValue(ref, null);
+    return element.handleCreate(ref, build);
   }
 }

@@ -10,7 +10,7 @@ part of 'sync_compatibility.dart';
 // ignore_for_file: type=lint, type=warning
 
 @ProviderFor(syncCompatibility)
-const syncCompatibilityProvider = SyncCompatibilityProvider._();
+final syncCompatibilityProvider = SyncCompatibilityProvider._();
 
 final class SyncCompatibilityProvider
     extends
@@ -22,7 +22,7 @@ final class SyncCompatibilityProvider
     with
         $FutureModifier<SyncCompatibility>,
         $FutureProvider<SyncCompatibility> {
-  const SyncCompatibilityProvider._()
+  SyncCompatibilityProvider._()
     : super(
         from: null,
         argument: null,
@@ -48,4 +48,4 @@ final class SyncCompatibilityProvider
   }
 }
 
-String _$syncCompatibilityHash() => r'4c95074af9bcb3a80d603809c76ea43e5a7fc2f1';
+String _$syncCompatibilityHash() => r'02a3028dce1bf0640b83d0df476d8d468da7ce9d';

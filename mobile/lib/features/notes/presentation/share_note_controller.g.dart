@@ -11,13 +11,13 @@ part of 'share_note_controller.dart';
 /// Controller for managing note shares for a specific note
 
 @ProviderFor(ShareNoteController)
-const shareNoteControllerProvider = ShareNoteControllerFamily._();
+final shareNoteControllerProvider = ShareNoteControllerFamily._();
 
 /// Controller for managing note shares for a specific note
 final class ShareNoteControllerProvider
     extends $AsyncNotifierProvider<ShareNoteController, List<NoteShare>> {
   /// Controller for managing note shares for a specific note
-  const ShareNoteControllerProvider._({
+  ShareNoteControllerProvider._({
     required ShareNoteControllerFamily super.from,
     required String super.argument,
   }) : super(
@@ -67,7 +67,7 @@ final class ShareNoteControllerFamily extends $Family
           FutureOr<List<NoteShare>>,
           String
         > {
-  const ShareNoteControllerFamily._()
+  ShareNoteControllerFamily._()
     : super(
         retry: null,
         name: r'shareNoteControllerProvider',
@@ -94,8 +94,7 @@ abstract class _$ShareNoteController extends $AsyncNotifier<List<NoteShare>> {
   FutureOr<List<NoteShare>> build(String noteId);
   @$mustCallSuper
   @override
-  void runBuild() {
-    final created = build(_$args);
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<AsyncValue<List<NoteShare>>, List<NoteShare>>;
     final element =
         ref.element
@@ -105,20 +104,20 @@ abstract class _$ShareNoteController extends $AsyncNotifier<List<NoteShare>> {
               Object?,
               Object?
             >;
-    element.handleValue(ref, created);
+    return element.handleCreate(ref, () => build(_$args));
   }
 }
 
 /// Provider for searching users
 
 @ProviderFor(UserSearch)
-const userSearchProvider = UserSearchFamily._();
+final userSearchProvider = UserSearchFamily._();
 
 /// Provider for searching users
 final class UserSearchProvider
     extends $AsyncNotifierProvider<UserSearch, List<UserSearchResult>> {
   /// Provider for searching users
-  const UserSearchProvider._({
+  UserSearchProvider._({
     required UserSearchFamily super.from,
     required String super.argument,
   }) : super(
@@ -167,7 +166,7 @@ final class UserSearchFamily extends $Family
           FutureOr<List<UserSearchResult>>,
           String
         > {
-  const UserSearchFamily._()
+  UserSearchFamily._()
     : super(
         retry: null,
         name: r'userSearchProvider',
@@ -194,8 +193,7 @@ abstract class _$UserSearch extends $AsyncNotifier<List<UserSearchResult>> {
   FutureOr<List<UserSearchResult>> build(String query);
   @$mustCallSuper
   @override
-  void runBuild() {
-    final created = build(_$args);
+  WhenComplete runBuild() {
     final ref =
         this.ref
             as $Ref<AsyncValue<List<UserSearchResult>>, List<UserSearchResult>>;
@@ -210,6 +208,6 @@ abstract class _$UserSearch extends $AsyncNotifier<List<UserSearchResult>> {
               Object?,
               Object?
             >;
-    element.handleValue(ref, created);
+    return element.handleCreate(ref, () => build(_$args));
   }
 }

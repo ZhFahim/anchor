@@ -98,7 +98,7 @@ describe('AuthService', () => {
           const user = addUser({
             id: `user-${users.size + 1}`,
             ...data,
-          } as UserRecord);
+          });
           // Honor `select` like Prisma does — the caller must not see
           // unselected fields (e.g. the password hash).
           if (!select) return Promise.resolve(user);

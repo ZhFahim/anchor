@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io' show File, Platform;
+import 'dart:io' show Platform;
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -181,9 +181,9 @@ class _LogViewerScreenState extends ConsumerState<LogViewerScreen> {
     final stamp = DateFormat('yyyyMMdd-HHmmss').format(DateTime.now());
     final filename = 'anchor-logs-$stamp.log';
 
-    String? result;
+    Uri? result;
     try {
-      result = await FilePicker.platform.saveFile(
+      result = await FilePicker.saveFile(
         dialogTitle: 'Save logs',
         fileName: filename,
         bytes: bytes,
@@ -202,22 +202,6 @@ class _LogViewerScreenState extends ConsumerState<LogViewerScreen> {
       return;
     }
     if (result == null) return; // user cancelled
-
-    if (!Platform.isAndroid && !Platform.isIOS) {
-      try {
-        await File(result).writeAsBytes(bytes, flush: true);
-      } catch (e, st) {
-        AppLogger.instance.error(
-          'LogViewer',
-          'Export write failed',
-          error: e,
-          stackTrace: st,
-        );
-        if (!mounted) return;
-        AppSnackbar.showError(context, message: 'Export failed: $e');
-        return;
-      }
-    }
 
     if (!mounted) return;
     AppSnackbar.showSuccess(context, message: 'Saved $filename');

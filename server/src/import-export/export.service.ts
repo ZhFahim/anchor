@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 import type { Response } from 'express';
-import archiver from 'archiver';
+import { ZipArchive, type ZipEntryData } from 'archiver';
 import * as fs from 'fs';
 import * as path from 'path';
 import { PrismaService } from '../prisma/prisma.service';
@@ -62,7 +62,7 @@ export class ExportService {
       `attachment; filename="anchor-export-${date}.zip"`,
     );
 
-    const archive = archiver('zip', { zlib: { level: 6 } });
+    const archive = new ZipArchive({ zlib: { level: 6 } });
     archive.on('error', (error) => {
       this.logger.error(`Export archive failed: ${error.message}`);
       res.destroy(error);
@@ -81,7 +81,7 @@ export class ExportService {
         const filePath = diskPathByAttachmentId.get(attachment.id);
         if (filePath) {
           // Media is already compressed; store without deflate
-          const entry: archiver.ZipEntryData = {
+          const entry: ZipEntryData = {
             name: attachment.archivePath,
             store: true,
           };

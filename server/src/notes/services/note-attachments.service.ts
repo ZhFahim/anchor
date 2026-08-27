@@ -63,7 +63,6 @@ export class NoteAttachmentsService {
   }
 
   async upload(userId: string, noteId: string, file: Express.Multer.File) {
-    // Require editor or owner access to upload
     await this.noteAccessService.ensureNoteAccess(
       userId,
       noteId,
@@ -194,7 +193,6 @@ export class NoteAttachmentsService {
   }
 
   async reorder(userId: string, noteId: string, orderedIds: string[]) {
-    // Editor or owner can reorder
     await this.noteAccessService.ensureNoteAccess(
       userId,
       noteId,
@@ -240,7 +238,7 @@ export class NoteAttachmentsService {
       // Directory may not exist, log only if it's not ENOENT
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
         this.logger.error(
-          `Failed to delete attachments directory for note ${noteId}: ${error}`,
+          `Failed to delete attachments directory for note ${noteId}: ${String(error)}`,
         );
       }
     }

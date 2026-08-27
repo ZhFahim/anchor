@@ -148,7 +148,7 @@ export class SyncApplyService {
       };
       if (access.isOwner) {
         noteData.isArchived = change.isArchived;
-        noteData.state = change.state as NoteState | undefined;
+        noteData.state = change.state;
       }
       const finalState = noteData.state ?? prior.state;
       const guardedChanged = guardedNoteFieldsChanged(prior, {
@@ -538,7 +538,7 @@ function noteAlreadyMatches(
     ...(isOwner
       ? {
           isArchived: change.isArchived,
-          state: change.state as NoteState | undefined,
+          state: change.state,
         }
       : {}),
   };

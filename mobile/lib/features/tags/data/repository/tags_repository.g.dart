@@ -10,12 +10,12 @@ part of 'tags_repository.dart';
 // ignore_for_file: type=lint, type=warning
 
 @ProviderFor(tagsRepository)
-const tagsRepositoryProvider = TagsRepositoryProvider._();
+final tagsRepositoryProvider = TagsRepositoryProvider._();
 
 final class TagsRepositoryProvider
     extends $FunctionalProvider<TagsRepository, TagsRepository, TagsRepository>
     with $Provider<TagsRepository> {
-  const TagsRepositoryProvider._()
+  TagsRepositoryProvider._()
     : super(
         from: null,
         argument: null,

@@ -10,7 +10,7 @@ part of 'note_history_repository.dart';
 // ignore_for_file: type=lint, type=warning
 
 @ProviderFor(noteHistoryRepository)
-const noteHistoryRepositoryProvider = NoteHistoryRepositoryProvider._();
+final noteHistoryRepositoryProvider = NoteHistoryRepositoryProvider._();
 
 final class NoteHistoryRepositoryProvider
     extends
@@ -20,7 +20,7 @@ final class NoteHistoryRepositoryProvider
           NoteHistoryRepository
         >
     with $Provider<NoteHistoryRepository> {
-  const NoteHistoryRepositoryProvider._()
+  NoteHistoryRepositoryProvider._()
     : super(
         from: null,
         argument: null,

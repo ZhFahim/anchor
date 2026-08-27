@@ -10,11 +10,11 @@ part of 'active_user_id_provider.dart';
 // ignore_for_file: type=lint, type=warning
 
 @ProviderFor(ActiveUserId)
-const activeUserIdProvider = ActiveUserIdProvider._();
+final activeUserIdProvider = ActiveUserIdProvider._();
 
 final class ActiveUserIdProvider
     extends $NotifierProvider<ActiveUserId, String?> {
-  const ActiveUserIdProvider._()
+  ActiveUserIdProvider._()
     : super(
         from: null,
         argument: null,
@@ -47,8 +47,7 @@ abstract class _$ActiveUserId extends $Notifier<String?> {
   String? build();
   @$mustCallSuper
   @override
-  void runBuild() {
-    final created = build();
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<String?, String?>;
     final element =
         ref.element
@@ -58,6 +57,6 @@ abstract class _$ActiveUserId extends $Notifier<String?> {
               Object?,
               Object?
             >;
-    element.handleValue(ref, created);
+    return element.handleCreate(ref, build);
   }
 }

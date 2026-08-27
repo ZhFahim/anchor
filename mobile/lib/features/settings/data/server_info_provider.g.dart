@@ -10,7 +10,7 @@ part of 'server_info_provider.dart';
 // ignore_for_file: type=lint, type=warning
 
 @ProviderFor(serverInfo)
-const serverInfoProvider = ServerInfoProvider._();
+final serverInfoProvider = ServerInfoProvider._();
 
 final class ServerInfoProvider
     extends
@@ -20,7 +20,7 @@ final class ServerInfoProvider
           FutureOr<ServerInfo?>
         >
     with $FutureModifier<ServerInfo?>, $FutureProvider<ServerInfo?> {
-  const ServerInfoProvider._()
+  ServerInfoProvider._()
     : super(
         from: null,
         argument: null,

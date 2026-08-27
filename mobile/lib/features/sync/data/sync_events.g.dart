@@ -10,12 +10,12 @@ part of 'sync_events.dart';
 // ignore_for_file: type=lint, type=warning
 
 @ProviderFor(syncEvents)
-const syncEventsProvider = SyncEventsProvider._();
+final syncEventsProvider = SyncEventsProvider._();
 
 final class SyncEventsProvider
     extends $FunctionalProvider<SyncEvents, SyncEvents, SyncEvents>
     with $Provider<SyncEvents> {
-  const SyncEventsProvider._()
+  SyncEventsProvider._()
     : super(
         from: null,
         argument: null,

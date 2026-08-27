@@ -10,7 +10,7 @@ part of 'connectivity_provider.dart';
 // ignore_for_file: type=lint, type=warning
 
 @ProviderFor(connectivityStream)
-const connectivityStreamProvider = ConnectivityStreamProvider._();
+final connectivityStreamProvider = ConnectivityStreamProvider._();
 
 final class ConnectivityStreamProvider
     extends
@@ -22,7 +22,7 @@ final class ConnectivityStreamProvider
     with
         $FutureModifier<List<ConnectivityResult>>,
         $StreamProvider<List<ConnectivityResult>> {
-  const ConnectivityStreamProvider._()
+  ConnectivityStreamProvider._()
     : super(
         from: null,
         argument: null,
@@ -52,10 +52,10 @@ String _$connectivityStreamHash() =>
     r'dbd2c4ce5970f1f97dad2730821bb5ca0b99c327';
 
 @ProviderFor(SyncManager)
-const syncManagerProvider = SyncManagerProvider._();
+final syncManagerProvider = SyncManagerProvider._();
 
 final class SyncManagerProvider extends $NotifierProvider<SyncManager, bool> {
-  const SyncManagerProvider._()
+  SyncManagerProvider._()
     : super(
         from: null,
         argument: null,
@@ -82,14 +82,13 @@ final class SyncManagerProvider extends $NotifierProvider<SyncManager, bool> {
   }
 }
 
-String _$syncManagerHash() => r'7a3e97e9c6457e182f400d5fc0efd3bf4e3be3ec';
+String _$syncManagerHash() => r'3cfdc2b223271917afc64639602e9125f95f6471';
 
 abstract class _$SyncManager extends $Notifier<bool> {
   bool build();
   @$mustCallSuper
   @override
-  void runBuild() {
-    final created = build();
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<bool, bool>;
     final element =
         ref.element
@@ -99,16 +98,16 @@ abstract class _$SyncManager extends $Notifier<bool> {
               Object?,
               Object?
             >;
-    element.handleValue(ref, created);
+    return element.handleCreate(ref, build);
   }
 }
 
 @ProviderFor(isOnline)
-const isOnlineProvider = IsOnlineProvider._();
+final isOnlineProvider = IsOnlineProvider._();
 
 final class IsOnlineProvider extends $FunctionalProvider<bool, bool, bool>
     with $Provider<bool> {
-  const IsOnlineProvider._()
+  IsOnlineProvider._()
     : super(
         from: null,
         argument: null,

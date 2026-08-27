@@ -10,7 +10,7 @@ part of 'editor_preferences_controller.dart';
 // ignore_for_file: type=lint, type=warning
 
 @ProviderFor(preferencesRepository)
-const preferencesRepositoryProvider = PreferencesRepositoryProvider._();
+final preferencesRepositoryProvider = PreferencesRepositoryProvider._();
 
 final class PreferencesRepositoryProvider
     extends
@@ -20,7 +20,7 @@ final class PreferencesRepositoryProvider
           PreferencesRepository
         >
     with $Provider<PreferencesRepository> {
-  const PreferencesRepositoryProvider._()
+  PreferencesRepositoryProvider._()
     : super(
         from: null,
         argument: null,
@@ -58,12 +58,12 @@ String _$preferencesRepositoryHash() =>
     r'a73cb8cd55a748279c39e0f4a35ab888fae1e30b';
 
 @ProviderFor(EditorPreferencesController)
-const editorPreferencesControllerProvider =
+final editorPreferencesControllerProvider =
     EditorPreferencesControllerProvider._();
 
 final class EditorPreferencesControllerProvider
     extends $NotifierProvider<EditorPreferencesController, EditorPreferences> {
-  const EditorPreferencesControllerProvider._()
+  EditorPreferencesControllerProvider._()
     : super(
         from: null,
         argument: null,
@@ -98,8 +98,7 @@ abstract class _$EditorPreferencesController
   EditorPreferences build();
   @$mustCallSuper
   @override
-  void runBuild() {
-    final created = build();
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<EditorPreferences, EditorPreferences>;
     final element =
         ref.element
@@ -109,6 +108,6 @@ abstract class _$EditorPreferencesController
               Object?,
               Object?
             >;
-    element.handleValue(ref, created);
+    return element.handleCreate(ref, build);
   }
 }

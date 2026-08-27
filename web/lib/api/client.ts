@@ -59,13 +59,12 @@ export function refreshAccessToken(): Promise<boolean> {
   return refreshPromise;
 }
 
-// Create the API client with interceptors
 export const api = ky.create({
-  prefixUrl: "/",
+  prefix: "/",
   timeout: 30000,
   hooks: {
     beforeRequest: [
-      (request) => {
+      ({ request }) => {
         const token = getAccessToken();
         if (token) {
           request.headers.set("Authorization", `Bearer ${token}`);
@@ -73,7 +72,7 @@ export const api = ky.create({
       },
     ],
     beforeError: [
-      async (error) => {
+      async ({ error }) => {
         // Extract error message from API response body
         if (error instanceof HTTPError) {
           try {
@@ -96,7 +95,7 @@ export const api = ky.create({
       },
     ],
     afterResponse: [
-      async (request, _options, response) => {
+      async ({ request, response }) => {
         if (response.status !== 401) {
           return response;
         }

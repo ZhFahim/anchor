@@ -227,14 +227,11 @@ class _NoteAttachmentSheetState extends State<NoteAttachmentSheet> {
   };
 
   Future<void> _pickAudioFile() async {
-    final result = await FilePicker.platform.pickFiles(
+    final file = await FilePicker.pickFile(
       type: FileType.custom,
       allowedExtensions: _allowedAudioExtensions,
-      allowMultiple: false,
     );
-    if (result == null || result.files.isEmpty || !mounted) return;
-
-    final file = result.files.first;
+    if (file == null || !mounted) return;
     if (file.path == null) return;
 
     final ext = path.extension(file.path!).toLowerCase();
@@ -470,7 +467,6 @@ class _PreviewWidget extends StatelessWidget {
                 ],
               ),
               SizedBox(height: dims.md),
-              // Progress bar
               ClipRRect(
                 borderRadius: BorderRadius.circular(4),
                 child: LinearProgressIndicator(
@@ -489,7 +485,6 @@ class _PreviewWidget extends StatelessWidget {
         // Action row
         Row(
           children: [
-            // Discard
             Expanded(
               child: OutlinedButton.icon(
                 onPressed: onDiscard,
@@ -505,7 +500,6 @@ class _PreviewWidget extends StatelessWidget {
               ),
             ),
             SizedBox(width: dims.xs),
-            // Re-record
             Expanded(
               child: OutlinedButton.icon(
                 onPressed: onRestart,
@@ -517,7 +511,6 @@ class _PreviewWidget extends StatelessWidget {
               ),
             ),
             SizedBox(width: dims.xs),
-            // Save
             Expanded(
               child: FilledButton.icon(
                 onPressed: onSave,
