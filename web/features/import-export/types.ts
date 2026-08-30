@@ -1,5 +1,10 @@
 import type { QuillDelta } from "@/features/notes/quill";
 
+export type ExportFormat = "anchor" | "markdown";
+
+// Mirrors IMPORT_MAX_CONTENT_LENGTH on the server
+export const IMPORT_MAX_CONTENT_LENGTH = 1_000_000;
+
 // Mirrors ATTACHMENT_ALLOWED_MIME_TYPES on the server
 export const IMPORT_ALLOWED_MIME_TYPES = new Set([
   // Image
@@ -38,6 +43,8 @@ export type CanonicalNote = {
   isTrashed: boolean;
   background: string | null;
   tagNames: string[];
+  /** Folder segments the note was filed under, applied as tags on request */
+  folderTags?: string[];
   createdAt?: string;
   updatedAt?: string;
   attachments: CanonicalAttachment[];
@@ -54,7 +61,7 @@ export type ImportTag = {
 };
 
 export type ParsedImport = {
-  formatId: "anchor" | "google-keep";
+  formatId: "anchor" | "google-keep" | "markdown";
   formatLabel: string;
   notes: CanonicalNote[];
   /** Unique tags referenced across all notes, carrying colors for restore */
@@ -62,6 +69,8 @@ export type ParsedImport = {
   attachmentCount: number;
   /** Items known up-front to be excluded (trashed Keep notes, unsupported media, ...) */
   skipped: ImportSkippedItem[];
+  /** True when at least one note carries folder tags */
+  hasFolders?: boolean;
 };
 
 export type ImportNoteItem = {

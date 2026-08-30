@@ -1,18 +1,33 @@
 import { anchorAdapter } from "./anchor";
 import { googleKeepAdapter } from "./google-keep";
+import { markdownAdapter } from "./markdown";
 import type { ImportAdapter } from "./types";
-import { readZip, type ZipArchive } from "./zip";
+import { type PickedFile, readFiles, readZip, type ZipArchive } from "./zip";
 
-// Detection runs in order; anchor's manifest check is the cheapest and
-// most specific. New formats (markdown, ...) register here.
-const ADAPTERS: ImportAdapter[] = [anchorAdapter, googleKeepAdapter];
+// Detection runs in order; anchor's manifest check is the cheapest and most
+// specific, markdown the loosest. New formats register here.
+const ADAPTERS: ImportAdapter[] = [
+  anchorAdapter,
+  googleKeepAdapter,
+  markdownAdapter,
+];
+
+const isZip = (file: File) =>
+  file.name.toLowerCase().endsWith(".zip") ||
+  file.type === "application/zip" ||
+  file.type === "application/x-zip-compressed";
 
 export async function detectFormat(
-  file: File,
+  files: PickedFile[],
 ): Promise<{ adapter: ImportAdapter; zip: ZipArchive } | null> {
+  if (!files.length) return null;
+
   let zip: ZipArchive;
   try {
-    zip = readZip(new Uint8Array(await file.arrayBuffer()));
+    zip =
+      files.length === 1 && isZip(files[0].file)
+        ? readZip(new Uint8Array(await files[0].file.arrayBuffer()))
+        : await readFiles(files);
   } catch {
     return null;
   }

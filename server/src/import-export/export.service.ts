@@ -12,6 +12,8 @@ import {
   ExportManifestV1,
   ExportNoteRow,
 } from './export-manifest.util';
+import { ExportFormat } from './dto/export-query.dto';
+import { planMarkdownExport } from './markdown/markdown-export.util';
 
 const NOTES_PAGE_SIZE = 500;
 
@@ -51,16 +53,33 @@ export class ExportService {
     private storageConfig: ConfigType<typeof StorageConfig>,
   ) {}
 
-  async streamExport(userId: string, res: Response): Promise<void> {
+  async streamExport(
+    userId: string,
+    res: Response,
+    format: ExportFormat = 'anchor',
+  ): Promise<void> {
     const { manifest, diskPathByAttachmentId } =
       await this.buildExportManifest(userId);
 
     const date = new Date().toISOString().slice(0, 10);
+    const filename =
+      format === 'markdown'
+        ? `anchor-markdown-${date}.zip`
+        : `anchor-export-${date}.zip`;
+    const archive = this.openArchive(res, filename);
+
+    if (format === 'markdown') {
+      this.appendMarkdownEntries(archive, manifest, diskPathByAttachmentId);
+    } else {
+      this.appendAnchorEntries(archive, manifest, diskPathByAttachmentId);
+    }
+
+    await archive.finalize();
+  }
+
+  private openArchive(res: Response, filename: string): ZipArchive {
     res.setHeader('Content-Type', 'application/zip');
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="anchor-export-${date}.zip"`,
-    );
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
 
     const archive = new ZipArchive({ zlib: { level: 6 } });
     archive.on('error', (error) => {
@@ -71,7 +90,14 @@ export class ExportService {
       this.logger.warn(`Export archive warning: ${warning.message}`);
     });
     archive.pipe(res);
+    return archive;
+  }
 
+  private appendAnchorEntries(
+    archive: ZipArchive,
+    manifest: ExportManifestV1,
+    diskPathByAttachmentId: Map<string, string>,
+  ): void {
     archive.append(JSON.stringify(manifest, null, 2), {
       name: 'manifest.json',
     });
@@ -89,8 +115,35 @@ export class ExportService {
         }
       }
     }
+  }
 
-    await archive.finalize();
+  private appendMarkdownEntries(
+    archive: ZipArchive,
+    manifest: ExportManifestV1,
+    diskPathByAttachmentId: Map<string, string>,
+  ): void {
+    const { entries, warnings } = planMarkdownExport(manifest);
+
+    for (const warning of warnings) {
+      this.logger.warn(`Markdown export: ${warning}`);
+    }
+
+    for (const entry of entries) {
+      archive.append(entry.markdown, {
+        name: entry.path,
+        date: new Date(entry.updatedAt),
+      });
+      for (const attachment of entry.attachments) {
+        const filePath = diskPathByAttachmentId.get(attachment.attachmentId);
+        if (filePath) {
+          const file: ZipEntryData = {
+            name: attachment.archivePath,
+            store: true,
+          };
+          archive.file(filePath, file);
+        }
+      }
+    }
   }
 
   private async buildExportManifest(userId: string): Promise<{

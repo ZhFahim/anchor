@@ -31,7 +31,10 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import type { PickedFile } from "../adapters/zip";
+import type { ImportOptions } from "../hooks/use-import";
 import { useImport } from "../hooks/use-import";
+import { fromDataTransfer, fromFileList } from "../picked-files";
 
 interface ImportDialogProps {
   open: boolean;
@@ -48,9 +51,10 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
     progress,
     report,
     isRunning,
-    skipExisting,
-    setSkipExisting,
-    selectFile,
+    options,
+    setOption,
+    previewTagCount,
+    selectFiles,
     start,
     retry,
     reset,
@@ -69,7 +73,8 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
         <DialogHeader>
           <DialogTitle>Import notes</DialogTitle>
           <DialogDescription>
-            Restore an Anchor backup or migrate from Google Keep (Takeout zip).
+            Restore an Anchor backup, migrate from Google Keep, or import
+            Markdown files from Obsidian, Nextcloud Notes and the like.
           </DialogDescription>
         </DialogHeader>
 
@@ -77,14 +82,15 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
           <PickStep
             isDetecting={isDetecting}
             error={pickError}
-            onFile={selectFile}
+            onFiles={selectFiles}
           />
         )}
         {step === "preview" && parsed && (
           <PreviewStep
             parsed={parsed}
-            skipExisting={skipExisting}
-            onSkipExistingChange={setSkipExisting}
+            options={options}
+            tagCount={previewTagCount}
+            onOptionChange={setOption}
             onConfirm={start}
             onCancel={() => handleOpenChange(false)}
           />
@@ -103,25 +109,34 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
 function PickStep({
   isDetecting,
   error,
-  onFile,
+  onFiles,
 }: {
   isDetecting: boolean;
   error: string | null;
-  onFile: (file: File) => void;
+  onFiles: (files: PickedFile[]) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  const handleFiles = useCallback(
-    (files: FileList | null) => {
-      const file = files?.[0];
-      if (file) onFile(file);
+  const submit = useCallback(
+    (picked: PickedFile[]) => {
+      if (picked.length) onFiles(picked);
     },
-    [onFile],
+    [onFiles],
+  );
+
+  const handleDrop = useCallback(
+    (event: React.DragEvent) => {
+      event.preventDefault();
+      setIsDragging(false);
+      // Entries must be read before the first await or the browser clears them
+      fromDataTransfer(event.dataTransfer).then(submit);
+    },
+    [submit],
   );
 
   return (
-    <div className="space-y-3">
+    <div className="min-w-0 space-y-3">
       <div
         className={cn(
           "border-2 border-dashed rounded-lg p-8 flex flex-col items-center gap-3 cursor-pointer",
@@ -135,11 +150,7 @@ function PickStep({
           setIsDragging(true);
         }}
         onDragLeave={() => setIsDragging(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setIsDragging(false);
-          handleFiles(e.dataTransfer.files);
-        }}
+        onDrop={handleDrop}
         onClick={() => inputRef.current?.click()}
       >
         {isDetecting ? (
@@ -149,15 +160,16 @@ function PickStep({
         )}
         <span className="text-center">
           {isDetecting
-            ? "Reading file..."
-            : "Drop a zip file here, or click to browse"}
+            ? "Reading files..."
+            : "Drop a zip or a folder here, or click to choose files"}
         </span>
         <input
           ref={inputRef}
           type="file"
-          accept=".zip,application/zip"
+          multiple
+          accept=".zip,application/zip,.md,.markdown,text/markdown,image/*,audio/*"
           className="hidden"
-          onChange={(e) => handleFiles(e.target.files)}
+          onChange={(e) => submit(fromFileList(e.target.files))}
         />
       </div>
       {error && (
@@ -172,19 +184,21 @@ function PickStep({
 
 function PreviewStep({
   parsed,
-  skipExisting,
-  onSkipExistingChange,
+  options,
+  tagCount,
+  onOptionChange,
   onConfirm,
   onCancel,
 }: {
   parsed: NonNullable<ReturnType<typeof useImport>["parsed"]>;
-  skipExisting: boolean;
-  onSkipExistingChange: (value: boolean) => void;
+  options: ImportOptions;
+  tagCount: number;
+  onOptionChange: ReturnType<typeof useImport>["setOption"];
   onConfirm: () => void;
   onCancel: () => void;
 }) {
   return (
-    <div className="space-y-4">
+    <div className="min-w-0 space-y-4">
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <FileArchive className="h-4 w-4 shrink-0" />
         <span>Detected format</span>
@@ -199,7 +213,7 @@ function PreviewStep({
         />
         <PreviewStat
           icon={TagIcon}
-          value={parsed.tags.length}
+          value={tagCount}
           singular="tag"
           plural="tags"
         />
@@ -218,21 +232,21 @@ function PreviewStep({
       )}
       {/* Only Anchor backups carry note ids, so only they can skip existing notes */}
       {parsed.formatId === "anchor" && (
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id="skip-existing-notes"
-            checked={skipExisting}
-            onCheckedChange={(checked) =>
-              onSkipExistingChange(checked === true)
-            }
-          />
-          <Label
-            htmlFor="skip-existing-notes"
-            className="text-sm font-normal leading-snug cursor-pointer"
-          >
-            Skip notes that already exist
-          </Label>
-        </div>
+        <ImportOption
+          id="skip-existing-notes"
+          label="Skip notes that already exist"
+          checked={options.skipExisting}
+          onChange={(value) => onOptionChange("skipExisting", value)}
+        />
+      )}
+      {parsed.formatId === "markdown" && parsed.hasFolders && (
+        <ImportOption
+          id="folder-tags"
+          label="Use folder names as tags"
+          hint="Nextcloud categories and Obsidian folders become tags"
+          checked={options.folderTags}
+          onChange={(value) => onOptionChange("folderTags", value)}
+        />
       )}
       <DialogFooter>
         <Button variant="outline" onClick={onCancel}>
@@ -244,6 +258,40 @@ function PreviewStep({
           {parsed.notes.length === 1 ? "note" : "notes"}
         </Button>
       </DialogFooter>
+    </div>
+  );
+}
+
+function ImportOption({
+  id,
+  label,
+  hint,
+  checked,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  hint?: string;
+  checked: boolean;
+  onChange: (value: boolean) => void;
+}) {
+  return (
+    <div className="flex items-start gap-2">
+      <Checkbox
+        id={id}
+        checked={checked}
+        className="mt-0.5"
+        onCheckedChange={(value) => onChange(value === true)}
+      />
+      <div className="space-y-0.5">
+        <Label
+          htmlFor={id}
+          className="text-sm font-normal leading-snug cursor-pointer"
+        >
+          {label}
+        </Label>
+        {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+      </div>
     </div>
   );
 }
@@ -293,7 +341,7 @@ function RunningStep({
       : `Importing notes ${progress?.done ?? 0}/${progress?.total ?? 0}`;
 
   return (
-    <div className="space-y-4">
+    <div className="min-w-0 space-y-4">
       <div className="space-y-2">
         <div className="flex items-center justify-between text-sm text-muted-foreground">
           <span className="flex items-center gap-2">
@@ -347,7 +395,7 @@ function ReportStep({
     summary.push(`${report.attachmentsFailed} attachments failed`);
 
   return (
-    <div className="space-y-4">
+    <div className="min-w-0 space-y-4">
       <p className="text-sm flex items-start gap-2">
         {report.failed || report.attachmentsFailed ? (
           <AlertTriangle className="h-4 w-4 mt-0.5 text-amber-500 shrink-0" />
@@ -362,9 +410,11 @@ function ReportStep({
           items={report.issues}
         />
       )}
-      <p className="text-xs text-muted-foreground">
-        Restored trashed notes start a fresh 30-day trash window.
-      </p>
+      {report.restoredTrashed && (
+        <p className="text-xs text-muted-foreground">
+          Restored trashed notes start a fresh 30-day trash window.
+        </p>
+      )}
       <DialogFooter>
         <Button onClick={onClose}>Done</Button>
       </DialogFooter>
@@ -380,17 +430,25 @@ function SkippedList({
   items: { item: string; reason: string }[];
 }) {
   return (
-    <Collapsible className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2">
+    <Collapsible className="min-w-0 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2">
       <CollapsibleTrigger className="group flex w-full items-center gap-2 text-sm text-amber-600 dark:text-amber-400 transition-opacity hover:opacity-80">
         <AlertTriangle className="h-4 w-4 shrink-0" />
-        <span className="flex-1 text-left">{title}</span>
+        <span className="min-w-0 flex-1 text-left">{title}</span>
         <ChevronDown className="h-4 w-4 shrink-0 transition-transform group-data-[state=open]:rotate-180" />
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <ul className="mt-2 max-h-40 overflow-y-auto space-y-1 text-xs text-muted-foreground">
+        <ul className="mt-2 max-h-40 min-w-0 space-y-2 overflow-y-auto text-xs text-muted-foreground">
           {items.map((entry, index) => (
-            <li key={`${entry.item}-${index}`} className="truncate">
-              <span className="font-medium">{entry.item}</span> — {entry.reason}
+            <li key={`${entry.item}-${index}`} className="min-w-0">
+              <p
+                className="truncate font-medium text-foreground/80"
+                title={entry.item}
+              >
+                {entry.item}
+              </p>
+              <p className="truncate" title={entry.reason}>
+                {entry.reason}
+              </p>
             </li>
           ))}
         </ul>

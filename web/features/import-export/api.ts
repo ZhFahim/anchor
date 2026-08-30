@@ -3,6 +3,7 @@ import type { NoteAttachment } from "@/features/notes/types";
 import { api } from "@/lib/api/client";
 import type {
   CanonicalNote,
+  ExportFormat,
   ImportNoteItem,
   ImportNotesResponse,
   ImportTag,
@@ -10,15 +11,23 @@ import type {
 
 export const IMPORT_BATCH_SIZE = 25;
 
-export async function downloadExport(): Promise<void> {
+export async function downloadExport(
+  format: ExportFormat = "anchor",
+): Promise<void> {
   // Export can take a while for large accounts; disable the 30s default
-  const response = await api.get("api/export", { timeout: false });
+  const response = await api.get("api/export", {
+    searchParams: { format },
+    timeout: false,
+  });
   const blob = await response.blob();
 
   const disposition = response.headers.get("Content-Disposition") ?? "";
   const match = disposition.match(/filename="([^"]+)"/);
+  const fallbackName =
+    format === "markdown" ? "anchor-markdown" : "anchor-export";
   const filename =
-    match?.[1] ?? `anchor-export-${new Date().toISOString().slice(0, 10)}.zip`;
+    match?.[1] ??
+    `${fallbackName}-${new Date().toISOString().slice(0, 10)}.zip`;
 
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -29,7 +38,10 @@ export async function downloadExport(): Promise<void> {
   setTimeout(() => URL.revokeObjectURL(url), 30_000);
 }
 
-export function toImportNoteItem(note: CanonicalNote): ImportNoteItem {
+export function toImportNoteItem(
+  note: CanonicalNote,
+  tagNames: string[] = note.tagNames,
+): ImportNoteItem {
   return {
     ref: note.ref,
     id: note.id,
@@ -39,7 +51,7 @@ export function toImportNoteItem(note: CanonicalNote): ImportNoteItem {
     isArchived: note.isArchived,
     isTrashed: note.isTrashed,
     background: note.background ?? undefined,
-    tagNames: note.tagNames.length ? note.tagNames : undefined,
+    tagNames: tagNames.length ? tagNames : undefined,
     createdAt: note.createdAt,
     updatedAt: note.updatedAt,
   };

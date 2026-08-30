@@ -3,6 +3,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useRef, useState } from "react";
 import { detectFormat } from "../adapters";
+import type { PickedFile } from "../adapters/zip";
 import {
   IMPORT_BATCH_SIZE,
   importAttachment,
@@ -10,6 +11,7 @@ import {
   toImportNoteItem,
 } from "../api";
 import type {
+  CanonicalNote,
   ImportNoteResult,
   ImportSkippedItem,
   ParsedImport,
@@ -18,6 +20,18 @@ import type {
 const ATTACHMENT_UPLOAD_CONCURRENCY = 2;
 
 export type ImportStep = "pick" | "preview" | "running" | "report";
+
+export type ImportOptions = {
+  /** Anchor backups only: keep the notes already in the account */
+  skipExisting: boolean;
+  /** Markdown only: file the notes under the folders they came from */
+  folderTags: boolean;
+};
+
+const DEFAULT_OPTIONS: ImportOptions = {
+  skipExisting: false,
+  folderTags: false,
+};
 
 export type ImportProgress = {
   phase: "notes" | "attachments";
@@ -33,6 +47,8 @@ export type ImportReport = {
   attachmentsUploaded: number;
   attachmentsFailed: number;
   issues: ImportSkippedItem[];
+  /** True when a note that was in the trash came back */
+  restoredTrashed: boolean;
 };
 
 type AttachmentUpload = {
@@ -43,6 +59,14 @@ type AttachmentUpload = {
   position: number;
   getBlob: () => Promise<Blob>;
 };
+
+function effectiveTagNames(
+  note: CanonicalNote,
+  options: ImportOptions,
+): string[] {
+  if (!options.folderTags || !note.folderTags?.length) return note.tagNames;
+  return [...new Set([...note.tagNames, ...note.folderTags])];
+}
 
 function chunk<T>(items: T[], size: number): T[][] {
   const chunks: T[][] = [];
@@ -62,7 +86,7 @@ export function useImport() {
   const [runError, setRunError] = useState<string | null>(null);
   const [progress, setProgress] = useState<ImportProgress | null>(null);
   const [report, setReport] = useState<ImportReport | null>(null);
-  const [skipExisting, setSkipExisting] = useState(false);
+  const [options, setOptions] = useState<ImportOptions>(DEFAULT_OPTIONS);
 
   // Retry resumes from the last unprocessed batch
   const batchIndexRef = useRef(0);
@@ -77,20 +101,20 @@ export function useImport() {
     setRunError(null);
     setProgress(null);
     setReport(null);
-    setSkipExisting(false);
+    setOptions(DEFAULT_OPTIONS);
     batchIndexRef.current = 0;
     resultsRef.current = [];
     isRunningRef.current = false;
   }, []);
 
-  const selectFile = useCallback(async (file: File) => {
+  const selectFiles = useCallback(async (files: PickedFile[]) => {
     setPickError(null);
     setIsDetecting(true);
     try {
-      const detected = await detectFormat(file);
+      const detected = await detectFormat(files);
       if (!detected) {
         setPickError(
-          "Unrecognized file. Use an Anchor backup zip or a Google Takeout zip containing Keep notes.",
+          "Nothing importable here. Drop an Anchor backup zip, a Google Takeout zip, or a folder of Markdown (.md) files.",
         );
         return;
       }
@@ -100,6 +124,10 @@ export function useImport() {
         return;
       }
       setParsed(result);
+      setOptions({
+        ...DEFAULT_OPTIONS,
+        folderTags: result.hasFolders === true,
+      });
       setStep("preview");
     } catch (error) {
       setPickError(
@@ -120,18 +148,25 @@ export function useImport() {
       const count = (status: ImportNoteResult["status"]) =>
         results.filter((result) => result.status === status).length;
 
+      const noteByRef = new Map(current.notes.map((note) => [note.ref, note]));
+      // Refs are internal ids; report the note by its title
+      const labelOf = (ref: string) => {
+        const note = noteByRef.get(ref);
+        return note?.title.trim() || note?.ref.split("/").pop() || ref;
+      };
+
       const issues: ImportSkippedItem[] = [
         ...current.skipped,
         ...results
           .filter((result) => result.status === "failed")
           .map((result) => ({
-            item: result.ref,
+            item: labelOf(result.ref),
             reason: result.error ?? "Failed to import",
           })),
         ...results
           .filter((result) => result.warning)
           .map((result) => ({
-            item: result.ref,
+            item: labelOf(result.ref),
             reason: result.warning ?? "",
           })),
         ...attachmentFailures,
@@ -145,6 +180,11 @@ export function useImport() {
         attachmentsUploaded,
         attachmentsFailed: attachmentFailures.length,
         issues,
+        restoredTrashed: results.some(
+          (result) =>
+            (result.status === "created" || result.status === "remapped") &&
+            noteByRef.get(result.ref)?.isTrashed === true,
+        ),
       });
       setStep("report");
 
@@ -175,12 +215,16 @@ export function useImport() {
         });
         // Only send colors for tags this batch's notes actually reference
         const batchTags = [
-          ...new Set(batches[i].flatMap((note) => note.tagNames)),
+          ...new Set(
+            batches[i].flatMap((note) => effectiveTagNames(note, options)),
+          ),
         ].map((name) => ({ name, color: colorByName.get(name) ?? null }));
         const response = await importNotes(
-          batches[i].map(toImportNoteItem),
+          batches[i].map((note) =>
+            toImportNoteItem(note, effectiveTagNames(note, options)),
+          ),
           batchTags,
-          skipExisting,
+          options.skipExisting,
         );
         resultsRef.current.push(...response.results);
         batchIndexRef.current = i + 1;
@@ -264,7 +308,20 @@ export function useImport() {
 
     isRunningRef.current = false;
     finishRun(parsed, uploaded, attachmentFailures);
-  }, [parsed, finishRun, skipExisting]);
+  }, [parsed, finishRun, options]);
+
+  const setOption = useCallback(
+    <K extends keyof ImportOptions>(key: K, value: ImportOptions[K]) => {
+      setOptions((current) => ({ ...current, [key]: value }));
+    },
+    [],
+  );
+
+  // The folder toggle changes which tags get sent
+  const previewTagCount = parsed
+    ? new Set(parsed.notes.flatMap((note) => effectiveTagNames(note, options)))
+        .size || parsed.tags.length
+    : 0;
 
   return {
     step,
@@ -275,9 +332,10 @@ export function useImport() {
     progress,
     report,
     isRunning: step === "running" && !runError,
-    skipExisting,
-    setSkipExisting,
-    selectFile,
+    options,
+    setOption,
+    previewTagCount,
+    selectFiles,
     start: run,
     retry: run,
     reset,
