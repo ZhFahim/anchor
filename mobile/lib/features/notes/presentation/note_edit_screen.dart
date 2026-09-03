@@ -416,6 +416,20 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
     );
   }
 
+  void _showTagPicker() {
+    if (_isReadOnly) return;
+    AppBottomSheet.show(
+      context,
+      builder: (context) => TagPickerSheet(
+        selectedTagIds: _selectedTagIds,
+        onTagsChanged: (tagIds) {
+          setState(() => _selectedTagIds = List.from(tagIds));
+          _onContentChanged();
+        },
+      ),
+    );
+  }
+
   void _showOptionsSheet() {
     AppBottomSheet.show(
       context,
@@ -424,6 +438,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
         isNew: _isNew,
         isOwner: _existingNote?.isOwner ?? true,
         isArchived: _isArchived,
+        onTagsTap: _showTagPicker,
         onBackgroundTap: _showColorPicker,
         onAttachmentTap: _showAttachmentSheet,
         onArchiveTap: _toggleArchived,
