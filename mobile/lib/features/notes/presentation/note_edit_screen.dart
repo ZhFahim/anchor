@@ -526,13 +526,16 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
     final content = editorState?.getContent() ?? '';
     final plainText = editorState?.getPlainText() ?? '';
 
-    if (title.isEmpty &&
+    // A note that was never created is only worth persisting once it holds
+    // something.
+    if (_isNew &&
+        title.isEmpty &&
         plainText.isEmpty &&
         _selectedBackground == null &&
         !_isPinned) {
       AppLogger.instance.debug(
         'NoteEdit',
-        '_saveNote: skipping empty note (isNew=$_isNew)',
+        '_saveNote: skipping empty new note',
       );
       return;
     }

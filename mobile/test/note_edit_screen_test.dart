@@ -271,6 +271,30 @@ void main() {
     await stored.close();
   });
 
+  testWidgets('clearing an existing note saves it empty', (tester) async {
+    const note = Note(
+      id: 'n1',
+      title: 'T',
+      content: '{"ops":[{"insert":"hi\\n"}]}',
+    );
+    await pumpScreen(tester, note: note);
+
+    final titleField = find.byWidgetPredicate(
+      (w) => w is TextField && w.decoration?.hintText == 'Title',
+    );
+    await tester.enterText(titleField, '');
+    final controller = editorController(tester);
+    controller.replaceText(0, controller.document.length - 1, '', null);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 3));
+
+    final captured = verify(() => notesRepo.updateNote(captureAny())).captured;
+    final saved = captured.last as Note;
+    expect(saved.id, 'n1');
+    expect(saved.title, isEmpty);
+    expect(saved.content, isNot(contains('hi')));
+  });
+
   testWidgets('editing an existing note autosaves an update', (tester) async {
     const note = Note(
       id: 'n1',
