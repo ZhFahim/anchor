@@ -8,6 +8,7 @@ class PreferenceKeys {
   static const sortChecklistItems = 'editor_sort_checklist_items';
   static const themeMode = 'theme_mode';
   static const displayDensity = 'display_density';
+  static const exactAlarmsOffered = 'reminders_exact_alarms_offered';
 }
 
 /// Repository for managing user preferences in secure storage
@@ -25,6 +26,18 @@ class PreferencesRepository {
   Future<void> setSortChecklistItems(bool value) async {
     await _storage.write(
       key: PreferenceKeys.sortChecklistItems,
+      value: value.toString(),
+    );
+  }
+
+  Future<bool> getExactAlarmsOffered() async {
+    final value = await _storage.read(key: PreferenceKeys.exactAlarmsOffered);
+    return value == 'true';
+  }
+
+  Future<void> setExactAlarmsOffered(bool value) async {
+    await _storage.write(
+      key: PreferenceKeys.exactAlarmsOffered,
       value: value.toString(),
     );
   }

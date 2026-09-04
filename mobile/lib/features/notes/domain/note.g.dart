@@ -6,6 +6,33 @@ part of 'note.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
+_NoteReminder _$NoteReminderFromJson(Map<String, dynamic> json) =>
+    _NoteReminder(
+      remindAt: json['remindAt'] as String,
+      recurrence:
+          $enumDecodeNullable(
+            _$ReminderRecurrenceEnumMap,
+            json['recurrence'],
+          ) ??
+          ReminderRecurrence.none,
+      version: (json['version'] as num?)?.toInt() ?? 0,
+    );
+
+Map<String, dynamic> _$NoteReminderToJson(_NoteReminder instance) =>
+    <String, dynamic>{
+      'remindAt': instance.remindAt,
+      'recurrence': _$ReminderRecurrenceEnumMap[instance.recurrence]!,
+      'version': instance.version,
+    };
+
+const _$ReminderRecurrenceEnumMap = {
+  ReminderRecurrence.none: 'none',
+  ReminderRecurrence.daily: 'daily',
+  ReminderRecurrence.weekly: 'weekly',
+  ReminderRecurrence.monthly: 'monthly',
+  ReminderRecurrence.yearly: 'yearly',
+};
+
 _SharedByUser _$SharedByUserFromJson(Map<String, dynamic> json) =>
     _SharedByUser(
       id: json['id'] as String,
@@ -47,6 +74,9 @@ _Note _$NoteFromJson(Map<String, dynamic> json) => _Note(
   sharedBy: json['sharedBy'] == null
       ? null
       : SharedByUser.fromJson(json['sharedBy'] as Map<String, dynamic>),
+  reminder: json['reminder'] == null
+      ? null
+      : NoteReminder.fromJson(json['reminder'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$NoteToJson(_Note instance) => <String, dynamic>{
@@ -62,6 +92,7 @@ Map<String, dynamic> _$NoteToJson(_Note instance) => <String, dynamic>{
   'permission': _$NotePermissionEnumMap[instance.permission]!,
   'shareIds': instance.shareIds,
   'sharedBy': instance.sharedBy,
+  'reminder': instance.reminder,
 };
 
 const _$NoteStateEnumMap = {

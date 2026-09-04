@@ -10,6 +10,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import '../features/settings/data/repository/preferences_repository.dart';
 import 'home_widget/home_widget_payload.dart';
 import 'logging/app_logger.dart';
+import 'notifications/notification_launch.dart';
 import 'router/app_routes.dart';
 import 'theme/tokens/app_dimensions.dart';
 
@@ -87,6 +88,9 @@ Future<void> initializeApp() async {
     }
   }
 
+  // Registered on every launch, whatever route the app opens on.
+  final notificationRoute = await _notificationLaunchRoute();
+
   final serverUrl = await _storage.read(key: _serverUrlKey);
   final accessToken = await _storage.read(key: _accessTokenKey);
   if (serverUrl == null || serverUrl.isEmpty) {
@@ -94,7 +98,24 @@ Future<void> initializeApp() async {
   } else if (accessToken == null) {
     initialRoute = AppRoutes.login;
   } else {
-    initialRoute = await _widgetLaunchRoute() ?? AppRoutes.home;
+    initialRoute =
+        notificationRoute ?? await _widgetLaunchRoute() ?? AppRoutes.home;
+  }
+}
+
+/// The route for a cold start from a reminder tap, or null when the app was
+/// launched some other way. Registers the plugin either way.
+Future<String?> _notificationLaunchRoute() async {
+  try {
+    return await initializeNotifications();
+  } catch (error, stack) {
+    AppLogger.instance.error(
+      'App',
+      'Notification init failed',
+      error: error,
+      stackTrace: stack,
+    );
+    return null;
   }
 }
 

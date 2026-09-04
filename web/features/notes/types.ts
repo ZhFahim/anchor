@@ -31,6 +31,19 @@ export interface NoteShare {
   updatedAt: string;
 }
 
+export type ReminderRecurrence =
+  | "none"
+  | "daily"
+  | "weekly"
+  | "monthly"
+  | "yearly";
+
+export interface NoteReminder {
+  remindAt: string;
+  recurrence: ReminderRecurrence;
+  version: number;
+}
+
 export interface Note {
   id: string;
   title: string;
@@ -55,6 +68,7 @@ export interface Note {
   };
   attachmentCount?: number;
   imagePreviewIds?: string[];
+  reminder?: NoteReminder | null;
 }
 
 // "conflict" holds content the server turned down, which never reached the note.
@@ -100,6 +114,7 @@ export interface CreateNoteDto {
   isArchived?: boolean;
   background?: string | null;
   tagIds?: string[];
+  reminder?: NoteReminderInput | null;
 }
 
 export interface UpdateNoteDto {
@@ -109,5 +124,11 @@ export interface UpdateNoteDto {
   isArchived?: boolean;
   background?: string | null;
   tagIds?: string[];
+  reminder?: NoteReminderInput | null;
   baseVersion?: number;
+}
+
+export interface NoteReminderInput {
+  remindAt: string;
+  recurrence?: ReminderRecurrence;
 }

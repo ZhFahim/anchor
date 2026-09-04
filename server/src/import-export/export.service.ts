@@ -207,6 +207,10 @@ export class ExportService {
         include: {
           ...NOTE_EXPORT_INCLUDE,
           pins: { where: { userId }, select: { userId: true } },
+          reminders: {
+            where: { userId },
+            select: { userId: true, remindAt: true, recurrence: true },
+          },
         },
         orderBy: { id: 'asc' },
         take: NOTES_PAGE_SIZE,

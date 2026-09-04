@@ -21,10 +21,12 @@ import {
   SyncEmission,
   noteEmissions,
   pinEmission,
+  reminderEmission,
   tagEmission,
   attachmentsEmissions,
 } from '../sync/sync-emitter.service';
 import { IMPORT_ALLOWED_BACKGROUNDS } from './constants/import.constants';
+import { SyncReminderRecurrence } from '../sync/dto/sync-request.dto';
 import {
   ImportNoteItemDto,
   ImportNoteResult,
@@ -107,6 +109,9 @@ export class ImportService {
       if (dto.notes[index].isPinned === true) {
         emissions.push(pinEmission(userId, result.noteId, true));
       }
+      if (dto.notes[index].reminder) {
+        emissions.push(reminderEmission(userId, result.noteId, true));
+      }
     });
     if (emissions.length) {
       await this.prisma.$transaction(async (tx) => {
@@ -186,6 +191,18 @@ export class ImportService {
         if (item.isPinned === true) {
           await tx.notePin.create({
             data: { userId, noteId: note.id },
+          });
+        }
+
+        if (item.reminder) {
+          await tx.noteReminder.create({
+            data: {
+              userId,
+              noteId: note.id,
+              remindAt: item.reminder.remindAt,
+              recurrence:
+                item.reminder.recurrence ?? SyncReminderRecurrence.none,
+            },
           });
         }
 

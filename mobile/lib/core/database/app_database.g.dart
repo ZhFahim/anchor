@@ -152,6 +152,65 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
     ),
     defaultValue: const Constant(true),
   );
+  static const VerificationMeta _reminderAtMeta = const VerificationMeta(
+    'reminderAt',
+  );
+  @override
+  late final GeneratedColumn<String> reminderAt = GeneratedColumn<String>(
+    'reminder_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _reminderRecurrenceMeta =
+      const VerificationMeta('reminderRecurrence');
+  @override
+  late final GeneratedColumn<String> reminderRecurrence =
+      GeneratedColumn<String>(
+        'reminder_recurrence',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _reminderVersionMeta = const VerificationMeta(
+    'reminderVersion',
+  );
+  @override
+  late final GeneratedColumn<int> reminderVersion = GeneratedColumn<int>(
+    'reminder_version',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isReminderSyncedMeta = const VerificationMeta(
+    'isReminderSynced',
+  );
+  @override
+  late final GeneratedColumn<bool> isReminderSynced = GeneratedColumn<bool>(
+    'is_reminder_synced',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_reminder_synced" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _reminderSlotMeta = const VerificationMeta(
+    'reminderSlot',
+  );
+  @override
+  late final GeneratedColumn<int> reminderSlot = GeneratedColumn<int>(
+    'reminder_slot',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _permissionMeta = const VerificationMeta(
     'permission',
   );
@@ -233,6 +292,11 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
     version,
     localRev,
     isPinSynced,
+    reminderAt,
+    reminderRecurrence,
+    reminderVersion,
+    isReminderSynced,
+    reminderSlot,
     permission,
     shareIds,
     sharedById,
@@ -325,6 +389,48 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
         isPinSynced.isAcceptableOrUnknown(
           data['is_pin_synced']!,
           _isPinSyncedMeta,
+        ),
+      );
+    }
+    if (data.containsKey('reminder_at')) {
+      context.handle(
+        _reminderAtMeta,
+        reminderAt.isAcceptableOrUnknown(data['reminder_at']!, _reminderAtMeta),
+      );
+    }
+    if (data.containsKey('reminder_recurrence')) {
+      context.handle(
+        _reminderRecurrenceMeta,
+        reminderRecurrence.isAcceptableOrUnknown(
+          data['reminder_recurrence']!,
+          _reminderRecurrenceMeta,
+        ),
+      );
+    }
+    if (data.containsKey('reminder_version')) {
+      context.handle(
+        _reminderVersionMeta,
+        reminderVersion.isAcceptableOrUnknown(
+          data['reminder_version']!,
+          _reminderVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('is_reminder_synced')) {
+      context.handle(
+        _isReminderSyncedMeta,
+        isReminderSynced.isAcceptableOrUnknown(
+          data['is_reminder_synced']!,
+          _isReminderSyncedMeta,
+        ),
+      );
+    }
+    if (data.containsKey('reminder_slot')) {
+      context.handle(
+        _reminderSlotMeta,
+        reminderSlot.isAcceptableOrUnknown(
+          data['reminder_slot']!,
+          _reminderSlotMeta,
         ),
       );
     }
@@ -433,6 +539,26 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
         DriftSqlType.bool,
         data['${effectivePrefix}is_pin_synced'],
       )!,
+      reminderAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reminder_at'],
+      ),
+      reminderRecurrence: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reminder_recurrence'],
+      ),
+      reminderVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}reminder_version'],
+      ),
+      isReminderSynced: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_reminder_synced'],
+      )!,
+      reminderSlot: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}reminder_slot'],
+      ),
       permission: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}permission'],
@@ -479,6 +605,11 @@ class Note extends DataClass implements Insertable<Note> {
   final int? version;
   final int localRev;
   final bool isPinSynced;
+  final String? reminderAt;
+  final String? reminderRecurrence;
+  final int? reminderVersion;
+  final bool isReminderSynced;
+  final int? reminderSlot;
   final String permission;
   final String? shareIds;
   final String? sharedById;
@@ -498,6 +629,11 @@ class Note extends DataClass implements Insertable<Note> {
     this.version,
     required this.localRev,
     required this.isPinSynced,
+    this.reminderAt,
+    this.reminderRecurrence,
+    this.reminderVersion,
+    required this.isReminderSynced,
+    this.reminderSlot,
     required this.permission,
     this.shareIds,
     this.sharedById,
@@ -528,6 +664,19 @@ class Note extends DataClass implements Insertable<Note> {
     }
     map['local_rev'] = Variable<int>(localRev);
     map['is_pin_synced'] = Variable<bool>(isPinSynced);
+    if (!nullToAbsent || reminderAt != null) {
+      map['reminder_at'] = Variable<String>(reminderAt);
+    }
+    if (!nullToAbsent || reminderRecurrence != null) {
+      map['reminder_recurrence'] = Variable<String>(reminderRecurrence);
+    }
+    if (!nullToAbsent || reminderVersion != null) {
+      map['reminder_version'] = Variable<int>(reminderVersion);
+    }
+    map['is_reminder_synced'] = Variable<bool>(isReminderSynced);
+    if (!nullToAbsent || reminderSlot != null) {
+      map['reminder_slot'] = Variable<int>(reminderSlot);
+    }
     map['permission'] = Variable<String>(permission);
     if (!nullToAbsent || shareIds != null) {
       map['share_ids'] = Variable<String>(shareIds);
@@ -569,6 +718,19 @@ class Note extends DataClass implements Insertable<Note> {
           : Value(version),
       localRev: Value(localRev),
       isPinSynced: Value(isPinSynced),
+      reminderAt: reminderAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reminderAt),
+      reminderRecurrence: reminderRecurrence == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reminderRecurrence),
+      reminderVersion: reminderVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reminderVersion),
+      isReminderSynced: Value(isReminderSynced),
+      reminderSlot: reminderSlot == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reminderSlot),
       permission: Value(permission),
       shareIds: shareIds == null && nullToAbsent
           ? const Value.absent()
@@ -606,6 +768,13 @@ class Note extends DataClass implements Insertable<Note> {
       version: serializer.fromJson<int?>(json['version']),
       localRev: serializer.fromJson<int>(json['localRev']),
       isPinSynced: serializer.fromJson<bool>(json['isPinSynced']),
+      reminderAt: serializer.fromJson<String?>(json['reminderAt']),
+      reminderRecurrence: serializer.fromJson<String?>(
+        json['reminderRecurrence'],
+      ),
+      reminderVersion: serializer.fromJson<int?>(json['reminderVersion']),
+      isReminderSynced: serializer.fromJson<bool>(json['isReminderSynced']),
+      reminderSlot: serializer.fromJson<int?>(json['reminderSlot']),
       permission: serializer.fromJson<String>(json['permission']),
       shareIds: serializer.fromJson<String?>(json['shareIds']),
       sharedById: serializer.fromJson<String?>(json['sharedById']),
@@ -632,6 +801,11 @@ class Note extends DataClass implements Insertable<Note> {
       'version': serializer.toJson<int?>(version),
       'localRev': serializer.toJson<int>(localRev),
       'isPinSynced': serializer.toJson<bool>(isPinSynced),
+      'reminderAt': serializer.toJson<String?>(reminderAt),
+      'reminderRecurrence': serializer.toJson<String?>(reminderRecurrence),
+      'reminderVersion': serializer.toJson<int?>(reminderVersion),
+      'isReminderSynced': serializer.toJson<bool>(isReminderSynced),
+      'reminderSlot': serializer.toJson<int?>(reminderSlot),
       'permission': serializer.toJson<String>(permission),
       'shareIds': serializer.toJson<String?>(shareIds),
       'sharedById': serializer.toJson<String?>(sharedById),
@@ -654,6 +828,11 @@ class Note extends DataClass implements Insertable<Note> {
     Value<int?> version = const Value.absent(),
     int? localRev,
     bool? isPinSynced,
+    Value<String?> reminderAt = const Value.absent(),
+    Value<String?> reminderRecurrence = const Value.absent(),
+    Value<int?> reminderVersion = const Value.absent(),
+    bool? isReminderSynced,
+    Value<int?> reminderSlot = const Value.absent(),
     String? permission,
     Value<String?> shareIds = const Value.absent(),
     Value<String?> sharedById = const Value.absent(),
@@ -673,6 +852,15 @@ class Note extends DataClass implements Insertable<Note> {
     version: version.present ? version.value : this.version,
     localRev: localRev ?? this.localRev,
     isPinSynced: isPinSynced ?? this.isPinSynced,
+    reminderAt: reminderAt.present ? reminderAt.value : this.reminderAt,
+    reminderRecurrence: reminderRecurrence.present
+        ? reminderRecurrence.value
+        : this.reminderRecurrence,
+    reminderVersion: reminderVersion.present
+        ? reminderVersion.value
+        : this.reminderVersion,
+    isReminderSynced: isReminderSynced ?? this.isReminderSynced,
+    reminderSlot: reminderSlot.present ? reminderSlot.value : this.reminderSlot,
     permission: permission ?? this.permission,
     shareIds: shareIds.present ? shareIds.value : this.shareIds,
     sharedById: sharedById.present ? sharedById.value : this.sharedById,
@@ -704,6 +892,21 @@ class Note extends DataClass implements Insertable<Note> {
       isPinSynced: data.isPinSynced.present
           ? data.isPinSynced.value
           : this.isPinSynced,
+      reminderAt: data.reminderAt.present
+          ? data.reminderAt.value
+          : this.reminderAt,
+      reminderRecurrence: data.reminderRecurrence.present
+          ? data.reminderRecurrence.value
+          : this.reminderRecurrence,
+      reminderVersion: data.reminderVersion.present
+          ? data.reminderVersion.value
+          : this.reminderVersion,
+      isReminderSynced: data.isReminderSynced.present
+          ? data.isReminderSynced.value
+          : this.isReminderSynced,
+      reminderSlot: data.reminderSlot.present
+          ? data.reminderSlot.value
+          : this.reminderSlot,
       permission: data.permission.present
           ? data.permission.value
           : this.permission,
@@ -738,6 +941,11 @@ class Note extends DataClass implements Insertable<Note> {
           ..write('version: $version, ')
           ..write('localRev: $localRev, ')
           ..write('isPinSynced: $isPinSynced, ')
+          ..write('reminderAt: $reminderAt, ')
+          ..write('reminderRecurrence: $reminderRecurrence, ')
+          ..write('reminderVersion: $reminderVersion, ')
+          ..write('isReminderSynced: $isReminderSynced, ')
+          ..write('reminderSlot: $reminderSlot, ')
           ..write('permission: $permission, ')
           ..write('shareIds: $shareIds, ')
           ..write('sharedById: $sharedById, ')
@@ -749,7 +957,7 @@ class Note extends DataClass implements Insertable<Note> {
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     id,
     title,
     content,
@@ -762,13 +970,18 @@ class Note extends DataClass implements Insertable<Note> {
     version,
     localRev,
     isPinSynced,
+    reminderAt,
+    reminderRecurrence,
+    reminderVersion,
+    isReminderSynced,
+    reminderSlot,
     permission,
     shareIds,
     sharedById,
     sharedByName,
     sharedByEmail,
     sharedByProfileImage,
-  );
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -785,6 +998,11 @@ class Note extends DataClass implements Insertable<Note> {
           other.version == this.version &&
           other.localRev == this.localRev &&
           other.isPinSynced == this.isPinSynced &&
+          other.reminderAt == this.reminderAt &&
+          other.reminderRecurrence == this.reminderRecurrence &&
+          other.reminderVersion == this.reminderVersion &&
+          other.isReminderSynced == this.isReminderSynced &&
+          other.reminderSlot == this.reminderSlot &&
           other.permission == this.permission &&
           other.shareIds == this.shareIds &&
           other.sharedById == this.sharedById &&
@@ -806,6 +1024,11 @@ class NotesCompanion extends UpdateCompanion<Note> {
   final Value<int?> version;
   final Value<int> localRev;
   final Value<bool> isPinSynced;
+  final Value<String?> reminderAt;
+  final Value<String?> reminderRecurrence;
+  final Value<int?> reminderVersion;
+  final Value<bool> isReminderSynced;
+  final Value<int?> reminderSlot;
   final Value<String> permission;
   final Value<String?> shareIds;
   final Value<String?> sharedById;
@@ -826,6 +1049,11 @@ class NotesCompanion extends UpdateCompanion<Note> {
     this.version = const Value.absent(),
     this.localRev = const Value.absent(),
     this.isPinSynced = const Value.absent(),
+    this.reminderAt = const Value.absent(),
+    this.reminderRecurrence = const Value.absent(),
+    this.reminderVersion = const Value.absent(),
+    this.isReminderSynced = const Value.absent(),
+    this.reminderSlot = const Value.absent(),
     this.permission = const Value.absent(),
     this.shareIds = const Value.absent(),
     this.sharedById = const Value.absent(),
@@ -847,6 +1075,11 @@ class NotesCompanion extends UpdateCompanion<Note> {
     this.version = const Value.absent(),
     this.localRev = const Value.absent(),
     this.isPinSynced = const Value.absent(),
+    this.reminderAt = const Value.absent(),
+    this.reminderRecurrence = const Value.absent(),
+    this.reminderVersion = const Value.absent(),
+    this.isReminderSynced = const Value.absent(),
+    this.reminderSlot = const Value.absent(),
     this.permission = const Value.absent(),
     this.shareIds = const Value.absent(),
     this.sharedById = const Value.absent(),
@@ -869,6 +1102,11 @@ class NotesCompanion extends UpdateCompanion<Note> {
     Expression<int>? version,
     Expression<int>? localRev,
     Expression<bool>? isPinSynced,
+    Expression<String>? reminderAt,
+    Expression<String>? reminderRecurrence,
+    Expression<int>? reminderVersion,
+    Expression<bool>? isReminderSynced,
+    Expression<int>? reminderSlot,
     Expression<String>? permission,
     Expression<String>? shareIds,
     Expression<String>? sharedById,
@@ -890,6 +1128,11 @@ class NotesCompanion extends UpdateCompanion<Note> {
       if (version != null) 'version': version,
       if (localRev != null) 'local_rev': localRev,
       if (isPinSynced != null) 'is_pin_synced': isPinSynced,
+      if (reminderAt != null) 'reminder_at': reminderAt,
+      if (reminderRecurrence != null) 'reminder_recurrence': reminderRecurrence,
+      if (reminderVersion != null) 'reminder_version': reminderVersion,
+      if (isReminderSynced != null) 'is_reminder_synced': isReminderSynced,
+      if (reminderSlot != null) 'reminder_slot': reminderSlot,
       if (permission != null) 'permission': permission,
       if (shareIds != null) 'share_ids': shareIds,
       if (sharedById != null) 'shared_by_id': sharedById,
@@ -914,6 +1157,11 @@ class NotesCompanion extends UpdateCompanion<Note> {
     Value<int?>? version,
     Value<int>? localRev,
     Value<bool>? isPinSynced,
+    Value<String?>? reminderAt,
+    Value<String?>? reminderRecurrence,
+    Value<int?>? reminderVersion,
+    Value<bool>? isReminderSynced,
+    Value<int?>? reminderSlot,
     Value<String>? permission,
     Value<String?>? shareIds,
     Value<String?>? sharedById,
@@ -935,6 +1183,11 @@ class NotesCompanion extends UpdateCompanion<Note> {
       version: version ?? this.version,
       localRev: localRev ?? this.localRev,
       isPinSynced: isPinSynced ?? this.isPinSynced,
+      reminderAt: reminderAt ?? this.reminderAt,
+      reminderRecurrence: reminderRecurrence ?? this.reminderRecurrence,
+      reminderVersion: reminderVersion ?? this.reminderVersion,
+      isReminderSynced: isReminderSynced ?? this.isReminderSynced,
+      reminderSlot: reminderSlot ?? this.reminderSlot,
       permission: permission ?? this.permission,
       shareIds: shareIds ?? this.shareIds,
       sharedById: sharedById ?? this.sharedById,
@@ -984,6 +1237,21 @@ class NotesCompanion extends UpdateCompanion<Note> {
     if (isPinSynced.present) {
       map['is_pin_synced'] = Variable<bool>(isPinSynced.value);
     }
+    if (reminderAt.present) {
+      map['reminder_at'] = Variable<String>(reminderAt.value);
+    }
+    if (reminderRecurrence.present) {
+      map['reminder_recurrence'] = Variable<String>(reminderRecurrence.value);
+    }
+    if (reminderVersion.present) {
+      map['reminder_version'] = Variable<int>(reminderVersion.value);
+    }
+    if (isReminderSynced.present) {
+      map['is_reminder_synced'] = Variable<bool>(isReminderSynced.value);
+    }
+    if (reminderSlot.present) {
+      map['reminder_slot'] = Variable<int>(reminderSlot.value);
+    }
     if (permission.present) {
       map['permission'] = Variable<String>(permission.value);
     }
@@ -1025,6 +1293,11 @@ class NotesCompanion extends UpdateCompanion<Note> {
           ..write('version: $version, ')
           ..write('localRev: $localRev, ')
           ..write('isPinSynced: $isPinSynced, ')
+          ..write('reminderAt: $reminderAt, ')
+          ..write('reminderRecurrence: $reminderRecurrence, ')
+          ..write('reminderVersion: $reminderVersion, ')
+          ..write('isReminderSynced: $isReminderSynced, ')
+          ..write('reminderSlot: $reminderSlot, ')
           ..write('permission: $permission, ')
           ..write('shareIds: $shareIds, ')
           ..write('sharedById: $sharedById, ')
@@ -3934,6 +4207,11 @@ typedef $$NotesTableCreateCompanionBuilder =
       Value<int?> version,
       Value<int> localRev,
       Value<bool> isPinSynced,
+      Value<String?> reminderAt,
+      Value<String?> reminderRecurrence,
+      Value<int?> reminderVersion,
+      Value<bool> isReminderSynced,
+      Value<int?> reminderSlot,
       Value<String> permission,
       Value<String?> shareIds,
       Value<String?> sharedById,
@@ -3956,6 +4234,11 @@ typedef $$NotesTableUpdateCompanionBuilder =
       Value<int?> version,
       Value<int> localRev,
       Value<bool> isPinSynced,
+      Value<String?> reminderAt,
+      Value<String?> reminderRecurrence,
+      Value<int?> reminderVersion,
+      Value<bool> isReminderSynced,
+      Value<int?> reminderSlot,
       Value<String> permission,
       Value<String?> shareIds,
       Value<String?> sharedById,
@@ -4030,6 +4313,31 @@ class $$NotesTableFilterComposer extends Composer<_$AppDatabase, $NotesTable> {
 
   ColumnFilters<bool> get isPinSynced => $composableBuilder(
     column: $table.isPinSynced,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get reminderAt => $composableBuilder(
+    column: $table.reminderAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get reminderRecurrence => $composableBuilder(
+    column: $table.reminderRecurrence,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get reminderVersion => $composableBuilder(
+    column: $table.reminderVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isReminderSynced => $composableBuilder(
+    column: $table.isReminderSynced,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get reminderSlot => $composableBuilder(
+    column: $table.reminderSlot,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4133,6 +4441,31 @@ class $$NotesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get reminderAt => $composableBuilder(
+    column: $table.reminderAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get reminderRecurrence => $composableBuilder(
+    column: $table.reminderRecurrence,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get reminderVersion => $composableBuilder(
+    column: $table.reminderVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isReminderSynced => $composableBuilder(
+    column: $table.isReminderSynced,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get reminderSlot => $composableBuilder(
+    column: $table.reminderSlot,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get permission => $composableBuilder(
     column: $table.permission,
     builder: (column) => ColumnOrderings(column),
@@ -4215,6 +4548,31 @@ class $$NotesTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get reminderAt => $composableBuilder(
+    column: $table.reminderAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get reminderRecurrence => $composableBuilder(
+    column: $table.reminderRecurrence,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get reminderVersion => $composableBuilder(
+    column: $table.reminderVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isReminderSynced => $composableBuilder(
+    column: $table.isReminderSynced,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get reminderSlot => $composableBuilder(
+    column: $table.reminderSlot,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get permission => $composableBuilder(
     column: $table.permission,
     builder: (column) => column,
@@ -4284,6 +4642,11 @@ class $$NotesTableTableManager
                 Value<int?> version = const Value.absent(),
                 Value<int> localRev = const Value.absent(),
                 Value<bool> isPinSynced = const Value.absent(),
+                Value<String?> reminderAt = const Value.absent(),
+                Value<String?> reminderRecurrence = const Value.absent(),
+                Value<int?> reminderVersion = const Value.absent(),
+                Value<bool> isReminderSynced = const Value.absent(),
+                Value<int?> reminderSlot = const Value.absent(),
                 Value<String> permission = const Value.absent(),
                 Value<String?> shareIds = const Value.absent(),
                 Value<String?> sharedById = const Value.absent(),
@@ -4304,6 +4667,11 @@ class $$NotesTableTableManager
                 version: version,
                 localRev: localRev,
                 isPinSynced: isPinSynced,
+                reminderAt: reminderAt,
+                reminderRecurrence: reminderRecurrence,
+                reminderVersion: reminderVersion,
+                isReminderSynced: isReminderSynced,
+                reminderSlot: reminderSlot,
                 permission: permission,
                 shareIds: shareIds,
                 sharedById: sharedById,
@@ -4326,6 +4694,11 @@ class $$NotesTableTableManager
                 Value<int?> version = const Value.absent(),
                 Value<int> localRev = const Value.absent(),
                 Value<bool> isPinSynced = const Value.absent(),
+                Value<String?> reminderAt = const Value.absent(),
+                Value<String?> reminderRecurrence = const Value.absent(),
+                Value<int?> reminderVersion = const Value.absent(),
+                Value<bool> isReminderSynced = const Value.absent(),
+                Value<int?> reminderSlot = const Value.absent(),
                 Value<String> permission = const Value.absent(),
                 Value<String?> shareIds = const Value.absent(),
                 Value<String?> sharedById = const Value.absent(),
@@ -4346,6 +4719,11 @@ class $$NotesTableTableManager
                 version: version,
                 localRev: localRev,
                 isPinSynced: isPinSynced,
+                reminderAt: reminderAt,
+                reminderRecurrence: reminderRecurrence,
+                reminderVersion: reminderVersion,
+                isReminderSynced: isReminderSynced,
+                reminderSlot: reminderSlot,
                 permission: permission,
                 shareIds: shareIds,
                 sharedById: sharedById,

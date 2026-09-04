@@ -100,8 +100,8 @@ export class SyncEmitterService {
   }
 
   // Recipients losing a note (revoke, tombstone) get a note remove, and their
-  // pin/attachments index rows for it go too. extraEmissions ride along so the
-  // whole operation still takes its locks in one sorted pass.
+  // pin/reminder/attachments index rows for it go too. extraEmissions ride
+  // along so the whole operation still takes its locks in one sorted pass.
   async removeNote(
     tx: Prisma.TransactionClient,
     recipientUserIds: string[],
@@ -116,14 +116,20 @@ export class SyncEmitterService {
       where: {
         recipientUserId: { in: recipientUserIds },
         entityId: noteId,
-        entityType: { in: [SyncEntityType.pin, SyncEntityType.attachments] },
+        entityType: {
+          in: [
+            SyncEntityType.pin,
+            SyncEntityType.reminder,
+            SyncEntityType.attachments,
+          ],
+        },
       },
     });
     return recipients;
   }
 
   // Batch form for the trash-expiry cron. The notes are gone for everyone, so
-  // the pin/attachments cleanup drops rows for every recipient.
+  // the pin/reminder/attachments cleanup drops rows for every recipient.
   async removeNotes(
     tx: Prisma.TransactionClient,
     recipientsByNote: Map<string, string[]>,
@@ -145,7 +151,13 @@ export class SyncEmitterService {
     await tx.changeLog.deleteMany({
       where: {
         entityId: { in: noteIds },
-        entityType: { in: [SyncEntityType.pin, SyncEntityType.attachments] },
+        entityType: {
+          in: [
+            SyncEntityType.pin,
+            SyncEntityType.reminder,
+            SyncEntityType.attachments,
+          ],
+        },
       },
     });
     return recipients;
@@ -199,6 +211,18 @@ export const pinEmission = (
   entityType: SyncEntityType.pin,
   entityId: noteId,
   op: isPinned ? SyncOp.upsert : SyncOp.remove,
+});
+
+// Reminders are per-user: the only recipient is the reminder's owner.
+export const reminderEmission = (
+  userId: string,
+  noteId: string,
+  hasReminder: boolean,
+): SyncEmission => ({
+  recipientUserId: userId,
+  entityType: SyncEntityType.reminder,
+  entityId: noteId,
+  op: hasReminder ? SyncOp.upsert : SyncOp.remove,
 });
 
 export const tagEmission = (

@@ -205,7 +205,9 @@ class SheetActionButtons extends StatelessWidget {
   final String? cancelText;
 
   final String confirmText;
-  final VoidCallback onConfirm;
+
+  /// Null greys the confirm button out.
+  final VoidCallback? onConfirm;
 
   /// Defaults to popping the route.
   final VoidCallback? onCancel;

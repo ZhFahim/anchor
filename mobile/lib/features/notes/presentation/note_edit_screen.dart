@@ -26,6 +26,9 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:uuid/uuid.dart';
 
 import '../data/repository/notes_repository.dart';
+import 'package:anchor/core/notifications/reminder_permission_prompt.dart';
+import 'widgets/reminder_chip.dart';
+import 'widgets/reminder_picker_sheet.dart';
 import 'package:anchor/core/theme/context_extensions.dart';
 import 'package:anchor/core/theme/tokens/app_icon_sizes.dart';
 import 'package:anchor/core/theme/tokens/app_radius.dart';
@@ -387,9 +390,49 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
           ShareNoteSheet(noteId: widget.noteId ?? _existingNote!.id),
     ).then((_) {
       if (widget.noteId != null || _existingNote != null) {
-        _reloadNoteShareInfo();
+        _reloadNote();
       }
     });
+  }
+
+  void _showReminderPicker() {
+    if (_isReadOnly) return;
+    AppBottomSheet.show(
+      context,
+      // The sheet pops before this runs, so the snackbar needs the screen's
+      // context.
+      builder: (_) => ReminderPickerSheet(
+        reminder: _existingNote?.reminder,
+        onReminderChanged: (reminder) async {
+          try {
+            var noteId = widget.noteId ?? _existingNote?.id;
+            noteId ??= await _createNote();
+
+            await ref
+                .read(notesRepositoryProvider)
+                .setReminder(noteId, reminder);
+            await _reloadNote();
+            if (!mounted) return;
+            AppSnackbar.showSuccess(
+              context,
+              message: reminder == null ? 'Reminder removed' : 'Reminder set',
+            );
+          } catch (_) {
+            if (!mounted) return;
+            AppSnackbar.showError(context, message: 'Failed to set reminder');
+            return;
+          }
+
+          if (reminder != null && mounted) {
+            await ensureReminderPermissions(
+              context,
+              ref,
+              trigger: ReminderPermissionTrigger.userSet,
+            );
+          }
+        },
+      ),
+    );
   }
 
   void _showAttachmentSheet() {
@@ -440,6 +483,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
         isArchived: _isArchived,
         onTagsTap: _showTagPicker,
         onBackgroundTap: _showColorPicker,
+        onReminderTap: _showReminderPicker,
         onAttachmentTap: _showAttachmentSheet,
         onArchiveTap: _toggleArchived,
         onDeleteTap: _deleteNote,
@@ -459,7 +503,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
     context.push('/note/$noteId/${AppRoutes.noteHistory}');
   }
 
-  Future<void> _reloadNoteShareInfo() async {
+  Future<void> _reloadNote() async {
     final noteId = widget.noteId ?? _existingNote?.id;
     if (noteId == null) return;
 
@@ -837,6 +881,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
     final showTags = (_isEditing && !isReadOnly) || _selectedTagIds.isNotEmpty;
     final showAttachments =
         !_isNew && (_existingNote != null || widget.noteId != null);
+    final reminder = _existingNote?.reminder;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -896,6 +941,21 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
                 _onContentChanged();
               }
             },
+          ),
+        if (reminder != null)
+          Padding(
+            padding: EdgeInsets.only(
+              left: dims.editorPadding.left,
+              right: dims.editorPadding.right,
+              top: dims.xs,
+            ),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: ReminderChip(
+                reminder: reminder,
+                onTap: isReadOnly ? null : _showReminderPicker,
+              ),
+            ),
           ),
         if (showAttachments)
           NoteAttachmentsGallery(

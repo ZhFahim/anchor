@@ -11,6 +11,7 @@ import type {
   CreateNoteDto,
   Note,
   NoteDraft,
+  NoteReminder,
   NoteSaveQueue,
   SaveFailure,
 } from "@/features/notes";
@@ -37,6 +38,7 @@ import {
   restoreNote,
   ShareDialog,
   saveNote,
+  toReminderInput,
   unarchiveNote,
 } from "@/features/notes";
 import type { RichTextEditorHandle } from "@/features/notes/components/editor";
@@ -106,6 +108,7 @@ export default function NoteEditorPage() {
   const [isArchived, setIsArchived] = useState(false);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [background, setBackground] = useState<string | null>(null);
+  const [reminder, setReminder] = useState<NoteReminder | null>(null);
   const [lastSaved, setLastSaved] = useState<NoteDraft | null>(null);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [isSaveStuck, setIsSaveStuck] = useState(false);
@@ -140,7 +143,11 @@ export default function NoteEditorPage() {
   const queueRef = useRef<NoteSaveQueue | null>(null);
   queueRef.current ??= createNoteSaveQueue({
     save: (draft, baseVersion) =>
-      saveNote(live.current.noteId, { ...draft, baseVersion }),
+      saveNote(live.current.noteId, {
+        ...draft,
+        reminder: toReminderInput(draft.reminder),
+        baseVersion,
+      }),
     onSaved: (draft, note) => live.current.onSaved(draft, note),
     onConflict: (serverNote, _draft, canRetry) =>
       live.current.onConflict(serverNote, canRetry),
@@ -196,8 +203,9 @@ export default function NoteEditorPage() {
       isPinned,
       background,
       tagIds: selectedTagIds,
+      reminder,
     }),
-    [title, content, isPinned, background, selectedTagIds],
+    [title, content, isPinned, background, selectedTagIds, reminder],
   );
 
   const hasUnsavedChanges = lastSaved
@@ -243,6 +251,7 @@ export default function NoteEditorPage() {
       setContent(incoming.content);
       setIsPinned(incoming.isPinned);
       setBackground(incoming.background);
+      setReminder(incoming.reminder);
       setSelectedTagIds(incoming.tagIds);
       setLastSaved(incoming);
       noteVersionRef.current = serverNote.version;
@@ -271,6 +280,7 @@ export default function NoteEditorPage() {
     setIsPinned(false);
     setIsArchived(false);
     setBackground(null);
+    setReminder(null);
     setSelectedTagIds(tagIdFromUrl ? [tagIdFromUrl] : []);
   }, [isNew, tagIdFromUrl]);
 
@@ -327,6 +337,7 @@ export default function NoteEditorPage() {
     setIsPinned(hydrated.isPinned);
     setSelectedTagIds(hydrated.tagIds);
     setBackground(hydrated.background);
+    setReminder(hydrated.reminder);
     setLastSaved(hydrated);
     noteVersionRef.current = note.version;
     queue.setBaseVersion(note.version);
@@ -740,6 +751,7 @@ export default function NoteEditorPage() {
         isPinned={isPinned}
         isArchived={isArchived}
         background={background}
+        reminder={reminder}
         isSaving={isSaving}
         hasUnsavedChanges={hasUnsavedChanges}
         isSaved={isSaved}
@@ -750,6 +762,7 @@ export default function NoteEditorPage() {
         onBack={handleBack}
         onTogglePin={togglePin}
         onBackgroundChange={setBackground}
+        onReminderChange={setReminder}
         onArchiveClick={() => setArchiveDialogOpen(true)}
         onDeleteClick={() => setDeleteDialogOpen(true)}
         onRestoreClick={() => setRestoreDialogOpen(true)}

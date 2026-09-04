@@ -6,6 +6,8 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:anchor/core/network/connectivity_provider.dart';
+import 'package:anchor/core/notifications/reminder_permission_prompt.dart';
+import 'package:anchor/core/notifications/reminder_permissions.dart';
 import 'package:anchor/core/widgets/quill_preview.dart';
 import 'package:anchor/core/widgets/app_drawer.dart';
 import 'package:anchor/features/tags/presentation/tags_controller.dart';
@@ -54,6 +56,30 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
     }
   }
 
+  /// Asks for what a reminder needs the first time this device holds one.
+  void _maybeAskForReminderPermissions(List<Note> notes) {
+    final controller = ref.read(reminderPermissionsControllerProvider.notifier);
+    if (controller.promptedThisRun) return;
+
+    final permissions = ref.read(reminderPermissionsControllerProvider).value;
+    if (permissions == null || permissions.ringsOnTime) return;
+
+    final rings = notes.any(
+      (note) => note.hasReminder && note.isActive && !note.isArchived,
+    );
+    if (!rings) return;
+
+    controller.promptedThisRun = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ensureReminderPermissions(
+        context,
+        ref,
+        trigger: ReminderPermissionTrigger.synced,
+      );
+    });
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -98,6 +124,9 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
   Widget build(BuildContext context) {
     final notesAsync = ref.watch(notesControllerProvider);
     final searchQuery = ref.watch(searchQueryProvider);
+    ref.watch(reminderPermissionsControllerProvider);
+    final notes = notesAsync.value;
+    if (notes != null) _maybeAskForReminderPermissions(notes);
     final selectedTagId = ref.watch(selectedTagFilterProvider);
     final tagsAsync = ref.watch(tagsControllerProvider);
     final isSyncing = ref.watch(syncManagerProvider);

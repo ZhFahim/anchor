@@ -5,7 +5,10 @@ import { NoteAccessService } from '../notes/services/note-access.service';
 import { SyncApplyService } from './sync-apply.service';
 import type { SyncChange } from './dto/sync-request.dto';
 import type { SyncTagPayload } from './dto/sync-response.dto';
-import type { TransformedNote } from '../notes/utils/note-transformer.util';
+import type {
+  NotePermission,
+  TransformedNote,
+} from '../notes/utils/note-transformer.util';
 import {
   asNoteRevisions,
   asSyncEmitter,
@@ -71,6 +74,19 @@ describe('SyncApplyService', () => {
   const pinUpsert = jest.fn().mockResolvedValue({});
   const pinDeleteMany = jest.fn().mockResolvedValue({ count: 1 });
 
+  let reminderRow: Record<string, unknown> | null;
+  let reminderWriteCount: number;
+  const reminderFindUnique = jest.fn(() => Promise.resolve(reminderRow));
+  const reminderCreate = jest.fn((args: { data: Record<string, unknown> }) =>
+    Promise.resolve({ ...args.data, version: 1 }),
+  );
+  const reminderUpdateMany = jest.fn(() =>
+    Promise.resolve({ count: reminderWriteCount }),
+  );
+  const reminderDeleteMany = jest.fn(() =>
+    Promise.resolve({ count: reminderWriteCount }),
+  );
+
   const prisma = {
     $transaction: (cb: (tx: unknown) => unknown) => cb(prisma),
     note: {
@@ -89,6 +105,12 @@ describe('SyncApplyService', () => {
       findUnique: pinFindUnique,
       upsert: pinUpsert,
       deleteMany: pinDeleteMany,
+    },
+    noteReminder: {
+      findUnique: reminderFindUnique,
+      create: reminderCreate,
+      updateMany: reminderUpdateMany,
+      deleteMany: reminderDeleteMany,
     },
   } as unknown as PrismaService;
 
@@ -165,6 +187,8 @@ describe('SyncApplyService', () => {
     existingTag = null;
     collidingTag = null;
     pinRow = null;
+    reminderRow = null;
+    reminderWriteCount = 1;
     updateManyCount = 1;
     jest.clearAllMocks();
     emitter.noteRecipients.mockResolvedValue([USER]);
@@ -855,6 +879,174 @@ describe('SyncApplyService', () => {
       expect(emitter.emit).toHaveBeenLastCalledWith(prisma, [
         expect.objectContaining({ entityType: 'pin', op: 'remove' }),
       ]);
+    });
+  });
+
+  describe('reminders', () => {
+    const reminderChange = (
+      overrides: Record<string, unknown> = {},
+    ): SyncChange =>
+      ({
+        type: 'reminder',
+        id: 'n1',
+        remindAt: '2026-09-04T09:00',
+        ...overrides,
+      }) as unknown as SyncChange;
+
+    const stored = (overrides: Record<string, unknown> = {}) => ({
+      userId: USER,
+      noteId: 'n1',
+      remindAt: '2026-09-04T09:00',
+      recurrence: 'none',
+      version: 3,
+      ...overrides,
+    });
+
+    const grantAccess = (permission: NotePermission = 'owner') =>
+      hasNoteAccess.mockResolvedValue({
+        hasAccess: true,
+        state: NoteState.active,
+        isOwner: permission === 'owner',
+        permission,
+      });
+
+    it('lets a viewer set a reminder on a note shared with them', async () => {
+      grantAccess(NoteSharePermission.viewer);
+
+      const results = await service.apply(USER, [reminderChange()]);
+
+      expect(results).toEqual([
+        { type: 'reminder', id: 'n1', status: 'applied', version: 1 },
+      ]);
+      expect(emitter.emit).toHaveBeenCalledWith(prisma, [
+        expect.objectContaining({
+          recipientUserId: USER,
+          entityType: 'reminder',
+          entityId: 'n1',
+          op: 'upsert',
+        }),
+      ]);
+    });
+
+    it('denies a reminder on a note it cannot reach', async () => {
+      hasNoteAccess.mockResolvedValue({ hasAccess: false });
+
+      const results = await service.apply(USER, [reminderChange()]);
+
+      expect(results[0].status).toBe('denied');
+      expect(reminderCreate).not.toHaveBeenCalled();
+    });
+
+    it('acks a clear for a reminder that is already gone', async () => {
+      grantAccess();
+
+      const results = await service.apply(USER, [
+        reminderChange({ remindAt: null }),
+      ]);
+
+      expect(results[0].status).toBe('applied');
+      expect(reminderDeleteMany).not.toHaveBeenCalled();
+    });
+
+    it('denies recreating a reminder the server no longer has', async () => {
+      grantAccess();
+
+      const results = await service.apply(USER, [
+        reminderChange({ baseVersion: 2 }),
+      ]);
+
+      expect(results[0].status).toBe('denied');
+      expect(reminderCreate).not.toHaveBeenCalled();
+    });
+
+    it('acks a redelivered push that already matches, without conflicting', async () => {
+      grantAccess();
+      reminderRow = stored();
+
+      const results = await service.apply(USER, [
+        reminderChange({ baseVersion: 1 }),
+      ]);
+
+      expect(results).toEqual([
+        { type: 'reminder', id: 'n1', status: 'applied', version: 3 },
+      ]);
+      expect(reminderUpdateMany).not.toHaveBeenCalled();
+    });
+
+    it('refuses a stale clear and hands back the newer reminder', async () => {
+      grantAccess();
+      reminderRow = stored({ remindAt: '2026-09-05T18:30', version: 7 });
+
+      const results = await service.apply(USER, [
+        reminderChange({ remindAt: null, baseVersion: 3 }),
+      ]);
+
+      expect(results[0]).toMatchObject({
+        status: 'conflict',
+        version: 7,
+        serverCopy: { remindAt: '2026-09-05T18:30', version: 7 },
+      });
+      expect(reminderDeleteMany).not.toHaveBeenCalled();
+    });
+
+    it('conflicts when the push carries no baseVersion at all', async () => {
+      grantAccess();
+      reminderRow = stored();
+
+      const results = await service.apply(USER, [
+        reminderChange({ remindAt: '2026-09-09T07:00' }),
+      ]);
+
+      expect(results[0].status).toBe('conflict');
+      expect(reminderUpdateMany).not.toHaveBeenCalled();
+    });
+
+    it('bumps the version and emits on an accepted edit', async () => {
+      grantAccess();
+      reminderRow = stored();
+
+      const results = await service.apply(USER, [
+        reminderChange({
+          remindAt: '2026-09-09T07:00',
+          recurrence: 'daily',
+          baseVersion: 3,
+        }),
+      ]);
+
+      expect(results).toEqual([
+        { type: 'reminder', id: 'n1', status: 'applied', version: 4 },
+      ]);
+      expect(reminderUpdateMany).toHaveBeenCalledWith({
+        where: { userId: USER, noteId: 'n1', version: 3 },
+        data: { remindAt: '2026-09-09T07:00', recurrence: 'daily', version: 4 },
+      });
+    });
+
+    it('clears the reminder and emits a remove', async () => {
+      grantAccess();
+      reminderRow = stored();
+
+      const results = await service.apply(USER, [
+        reminderChange({ remindAt: null, baseVersion: 3 }),
+      ]);
+
+      expect(results[0].status).toBe('applied');
+      expect(emitter.emit).toHaveBeenCalledWith(prisma, [
+        expect.objectContaining({ entityType: 'reminder', op: 'remove' }),
+      ]);
+    });
+
+    it('conflicts when the guarded write matches no row', async () => {
+      grantAccess();
+      reminderRow = stored();
+      reminderWriteCount = 0;
+
+      const results = await service.apply(USER, [
+        reminderChange({ remindAt: '2026-09-09T07:00', baseVersion: 3 }),
+      ]);
+
+      expect(results[0].status).toBe('conflict');
+      expect(emitter.emit).not.toHaveBeenCalled();
     });
   });
 });

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:anchor/core/database/app_database.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as path;
@@ -33,6 +34,9 @@ void main() {
       await withDatabase((db) async {
         await db.customStatement('DROP TABLE note_revisions');
         await db.customStatement('DROP TABLE note_history_state');
+        for (final column in _reminderColumns) {
+          await db.customStatement('ALTER TABLE notes DROP COLUMN $column');
+        }
         await db.customStatement('PRAGMA user_version = 8');
       });
 
@@ -68,4 +72,45 @@ void main() {
       });
     },
   );
+
+  test('a database from before reminders gains the reminder columns', () async {
+    await withDatabase((db) async {
+      await db
+          .into(db.notes)
+          .insert(
+            NotesCompanion.insert(
+              id: 'n1',
+              title: 'Groceries',
+              isSynced: const Value(false),
+              localRev: const Value(4),
+            ),
+          );
+      for (final column in _reminderColumns) {
+        await db.customStatement('ALTER TABLE notes DROP COLUMN $column');
+      }
+      await db.customStatement('PRAGMA user_version = 9');
+    });
+
+    await withDatabase((db) async {
+      final columns = await db.customSelect('PRAGMA table_info(notes)').get();
+      final names = columns.map((row) => row.read<String>('name')).toSet();
+      expect(names, containsAll(_reminderColumns));
+
+      final note = await db.select(db.notes).getSingle();
+      expect(note.reminderAt, isNull);
+      expect(note.reminderRecurrence, isNull);
+      expect(note.reminderSlot, isNull);
+      expect(note.isReminderSynced, isTrue);
+      expect(note.isSynced, isFalse);
+      expect(note.localRev, 4);
+    });
+  });
 }
+
+const _reminderColumns = [
+  'reminder_at',
+  'reminder_recurrence',
+  'reminder_version',
+  'is_reminder_synced',
+  'reminder_slot',
+];

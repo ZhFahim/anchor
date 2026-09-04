@@ -8,6 +8,7 @@ import {
   IsOptional,
   IsString,
   IsEnum,
+  Matches,
   Max,
   Min,
   ValidateNested,
@@ -26,10 +27,18 @@ export enum SyncNoteState {
   deleted = 'deleted',
 }
 
-// For pins `id` is the noteId; there is no pin entity of its own.
+export enum SyncReminderRecurrence {
+  none = 'none',
+  daily = 'daily',
+  weekly = 'weekly',
+  monthly = 'monthly',
+  yearly = 'yearly',
+}
+
+// For pins and reminders `id` is the noteId; neither has an entity of its own.
 export class SyncChangeBaseDto {
-  @IsIn(['note', 'tag', 'pin'])
-  type: 'note' | 'tag' | 'pin';
+  @IsIn(['note', 'tag', 'pin', 'reminder'])
+  type: 'note' | 'tag' | 'pin' | 'reminder';
 
   @IsString()
   id: string;
@@ -135,8 +144,32 @@ export class SyncPinChangeDto extends SyncChangeBaseDto {
   isPinned: boolean;
 }
 
+// A local wall clock with no zone and no seconds, e.g. "2026-09-04T09:00".
+export const REMINDER_WALL_CLOCK = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
+
+export class SyncReminderChangeDto extends SyncChangeBaseDto {
+  declare type: 'reminder';
+
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  baseVersion?: number;
+
+  // Null or absent clears the reminder.
+  @Matches(REMINDER_WALL_CLOCK)
+  @IsOptional()
+  remindAt?: string | null;
+
+  @IsEnum(SyncReminderRecurrence)
+  @IsOptional()
+  recurrence?: SyncReminderRecurrence;
+}
+
 export type SyncChange =
-  SyncNoteChangeDto | SyncTagChangeDto | SyncPinChangeDto;
+  | SyncNoteChangeDto
+  | SyncTagChangeDto
+  | SyncPinChangeDto
+  | SyncReminderChangeDto;
 
 export class SyncRequestDto {
   @IsString()
@@ -159,6 +192,7 @@ export class SyncRequestDto {
         { value: SyncNoteChangeDto, name: 'note' },
         { value: SyncTagChangeDto, name: 'tag' },
         { value: SyncPinChangeDto, name: 'pin' },
+        { value: SyncReminderChangeDto, name: 'reminder' },
       ],
     },
     keepDiscriminatorProperty: true,

@@ -14,7 +14,11 @@ export class SyncService {
     private feedService: SyncFeedService,
   ) {}
 
-  async sync(userId: string, dto: SyncRequestDto): Promise<SyncResponse> {
+  async sync(
+    userId: string,
+    dto: SyncRequestDto,
+    clientProtocol?: number,
+  ): Promise<SyncResponse> {
     const results = dto.changes?.length
       ? await this.applyService.apply(userId, dto.changes)
       : [];
@@ -23,6 +27,11 @@ export class SyncService {
       dto.cursor,
       dto.limit ?? DEFAULT_SYNC_LIMIT,
     );
-    return { protocol: ANCHOR_PROTOCOL, results, ...feed };
+    // Answer in the protocol the caller speaks.
+    const protocol = Math.min(
+      clientProtocol ?? ANCHOR_PROTOCOL,
+      ANCHOR_PROTOCOL,
+    );
+    return { protocol, results, ...feed };
   }
 }

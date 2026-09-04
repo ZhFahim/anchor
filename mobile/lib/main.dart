@@ -5,6 +5,8 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'core/app_initializer.dart';
 import 'core/home_widget/home_widget_service.dart';
 import 'core/network/connectivity_provider.dart';
+import 'core/notifications/reminder_scheduler.dart';
+import 'core/notifications/reminder_tap_handler.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'features/settings/presentation/controllers/theme_preferences_controller.dart';
@@ -29,6 +31,10 @@ class AnchorApp extends ConsumerWidget {
     // Keep the Android home-screen widget fed and handle its taps
     ref.watch(homeWidgetSyncProvider);
     ref.watch(homeWidgetLaunchHandlerProvider);
+
+    // Keep the OS's scheduled reminders in step and handle their taps
+    ref.watch(reminderSchedulerProvider);
+    ref.watch(reminderTapHandlerProvider);
 
     return MaterialApp.router(
       title: 'Anchor Notes',

@@ -4,6 +4,7 @@ import type { Note } from 'src/generated/prisma/client';
 import {
   NoteSharePermission,
   NoteState,
+  ReminderRecurrence,
   SyncOp,
 } from 'src/generated/prisma/enums';
 import { NoteAccessService } from '../notes/services/note-access.service';
@@ -24,6 +25,7 @@ import {
   SyncEmitterService,
   noteEmissions,
   pinEmission,
+  reminderEmission,
   tagEmission,
 } from './sync-emitter.service';
 import { NoteRevisionsService, revisionsCover } from './note-revisions.service';
@@ -31,9 +33,14 @@ import type {
   SyncChange,
   SyncNoteChangeDto,
   SyncPinChangeDto,
+  SyncReminderChangeDto,
   SyncTagChangeDto,
 } from './dto/sync-request.dto';
-import { SyncApplyResult, toSyncTagPayload } from './dto/sync-response.dto';
+import {
+  SyncApplyResult,
+  toSyncReminderPayload,
+  toSyncTagPayload,
+} from './dto/sync-response.dto';
 
 @Injectable()
 export class SyncApplyService {
@@ -77,6 +84,8 @@ export class SyncApplyService {
           return await this.applyTag(userId, change);
         case 'pin':
           return await this.applyPin(userId, change);
+        case 'reminder':
+          return await this.applyReminder(userId, change);
       }
     } catch (error) {
       this.logger.error(
@@ -518,6 +527,89 @@ export class SyncApplyService {
     });
 
     return { ...base, status: 'applied' };
+  }
+
+  private async applyReminder(
+    userId: string,
+    change: SyncReminderChangeDto,
+  ): Promise<SyncApplyResult> {
+    const base = { type: 'reminder' as const, id: change.id };
+    const access = await this.noteAccess.hasNoteAccess(userId, change.id);
+    if (!access.hasAccess || access.state === NoteState.deleted) {
+      return { ...base, status: 'denied' };
+    }
+
+    const key = { userId_noteId: { userId, noteId: change.id } };
+    const prior = await this.prisma.noteReminder.findUnique({ where: key });
+    const remindAt = change.remindAt ?? null;
+    const recurrence = change.recurrence ?? ReminderRecurrence.none;
+
+    if (!prior) {
+      if (remindAt === null) {
+        return { ...base, status: 'applied' };
+      }
+      if (change.baseVersion !== undefined) {
+        return { ...base, status: 'denied' };
+      }
+      const created = await this.prisma.$transaction(async (tx) => {
+        const row = await tx.noteReminder.create({
+          data: { userId, noteId: change.id, remindAt, recurrence },
+        });
+        await this.syncEmitter.emit(tx, [
+          reminderEmission(userId, change.id, true),
+        ]);
+        return row;
+      });
+      return { ...base, status: 'applied', version: created.version };
+    }
+
+    if (
+      remindAt !== null &&
+      prior.remindAt === remindAt &&
+      prior.recurrence === recurrence
+    ) {
+      return { ...base, status: 'applied', version: prior.version };
+    }
+
+    if (change.baseVersion !== prior.version) {
+      return {
+        ...base,
+        status: 'conflict',
+        version: prior.version,
+        serverCopy: toSyncReminderPayload(prior),
+      };
+    }
+
+    return await this.prisma.$transaction(async (tx) => {
+      if (remindAt === null) {
+        const { count } = await tx.noteReminder.deleteMany({
+          where: { userId, noteId: change.id, version: prior.version },
+        });
+        if (count !== 1) {
+          return { ...base, status: 'conflict' as const };
+        }
+        await this.syncEmitter.emit(tx, [
+          reminderEmission(userId, change.id, false),
+        ]);
+        return { ...base, status: 'applied' as const };
+      }
+
+      const { count } = await tx.noteReminder.updateMany({
+        where: { userId, noteId: change.id, version: prior.version },
+        data: { remindAt, recurrence, version: prior.version + 1 },
+      });
+      if (count !== 1) {
+        return { ...base, status: 'conflict' as const };
+      }
+      await this.syncEmitter.emit(tx, [
+        reminderEmission(userId, change.id, true),
+      ]);
+      return {
+        ...base,
+        status: 'applied' as const,
+        version: prior.version + 1,
+      };
+    });
   }
 }
 

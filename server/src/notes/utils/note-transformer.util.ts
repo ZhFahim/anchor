@@ -1,7 +1,17 @@
-import { NoteSharePermission } from 'src/generated/prisma/enums';
+import {
+  NoteSharePermission,
+  ReminderRecurrence,
+} from 'src/generated/prisma/enums';
 
 // Type definitions for transformed note structures
 export type NotePermission = 'owner' | NoteSharePermission;
+
+// remindAt is a local wall clock ("YYYY-MM-DDTHH:mm"), not an instant.
+export interface TransformedReminder {
+  remindAt: string;
+  recurrence: ReminderRecurrence;
+  version: number;
+}
 
 interface SharedByUser {
   id: string;
@@ -28,6 +38,8 @@ export interface TransformedNote {
   sharedBy?: SharedByUser;
   attachmentCount?: number;
   imagePreviewIds?: string[];
+  // Absent means "not loaded"; null means "this user has no reminder".
+  reminder?: TransformedReminder | null;
 }
 
 // Input type for notes from Prisma with includes
@@ -44,6 +56,11 @@ interface NoteWithIncludes {
   stateChangedAt?: Date;
   userId: string;
   pins?: Array<{ userId: string }>;
+  reminders?: Array<{
+    remindAt: string;
+    recurrence: ReminderRecurrence;
+    version: number;
+  }>;
   tags?: Array<{ id: string; userId: string }>;
   sharedWith?: Array<{
     id: string;
@@ -72,6 +89,7 @@ export function transformNote(
     _count,
     attachments,
     pins,
+    reminders,
     stateChangedAt,
     ...rest
   } = note;
@@ -116,6 +134,10 @@ export function transformNote(
   // Add sharedBy for shared notes
   if (sharedBy) {
     transformed.sharedBy = sharedBy;
+  }
+
+  if (reminders) {
+    transformed.reminder = reminders[0] ?? null;
   }
 
   return transformed;

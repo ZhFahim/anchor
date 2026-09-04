@@ -138,7 +138,7 @@ describe('SyncEmitterService', () => {
     });
   });
 
-  it('removeNote drops the pin/attachments index rows and folds extras into one emit', async () => {
+  it('removeNote drops the pin/reminder/attachments index rows and folds extras into one emit', async () => {
     await service.removeNote(
       tx,
       ['user-b'],
@@ -150,7 +150,13 @@ describe('SyncEmitterService', () => {
       where: {
         recipientUserId: { in: ['user-b'] },
         entityId: 'note-1',
-        entityType: { in: [SyncEntityType.pin, SyncEntityType.attachments] },
+        entityType: {
+          in: [
+            SyncEntityType.pin,
+            SyncEntityType.reminder,
+            SyncEntityType.attachments,
+          ],
+        },
       },
     });
     const ops = new Map(upserted.map((row) => [row.recipientUserId, row.op]));

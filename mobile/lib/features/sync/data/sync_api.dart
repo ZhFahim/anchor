@@ -189,6 +189,35 @@ class SyncPinChange extends SyncChange {
   };
 }
 
+/// A reminder push. `remindAt: null` clears it.
+class SyncReminderChange extends SyncChange {
+  const SyncReminderChange({
+    required super.id,
+    required this.remindAt,
+    required this.recurrence,
+    this.baseVersion,
+  });
+
+  final String? remindAt;
+  final domain.ReminderRecurrence recurrence;
+  final int? baseVersion;
+
+  @override
+  String get type => 'reminder';
+
+  @override
+  int get approximateBytes => _changeOverheadBytes;
+
+  @override
+  Map<String, dynamic> toJson() => {
+    'type': type,
+    'id': id,
+    'remindAt': remindAt,
+    'recurrence': recurrence.name,
+    if (baseVersion != null) 'baseVersion': baseVersion,
+  };
+}
+
 enum SyncStatus {
   applied,
   conflict,
@@ -206,7 +235,8 @@ enum SyncEntityType {
   note,
   tag,
   pin,
-  attachments;
+  attachments,
+  reminder;
 
   static SyncEntityType? fromString(String? value) {
     for (final type in SyncEntityType.values) {
@@ -224,6 +254,7 @@ class SyncResult {
     this.version,
     this.serverNote,
     this.serverTag,
+    this.serverReminder,
   });
 
   factory SyncResult.fromJson(Map<String, dynamic> json) {
@@ -240,6 +271,9 @@ class SyncResult {
       serverTag: type == 'tag' && serverCopy != null
           ? SyncServerTag.fromJson(serverCopy)
           : null,
+      serverReminder: type == 'reminder'
+          ? SyncServerReminder.fromJson(serverCopy)
+          : null,
     );
   }
 
@@ -251,6 +285,34 @@ class SyncResult {
   /// For a tag that clashed by name this is a different tag, to merge into.
   final SyncServerNote? serverNote;
   final SyncServerTag? serverTag;
+
+  /// Null on a reminder conflict means the winning state is "no reminder".
+  final SyncServerReminder? serverReminder;
+}
+
+class SyncServerReminder {
+  const SyncServerReminder({
+    required this.remindAt,
+    required this.recurrence,
+    required this.version,
+  });
+
+  static SyncServerReminder? fromJson(Map<String, dynamic>? json) {
+    if (json == null) return null;
+    final remindAt = json['remindAt'] as String?;
+    if (remindAt == null) return null;
+    return SyncServerReminder(
+      remindAt: remindAt,
+      recurrence: domain.ReminderRecurrence.fromString(
+        json['recurrence'] as String?,
+      ),
+      version: json['version'] as int? ?? 1,
+    );
+  }
+
+  final String remindAt;
+  final domain.ReminderRecurrence recurrence;
+  final int version;
 }
 
 class SyncServerNote {
@@ -268,6 +330,8 @@ class SyncServerNote {
     required this.permission,
     required this.shareIds,
     required this.sharedBy,
+    required this.hasReminderField,
+    required this.reminder,
   });
 
   factory SyncServerNote.fromJson(Map<String, dynamic> json) {
@@ -288,6 +352,11 @@ class SyncServerNote {
       sharedBy: sharedBy != null
           ? domain.SharedByUser.fromJson(sharedBy)
           : null,
+      // An absent key means "not loaded"; an explicit null means "no reminder".
+      hasReminderField: json.containsKey('reminder'),
+      reminder: SyncServerReminder.fromJson(
+        json['reminder'] as Map<String, dynamic>?,
+      ),
     );
   }
 
@@ -304,6 +373,10 @@ class SyncServerNote {
   final String permission;
   final List<String> shareIds;
   final domain.SharedByUser? sharedBy;
+
+  /// Whether the payload spoke about the reminder at all.
+  final bool hasReminderField;
+  final SyncServerReminder? reminder;
 
   bool get isDeleted => state == 'deleted';
   bool get canEdit => permission == 'owner' || permission == 'editor';
@@ -340,6 +413,7 @@ class SyncEntry {
     required this.isRemove,
     this.note,
     this.tag,
+    this.reminder,
     this.attachments = const [],
   });
 
@@ -356,6 +430,9 @@ class SyncEntry {
       isRemove: json['op'] == 'remove',
       note: note != null ? SyncServerNote.fromJson(note) : null,
       tag: tag != null ? SyncServerTag.fromJson(tag) : null,
+      reminder: SyncServerReminder.fromJson(
+        json['reminder'] as Map<String, dynamic>?,
+      ),
       attachments: [
         for (final item in attachments ?? const [])
           domain.NoteAttachment.fromJson(item as Map<String, dynamic>),
@@ -368,6 +445,7 @@ class SyncEntry {
   final bool isRemove;
   final SyncServerNote? note;
   final SyncServerTag? tag;
+  final SyncServerReminder? reminder;
   final List<domain.NoteAttachment> attachments;
 }
 

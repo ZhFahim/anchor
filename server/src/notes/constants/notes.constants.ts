@@ -51,6 +51,19 @@ export const notePinInclude = (userId: string) =>
     },
   }) as const;
 
+// Include the requesting user's reminder.
+export const noteReminderInclude = (userId: string) =>
+  ({
+    reminders: {
+      where: { userId },
+      select: {
+        remindAt: true,
+        recurrence: true,
+        version: true,
+      },
+    },
+  }) as const;
+
 // Include shares for notes (used in queries, filtered during transformation)
 export const NOTE_INCLUDE_SHARES = {
   sharedWith: {

@@ -18,6 +18,16 @@ class Notes extends Table {
   // A pin belongs to the person, not the note, so it syncs on its own.
   BoolColumn get isPinSynced => boolean().withDefault(const Constant(true))();
 
+  // A local wall clock ("YYYY-MM-DDTHH:mm"), not an instant.
+  TextColumn get reminderAt => text().nullable()();
+  TextColumn get reminderRecurrence => text().nullable()();
+  IntColumn get reminderVersion => integer().nullable()();
+  BoolColumn get isReminderSynced =>
+      boolean().withDefault(const Constant(true))();
+
+  // Local only, never synced: the OS notification id this note occupies.
+  IntColumn get reminderSlot => integer().nullable()();
+
   // Sharing fields
   TextColumn get permission => text().withDefault(const Constant('owner'))();
   TextColumn get shareIds => text().nullable()(); // JSON array of user IDs

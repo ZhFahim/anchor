@@ -553,6 +553,11 @@
   scrollbar-width: none;
 }
 
+/* Chromium ignores scrollbar-width. */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
 /* ===== Scrollbar Styling ===== */
 ::-webkit-scrollbar {
   width: 8px;

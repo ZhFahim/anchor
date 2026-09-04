@@ -6,8 +6,10 @@ import 'package:anchor/core/providers/active_user_id_provider.dart';
 import 'package:anchor/core/widgets/rich_text_editor.dart';
 import 'package:anchor/features/notes/data/repository/note_attachments_repository.dart';
 import 'package:anchor/features/notes/data/repository/notes_repository.dart';
+import 'package:anchor/core/notifications/notification_gateway.dart';
 import 'package:anchor/features/notes/domain/note.dart';
 import 'package:anchor/features/notes/presentation/note_edit_screen.dart';
+import 'package:anchor/features/notes/presentation/widgets/reminder_chip.dart';
 import 'package:anchor/features/settings/presentation/controllers/editor_preferences_controller.dart';
 import 'package:anchor/features/settings/data/repository/preferences_repository.dart';
 import 'package:anchor/features/tags/data/repository/tags_repository.dart';
@@ -19,7 +21,10 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mocktail/mocktail.dart';
+
+import 'reminder_permissions_test.dart' show FakeGateway;
 
 class MockNotesRepository extends Mock implements NotesRepository {}
 
@@ -65,6 +70,7 @@ void main() {
       () => attachmentsRepo.watchAttachments(any()),
     ).thenAnswer((_) => Stream.value(const []));
     when(() => prefsRepo.getSortChecklistItems()).thenAnswer((_) async => true);
+    when(() => prefsRepo.getExactAlarmsOffered()).thenAnswer((_) async => true);
   });
 
   Future<void> pumpScreen(WidgetTester tester, {Note? note}) async {
@@ -80,6 +86,7 @@ void main() {
             (ref) => const Stream<List<ConnectivityResult>>.empty(),
           ),
           activeUserIdProvider.overrideWith(FakeActiveUserId.new),
+          notificationGatewayProvider.overrideWithValue(FakeGateway()),
         ],
         child: MaterialApp.router(
           localizationsDelegates: const [
@@ -312,5 +319,35 @@ void main() {
     final saved = captured.single as Note;
     expect(saved.id, 'n1');
     expect(saved.content, contains('xhi'));
+  });
+
+  testWidgets('setting a reminder shows it on the note straight away', (
+    tester,
+  ) async {
+    const note = Note(id: 'n1', title: 'Groceries');
+    var stored = note;
+    when(() => notesRepo.getNote('n1')).thenAnswer((_) async => stored);
+    when(() => notesRepo.setReminder(any(), any())).thenAnswer((
+      invocation,
+    ) async {
+      stored = stored.copyWith(
+        reminder: invocation.positionalArguments[1] as NoteReminder?,
+      );
+    });
+
+    await pumpScreen(tester, note: note);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(LucideIcons.ellipsisVertical));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(LucideIcons.bell));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Tomorrow'));
+    await tester.pump();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    verify(() => notesRepo.setReminder('n1', any())).called(1);
+    expect(find.byType(ReminderChip), findsOneWidget);
   });
 }

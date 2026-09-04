@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import {
   NoteSharePermission,
   NoteState,
+  ReminderRecurrence,
   SyncEntityType,
   SyncOp,
 } from 'src/generated/prisma/enums';
@@ -16,6 +17,7 @@ import {
   NOTE_INCLUDE_SHARES,
   NOTE_INCLUDE_ATTACHMENT_COUNT,
   notePinInclude,
+  noteReminderInclude,
 } from '../notes/constants/notes.constants';
 import type { Tag } from 'src/generated/prisma/client';
 import { toSyncTagPayload, SyncFeedEntry } from './dto/sync-response.dto';
@@ -39,6 +41,11 @@ interface NoteRow {
   updatedAt: Date;
   userId: string;
   pins: Array<{ userId: string }>;
+  reminders: Array<{
+    remindAt: string;
+    recurrence: ReminderRecurrence;
+    version: number;
+  }>;
   tags: Array<{ id: string; userId: string }>;
   sharedWith: Array<{
     id: string;
@@ -71,7 +78,7 @@ export class SyncHydratorService {
       if (row.entityType === SyncEntityType.tag) {
         tagIds.add(row.entityId);
       } else {
-        // note, pin, and attachments rows all key on a noteId.
+        // note, pin, reminder, and attachments rows all key on a noteId.
         noteIds.add(row.entityId);
       }
     }
@@ -144,6 +151,17 @@ export class SyncHydratorService {
         }
         return { ...base, op: 'upsert' };
       }
+      case SyncEntityType.reminder: {
+        const note = notes.get(row.entityId);
+        if (!isAccessible(userId, note)) {
+          return { ...base, op: 'remove' };
+        }
+        const reminder = note.reminders[0];
+        if (!reminder) {
+          return { ...base, op: 'remove' };
+        }
+        return { ...base, op: 'upsert', reminder };
+      }
     }
   }
 
@@ -161,6 +179,7 @@ export class SyncHydratorService {
         ...NOTE_INCLUDE_SHARES,
         ...NOTE_INCLUDE_ATTACHMENT_COUNT,
         ...notePinInclude(userId),
+        ...noteReminderInclude(userId),
       },
     });
     return new Map(notes.map((note) => [note.id, note]));

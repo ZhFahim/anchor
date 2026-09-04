@@ -118,6 +118,32 @@ class AppTheme {
           borderRadius: AppRadius.sheetBorder,
         ),
       ),
+      datePickerTheme: DatePickerThemeData(
+        backgroundColor: container,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        shape: const RoundedRectangleBorder(
+          borderRadius: AppRadius.sheetBorder,
+        ),
+        headerBackgroundColor: container,
+        headerForegroundColor: primary,
+        dayShape: const WidgetStatePropertyAll(
+          RoundedRectangleBorder(borderRadius: AppRadius.smBorder),
+        ),
+      ),
+      timePickerTheme: TimePickerThemeData(
+        backgroundColor: container,
+        elevation: 0,
+        shape: const RoundedRectangleBorder(
+          borderRadius: AppRadius.sheetBorder,
+        ),
+        hourMinuteShape: const RoundedRectangleBorder(
+          borderRadius: AppRadius.mdBorder,
+        ),
+        dialBackgroundColor: AppPalette.slateBlue.withValues(
+          alpha: AppOpacity.subtleFill,
+        ),
+      ),
       bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,

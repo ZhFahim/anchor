@@ -11,6 +11,7 @@ import '../../../tags/data/repository/tags_repository.dart';
 import '../../domain/note.dart' as domain;
 import '../../domain/note_attachment.dart' as domain;
 import '../../domain/note_revision.dart';
+import '../local/reminder_slots.dart';
 import 'note_attachments_repository.dart';
 import 'note_revisions_store.dart';
 
@@ -467,6 +468,38 @@ class NotesRepository {
     scheduleAppSync(trigger: 'NotesRepo.restoreNote');
   }
 
+  /// Sets or clears the reminder on a note, leaving the note itself alone.
+  Future<void> setReminder(String noteId, domain.NoteReminder? reminder) async {
+    await _db.transaction(() async {
+      final prior = await _noteRow(noteId);
+      if (prior == null) return;
+
+      final slot = reminder == null
+          ? null
+          : await ensureReminderSlot(_db, noteId);
+
+      await (_db.update(
+        _db.notes,
+      )..where((tbl) => tbl.id.equals(noteId))).write(
+        NotesCompanion(
+          reminderAt: drift.Value(reminder?.remindAt),
+          reminderRecurrence: drift.Value(reminder?.recurrence.name),
+          isReminderSynced: const drift.Value(false),
+          reminderSlot: slot == null
+              ? const drift.Value.absent()
+              : drift.Value(slot),
+        ),
+      );
+    });
+
+    AppLogger.instance.info(
+      'Notes',
+      'setReminder id=$noteId at=${reminder?.remindAt ?? 'none'} '
+          'repeat=${reminder?.recurrence.name ?? 'none'}',
+    );
+    scheduleAppSync(trigger: 'NotesRepo.setReminder');
+  }
+
   // Archive a note
   Future<void> archiveNote(String id) async {
     await _writeArchived(ids: [id], isArchived: true);
@@ -614,6 +647,16 @@ class NotesRepository {
             )
           : null,
       isSynced: row.isSynced,
+      reminderSlot: row.reminderSlot,
+      reminder: row.reminderAt == null
+          ? null
+          : domain.NoteReminder(
+              remindAt: row.reminderAt!,
+              recurrence: domain.ReminderRecurrence.fromString(
+                row.reminderRecurrence,
+              ),
+              version: row.reminderVersion ?? 0,
+            ),
     );
   }
 }

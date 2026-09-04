@@ -13,6 +13,7 @@ class NoteOptionsSheet extends StatelessWidget {
   final bool isOwner;
   final bool isArchived;
   final VoidCallback onTagsTap;
+  final VoidCallback onReminderTap;
   final VoidCallback onBackgroundTap;
   final VoidCallback onAttachmentTap;
   final VoidCallback onArchiveTap;
@@ -28,6 +29,7 @@ class NoteOptionsSheet extends StatelessWidget {
     required this.isOwner,
     required this.isArchived,
     required this.onTagsTap,
+    required this.onReminderTap,
     required this.onBackgroundTap,
     required this.onAttachmentTap,
     required this.onArchiveTap,
@@ -52,6 +54,12 @@ class NoteOptionsSheet extends StatelessWidget {
     final options = <_OptionSpec>[
       if (!isReadOnly)
         _OptionSpec(icon: LucideIcons.tags, label: 'Tags', onTap: onTagsTap),
+      if (!isReadOnly)
+        _OptionSpec(
+          icon: LucideIcons.bell,
+          label: 'Reminder',
+          onTap: onReminderTap,
+        ),
       if (!isReadOnly)
         _OptionSpec(
           icon: LucideIcons.palette,

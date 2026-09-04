@@ -33,6 +33,7 @@ export interface ExportManifestNote {
   updatedAt: string;
   sharedBy?: { name: string; email: string };
   attachments: ExportManifestAttachment[];
+  reminder?: { remindAt: string; recurrence: string };
 }
 
 export interface ExportManifestV1 {
@@ -59,6 +60,7 @@ export interface ExportNoteRow {
   updatedAt: Date;
   tags: { id: string; userId: string }[];
   pins: { userId: string }[];
+  reminders?: { userId: string; remindAt: string; recurrence: string }[];
   attachments: {
     id: string;
     type: string;
@@ -115,6 +117,14 @@ export function buildManifestNote(
       ),
     })),
   };
+
+  const reminder = note.reminders?.find((r) => r.userId === userId);
+  if (reminder) {
+    entry.reminder = {
+      remindAt: reminder.remindAt,
+      recurrence: reminder.recurrence,
+    };
+  }
 
   if (origin === 'shared') {
     const share = note.sharedWith?.find((s) => s.sharedWithUserId === userId);

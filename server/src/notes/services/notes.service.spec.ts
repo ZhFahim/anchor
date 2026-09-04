@@ -44,6 +44,8 @@ describe('NotesService tag reconciliation (shared notes)', () => {
     where: { id: string };
     data?: {
       tags?: { set?: TagRef[]; connect?: TagRef[]; disconnect?: TagRef[] };
+      version?: unknown;
+      reminder?: unknown;
     };
   }
 
@@ -102,6 +104,19 @@ describe('NotesService tag reconciliation (shared notes)', () => {
       .map((t) => ({ id: t.id, userId: t.userId }));
 
   const noteUpdateMock = jest.fn(noteUpdate);
+  let storedReminder: {
+    remindAt: string;
+    recurrence: string;
+    version: number;
+  } | null = null;
+
+  const reminderUpsert = jest.fn().mockResolvedValue({
+    remindAt: '2026-09-04T09:00',
+    recurrence: 'none',
+    version: 1,
+  });
+  const reminderFindUnique = jest.fn(() => Promise.resolve(storedReminder));
+  const reminderDelete = jest.fn().mockResolvedValue(undefined);
 
   const prisma = {
     $transaction: (cb: (tx: PrismaService) => unknown) => cb(prisma),
@@ -125,6 +140,12 @@ describe('NotesService tag reconciliation (shared notes)', () => {
     },
     tag: { findMany: jest.fn(tagFindMany) },
     notePin: { upsert: jest.fn(), deleteMany: jest.fn() },
+    noteReminder: {
+      findUnique: reminderFindUnique,
+      upsert: reminderUpsert,
+      delete: reminderDelete,
+      deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
+    },
   } as unknown as PrismaService;
 
   const noteAccess = {
@@ -140,6 +161,7 @@ describe('NotesService tag reconciliation (shared notes)', () => {
       pair(NOTE_ID, 'tag-owner'),
       pair(NOTE_ID, 'tag-family'),
     ]);
+    storedReminder = null;
     service = new NotesService(
       prisma,
       noteAccess,
@@ -198,4 +220,61 @@ describe('NotesService tag reconciliation (shared notes)', () => {
     expect(tagWrite?.data?.tags?.connect).toEqual([{ id: 'tag-family' }]);
     expect(noteTags.has(pair(NOTE_ID, 'tag-owner'))).toBe(true);
   });
+
+  it('keeps the reminder out of the note write and off the version', async () => {
+    await service.update(OWNER, NOTE_ID, {
+      reminder: { remindAt: '2026-09-04T09:00' },
+    });
+
+    for (const [arg] of noteUpdateMock.mock.calls) {
+      expect(arg.data).not.toHaveProperty('reminder');
+      expect(arg.data?.version).toBeUndefined();
+    }
+    expect(reminderUpsert).toHaveBeenCalled();
+  });
+
+  it('a save that repeats the stored reminder writes nothing', async () => {
+    storedReminder = {
+      remindAt: '2026-09-04T09:00',
+      recurrence: 'none',
+      version: 3,
+    };
+    const emitter = createMockSyncEmitter();
+    service = new NotesService(
+      prisma,
+      noteAccess,
+      {} as unknown as NoteAttachmentsService,
+      asSyncEmitter(emitter),
+      asNoteRevisions(createMockNoteRevisions()),
+    );
+
+    await service.update(OWNER, NOTE_ID, {
+      reminder: { remindAt: '2026-09-04T09:00' },
+    });
+
+    expect(reminderUpsert).not.toHaveBeenCalled();
+    expect(emittedTypes(emitter)).not.toContain('reminder');
+  });
+
+  it('a save carrying no reminder on a note without one emits nothing', async () => {
+    const emitter = createMockSyncEmitter();
+    service = new NotesService(
+      prisma,
+      noteAccess,
+      {} as unknown as NoteAttachmentsService,
+      asSyncEmitter(emitter),
+      asNoteRevisions(createMockNoteRevisions()),
+    );
+
+    await service.update(OWNER, NOTE_ID, { title: 'Typing', reminder: null });
+
+    expect(reminderDelete).not.toHaveBeenCalled();
+    expect(emittedTypes(emitter)).not.toContain('reminder');
+  });
 });
+
+const emittedTypes = (emitter: { emit: jest.Mock }): string[] =>
+  emitter.emit.mock.calls.flatMap(
+    ([, emissions]: [unknown, Array<{ entityType: string }>]) =>
+      emissions.map((emission) => emission.entityType),
+  );

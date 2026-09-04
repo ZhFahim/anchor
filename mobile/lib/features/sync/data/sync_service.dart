@@ -6,8 +6,10 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/logging/app_logger.dart';
 import '../../../core/network/dio_provider.dart';
+import '../../notes/data/local/reminder_slots.dart';
 import '../../notes/data/repository/note_attachments_repository.dart';
 import '../../notes/data/repository/note_revisions_store.dart';
+import '../../notes/domain/note.dart' as domain;
 import '../../notes/domain/note_attachment.dart' as domain;
 import '../../notes/domain/note_revision.dart';
 import 'sync_api.dart';
@@ -157,6 +159,11 @@ class SyncService {
       pins.map((note) => SyncPinChange(id: note.id, isPinned: note.isPinned)),
     );
 
+    final reminders = await (_db.select(
+      _db.notes,
+    )..where((tbl) => tbl.isReminderSynced.equals(false))).get();
+    changes.addAll(reminders.map(_reminderChangeOf));
+
     return changes;
   }
 
@@ -205,6 +212,13 @@ class SyncService {
     );
   }
 
+  SyncReminderChange _reminderChangeOf(Note note) => SyncReminderChange(
+    id: note.id,
+    remindAt: note.reminderAt,
+    recurrence: domain.ReminderRecurrence.fromString(note.reminderRecurrence),
+    baseVersion: note.reminderVersion,
+  );
+
   SyncTagChange _tagChangeOf(Tag tag) => SyncTagChange(
     id: tag.id,
     localRev: tag.localRev,
@@ -235,6 +249,8 @@ class SyncService {
             await _applyTagResult(result, change, rebased);
           case SyncPinChange():
             await _applyPinResult(result, change);
+          case SyncReminderChange():
+            await _applyReminderResult(result, change);
           case null:
             break;
         }
@@ -414,6 +430,57 @@ class SyncService {
     }
   }
 
+  Future<void> _applyReminderResult(
+    SyncResult result,
+    SyncReminderChange change,
+  ) async {
+    switch (result.status) {
+      case SyncStatus.applied:
+        final row = await _noteRow(result.id);
+        // An edit made during the round trip must stay queued.
+        if (row == null ||
+            row.reminderAt != change.remindAt ||
+            row.reminderRecurrence != change.recurrence.name) {
+          return;
+        }
+        await _writeNote(
+          result.id,
+          NotesCompanion(
+            isReminderSynced: const Value(true),
+            reminderVersion: Value(result.version),
+          ),
+        );
+
+      case SyncStatus.conflict:
+        // No conflict dialog for a reminder: adopt the server's copy.
+        await _writeNote(
+          result.id,
+          await _reminderOf(result.id, result.serverReminder),
+        );
+
+      case SyncStatus.denied:
+        // The note is gone or unshared, so the reminder has nothing to ring for.
+        await _writeNote(result.id, await _reminderOf(result.id, null));
+
+      case SyncStatus.failed:
+        break;
+    }
+  }
+
+  /// The columns for a server reminder, or for having none.
+  Future<NotesCompanion> _reminderOf(
+    String noteId,
+    SyncServerReminder? reminder,
+  ) async => NotesCompanion(
+    reminderAt: Value(reminder?.remindAt),
+    reminderRecurrence: Value(reminder?.recurrence.name),
+    reminderVersion: Value(reminder?.version),
+    isReminderSynced: const Value(true),
+    reminderSlot: reminder == null
+        ? const Value.absent()
+        : Value(await ensureReminderSlot(_db, noteId)),
+  );
+
   Future<void> _applyEntry(
     SyncEntry entry,
     Set<String> filesToClean,
@@ -448,6 +515,18 @@ class SyncService {
           NotesCompanion(isPinned: Value(!entry.isRemove)),
         );
 
+      case SyncEntityType.reminder:
+        final row = await _noteRow(entry.entityId);
+        // An unsent local reminder wins; it rides up on the next push.
+        if (row == null || !row.isReminderSynced) return;
+        await _writeNote(
+          entry.entityId,
+          await _reminderOf(
+            entry.entityId,
+            entry.isRemove ? null : entry.reminder,
+          ),
+        );
+
       case SyncEntityType.attachments:
         if (entry.isRemove) {
           filesToClean.add(entry.entityId);
@@ -471,8 +550,22 @@ class SyncService {
     bool force = false,
   }) async {
     final row = await _noteRow(note.id);
+    final keepLocalReminder = row != null && !row.isReminderSynced;
+    final serverReminder = !note.hasReminderField || keepLocalReminder
+        ? const NotesCompanion()
+        : await _reminderOf(note.id, note.reminder);
+
     if (!force && row != null && !row.isSynced) {
-      await _writeNote(note.id, _sharingOf(note));
+      await _writeNote(
+        note.id,
+        _sharingOf(note).copyWith(
+          reminderAt: serverReminder.reminderAt,
+          reminderRecurrence: serverReminder.reminderRecurrence,
+          reminderVersion: serverReminder.reminderVersion,
+          isReminderSynced: serverReminder.isReminderSynced,
+          reminderSlot: serverReminder.reminderSlot,
+        ),
+      );
       return;
     }
 
@@ -493,6 +586,11 @@ class SyncService {
             updatedAt: Value(note.updatedAt),
             version: Value(note.version),
             isSynced: const Value(true),
+            reminderAt: serverReminder.reminderAt,
+            reminderRecurrence: serverReminder.reminderRecurrence,
+            reminderVersion: serverReminder.reminderVersion,
+            isReminderSynced: serverReminder.isReminderSynced,
+            reminderSlot: serverReminder.reminderSlot,
           ),
         );
     await _setNoteTags(note.id, note.tagIds);
@@ -732,7 +830,9 @@ class SyncService {
           await _dropTag(row.entityId);
         case SyncEntityType.attachments:
           await _dropSyncedAttachments(row.entityId, orphanedFiles);
+        // Both ride on the note payload and reconcile in the notes phase.
         case SyncEntityType.pin:
+        case SyncEntityType.reminder:
         case null:
           break;
       }

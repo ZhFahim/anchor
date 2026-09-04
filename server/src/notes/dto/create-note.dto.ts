@@ -1,4 +1,12 @@
-import { IsBoolean, IsOptional, IsString, IsArray } from 'class-validator';
+import {
+  IsBoolean,
+  IsOptional,
+  IsString,
+  IsArray,
+  ValidateNested,
+} from 'class-validator';
+import { Type } from 'class-transformer';
+import { NoteReminderDto } from './note-reminder.dto';
 
 export class CreateNoteDto {
   // Blank is allowed and canonical for "no title"; clients render an "Untitled" placeholder.
@@ -25,4 +33,10 @@ export class CreateNoteDto {
   @IsString({ each: true })
   @IsOptional()
   tagIds?: string[];
+
+  // null clears the reminder; absent leaves it alone.
+  @ValidateNested()
+  @Type(() => NoteReminderDto)
+  @IsOptional()
+  reminder?: NoteReminderDto | null;
 }

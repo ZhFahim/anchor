@@ -194,6 +194,11 @@ export class NoteSharesService {
         where: { noteId, userId: share.sharedWithUserId },
       });
 
+      // Their reminder goes too, or it comes back on a re-share.
+      await tx.noteReminder.deleteMany({
+        where: { noteId, userId: share.sharedWithUserId },
+      });
+
       // The revoked sharee gets a note remove; the rest re-pull so their share
       // lists stay fresh.
       const remaining = await this.syncEmitter.noteRecipients(tx, noteId);

@@ -1,13 +1,14 @@
 "use client";
 
 import { format } from "date-fns";
-import { Paperclip, Pin } from "lucide-react";
+import { BellRing, Paperclip, Pin } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { Note } from "@/features/notes";
 import { QuillPreview } from "@/features/notes";
+import { isReminderPast, reminderLabel } from "@/features/notes/reminder";
 import { cn } from "@/lib/utils";
 import { NoteBackground } from "./backgrounds";
 import { ListImageThumbnail, NoteCardImages } from "./note-card-images";
@@ -188,6 +189,19 @@ export function NoteCard({
                               <span>{note.attachmentCount}</span>
                             </div>
                           )}
+                        {note.reminder && (
+                          <span
+                            className={cn(
+                              "flex items-center gap-1",
+                              isReminderPast(note.reminder)
+                                ? "text-destructive"
+                                : "text-muted-foreground",
+                            )}
+                          >
+                            <BellRing className="h-3 w-3" />
+                            <span>{reminderLabel(note.reminder)}</span>
+                          </span>
+                        )}
                         <span className="text-xs text-muted-foreground font-medium">
                           {format(new Date(note.updatedAt), "MMM d, yyyy")}
                         </span>
@@ -337,6 +351,19 @@ export function NoteCard({
                         <Paperclip className="h-3 w-3" />
                         <span>{note.attachmentCount}</span>
                       </div>
+                    )}
+                    {note.reminder && (
+                      <span
+                        className={cn(
+                          "flex items-center gap-1",
+                          isReminderPast(note.reminder)
+                            ? "text-destructive"
+                            : "text-muted-foreground",
+                        )}
+                      >
+                        <BellRing className="h-3 w-3" />
+                        <span>{reminderLabel(note.reminder)}</span>
+                      </span>
                     )}
                     <span className="font-medium">
                       {format(new Date(note.updatedAt), "MMM d, yyyy")}

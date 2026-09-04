@@ -1,4 +1,4 @@
-import type { Note } from "./types";
+import type { Note, NoteReminder, NoteReminderInput } from "./types";
 
 export interface NoteDraft {
   title: string;
@@ -6,6 +6,7 @@ export interface NoteDraft {
   isPinned: boolean;
   background: string | null;
   tagIds: string[];
+  reminder: NoteReminder | null;
 }
 
 export type SaveOutcome =
@@ -47,6 +48,7 @@ export function noteToDraft(note: Note): NoteDraft {
     isPinned: note.isPinned,
     background: note.background || null,
     tagIds: note.tagIds || note.tags?.map((tag) => tag.id) || [],
+    reminder: note.reminder ?? null,
   };
 }
 
@@ -56,9 +58,18 @@ export function noteDraftsEqual(a: NoteDraft, b: NoteDraft): boolean {
     a.content === b.content &&
     a.isPinned === b.isPinned &&
     a.background === b.background &&
+    a.reminder?.remindAt === b.reminder?.remindAt &&
+    a.reminder?.recurrence === b.reminder?.recurrence &&
     a.tagIds.length === b.tagIds.length &&
     [...a.tagIds].sort().join() === [...b.tagIds].sort().join()
   );
+}
+
+export function toReminderInput(
+  reminder: NoteReminder | null,
+): NoteReminderInput | null {
+  if (!reminder) return null;
+  return { remindAt: reminder.remindAt, recurrence: reminder.recurrence };
 }
 
 // Holds one request open at a time and remembers only the newest draft, so

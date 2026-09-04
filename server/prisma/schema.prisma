@@ -34,6 +34,15 @@ enum SyncEntityType {
   tag
   pin
   attachments
+  reminder
+}
+
+enum ReminderRecurrence {
+  none
+  daily
+  weekly
+  monthly
+  yearly
 }
 
 enum SyncOp {
@@ -69,6 +78,7 @@ model User {
   syncState            SyncState?
   changeLog            ChangeLog[]
   noteRevisions        NoteRevision[]
+  noteReminders        NoteReminder[]
 }
 
 model Settings {
@@ -96,10 +106,27 @@ model Note {
   sharedWith  NoteShare[]
   attachments NoteAttachment[]
   pins        NotePin[]
+  reminders   NoteReminder[]
   revisions   NoteRevision[]
 
   @@index([userId])
   @@index([state, stateChangedAt])
+}
+
+// A reminder belongs to the person, not the note: sharees each get their own.
+model NoteReminder {
+  userId     String
+  noteId     String
+  remindAt   String // local wall clock, "YYYY-MM-DDTHH:mm"
+  recurrence ReminderRecurrence @default(none)
+  version    Int                @default(1)
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  note       Note               @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@id([userId, noteId])
+  @@index([noteId])
 }
 
 model NotePin {

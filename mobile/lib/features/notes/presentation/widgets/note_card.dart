@@ -18,6 +18,7 @@ import 'package:anchor/core/network/server_config_provider.dart';
 import 'package:anchor/features/tags/presentation/tags_controller.dart';
 import 'package:anchor/features/tags/presentation/widgets/tag_chip.dart';
 import 'package:anchor/features/notes/presentation/widgets/note_background.dart';
+import 'package:anchor/features/notes/presentation/widgets/reminder_chip.dart';
 import 'package:anchor/features/notes/presentation/widgets/share_note_sheet.dart';
 import 'package:anchor/core/widgets/app_bottom_sheet.dart';
 import 'package:anchor/core/theme/tokens/app_opacity.dart';
@@ -192,48 +193,63 @@ class NoteCard extends ConsumerWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (note.sharedBy != null) ...[
-                                  Tooltip(
-                                    message: 'Shared by ${note.sharedBy!.name}',
-                                    child: _SharedByAvatar(
-                                      sharedBy: note.sharedBy!,
-                                      serverUrl: serverUrl,
-                                      size: 20,
+                            // Bounds the row so the reminder chip can ellipsize.
+                            Expanded(
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (note.sharedBy != null) ...[
+                                    Tooltip(
+                                      message:
+                                          'Shared by ${note.sharedBy!.name}',
+                                      child: _SharedByAvatar(
+                                        sharedBy: note.sharedBy!,
+                                        serverUrl: serverUrl,
+                                        size: 20,
+                                      ),
                                     ),
-                                  ),
-                                  SizedBox(width: dims.xs),
-                                ],
-                                if (note.isOwner && note.hasShares) ...[
-                                  _SharedByMeIndicator(
-                                    count: note.shareIds!.length,
-                                    onTap: isSelectionMode
-                                        ? null
-                                        : () => AppBottomSheet.show(
-                                            context,
-                                            builder: (_) =>
-                                                ShareNoteSheet(noteId: note.id),
-                                          ),
-                                  ),
-                                  SizedBox(width: dims.xs),
-                                ],
-                                if (note.updatedAt != null)
-                                  Text(
-                                    datePrefix != null
-                                        ? '$datePrefix ${DateFormat.MMMd().format(note.updatedAt!)}'
-                                        : DateFormat.MMMd().format(
-                                            note.updatedAt!,
-                                          ),
-                                    style: theme.textTheme.labelSmall?.copyWith(
-                                      color: theme.colorScheme.onSurface
-                                          .withValues(
-                                            alpha: AppOpacity.secondary,
+                                    SizedBox(width: dims.xs),
+                                  ],
+                                  if (note.isOwner && note.hasShares) ...[
+                                    _SharedByMeIndicator(
+                                      count: note.shareIds!.length,
+                                      onTap: isSelectionMode
+                                          ? null
+                                          : () => AppBottomSheet.show(
+                                              context,
+                                              builder: (_) => ShareNoteSheet(
+                                                noteId: note.id,
+                                              ),
+                                            ),
+                                    ),
+                                    SizedBox(width: dims.xs),
+                                  ],
+                                  if (note.reminder != null) ...[
+                                    Flexible(
+                                      child: ReminderChip(
+                                        reminder: note.reminder!,
+                                        compact: true,
+                                      ),
+                                    ),
+                                    SizedBox(width: dims.xs),
+                                  ],
+                                  if (note.updatedAt != null)
+                                    Text(
+                                      datePrefix != null
+                                          ? '$datePrefix ${DateFormat.MMMd().format(note.updatedAt!)}'
+                                          : DateFormat.MMMd().format(
+                                              note.updatedAt!,
+                                            ),
+                                      style: theme.textTheme.labelSmall
+                                          ?.copyWith(
+                                            color: theme.colorScheme.onSurface
+                                                .withValues(
+                                                  alpha: AppOpacity.secondary,
+                                                ),
                                           ),
                                     ),
-                                  ),
-                              ],
+                                ],
+                              ),
                             ),
                             if (trailingActions != null)
                               Row(

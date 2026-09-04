@@ -33,7 +33,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -78,6 +78,13 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(noteRevisions);
         await m.createTable(noteHistoryState);
         await m.createIndex(noteRevisionsNoteCreated);
+      }
+      if (from < 10) {
+        await m.addColumn(notes, notes.reminderAt);
+        await m.addColumn(notes, notes.reminderRecurrence);
+        await m.addColumn(notes, notes.reminderVersion);
+        await m.addColumn(notes, notes.isReminderSynced);
+        await m.addColumn(notes, notes.reminderSlot);
       }
     },
   );

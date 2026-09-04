@@ -1,8 +1,8 @@
 import type { Note } from 'src/generated/prisma/client';
 import type { NoteState } from 'src/generated/prisma/enums';
 
-// Only these fields bump Note.version. Pins, tag reconciliation, and
-// attachment touches never do.
+// Only these fields bump Note.version. Pins, reminders, tag reconciliation,
+// and attachment touches never do.
 export interface GuardedNoteFields {
   title?: string;
   content?: string | null;

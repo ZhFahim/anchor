@@ -35,6 +35,7 @@ function makeDraft(title: string): NoteDraft {
     isPinned: false,
     background: null,
     tagIds: [],
+    reminder: null,
   };
 }
 
@@ -79,6 +80,44 @@ describe("noteDraftsEqual", () => {
     const a = { ...makeDraft("t"), tagIds: ["one", "two"] };
     const b = { ...makeDraft("t"), tagIds: ["one"] };
     expect(noteDraftsEqual(a, b)).toBe(false);
+  });
+
+  it("sees a reminder being set, moved and cleared", () => {
+    const none = makeDraft("t");
+    const set = {
+      ...none,
+      reminder: {
+        remindAt: "2026-09-04T09:00",
+        recurrence: "none" as const,
+        version: 1,
+      },
+    };
+    const moved = {
+      ...set,
+      reminder: { ...set.reminder, remindAt: "2026-09-05T09:00" },
+    };
+    const repeating = {
+      ...set,
+      reminder: { ...set.reminder, recurrence: "daily" as const },
+    };
+
+    expect(noteDraftsEqual(none, set)).toBe(false);
+    expect(noteDraftsEqual(set, moved)).toBe(false);
+    expect(noteDraftsEqual(set, repeating)).toBe(false);
+    expect(noteDraftsEqual(set, { ...set })).toBe(true);
+  });
+
+  it("ignores a version change on an otherwise identical reminder", () => {
+    const a = {
+      ...makeDraft("t"),
+      reminder: {
+        remindAt: "2026-09-04T09:00",
+        recurrence: "none" as const,
+        version: 1,
+      },
+    };
+    const b = { ...a, reminder: { ...a.reminder, version: 9 } };
+    expect(noteDraftsEqual(a, b)).toBe(true);
   });
 });
 

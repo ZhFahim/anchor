@@ -20,6 +20,7 @@ import {
   IMPORT_MAX_TAGS_PER_NOTE,
   IMPORT_MAX_TITLE_LENGTH,
 } from '../constants/import.constants';
+import { NoteReminderDto } from '../../notes/dto/note-reminder.dto';
 
 export class ImportNoteItemDto {
   @IsString()
@@ -56,6 +57,11 @@ export class ImportNoteItemDto {
   @MaxLength(64)
   @IsOptional()
   background?: string;
+
+  @ValidateNested()
+  @Type(() => NoteReminderDto)
+  @IsOptional()
+  reminder?: NoteReminderDto;
 
   @IsArray()
   @ArrayMaxSize(IMPORT_MAX_TAGS_PER_NOTE)

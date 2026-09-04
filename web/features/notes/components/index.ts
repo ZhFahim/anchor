@@ -18,6 +18,7 @@ export {
 } from "./note-editor";
 export { NoteHistorySheet } from "./note-history-sheet";
 export { QuillPreview } from "./quill-preview";
+export { ReminderPicker } from "./reminder-picker";
 export { ShareDialog } from "./share-dialog";
 export { SharedNoteIndicator } from "./shared-note-indicator";
 export { ViewSettings } from "./view-settings";

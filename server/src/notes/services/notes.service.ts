@@ -6,7 +6,11 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateNoteDto } from '../dto/create-note.dto';
 import { UpdateNoteDto } from '../dto/update-note.dto';
-import { NoteState, NoteSharePermission } from 'src/generated/prisma/enums';
+import {
+  NoteState,
+  NoteSharePermission,
+  ReminderRecurrence,
+} from 'src/generated/prisma/enums';
 import type { Prisma } from 'src/generated/prisma/client';
 import { NoteAccessService } from './note-access.service';
 import { NoteAttachmentsService } from './note-attachments.service';
@@ -20,6 +24,7 @@ import {
   SyncEmitterService,
   noteEmissions,
   pinEmission,
+  reminderEmission,
 } from '../../sync/sync-emitter.service';
 import { NoteRevisionsService } from '../../sync/note-revisions.service';
 import {
@@ -29,7 +34,9 @@ import {
   NOTE_INCLUDE_ATTACHMENT_COUNT,
   NOTE_LIST_ORDER,
   notePinInclude,
+  noteReminderInclude,
 } from '../constants/notes.constants';
+import { NoteReminderDto } from '../dto/note-reminder.dto';
 import { RETENTION_CHUNK_SIZE } from '../../common/retention.constants';
 
 @Injectable()
@@ -43,7 +50,7 @@ export class NotesService {
   ) {}
 
   async create(userId: string, createNoteDto: CreateNoteDto) {
-    const { tagIds, isPinned, ...noteData } = createNoteDto;
+    const { tagIds, isPinned, reminder, ...noteData } = createNoteDto;
     const validTagIds = await this.filterOwnedTagIds(userId, tagIds);
 
     const note = await this.prisma.$transaction(async (tx) => {
@@ -62,18 +69,31 @@ export class NotesService {
       });
 
       await this.setNotePin(tx, userId, created.id, isPinned);
+      const saved = await this.setNoteReminder(
+        tx,
+        userId,
+        created.id,
+        reminder,
+      );
       await this.syncEmitter.emit(tx, [
         ...noteEmissions([userId], created.id),
         ...(isPinned !== undefined
           ? [pinEmission(userId, created.id, isPinned)]
           : []),
+        ...(saved?.changed
+          ? [reminderEmission(userId, created.id, !!saved.row)]
+          : []),
       ]);
 
-      return created;
+      return { created, saved };
     });
 
     return transformNote(
-      { ...note, pins: isPinned ? [{ userId }] : [] },
+      {
+        ...note.created,
+        pins: isPinned ? [{ userId }] : [],
+        reminders: note.saved?.row ? [note.saved.row] : [],
+      },
       userId,
     );
   }
@@ -136,6 +156,7 @@ export class NotesService {
         ...NOTE_INCLUDE_SHARES,
         ...NOTE_INCLUDE_ATTACHMENT_COUNT,
         ...notePinInclude(userId),
+        ...noteReminderInclude(userId),
       },
       orderBy: NOTE_LIST_ORDER,
       take: normalizedLimit,
@@ -158,6 +179,7 @@ export class NotesService {
         ...NOTE_INCLUDE_SHARES,
         ...NOTE_INCLUDE_ATTACHMENT_COUNT,
         ...notePinInclude(userId),
+        ...noteReminderInclude(userId),
       },
     });
 
@@ -180,7 +202,8 @@ export class NotesService {
       NoteSharePermission.editor,
     );
 
-    const { tagIds, isPinned, baseVersion, ...noteData } = updateNoteDto;
+    const { tagIds, isPinned, reminder, baseVersion, ...noteData } =
+      updateNoteDto;
 
     const outcome = await this.prisma.$transaction(async (tx) => {
       const prior = await tx.note.findUniqueOrThrow({ where: { id } });
@@ -192,8 +215,13 @@ export class NotesService {
         return { conflict: true as const };
       }
 
-      // Apply the pin first so the include below reflects the new state.
       await this.setNotePin(tx, userId, id, isPinned);
+      const savedReminder = await this.setNoteReminder(
+        tx,
+        userId,
+        id,
+        reminder,
+      );
 
       if (noteContentChanged(prior, noteData)) {
         await this.noteRevisions.recordEdit(tx, prior, userId);
@@ -217,11 +245,18 @@ export class NotesService {
       await this.syncEmitter.emit(tx, [
         ...noteEmissions(recipients, id),
         ...(isPinned !== undefined ? [pinEmission(userId, id, isPinned)] : []),
+        ...(savedReminder?.changed
+          ? [reminderEmission(userId, id, !!savedReminder.row)]
+          : []),
       ]);
 
       const note = await tx.note.findUniqueOrThrow({
         where: { id },
-        include: { ...NOTE_INCLUDE_TAGS, ...notePinInclude(userId) },
+        include: {
+          ...NOTE_INCLUDE_TAGS,
+          ...notePinInclude(userId),
+          ...noteReminderInclude(userId),
+        },
       });
       return { conflict: false as const, note };
     });
@@ -250,6 +285,7 @@ export class NotesService {
         ...NOTE_INCLUDE_SHARES,
         ...NOTE_INCLUDE_ATTACHMENT_COUNT,
         ...notePinInclude(userId),
+        ...noteReminderInclude(userId),
       },
     });
 
@@ -289,7 +325,11 @@ export class NotesService {
             ? { version: { increment: 1 }, stateChangedAt: new Date() }
             : {}),
         },
-        include: { ...NOTE_INCLUDE_TAGS, ...notePinInclude(userId) },
+        include: {
+          ...NOTE_INCLUDE_TAGS,
+          ...notePinInclude(userId),
+          ...noteReminderInclude(userId),
+        },
       });
       const recipients = await this.syncEmitter.noteRecipients(tx, id);
       await this.syncEmitter.emit(tx, noteEmissions(recipients, id));
@@ -319,7 +359,11 @@ export class NotesService {
           version: { increment: 1 },
           stateChangedAt: new Date(),
         },
-        include: { ...NOTE_INCLUDE_TAGS, ...notePinInclude(userId) },
+        include: {
+          ...NOTE_INCLUDE_TAGS,
+          ...notePinInclude(userId),
+          ...noteReminderInclude(userId),
+        },
       });
       const recipients = await this.syncEmitter.noteRecipients(tx, id);
       await this.syncEmitter.emit(tx, noteEmissions(recipients, id));
@@ -345,7 +389,11 @@ export class NotesService {
             ? { version: { increment: 1 }, stateChangedAt: new Date() }
             : {}),
         },
-        include: { ...NOTE_INCLUDE_TAGS, ...notePinInclude(userId) },
+        include: {
+          ...NOTE_INCLUDE_TAGS,
+          ...notePinInclude(userId),
+          ...noteReminderInclude(userId),
+        },
       });
       await this.syncEmitter.removeNote(tx, recipients, id);
       return updated;
@@ -366,6 +414,7 @@ export class NotesService {
         ...NOTE_INCLUDE_TAGS,
         ...NOTE_INCLUDE_ATTACHMENT_COUNT,
         ...notePinInclude(userId),
+        ...noteReminderInclude(userId),
       },
     });
 
@@ -385,6 +434,7 @@ export class NotesService {
         ...NOTE_INCLUDE_TAGS,
         ...NOTE_INCLUDE_ATTACHMENT_COUNT,
         ...notePinInclude(userId),
+        ...noteReminderInclude(userId),
       },
     });
 
@@ -695,6 +745,58 @@ export class NotesService {
       await tx.notePin.deleteMany({ where: { userId, noteId } });
     }
   }
+
+  // undefined leaves the reminder untouched; null clears it. `changed` is
+  // false when the stored value already matched, so repeating it neither bumps
+  // the version nor emits.
+  private async setNoteReminder(
+    tx: Prisma.TransactionClient,
+    userId: string,
+    noteId: string,
+    reminder: NoteReminderDto | null | undefined,
+  ): Promise<ReminderWrite | undefined> {
+    if (reminder === undefined) {
+      return undefined;
+    }
+
+    const key = { userId_noteId: { userId, noteId } };
+    const prior = await tx.noteReminder.findUnique({ where: key });
+
+    if (!reminder) {
+      if (!prior) return { changed: false, row: null };
+      await tx.noteReminder.delete({ where: key });
+      return { changed: true, row: null };
+    }
+
+    const recurrence = reminder.recurrence ?? ReminderRecurrence.none;
+    if (
+      prior &&
+      prior.remindAt === reminder.remindAt &&
+      prior.recurrence === recurrence
+    ) {
+      return { changed: false, row: prior };
+    }
+
+    const row = await tx.noteReminder.upsert({
+      where: key,
+      create: { userId, noteId, remindAt: reminder.remindAt, recurrence },
+      update: {
+        remindAt: reminder.remindAt,
+        recurrence,
+        version: { increment: 1 },
+      },
+    });
+    return { changed: true, row };
+  }
+}
+
+interface ReminderWrite {
+  changed: boolean;
+  row: {
+    remindAt: string;
+    recurrence: ReminderRecurrence;
+    version: number;
+  } | null;
 }
 
 const clampLimit = (limit?: number) => {
