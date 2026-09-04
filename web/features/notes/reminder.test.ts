@@ -39,11 +39,11 @@ describe("wall clock", () => {
 describe("isReminderPast", () => {
   const now = new Date(2026, 8, 4, 12, 0);
 
-  it("is true for a one-off whose time has gone", () => {
+  it("is true for a reminder that does not repeat and has passed", () => {
     expect(isReminderPast(reminder(), now)).toBe(true);
   });
 
-  it("is false for a one-off still to come", () => {
+  it("is false for a reminder that is still to come", () => {
     expect(
       isReminderPast(reminder({ remindAt: "2026-09-04T18:00" }), now),
     ).toBe(false);
@@ -85,7 +85,7 @@ describe("reminderLabel", () => {
     );
   });
 
-  it("says nothing about repeating for a one-off", () => {
+  it("says nothing about repeating when it does not repeat", () => {
     expect(reminderLabel(reminder(), now)).not.toContain("·");
   });
 
@@ -104,7 +104,7 @@ describe("nextOccurrence", () => {
     expect(toWallClock(at!)).toBe("2026-09-04T18:00");
   });
 
-  it("returns nothing for a one-off already gone", () => {
+  it("returns nothing when it does not repeat and has passed", () => {
     expect(nextOccurrence(reminder(), now)).toBeNull();
   });
 

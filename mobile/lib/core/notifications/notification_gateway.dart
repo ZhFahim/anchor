@@ -35,7 +35,7 @@ class ScheduledNotification {
   /// Local wall-clock time, resolved against the device's zone at schedule time.
   final DateTime at;
 
-  /// Null for a one-off.
+  /// Null when the reminder does not repeat.
   final DateTimeComponents? repeat;
   final String payload;
 }

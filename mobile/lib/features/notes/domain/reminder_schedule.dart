@@ -29,7 +29,7 @@ DateTime? parseWallClock(String? value) {
 }
 
 /// The next time [reminder] should fire, at or after [from], in local time,
-/// or null for a one-off whose moment has passed.
+/// or null when it does not repeat and its time has passed.
 DateTime? nextOccurrence(NoteReminder reminder, {required DateTime from}) {
   final anchor = parseWallClock(reminder.remindAt);
   if (anchor == null) return null;

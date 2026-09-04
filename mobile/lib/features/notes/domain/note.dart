@@ -58,7 +58,7 @@ enum ReminderRecurrence {
   monthly,
   yearly;
 
-  /// Unknown values fall back to a one-off.
+  /// Unknown values fall back to no repeat.
   static ReminderRecurrence fromString(String? value) {
     return ReminderRecurrence.values.firstWhere(
       (e) => e.name == value,

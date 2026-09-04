@@ -134,7 +134,7 @@ function advanceMonths(anchor: Date, from: Date, step: number): Date {
   return next;
 }
 
-/** When the reminder next fires, or null for a one-off already gone by. */
+/** When the reminder next fires, or null if it does not repeat and has passed. */
 export function nextOccurrence(
   reminder: NoteReminder,
   now = new Date(),
