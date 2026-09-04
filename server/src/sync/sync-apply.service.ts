@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import type { Note } from 'src/generated/prisma/client';
+import type { Note, Prisma } from 'src/generated/prisma/client';
 import {
   NoteSharePermission,
   NoteState,
@@ -548,9 +548,7 @@ export class SyncApplyService {
       if (remindAt === null) {
         return { ...base, status: 'applied' };
       }
-      if (change.baseVersion !== undefined) {
-        return { ...base, status: 'denied' };
-      }
+      // A baseVersion here names a row another device has since cleared.
       const created = await this.prisma.$transaction(async (tx) => {
         const row = await tx.noteReminder.create({
           data: { userId, noteId: change.id, remindAt, recurrence },
@@ -586,7 +584,7 @@ export class SyncApplyService {
           where: { userId, noteId: change.id, version: prior.version },
         });
         if (count !== 1) {
-          return { ...base, status: 'conflict' as const };
+          return await this.reminderRaceLost(tx, key, base);
         }
         await this.syncEmitter.emit(tx, [
           reminderEmission(userId, change.id, false),
@@ -599,7 +597,7 @@ export class SyncApplyService {
         data: { remindAt, recurrence, version: prior.version + 1 },
       });
       if (count !== 1) {
-        return { ...base, status: 'conflict' as const };
+        return await this.reminderRaceLost(tx, key, base);
       }
       await this.syncEmitter.emit(tx, [
         reminderEmission(userId, change.id, true),
@@ -610,6 +608,21 @@ export class SyncApplyService {
         version: prior.version + 1,
       };
     });
+  }
+
+  // Another push landed first. The copy rides back even when it is null.
+  private async reminderRaceLost(
+    tx: Prisma.TransactionClient,
+    key: { userId_noteId: { userId: string; noteId: string } },
+    base: { type: 'reminder'; id: string },
+  ): Promise<SyncApplyResult> {
+    const current = await tx.noteReminder.findUnique({ where: key });
+    return {
+      ...base,
+      status: 'conflict',
+      ...(current ? { version: current.version } : {}),
+      serverCopy: current ? toSyncReminderPayload(current) : null,
+    };
   }
 }
 

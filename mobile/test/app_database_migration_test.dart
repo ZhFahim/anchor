@@ -105,6 +105,40 @@ void main() {
       expect(note.localRev, 4);
     });
   });
+
+  test(
+    'a database from the first reminders release re-downloads the feed',
+    () async {
+      await withDatabase((db) async {
+        await db
+            .into(db.syncState)
+            .insert(const SyncStateCompanion(cursor: Value('cursor-42')));
+        await db.customStatement('PRAGMA user_version = 10');
+      });
+
+      await withDatabase((db) async {
+        final state = await db.select(db.syncState).getSingle();
+        expect(state.cursor, isNull);
+      });
+    },
+  );
+
+  test('a database from before reminders re-downloads the feed too', () async {
+    await withDatabase((db) async {
+      await db
+          .into(db.syncState)
+          .insert(const SyncStateCompanion(cursor: Value('cursor-42')));
+      for (final column in _reminderColumns) {
+        await db.customStatement('ALTER TABLE notes DROP COLUMN $column');
+      }
+      await db.customStatement('PRAGMA user_version = 9');
+    });
+
+    await withDatabase((db) async {
+      final state = await db.select(db.syncState).getSingle();
+      expect(state.cursor, isNull);
+    });
+  });
 }
 
 const _reminderColumns = [

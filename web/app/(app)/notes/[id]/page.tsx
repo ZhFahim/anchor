@@ -35,10 +35,11 @@ import {
   permanentDeleteNote,
   ReadOnlyBanner,
   RestoreDialog,
+  reminderUpdate,
   restoreNote,
   ShareDialog,
+  sameReminder,
   saveNote,
-  toReminderInput,
   unarchiveNote,
 } from "@/features/notes";
 import type { RichTextEditorHandle } from "@/features/notes/components/editor";
@@ -129,6 +130,8 @@ export default function NoteEditorPage() {
   const pendingFocusRestoreRef = useRef<PendingFocusRestore | null>(null);
   const pendingCreateNoteRef = useRef<Promise<Note> | null>(null);
   const noteVersionRef = useRef<number | undefined>(undefined);
+  // The reminder the server last told us about.
+  const serverReminderRef = useRef<NoteReminder | null>(null);
 
   // The queue outlives every render and reaches the current handlers here.
   const live = useRef({
@@ -145,7 +148,7 @@ export default function NoteEditorPage() {
     save: (draft, baseVersion) =>
       saveNote(live.current.noteId, {
         ...draft,
-        reminder: toReminderInput(draft.reminder),
+        reminder: reminderUpdate(draft.reminder, serverReminderRef.current),
         baseVersion,
       }),
     onSaved: (draft, note) => live.current.onSaved(draft, note),
@@ -255,6 +258,7 @@ export default function NoteEditorPage() {
       setSelectedTagIds(incoming.tagIds);
       setLastSaved(incoming);
       noteVersionRef.current = serverNote.version;
+      serverReminderRef.current = incoming.reminder;
       queue.setBaseVersion(serverNote.version);
     },
     [queue],
@@ -281,6 +285,7 @@ export default function NoteEditorPage() {
     setIsArchived(false);
     setBackground(null);
     setReminder(null);
+    serverReminderRef.current = null;
     setSelectedTagIds(tagIdFromUrl ? [tagIdFromUrl] : []);
   }, [isNew, tagIdFromUrl]);
 
@@ -340,9 +345,26 @@ export default function NoteEditorPage() {
     setReminder(hydrated.reminder);
     setLastSaved(hydrated);
     noteVersionRef.current = note.version;
+    serverReminderRef.current = hydrated.reminder;
     queue.setBaseVersion(note.version);
     hydratedNoteIdRef.current = note.id;
   }, [note, queue]);
+
+  // A reminder set elsewhere leaves the note version alone, so the rebase
+  // below never sees it.
+  useEffect(() => {
+    if (!note || hydratedNoteIdRef.current !== note.id) return;
+
+    const incoming = note.reminder ?? null;
+    if (sameReminder(incoming, serverReminderRef.current)) return;
+
+    const untouched = sameReminder(reminder, serverReminderRef.current);
+    serverReminderRef.current = incoming;
+    if (!untouched) return;
+
+    setReminder(incoming);
+    setLastSaved((saved) => (saved ? { ...saved, reminder: incoming } : saved));
+  }, [note, reminder]);
 
   // A newer copy arrived from somewhere else: it replaces what is on screen,
   // unless there is an unsaved edit, which is re-based onto it and goes up next.
@@ -381,6 +403,7 @@ export default function NoteEditorPage() {
       // Anything typed while the note was being created stays and goes up next.
       hydratedNoteIdRef.current = newNote.id;
       noteVersionRef.current = newNote.version;
+      serverReminderRef.current = newNote.reminder ?? null;
       queue.setBaseVersion(newNote.version);
       setLastSaved(noteToDraft(newNote));
 
@@ -432,6 +455,7 @@ export default function NoteEditorPage() {
     (savedDraft: NoteDraft, savedNote: Note) => {
       setLastSaved(savedDraft);
       noteVersionRef.current = savedNote.version;
+      serverReminderRef.current = savedNote.reminder ?? null;
       setIsSaveStuck(false);
       toast.dismiss(saveErrorToastId);
       queryClient.invalidateQueries({ queryKey: ["notes"] });
@@ -488,7 +512,10 @@ export default function NoteEditorPage() {
   const flush = useCallback(() => {
     if (isNew || isReadOnly || !hasUnsavedChanges) return;
 
-    flushNoteUpdate(noteId, draft);
+    flushNoteUpdate(noteId, {
+      ...draft,
+      reminder: reminderUpdate(draft.reminder, serverReminderRef.current),
+    });
   }, [draft, hasUnsavedChanges, isNew, isReadOnly, noteId]);
 
   useEffect(() => {

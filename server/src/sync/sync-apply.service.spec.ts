@@ -948,15 +948,15 @@ describe('SyncApplyService', () => {
       expect(reminderDeleteMany).not.toHaveBeenCalled();
     });
 
-    it('denies recreating a reminder the server no longer has', async () => {
+    it('re-creates a reminder the server no longer has', async () => {
       grantAccess();
 
       const results = await service.apply(USER, [
         reminderChange({ baseVersion: 2 }),
       ]);
 
-      expect(results[0].status).toBe('denied');
-      expect(reminderCreate).not.toHaveBeenCalled();
+      expect(results[0]).toMatchObject({ status: 'applied', version: 1 });
+      expect(reminderCreate).toHaveBeenCalled();
     });
 
     it('acks a redelivered push that already matches, without conflicting', async () => {
@@ -1047,6 +1047,37 @@ describe('SyncApplyService', () => {
 
       expect(results[0].status).toBe('conflict');
       expect(emitter.emit).not.toHaveBeenCalled();
+    });
+
+    it('hands back a server copy on every conflict', async () => {
+      grantAccess();
+      reminderRow = stored();
+      reminderWriteCount = 0;
+
+      const results = await service.apply(USER, [
+        reminderChange({ remindAt: '2026-09-09T07:00', baseVersion: 3 }),
+      ]);
+
+      expect(results[0]).toMatchObject({
+        status: 'conflict',
+        version: 3,
+        serverCopy: { remindAt: '2026-09-04T09:00', version: 3 },
+      });
+    });
+
+    it('hands back a server copy when a clear loses the race', async () => {
+      grantAccess();
+      reminderRow = stored();
+      reminderWriteCount = 0;
+
+      const results = await service.apply(USER, [
+        reminderChange({ remindAt: null, baseVersion: 3 }),
+      ]);
+
+      expect(results[0]).toMatchObject({
+        status: 'conflict',
+        serverCopy: { remindAt: '2026-09-04T09:00' },
+      });
     });
   });
 });

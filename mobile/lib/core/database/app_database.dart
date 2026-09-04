@@ -33,7 +33,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -85,6 +85,13 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(notes, notes.reminderVersion);
         await m.addColumn(notes, notes.isReminderSynced);
         await m.addColumn(notes, notes.reminderSlot);
+      }
+      if (from < 11) {
+        // The server sends each feed entry once; only a sync with no cursor
+        // repeats them.
+        await (update(syncState)..where((tbl) => tbl.cursor.isNotNull())).write(
+          const SyncStateCompanion(cursor: Value(null)),
+        );
       }
     },
   );

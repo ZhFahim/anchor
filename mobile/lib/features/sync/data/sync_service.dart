@@ -437,21 +437,23 @@ class SyncService {
     switch (result.status) {
       case SyncStatus.applied:
         final row = await _noteRow(result.id);
-        // An edit made during the round trip must stay queued.
-        if (row == null ||
-            row.reminderAt != change.remindAt ||
-            row.reminderRecurrence != change.recurrence.name) {
-          return;
-        }
+        if (row == null) return;
+        // An edit made during the round trip stays queued, on the new version.
+        final pending = _reminderChangeOf(row);
+        final settled =
+            pending.remindAt == change.remindAt &&
+            pending.recurrence == change.recurrence;
         await _writeNote(
           result.id,
           NotesCompanion(
-            isReminderSynced: const Value(true),
+            isReminderSynced: Value(settled),
             reminderVersion: Value(result.version),
           ),
         );
 
       case SyncStatus.conflict:
+        // Nothing to adopt: leave the change queued and try again.
+        if (!result.hasServerCopy) return;
         // No conflict dialog for a reminder: adopt the server's copy.
         await _writeNote(
           result.id,
@@ -459,7 +461,10 @@ class SyncService {
         );
 
       case SyncStatus.denied:
-        // The note is gone or unshared, so the reminder has nothing to ring for.
+        // A note the server has never seen may still be accepted later; one it
+        // has is gone or unshared, so the reminder has nothing to ring for.
+        final denied = await _noteRow(result.id);
+        if (denied == null || denied.version == null) return;
         await _writeNote(result.id, await _reminderOf(result.id, null));
 
       case SyncStatus.failed:

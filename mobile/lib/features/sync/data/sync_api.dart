@@ -252,6 +252,7 @@ class SyncResult {
     required this.id,
     required this.status,
     this.version,
+    this.hasServerCopy = false,
     this.serverNote,
     this.serverTag,
     this.serverReminder,
@@ -265,6 +266,7 @@ class SyncResult {
       id: json['id'] as String? ?? '',
       status: SyncStatus.fromString(json['status'] as String?),
       version: json['version'] as int?,
+      hasServerCopy: json.containsKey('serverCopy'),
       serverNote: type == 'note' && serverCopy != null
           ? SyncServerNote.fromJson(serverCopy)
           : null,
@@ -282,11 +284,14 @@ class SyncResult {
   final SyncStatus status;
   final int? version;
 
+  /// Whether the answer spoke about the server's own copy at all.
+  final bool hasServerCopy;
+
   /// For a tag that clashed by name this is a different tag, to merge into.
   final SyncServerNote? serverNote;
   final SyncServerTag? serverTag;
 
-  /// Null on a reminder conflict means the winning state is "no reminder".
+  /// Null alongside [hasServerCopy] means the winning state is "no reminder".
   final SyncServerReminder? serverReminder;
 }
 

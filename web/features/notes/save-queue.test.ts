@@ -4,6 +4,7 @@ import {
   type NoteDraft,
   type NoteSaveQueueHandlers,
   noteDraftsEqual,
+  reminderUpdate,
   type SaveFailure,
   type SaveOutcome,
 } from "./save-queue";
@@ -118,6 +119,32 @@ describe("noteDraftsEqual", () => {
     };
     const b = { ...a, reminder: { ...a.reminder, version: 9 } };
     expect(noteDraftsEqual(a, b)).toBe(true);
+  });
+});
+
+describe("reminderUpdate", () => {
+  const reminder = {
+    remindAt: "2026-09-04T09:00",
+    recurrence: "none" as const,
+    version: 1,
+  };
+
+  it("leaves the server's reminder out of a save that did not touch it", () => {
+    expect(
+      reminderUpdate(reminder, { ...reminder, version: 4 }),
+    ).toBeUndefined();
+    expect(reminderUpdate(null, null)).toBeUndefined();
+  });
+
+  it("sends the reminder the user set here", () => {
+    expect(reminderUpdate(reminder, null)).toEqual({
+      remindAt: "2026-09-04T09:00",
+      recurrence: "none",
+    });
+  });
+
+  it("sends null for the reminder the user removed here", () => {
+    expect(reminderUpdate(null, reminder)).toBeNull();
   });
 });
 

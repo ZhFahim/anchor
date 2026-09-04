@@ -58,11 +58,18 @@ export function noteDraftsEqual(a: NoteDraft, b: NoteDraft): boolean {
     a.content === b.content &&
     a.isPinned === b.isPinned &&
     a.background === b.background &&
-    a.reminder?.remindAt === b.reminder?.remindAt &&
-    a.reminder?.recurrence === b.reminder?.recurrence &&
+    sameReminder(a.reminder, b.reminder) &&
     a.tagIds.length === b.tagIds.length &&
     [...a.tagIds].sort().join() === [...b.tagIds].sort().join()
   );
+}
+
+/** The same time and repeat, whatever version each side is on. */
+export function sameReminder(
+  a: NoteReminder | null,
+  b: NoteReminder | null,
+): boolean {
+  return a?.remindAt === b?.remindAt && a?.recurrence === b?.recurrence;
 }
 
 export function toReminderInput(
@@ -70,6 +77,15 @@ export function toReminderInput(
 ): NoteReminderInput | null {
   if (!reminder) return null;
   return { remindAt: reminder.remindAt, recurrence: reminder.recurrence };
+}
+
+/** The reminder to send; nothing at all keeps the one the server holds. */
+export function reminderUpdate(
+  draft: NoteReminder | null,
+  server: NoteReminder | null,
+): NoteReminderInput | null | undefined {
+  if (sameReminder(draft, server)) return undefined;
+  return toReminderInput(draft);
 }
 
 // Holds one request open at a time and remembers only the newest draft, so

@@ -3,6 +3,7 @@ type MockModel = Record<string, jest.Mock>;
 export interface MockPrismaService {
   note: MockModel;
   notePin: MockModel;
+  noteReminder: MockModel;
   tag: MockModel;
   noteAttachment: MockModel;
   user: MockModel;
@@ -18,6 +19,15 @@ export function createMockPrisma(): MockPrismaService {
   const prisma: MockPrismaService = {
     note: model('findMany', 'findUnique', 'create', 'update', 'updateMany'),
     notePin: model('create', 'delete', 'deleteMany'),
+    noteReminder: model(
+      'findUnique',
+      'create',
+      'upsert',
+      'update',
+      'updateMany',
+      'delete',
+      'deleteMany',
+    ),
     tag: model('findMany', 'create', 'createMany'),
     noteAttachment: model('create', 'findMany', 'delete'),
     user: model('findUnique', 'findMany'),

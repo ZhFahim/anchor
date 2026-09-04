@@ -901,6 +901,7 @@ void main() {
       int? reminderVersion,
       bool isReminderSynced = true,
       bool isSynced = true,
+      int? version,
       int? slot,
     }) async {
       await db
@@ -910,6 +911,7 @@ void main() {
               id: id,
               title: 'Groceries',
               isSynced: Value(isSynced),
+              version: Value(version),
               reminderAt: Value(reminderAt),
               reminderRecurrence: Value(recurrence),
               reminderVersion: Value(reminderVersion),
@@ -953,6 +955,23 @@ void main() {
       await service.run();
 
       expect(changesOf(0).single['remindAt'], isNull);
+    });
+
+    test('settles the flag after a clear is applied', () async {
+      await insertNote('n1', reminderVersion: 2, isReminderSynced: false);
+      stub([
+        response(
+          results: [
+            {'type': 'reminder', 'id': 'n1', 'status': 'applied'},
+          ],
+        ),
+      ]);
+
+      await service.run();
+
+      final row = await noteRow('n1');
+      expect(row.isReminderSynced, isTrue);
+      expect(row.reminderVersion, isNull);
     });
 
     test('settles the flag and takes the version on applied', () async {
@@ -1005,7 +1024,48 @@ void main() {
 
       await service.run();
 
-      expect((await noteRow('n1')).isReminderSynced, isFalse);
+      final row = await noteRow('n1');
+      expect(row.isReminderSynced, isFalse);
+      expect(row.reminderVersion, 5);
+    });
+
+    test('pushes the edit made mid-flight against the new version', () async {
+      await insertNote(
+        'n1',
+        reminderAt: '2026-09-04T09:00',
+        reminderVersion: 4,
+        isReminderSynced: false,
+      );
+      stub(
+        [
+          response(
+            results: [
+              {
+                'type': 'reminder',
+                'id': 'n1',
+                'status': 'applied',
+                'version': 5,
+              },
+            ],
+          ),
+        ],
+        whileInFlight: () async {
+          await (db.update(db.notes)..where((t) => t.id.equals('n1'))).write(
+            const NotesCompanion(reminderAt: Value('2026-09-09T07:00')),
+          );
+        },
+      );
+
+      await service.run();
+      await service.run();
+
+      expect(changesOf(1).single, {
+        'type': 'reminder',
+        'id': 'n1',
+        'remindAt': '2026-09-09T07:00',
+        'recurrence': 'none',
+        'baseVersion': 5,
+      });
     });
 
     test('adopts the server copy on a conflict', () async {
@@ -1043,11 +1103,64 @@ void main() {
       expect(row.reminderSlot, isNotNull);
     });
 
+    test('takes a reminder set again after this device removed one', () async {
+      await insertNote('n1', reminderVersion: 1, isReminderSynced: false);
+      stub([
+        response(
+          results: [
+            {'type': 'reminder', 'id': 'n1', 'status': 'applied'},
+          ],
+          entries: [
+            {
+              'seq': '7',
+              'entityType': 'reminder',
+              'entityId': 'n1',
+              'op': 'upsert',
+              'reminder': reminderJson(remindAt: '2026-09-06T08:00'),
+            },
+          ],
+        ),
+      ]);
+
+      await service.run();
+
+      final row = await noteRow('n1');
+      expect(row.reminderAt, '2026-09-06T08:00');
+      expect(row.isReminderSynced, isTrue);
+      expect(row.reminderSlot, isNotNull);
+    });
+
+    test(
+      'keeps the local reminder when a conflict carries no server copy',
+      () async {
+        await insertNote(
+          'n1',
+          reminderAt: '2026-09-04T09:00',
+          reminderVersion: 3,
+          isReminderSynced: false,
+        );
+        stub([
+          response(
+            results: [
+              {'type': 'reminder', 'id': 'n1', 'status': 'conflict'},
+            ],
+          ),
+        ]);
+
+        await service.run();
+
+        final row = await noteRow('n1');
+        expect(row.reminderAt, '2026-09-04T09:00');
+        expect(row.isReminderSynced, isFalse);
+      },
+    );
+
     test('clears the reminder when the push is denied', () async {
       await insertNote(
         'n1',
         reminderAt: '2026-09-04T09:00',
         isReminderSynced: false,
+        version: 2,
       );
       stub([
         response(
@@ -1062,6 +1175,29 @@ void main() {
       final row = await noteRow('n1');
       expect(row.reminderAt, isNull);
       expect(row.isReminderSynced, isTrue);
+    });
+
+    test('keeps the reminder when the note itself never landed', () async {
+      await insertNote(
+        'n1',
+        reminderAt: '2026-09-04T09:00',
+        isReminderSynced: false,
+        isSynced: false,
+      );
+      stub([
+        response(
+          results: [
+            {'type': 'note', 'id': 'n1', 'status': 'failed'},
+            {'type': 'reminder', 'id': 'n1', 'status': 'denied'},
+          ],
+        ),
+      ]);
+
+      await service.run();
+
+      final row = await noteRow('n1');
+      expect(row.reminderAt, '2026-09-04T09:00');
+      expect(row.isReminderSynced, isFalse);
     });
 
     test('applies a reminder feed entry to a clean row', () async {
