@@ -17,6 +17,7 @@ export {
   ReadOnlyBanner,
 } from "./note-editor";
 export { NoteHistorySheet } from "./note-history-sheet";
+export { NoteViewer } from "./note-viewer";
 export { QuillPreview } from "./quill-preview";
 export { ReminderPicker } from "./reminder-picker";
 export { ShareDialog } from "./share-dialog";

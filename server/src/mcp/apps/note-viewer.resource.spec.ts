@@ -1,7 +1,8 @@
 import {
   noteViewerResource,
   mcpAppsResources,
-  buildNoteViewerHtml,
+  fetchViewerHtml,
+  clearViewerCache,
   UI_VIEWER_URI,
 } from './note-viewer.resource';
 import type { McpUserContext } from '../mcp-auth.context';
@@ -13,6 +14,11 @@ const user: McpUserContext = {
 };
 
 describe('MCP Apps note-viewer resource', () => {
+  beforeEach(() => clearViewerCache());
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   it('is registered under the ui:// scheme and text/html mime', () => {
     expect(Object.keys(mcpAppsResources)).toContain('anchor-note-viewer');
     expect(noteViewerResource.uri).toBe(UI_VIEWER_URI);
@@ -20,21 +26,29 @@ describe('MCP Apps note-viewer resource', () => {
     expect(noteViewerResource.mimeType).toBe('text/html');
   });
 
-  it('returns a self-contained HTML page with the postMessage app script', async () => {
-    const result = await noteViewerResource.load(
-      user,
-      UI_VIEWER_URI,
-      {} as never,
+  it('serves the SSR viewer HTML fetched from the web app', async () => {
+    const html = '<!doctype html><html><body>SSR viewer</body></html>';
+    const fetchSpy = jest
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response(html, { status: 200 }));
+
+    const result = await noteViewerResource.load(user, UI_VIEWER_URI, {
+      baseUrl: 'https://notes.example.com',
+    } as never);
+    const text = (result.contents[0] as { text: string }).text;
+    expect(text).toContain('SSR viewer');
+    expect(fetchSpy).toHaveBeenCalledWith(
+      'https://notes.example.com/mcp-app/note-viewer',
+      expect.anything(),
     );
-    const html = (result.contents[0] as { text: string }).text;
-    expect(html).toContain('<!doctype html>');
-    expect(html).toContain('ui/initialize');
-    expect(html).toContain(`tools/call`);
-    expect(html).toContain('note_render');
   });
 
-  it('builds valid, escapable note rendering markup', () => {
-    const html = buildNoteViewerHtml();
-    expect(html).toContain('&lt;');
+  it('throws when the viewer route is unavailable', async () => {
+    jest
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response('nope', { status: 500 }));
+    await expect(
+      fetchViewerHtml('https://notes.example.com'),
+    ).rejects.toThrow();
   });
 });

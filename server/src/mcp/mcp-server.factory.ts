@@ -23,7 +23,6 @@ export function createMcpServer(
   services: McpServices,
   visibleTools?: string[],
   audit?: McpAuditSink,
-  includeAppTools = false,
 ): McpServer {
   const server = new McpServer(
     {
@@ -37,11 +36,12 @@ export function createMcpServer(
 
   // Resources (directory catalog + on-demand fetch). Every resource resolves
   // the current user from the auth storage so it stays scoped to the caller.
+  // The embedded MCP-apps UI (ui://) is always advertised; it is a static
+  // viewer shell and leaks no note content on its own. The app fetches content
+  // through the app-only note_render tool.
   const allResources = {
     ...mcpResources,
-    // The embedded MCP-apps UI (ui://) is only advertised when the transport
-    // opts in (?app=1); it returns a self-contained HTML viewer.
-    ...(includeAppTools ? mcpAppsResources : {}),
+    ...mcpAppsResources,
   };
   for (const resource of Object.values(allResources)) {
     const metadata = {
@@ -111,9 +111,6 @@ export function createMcpServer(
 
   for (const tool of Object.values(registeredTools)) {
     if (names && !names.has(tool.name)) continue;
-    // App-only tools feed the embedded rendering bundle; hide them from normal
-    // LLM clients unless the transport explicitly opts in (plan P5/P10).
-    if (tool.visibility === 'app' && !includeAppTools) continue;
     server.registerTool(
       tool.name,
       {
@@ -125,14 +122,15 @@ export function createMcpServer(
           destructiveHint: tool.destructive ?? false,
           idempotentHint: tool.name !== 'note_edit',
         },
-        // MCP Apps extension: point hosts at the embedded UI resource so they
-        // can render the app in a sandboxed iframe (plan P7/P10).
-        ...(tool.visibility === 'app' && includeAppTools
-          ? {
-              _meta: {
-                ui: { resourceUri: 'ui://anchor/note-viewer' },
-              },
-            }
+        // MCP Apps extension: the embedded viewer is discovered via a DEFAULT
+        // tool (note_get) so normal hosts see it. App-only tools (note_render)
+        // carry `ui.visibility: ['app']` so they are hidden from the model but
+        // remain callable from inside the app iframe.
+        ...(tool.name === 'note_get'
+          ? { _meta: { ui: { resourceUri: 'ui://anchor/note-viewer' } } }
+          : {}),
+        ...(tool.visibility === 'app'
+          ? { _meta: { ui: { visibility: ['app'] } } }
           : {}),
       },
       async (params) => {

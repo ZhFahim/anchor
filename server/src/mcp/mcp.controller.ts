@@ -108,11 +108,10 @@ export class McpController {
         : (req.query.tools as string | undefined),
     );
 
-    // The embedded MCP-apps bundle requests app-only tools via ?app=1 so note
-    // content reaches the UI for faithful rendering, without leaking it to the
-    // LLM unless it explicitly asks (plan P10).
-    const includeAppTools = req.query.app === '1';
-
+    // App-only tools/resources are advertised on every session and hidden from
+    // the model via `_meta.ui.visibility: ['app']`; the iframe calls them. No
+    // separate `?app=1` transport is needed (which previously leaked the tool
+    // to the LLM).
     const server = createMcpServer(
       {
         notes: this.notes,
@@ -123,7 +122,6 @@ export class McpController {
       },
       tools,
       (rec) => this.audit.record(rec),
-      includeAppTools,
     );
 
     const transport = new StreamableHTTPServerTransport({
