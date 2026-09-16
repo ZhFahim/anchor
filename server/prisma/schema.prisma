@@ -250,3 +250,16 @@ model NoteAttachment {
   @@index([noteId])
   @@index([uploadedByUserId])
 }
+
+// OAuth 2.1 dynamic-registered client (authorization_code + PKCE).
+model OAuthClient {
+  id           String   @id @default(uuid())
+  clientId     String   @unique
+  clientSecret String?  // null for public clients (PKCE)
+  name         String
+  redirectUris String[] @default([])
+  scopes       String[] @default(["read-only"])
+  isConfidential Boolean @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
