@@ -347,4 +347,38 @@ describe('mcp tools', () => {
     });
     expect(out.structuredContent?.title).toBe('Groceries v2');
   });
+
+  it('note_edit rejects malformed full-body content (no silent corrupt)', async () => {
+    const out = await noteEdit.run(
+      user,
+      { noteId: 'n1', content: 'not delta' },
+      services,
+    );
+    expect(out.isError).toBe(true);
+    expect(updateNote).not.toHaveBeenCalled();
+  });
+
+  it('note_edit applies a targeted edit_op server-side (P2)', async () => {
+    getNote.mockResolvedValueOnce({
+      id: 'n1',
+      title: 'Groceries',
+      content: '{"ops":[{"insert":"one\\n"}]}',
+      state: 'active',
+      isArchived: false,
+      version: 1,
+      updatedAt: '2026-01-01',
+    });
+    const out = await noteEdit.run(
+      user,
+      { noteId: 'n1', edit_op: { op: 'append_line', text: 'two' } },
+      services,
+    );
+    expect(out.isError).toBeUndefined();
+    const call = (
+      updateNote.mock.calls as unknown as Array<
+        [string, string, { content: string }]
+      >
+    )[0];
+    expect(call?.[2]?.content).toContain('two');
+  });
 });

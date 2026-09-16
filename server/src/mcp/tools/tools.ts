@@ -3,6 +3,7 @@ import { NoteHistoryService } from '../../notes/services/note-history.service';
 import { NoteAttachmentsService } from '../../notes/services/note-attachments.service';
 import { TagsService } from '../../tags/tags.service';
 import { SyncReminderRecurrence } from '../../sync/dto/sync-request.dto';
+import { applyTargetedEdit, validateDelta } from './targeted-delta';
 import type { McpUserContext } from '../mcp-auth.context';
 
 export type { McpUserContext };
@@ -268,13 +269,18 @@ export const noteRender: ToolBinding = {
 export const noteEdit: ToolBinding = {
   name: 'note_edit',
   title: 'Edit a Note',
-  description: `Update a note's title and/or content (Quill Delta JSON), or set a reminder.
+  description: `Update a note's title, make a targeted line edit, set a reminder, or (rarely) replace the whole body.
+
+Prefer the targeted 'edit_op' for content changes: the server applies a deterministic line-level transform so you never rewrite the whole note. Full-body 'content' is only for cases the line ops can't express and must be valid Quill Delta JSON.
 
 Edits are recoverable: the prior content is saved as a revision and the server's optimistic-concurrency check returns a 409 if the note changed since baseVersion. Pass baseVersion to avoid clobbering concurrent edits.`,
   inputShape: {
     noteId: 'string (required).',
     title: 'string (optional). New title.',
-    content: 'string (optional). New content as Quill Delta JSON string.',
+    edit_op:
+      "object (optional). A targeted content edit: {op:'append_line'|'insert_after_line'|'replace_line'|'delete_line'|'check_item', line?:number, text?:string, checked?:boolean}. line is 1-based.",
+    content:
+      'string (optional). Full Quill Delta JSON replacement — use only when edit_op cannot express the change.',
     reminder:
       'string (optional). JSON object {"remindAt":"YYYY-MM-DDTHH:mm","recurrence":"none|daily|weekly|monthly|yearly"}.',
     reminderRecurrence:
@@ -298,7 +304,31 @@ Edits are recoverable: the prior content is saved as a revision and the server's
     }
     const data: Record<string, unknown> = {};
     if (titleParam !== undefined) data.title = titleParam;
-    if (contentParam !== undefined) data.content = contentParam;
+    if (contentParam !== undefined) {
+      // Never persist a malformed body: the web editor silently empties on open.
+      try {
+        validateDelta(contentParam);
+      } catch {
+        return err(
+          'Invalid content: it must be Quill Delta JSON like {"ops":[...]}. Prefer edit_op for line edits.',
+        );
+      }
+      data.content = contentParam;
+    }
+    if (params.edit_op !== undefined) {
+      // P2: the LLM names the intent; the server performs the Delta transform.
+      const note = await notes.findOne(user.userId, noteId);
+      const op = params.edit_op;
+      try {
+        data.content = applyTargetedEdit(
+          note.content ?? '{"ops":[]}',
+          op as never,
+        );
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        return err(`edit_op failed: ${msg}`);
+      }
+    }
     if (typeof params.baseVersion === 'number')
       data.baseVersion = params.baseVersion;
     if (params.reminder) {

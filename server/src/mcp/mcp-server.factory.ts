@@ -231,6 +231,22 @@ function toolSchema(name: string): ZodTypeAny {
         .literal(true)
         .describe('Explicit confirmation for unrecoverable actions.');
     }
+    if (key === 'edit_op') {
+      field = z
+        .object({
+          op: z.enum([
+            'append_line',
+            'insert_after_line',
+            'replace_line',
+            'delete_line',
+            'check_item',
+          ]),
+          line: z.number().int().min(1).optional(),
+          text: z.string().optional(),
+          checked: z.boolean().optional(),
+        })
+        .describe(desc.trim());
+    }
     fields[key] = optional ? field.optional() : field;
   }
   return z.object(fields).strict();
