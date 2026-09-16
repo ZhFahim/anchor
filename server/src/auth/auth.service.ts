@@ -15,7 +15,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
-import { UserStatus } from '../generated/prisma/enums';
+import { ApiTokenScope, UserStatus } from '../generated/prisma/enums';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import * as fs from 'fs/promises';
@@ -220,7 +220,7 @@ export class AuthService {
   async getApiToken(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, status: true, apiToken: true },
+      select: { id: true, status: true, apiToken: true, apiTokenScope: true },
     });
 
     if (!user) {
@@ -231,7 +231,32 @@ export class AuthService {
       throw new ForbiddenException('Account pending approval');
     }
 
-    return { apiToken: user.apiToken };
+    return { apiToken: user.apiToken, scope: user.apiTokenScope };
+  }
+
+  async setApiTokenScope(
+    userId: string,
+    scope: ApiTokenScope,
+  ) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, status: true },
+    });
+
+    if (!user) {
+      throw new ForbiddenException('User not found');
+    }
+
+    if (user.status !== UserStatus.active) {
+      throw new ForbiddenException('Account pending approval');
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { apiTokenScope: scope },
+    });
+
+    return { scope };
   }
 
   async revokeApiToken(userId: string) {

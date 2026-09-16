@@ -3,9 +3,11 @@ import type {
   AdminStats,
   AdminUser,
   CreateUserDto,
+  McpSettings,
   OidcSettings,
   RegistrationSettings,
   ResetPasswordResponse,
+  UpdateMcpSettingsDto,
   UpdateOidcSettingsDto,
   UpdateRegistrationModeDto,
   UpdateUserDto,
@@ -89,4 +91,16 @@ export async function updateOidcSettings(
   return api
     .patch("api/admin/settings/oidc", { json: data })
     .json<OidcSettings>();
+}
+
+export async function getMcpSettings(): Promise<McpSettings> {
+  return api.get("api/admin/settings/mcp").json<McpSettings>();
+}
+
+export async function updateMcpSettings(
+  data: UpdateMcpSettingsDto,
+): Promise<McpSettings> {
+  return api
+    .patch("api/admin/settings/mcp", { json: data })
+    .json<McpSettings>();
 }

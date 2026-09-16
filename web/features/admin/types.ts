@@ -51,6 +51,14 @@ export interface RegistrationSettings {
   source: "env" | "database" | "default";
 }
 
+export interface McpSettings {
+  enabled: boolean;
+}
+
+export interface UpdateMcpSettingsDto {
+  enabled: boolean;
+}
+
 export interface UpdateRegistrationModeDto {
   mode: RegistrationMode;
 }

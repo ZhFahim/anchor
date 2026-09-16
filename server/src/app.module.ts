@@ -16,6 +16,7 @@ import { AdminModule } from './admin/admin.module';
 import { SettingsModule } from './settings/settings.module';
 import { UsersModule } from './users/users.module';
 import { ImportExportModule } from './import-export/import-export.module';
+import { McpModule } from './mcp/mcp.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { ImportExportModule } from './import-export/import-export.module';
     SettingsModule,
     UsersModule,
     ImportExportModule,
+    McpModule,
   ],
   providers: [
     {

@@ -22,6 +22,7 @@ export interface RefreshTokenResponse {
 
 export interface ApiTokenResponse {
   apiToken: string | null;
+  scope: "readOnly" | "readWrite";
 }
 
 export interface LoginCredentials {

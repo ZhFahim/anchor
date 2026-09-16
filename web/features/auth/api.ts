@@ -67,6 +67,14 @@ export async function regenerateApiToken(): Promise<ApiTokenResponse> {
   return api.post("api/auth/api-token/regenerate").json<ApiTokenResponse>();
 }
 
+export async function setApiTokenScope(
+  scope: "readOnly" | "readWrite",
+): Promise<{ scope: "readOnly" | "readWrite" }> {
+  return api
+    .patch("api/auth/api-token/scope", { json: { scope } })
+    .json<{ scope: "readOnly" | "readWrite" }>();
+}
+
 export async function revokeApiToken(): Promise<ApiTokenResponse> {
   return api.delete("api/auth/api-token").json<ApiTokenResponse>();
 }

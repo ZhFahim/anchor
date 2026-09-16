@@ -22,6 +22,7 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { LogoutDto } from './dto/logout.dto';
+import { SetApiTokenScopeDto } from './dto/set-api-token-scope.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { PROFILE_IMAGE_MAX_BYTES } from './constants/auth.constants';
@@ -82,6 +83,16 @@ export class AuthController {
   @Post('api-token/regenerate')
   regenerateApiToken(@CurrentUser() user: User) {
     return this.authService.regenerateApiToken(user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @Patch('api-token/scope')
+  setApiTokenScope(
+    @CurrentUser() user: User,
+    @Body() setApiTokenScopeDto: SetApiTokenScopeDto,
+  ) {
+    return this.authService.setApiTokenScope(user.id, setApiTokenScopeDto.scope);
   }
 
   @UseGuards(JwtAuthGuard)

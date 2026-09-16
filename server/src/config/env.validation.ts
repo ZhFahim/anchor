@@ -80,6 +80,14 @@ export class EnvironmentVariables {
   @IsOptional()
   @IsString()
   DISABLE_INTERNAL_AUTH?: string;
+
+  @IsOptional()
+  @IsString()
+  MCP_ENABLED?: string;
+
+  @IsOptional()
+  @IsString()
+  MCP_PUBLIC_URL?: string;
 }
 
 export function validate(

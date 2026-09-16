@@ -19,6 +19,11 @@ enum UserStatus {
   pending
 }
 
+enum ApiTokenScope {
+  readOnly
+  readWrite
+}
+
 enum NoteSharePermission {
   viewer
   editor
@@ -63,6 +68,7 @@ model User {
   name                 String
   profileImage         String?
   apiToken             String?          @unique
+  apiTokenScope        ApiTokenScope    @default(readWrite)
   isAdmin              Boolean          @default(false)
   status               UserStatus       @default(active)
   oidcSubject          String?          @unique

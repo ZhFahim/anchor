@@ -1,15 +1,23 @@
 import {
   CanActivate,
   ExecutionContext,
+  ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ExtractJwt } from 'passport-jwt';
 import { UserStatus } from '../generated/prisma/enums';
-import { TokenResolverService } from './token-resolver.service';
+import {
+  TokenResolverService,
+  isApiTokenAuth,
+} from './token-resolver.service';
 import { AuthenticatedRequest } from './authenticated-request';
+import type { ApiTokenScope } from '../generated/prisma/enums';
 
 const extractBearerToken = ExtractJwt.fromAuthHeaderAsBearerToken();
+
+/** HTTP methods that mutate state; rejected for read-only API tokens. */
+const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -34,6 +42,20 @@ export class AuthGuard implements CanActivate {
     }
 
     request.user = user;
+    this.enforceScope(request, user.apiTokenScope);
     return true;
+  }
+
+  private enforceScope(
+    request: AuthenticatedRequest,
+    scope: ApiTokenScope,
+  ): void {
+    if (!request.user || !isApiTokenAuth(request.user)) return;
+
+    if (scope === 'readOnly' && WRITE_METHODS.has(request.method)) {
+      throw new ForbiddenException(
+        'API token is read-only; use a read-write token to modify data',
+      );
+    }
   }
 }
