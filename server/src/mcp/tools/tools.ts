@@ -21,6 +21,8 @@ export interface ToolBinding {
   visibility?: 'default' | 'app';
   /** Unrecoverable ops require an explicit `confirm: true` (P4). */
   confirmRequired?: boolean;
+  /** True for tools that can destroy data (drives destructiveHint). */
+  destructive?: boolean;
   /**
    * For multi-mode tools (e.g. an `action` param), the subset of action values
    * that are read-only. When present and the incoming action is in this set,
@@ -178,6 +180,7 @@ export const noteHistory: ToolBinding = {
       "boolean (optional). 'restore' rewrites the note; pass true to confirm.",
   },
   readOnlyHint: false,
+  destructive: true,
   readOnlyActions: ['list', 'view'],
   async run(user, params, { history }) {
     const [noteId] = requireIds(params, ['noteId']);
@@ -519,6 +522,7 @@ export const tagCreate: ToolBinding = {
       'boolean (optional, required for remove). Confirm unrecoverable deletion.',
   },
   readOnlyHint: false,
+  destructive: true,
   async run(user, params, { tags }) {
     const action = params.action;
     if (
@@ -598,6 +602,7 @@ export const noteAttachments: ToolBinding = {
   },
   readOnlyHint: false,
   confirmRequired: false,
+  destructive: true,
   readOnlyActions: ['list', 'download'],
   async run(user, params, { attachments, baseUrl }) {
     const noteId = params.noteId;

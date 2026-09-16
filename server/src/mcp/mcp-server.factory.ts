@@ -1,4 +1,5 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z, type ZodTypeAny } from 'zod';
 import { tools as registeredTools } from './tools/tools';
 import type { McpServices } from './tools/tools';
@@ -43,18 +44,34 @@ export function createMcpServer(
     ...(includeAppTools ? mcpAppsResources : {}),
   };
   for (const resource of Object.values(allResources)) {
-    server.registerResource(
-      resource.name,
-      resource.uri,
-      {
-        description: resource.description,
-        mimeType: resource.mimeType,
-      },
-      async (uri) => {
-        const user = requireAuth();
-        return resource.load(user, uri.toString(), services);
-      },
-    );
+    const metadata = {
+      description: resource.description,
+      mimeType: resource.mimeType,
+    };
+    // A URI with `{var}` placeholders must be registered as a ResourceTemplate
+    // so templated reads (anchor://notes/<id>) resolve; a literal string is
+    // registered as a fixed resource and would 404 on any concrete id.
+    if (resource.uri.includes('{')) {
+      server.registerResource(
+        resource.name,
+        new ResourceTemplate(resource.uri, { list: undefined }),
+        metadata,
+        async (uri) => {
+          const user = requireAuth();
+          return resource.load(user, uri.toString(), services);
+        },
+      );
+    } else {
+      server.registerResource(
+        resource.name,
+        resource.uri,
+        metadata,
+        async (uri) => {
+          const user = requireAuth();
+          return resource.load(user, uri.toString(), services);
+        },
+      );
+    }
   }
 
   // Prompts: orchestration only (P9).
@@ -105,7 +122,7 @@ export function createMcpServer(
         inputSchema: toolSchema(tool.name),
         annotations: {
           readOnlyHint: tool.readOnlyHint,
-          destructiveHint: false,
+          destructiveHint: tool.destructive ?? false,
           idempotentHint: tool.name !== 'note_edit',
         },
         // MCP Apps extension: point hosts at the embedded UI resource so they
@@ -128,28 +145,23 @@ export function createMcpServer(
           (!!tool.readOnlyActions &&
             typeof action === 'string' &&
             tool.readOnlyActions.includes(action));
-        const outcome = () => {
-          if (refusedForReadOnly(readOnly, user.scope)) {
-            return 'refused' as const;
-          }
-          return undefined;
-        };
 
-        if (audit) {
-          audit({
+        const record = (outcome: McpAuditRecord['outcome']) => {
+          audit?.({
             source: 'mcp',
             user: user.userId,
             tool: tool.name,
             opType: opTypeOf(tool.name),
             noteId: typeof noteId === 'string' ? noteId : undefined,
-            outcome: outcome() ?? 'ok',
+            outcome,
             authMethod: user.authMethod,
             scope: user.scope,
             timestamp: new Date().toISOString(),
           });
-        }
+        };
 
         if (refusedForReadOnly(readOnly, user.scope)) {
+          record('refused');
           return {
             content: [
               {
@@ -161,26 +173,12 @@ export function createMcpServer(
           };
         }
         if (tool.confirmRequired && paramsObject.confirm !== true) {
-          const name2 = tool.name;
-          audit?.({
-            source: 'mcp',
-            user: user.userId,
-            tool: name2,
-            opType: opTypeOf(name2),
-            noteId:
-              typeof paramsObject.noteId === 'string'
-                ? paramsObject.noteId
-                : undefined,
-            outcome: 'confirm_required',
-            authMethod: user.authMethod,
-            scope: user.scope,
-            timestamp: new Date().toISOString(),
-          });
+          record('confirm_required');
           return {
             content: [
               {
                 type: 'text',
-                text: `${name2} is unrecoverable and requires explicit confirmation. Retry with "confirm": true to proceed.`,
+                text: `${tool.name} is unrecoverable and requires explicit confirmation. Retry with "confirm": true to proceed.`,
               },
             ],
             isError: true,
@@ -191,6 +189,9 @@ export function createMcpServer(
           params as Record<string, unknown>,
           services,
         );
+        // Audit after execution so refusals/errors raised inside the tool are
+        // classified correctly (the tool owns the confirm contract).
+        record(result.isError ? 'error' : 'ok');
         return {
           content: result.content,
           ...(result.structuredContent !== undefined
@@ -269,10 +270,11 @@ export const refusedForReadOnly = (
 ): boolean => !readOnlyHint && scope === 'readOnly';
 
 const opTypeOf = (tool: string): McpAuditRecord['opType'] => {
-  if (tool.startsWith('note_edit')) return 'edit';
-  if (tool.startsWith('note_search')) return 'search';
-  if (tool.startsWith('note_history')) return 'history';
-  if (tool.startsWith('note_reminders')) return 'reminder';
-  if (tool.startsWith('tag_')) return 'tag';
+  if (tool === 'note_edit') return 'edit';
+  if (tool === 'note_search') return 'search';
+  if (tool === 'note_history') return 'history';
+  if (tool === 'note_reminders') return 'reminder';
+  if (tool === 'note_attachments') return 'attachment';
+  if (tool === 'tag_manage') return 'tag';
   return 'read';
 };

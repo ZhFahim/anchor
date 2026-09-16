@@ -66,7 +66,9 @@ export class McpAuthGuard implements CanActivate {
     (req as unknown as { mcpUser: unknown }).mcpUser = {
       userId: user.id,
       authMethod: user.authMethod,
-      scope: user.apiTokenScope,
+      // The PAT scope only applies to API-token auth; a session JWT is always
+      // full-access (matching AuthGuard's behaviour for the rest of the API).
+      scope: user.authMethod === 'apiToken' ? user.apiTokenScope : 'readWrite',
     };
     return true;
   }
