@@ -7,10 +7,7 @@ import {
 } from '@nestjs/common';
 import { ExtractJwt } from 'passport-jwt';
 import { UserStatus } from '../generated/prisma/enums';
-import {
-  TokenResolverService,
-  isApiTokenAuth,
-} from './token-resolver.service';
+import { TokenResolverService, isApiTokenAuth } from './token-resolver.service';
 import { AuthenticatedRequest } from './authenticated-request';
 import type { ApiTokenScope } from '../generated/prisma/enums';
 

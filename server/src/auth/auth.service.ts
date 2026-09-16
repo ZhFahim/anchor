@@ -234,10 +234,7 @@ export class AuthService {
     return { apiToken: user.apiToken, scope: user.apiTokenScope };
   }
 
-  async setApiTokenScope(
-    userId: string,
-    scope: ApiTokenScope,
-  ) {
+  async setApiTokenScope(userId: string, scope: ApiTokenScope) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { id: true, status: true },

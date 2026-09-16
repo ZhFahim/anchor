@@ -92,7 +92,10 @@ export class AuthController {
     @CurrentUser() user: User,
     @Body() setApiTokenScopeDto: SetApiTokenScopeDto,
   ) {
-    return this.authService.setApiTokenScope(user.id, setApiTokenScopeDto.scope);
+    return this.authService.setApiTokenScope(
+      user.id,
+      setApiTokenScopeDto.scope,
+    );
   }
 
   @UseGuards(JwtAuthGuard)

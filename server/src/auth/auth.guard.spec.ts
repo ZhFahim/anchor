@@ -18,13 +18,14 @@ const baseUser: AuthUser = {
   updatedAt: new Date(),
 };
 
-const makeContext = (
-  method: string,
-  user?: AuthUser,
-): ExecutionContext =>
+const makeContext = (method: string, user?: AuthUser): ExecutionContext =>
   ({
     switchToHttp: () => ({
-      getRequest: () => ({ method, headers: { authorization: 'Bearer t' }, user }),
+      getRequest: () => ({
+        method,
+        headers: { authorization: 'Bearer t' },
+        user,
+      }),
     }),
   }) as unknown as ExecutionContext;
 
@@ -45,16 +46,14 @@ describe('AuthGuard', () => {
 
   it('allows read requests for a read-only API token', async () => {
     tokenResolver.resolveUser.mockResolvedValue(baseUser);
-    await expect(
-      guard.canActivate(makeContext('GET')),
-    ).resolves.toBe(true);
+    await expect(guard.canActivate(makeContext('GET'))).resolves.toBe(true);
   });
 
   it('blocks write requests for a read-only API token', async () => {
     tokenResolver.resolveUser.mockResolvedValue(baseUser);
-    await expect(
-      guard.canActivate(makeContext('POST')),
-    ).rejects.toBeInstanceOf(ForbiddenException);
+    await expect(guard.canActivate(makeContext('POST'))).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
   });
 
   it('allows write requests for a read-write API token', async () => {
@@ -62,9 +61,7 @@ describe('AuthGuard', () => {
       ...baseUser,
       apiTokenScope: ApiTokenScope.readWrite,
     });
-    await expect(
-      guard.canActivate(makeContext('PATCH')),
-    ).resolves.toBe(true);
+    await expect(guard.canActivate(makeContext('PATCH'))).resolves.toBe(true);
   });
 
   it('allows write requests for a session (JWT) auth regardless of scope', async () => {
@@ -72,8 +69,6 @@ describe('AuthGuard', () => {
       ...baseUser,
       authMethod: 'jwt',
     });
-    await expect(
-      guard.canActivate(makeContext('DELETE')),
-    ).resolves.toBe(true);
+    await expect(guard.canActivate(makeContext('DELETE'))).resolves.toBe(true);
   });
 });
