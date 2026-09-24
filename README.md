@@ -146,6 +146,12 @@ If you want to build from source or customize the image:
 
    The `docker-compose.yml` file will build the image from source automatically.
 
+### Option 3: Easypanel
+
+[Easypanel](https://easypanel.io/) can deploy Anchor with one click using its [official template](https://easypanel.io/templates/anchor), which runs the pre-built image with a persistent data volume for you.
+
+![Anchor deployed on Easypanel](docs/easypanel_deployed.png)
+
 ## Mobile App
 
 Download the Android mobile app.
