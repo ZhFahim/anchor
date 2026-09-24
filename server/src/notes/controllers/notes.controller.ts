@@ -17,6 +17,7 @@ import { BulkPinDto } from '../dto/bulk-pin.dto';
 import { BulkTagsDto } from '../dto/bulk-tags.dto';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { AuthGuard } from '../../auth/auth.guard';
+import { SearchRateLimitGuard } from './search-rate-limit.guard';
 
 @Controller('api/notes')
 @UseGuards(AuthGuard)
@@ -32,6 +33,7 @@ export class NotesController {
   }
 
   @Get()
+  @UseGuards(SearchRateLimitGuard)
   findAll(
     @CurrentUser('id') userId: string,
     @Query('search') search?: string,

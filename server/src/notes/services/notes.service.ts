@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -104,6 +105,11 @@ export class NotesService {
     tagId?: string,
     limit?: number,
   ) {
+    if (search !== undefined && search.length > MAX_SEARCH_QUERY_LENGTH) {
+      throw new BadRequestException(
+        `Search query exceeds ${MAX_SEARCH_QUERY_LENGTH} characters`,
+      );
+    }
     const normalizedLimit = clampLimit(limit);
 
     const notes = await this.prisma.note.findMany({
@@ -439,6 +445,31 @@ export class NotesService {
     });
 
     return notes.map((note) => transformNote(note, userId));
+  }
+
+  /**
+   * List the user's reminders across all notes, joined with the note title.
+   * Reminders are the user's own (the per-user model). Returns a stable,
+   * sorted list ordered by remindAt.
+   */
+  async listReminders(userId: string) {
+    const rows = await this.prisma.noteReminder.findMany({
+      where: { userId },
+      select: {
+        noteId: true,
+        remindAt: true,
+        recurrence: true,
+        note: { select: { title: true, state: true } },
+      },
+      orderBy: { remindAt: 'asc' as const },
+    });
+    return rows.map(({ note, noteId, remindAt, recurrence }) => ({
+      noteId,
+      title: note.title || '(untitled)',
+      remindAt,
+      recurrence,
+      noteState: note.state,
+    }));
   }
 
   // Auto-delete notes that have been in trash for longer than retention period
@@ -798,7 +829,6 @@ interface ReminderWrite {
     version: number;
   } | null;
 }
-
 const clampLimit = (limit?: number) => {
   if (typeof limit !== 'number' || Number.isNaN(limit)) {
     return undefined;
@@ -807,3 +837,5 @@ const clampLimit = (limit?: number) => {
   const normalized = Math.trunc(limit);
   return Math.min(Math.max(normalized, 1), 200);
 };
+
+const MAX_SEARCH_QUERY_LENGTH = 300;

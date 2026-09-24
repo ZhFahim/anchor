@@ -17,6 +17,12 @@ import { OidcConfigService } from './oidc/oidc-config.service';
 import { OidcClientService } from './oidc/oidc-client.service';
 import { OidcStateService } from './oidc/oidc-state.service';
 import { OidcUserService } from './oidc/oidc-user.service';
+import { OAuthController } from './oauth/oauth.controller';
+import { OAuthMetadataService } from './oauth/oauth-metadata.service';
+import { OAuthTokenService } from './oauth/oauth-token.service';
+import { OAuthCodeStore } from './oauth/oauth-code.store';
+import { OAuthClientService } from './oauth/oauth-client.service';
+import { OAuthAuthorizeService } from './oauth/oauth-authorize.service';
 
 @Module({
   imports: [
@@ -32,7 +38,7 @@ import { OidcUserService } from './oidc/oidc-user.service';
     SettingsModule,
     PrismaModule,
   ],
-  controllers: [AuthController, OidcController],
+  controllers: [AuthController, OidcController, OAuthController],
   providers: [
     AuthService,
     JwtStrategy,
@@ -43,6 +49,11 @@ import { OidcUserService } from './oidc/oidc-user.service';
     OidcClientService,
     OidcStateService,
     OidcUserService,
+    OAuthMetadataService,
+    OAuthTokenService,
+    OAuthCodeStore,
+    OAuthClientService,
+    OAuthAuthorizeService,
   ],
   exports: [
     AuthService,

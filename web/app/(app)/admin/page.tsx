@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import {
   AlertTriangle,
+  Bot,
   CheckCircle,
   Clock,
   FileText,
@@ -62,6 +63,7 @@ import {
   createUser,
   deleteUser,
   getAdminStats,
+  getMcpSettings,
   getOidcSettings,
   getPendingUsers,
   getRegistrationSettings,
@@ -71,6 +73,7 @@ import {
   resetPassword,
   type UpdateOidcSettingsDto,
   type UpdateUserDto,
+  updateMcpSettings,
   updateOidcSettings,
   updateRegistrationMode,
   updateUser,
@@ -111,6 +114,11 @@ export default function AdminPage() {
       queryKey: ["admin", "settings", "registration"],
       queryFn: getRegistrationSettings,
     });
+
+  const { data: mcpSettings, isLoading: mcpSettingsLoading } = useQuery({
+    queryKey: ["admin", "settings", "mcp"],
+    queryFn: getMcpSettings,
+  });
 
   const { data: oidcSettings, isLoading: oidcSettingsLoading } = useQuery({
     queryKey: ["admin", "settings", "oidc"],
@@ -153,6 +161,17 @@ export default function AdminPage() {
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to update registration mode");
+    },
+  });
+
+  const updateMcpSettingsMutation = useMutation({
+    mutationFn: updateMcpSettings,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "settings"] });
+      toast.success("MCP settings updated successfully");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to update MCP settings");
     },
   });
 
@@ -514,6 +533,44 @@ export default function AdminPage() {
           </CardContent>
         </Card>
 
+        {/* MCP Settings */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border bg-muted/50">
+                <Bot className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <div>
+                <CardTitle>MCP (Model Context Protocol)</CardTitle>
+                <CardDescription className="mt-1">
+                  Enable the MCP transport so AI clients can access notes.
+                </CardDescription>
+              </div>
+              {!mcpSettingsLoading && (
+                <Switch
+                  id="mcp-enabled"
+                  checked={mcpSettings?.enabled ?? false}
+                  onCheckedChange={(checked) =>
+                    updateMcpSettingsMutation.mutate({ enabled: checked })
+                  }
+                  disabled={updateMcpSettingsMutation.isPending}
+                  className="ml-auto"
+                />
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              When enabled, clients authenticate with a session token or an API
+              token, and access notes/tags/reminders over Streamable HTTP at{" "}
+              <code className="px-1 py-0.5 bg-background rounded text-xs font-mono">
+                /mcp
+              </code>
+              .
+            </p>
+          </CardContent>
+        </Card>
+
         {/* OIDC Settings */}
         <Card>
           <CardHeader>
@@ -528,7 +585,7 @@ export default function AdminPage() {
                     Allow users to sign in with your OIDC provider.
                   </CardDescription>
                 </div>
-              </div>
+              </div>{" "}
               {oidcSettings && (
                 <Switch
                   id="oidc-enabled"

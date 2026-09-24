@@ -34,9 +34,15 @@ export const StorageConfig = registerAs('storage', () => {
   };
 });
 
+export const McpConfig = registerAs('mcp', () => ({
+  enabled: process.env.MCP_ENABLED === 'true',
+  publicUrl: process.env.MCP_PUBLIC_URL?.trim() || undefined,
+}));
+
 export const configurations = [
   AppConfig,
   DatabaseConfig,
   AuthConfig,
   StorageConfig,
+  McpConfig,
 ];

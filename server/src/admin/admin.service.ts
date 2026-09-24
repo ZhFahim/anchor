@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
+import { McpEnableService } from '../mcp/mcp-enable.service';
 import { OidcConfigService } from '../auth/oidc/oidc-config.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -21,6 +22,7 @@ export class AdminService {
     private prisma: PrismaService,
     private settingsService: SettingsService,
     private oidcConfigService: OidcConfigService,
+    private mcpEnableService: McpEnableService,
   ) {}
 
   async getStats() {
@@ -52,6 +54,16 @@ export class AdminService {
   async updateRegistrationMode(mode: 'disabled' | 'enabled' | 'review') {
     await this.settingsService.setRegistrationMode(mode);
     return this.settingsService.getRegistrationSettings();
+  }
+
+  async getMcpSettings() {
+    const enabled = await this.mcpEnableService.isEnabled();
+    return { enabled };
+  }
+
+  async updateMcpSettings(enabled: boolean) {
+    await this.mcpEnableService.setEnabled(enabled);
+    return { enabled };
   }
 
   async findAllUsers(skip = 0, take = 50) {

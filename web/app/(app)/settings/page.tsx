@@ -36,10 +36,12 @@ import {
   regenerateApiToken,
   removeProfileImage,
   revokeApiToken,
+  setApiTokenScope,
   updateProfile,
   uploadProfileImage,
 } from "@/features/auth/api";
 import { useAuthStore } from "@/features/auth/store";
+import type { ApiTokenResponse } from "@/features/auth/types";
 import { DataImportExportCard } from "@/features/import-export";
 import { usePreferencesStore } from "@/features/preferences";
 import { cn } from "@/lib/utils";
@@ -349,6 +351,25 @@ export default function SettingsPage() {
     },
   });
 
+  const setScopeMutation = useMutation({
+    mutationFn: setApiTokenScope,
+    onSuccess: (response) => {
+      queryClient.setQueryData(
+        ["api-token"],
+        (prev: ApiTokenResponse | undefined) =>
+          prev ? { ...prev, scope: response.scope } : prev,
+      );
+      toast.success(
+        response.scope === "readOnly"
+          ? "API token set to read-only"
+          : "API token set to read-write",
+      );
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to update API token scope");
+    },
+  });
+
   const handleCopyApiToken = async () => {
     const apiToken = apiTokenResponse?.apiToken;
     if (!apiToken) {
@@ -361,6 +382,15 @@ export default function SettingsPage() {
       toast.success("API token copied to clipboard");
     } catch {
       toast.error("Failed to copy API token");
+    }
+  };
+
+  const handleCopyText = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("Copied to clipboard");
+    } catch {
+      toast.error("Failed to copy");
     }
   };
 
@@ -599,6 +629,38 @@ export default function SettingsPage() {
                   </button>
                 </div>
               </div>
+              <div className="space-y-2">
+                <Label>Scope</Label>
+                <div className="flex items-center gap-2">
+                  {(["readOnly", "readWrite"] as const).map((scope) => (
+                    <Button
+                      key={scope}
+                      type="button"
+                      variant={
+                        apiTokenResponse.scope === scope ? "default" : "outline"
+                      }
+                      size="sm"
+                      onClick={() =>
+                        apiTokenResponse.scope !== scope &&
+                        setScopeMutation.mutate(scope)
+                      }
+                      disabled={setScopeMutation.isPending}
+                      className="flex items-center gap-2"
+                    >
+                      {scope === "readOnly" ? (
+                        <Lock className="h-3.5 w-3.5" />
+                      ) : (
+                        <KeyRound className="h-3.5 w-3.5" />
+                      )}
+                      {scope === "readOnly" ? "Read-only" : "Read-write"}
+                    </Button>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Read-only tokens can view notes but cannot modify them. Useful
+                  for MCP or AI clients that only need to read.
+                </p>
+              </div>
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <p className="text-xs text-muted-foreground">
                   Regenerating will invalidate your current token immediately.
@@ -635,6 +697,61 @@ export default function SettingsPage() {
               </div>
             </>
           )}
+        </CardContent>
+      </Card>
+
+      {/* MCP Connection Section */}
+      <Card className="border-0 shadow-xl bg-card/80 backdrop-blur-sm mb-6">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl">MCP Connection</CardTitle>
+          <CardDescription>
+            Connect AI clients to your notes via the Anchor MCP server
+            (Streamable HTTP). Requires an API token above; generate one if you
+            don't have it.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="mcpEndpoint">Endpoint</Label>
+            <div className="relative">
+              <Input
+                id="mcpEndpoint"
+                value={`${typeof window !== "undefined" ? window.location.origin : ""}/mcp`}
+                readOnly
+                className="pl-3 pr-12 h-12 bg-background/50 font-mono text-xs"
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Claude Code / CLI</Label>
+            <div className="relative">
+              <Input
+                value={`claude mcp add anchor --transport http --url "${typeof window !== "undefined" ? window.location.origin : ""}/mcp" --header "Authorization: Bearer <API_TOKEN>"`}
+                readOnly
+                className="pl-3 pr-12 h-12 bg-background/50 font-mono text-xs"
+              />
+              <button
+                type="button"
+                onClick={() =>
+                  handleCopyText(
+                    `claude mcp add anchor --transport http --url "${typeof window !== "undefined" ? window.location.origin : ""}/mcp" --header "Authorization: Bearer ${apiTokenResponse?.apiToken ?? "<API_TOKEN>"}"`,
+                  )
+                }
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                title="Copy command"
+              >
+                <Copy className="h-4 w-4 opacity-40" />
+              </button>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Use a read-only token for read-only agents, or read-write for agents
+            that may edit. Set the{" "}
+            <code className="px-1 py-0.5 bg-background rounded font-mono">
+              MCP_ENABLED
+            </code>{" "}
+            env or ask an admin to enable MCP if you get a 404.
+          </p>
         </CardContent>
       </Card>
 

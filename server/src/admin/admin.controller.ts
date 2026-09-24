@@ -16,6 +16,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { UpdateRegistrationModeDto } from './dto/update-registration-mode.dto';
+import { UpdateMcpSettingsDto } from './dto/update-mcp-settings.dto';
 import { UpdateOidcSettingsDto } from './dto/update-oidc-settings.dto';
 
 @Controller('api/admin')
@@ -36,6 +37,16 @@ export class AdminController {
   @Patch('settings/registration')
   updateRegistrationMode(@Body() dto: UpdateRegistrationModeDto) {
     return this.adminService.updateRegistrationMode(dto.mode);
+  }
+
+  @Get('settings/mcp')
+  getMcpSettings() {
+    return this.adminService.getMcpSettings();
+  }
+
+  @Patch('settings/mcp')
+  updateMcpSettings(@Body() dto: UpdateMcpSettingsDto) {
+    return this.adminService.updateMcpSettings(dto.enabled);
   }
 
   @Get('users')

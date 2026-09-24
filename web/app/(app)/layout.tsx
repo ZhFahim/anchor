@@ -5,11 +5,13 @@ import { Sidebar } from "@/components/layout";
 import { AuthGuard } from "@/features/auth";
 import { usePreferencesStore } from "@/features/preferences";
 import { useSync } from "@/features/sync";
+import { useWebMcp } from "@/features/webmcp";
 import { cn } from "@/lib/utils";
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { ui, setUIPreference } = usePreferencesStore();
   useSync();
+  useWebMcp();
   const isCollapsed = ui.sidebarCollapsed;
   const toggleCollapsed = () =>
     setUIPreference("sidebarCollapsed", !isCollapsed);
