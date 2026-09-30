@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, Paperclip, Plus } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   Collapsible,
@@ -17,6 +17,7 @@ import {
   reorderAttachments,
   uploadAttachment,
 } from "../../api";
+import { isAcceptedAttachmentType } from "../../constants";
 import { useAttachmentBlob } from "../../hooks";
 import type { NoteAttachment } from "../../types";
 import { AttachmentUploadZone } from "./attachment-upload-zone";
@@ -195,6 +196,40 @@ export function AttachmentsCollapsible({
     },
     [noteId, onEnsureNoteId, queryClient],
   );
+
+  useEffect(() => {
+    if (!canUpload) return;
+
+    const handlePaste = (event: ClipboardEvent) => {
+      if (!(event.target instanceof Element)) {
+        return;
+      }
+
+      const isNoteTitle = event.target.matches("[data-note-title-input]");
+      const isEditorContent = Boolean(event.target.closest(".ql-editor"));
+      if (!isNoteTitle && !isEditorContent) {
+        return;
+      }
+
+      const files = Array.from(event.clipboardData?.items ?? [])
+        .filter((item) => item.kind === "file")
+        .map((item) => item.getAsFile())
+        .filter(
+          (file): file is File =>
+            file?.type.startsWith("image/") === true &&
+            isAcceptedAttachmentType(file),
+        );
+
+      if (files.length === 0) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      handleFiles(files);
+    };
+
+    document.addEventListener("paste", handlePaste, true);
+    return () => document.removeEventListener("paste", handlePaste, true);
+  }, [canUpload, handleFiles]);
 
   const imageAttachments = attachments.filter((a) => a.type === "image");
   const audioAttachments = attachments.filter((a) => a.type === "audio");

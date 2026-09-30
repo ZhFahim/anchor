@@ -53,6 +53,7 @@ export function NoteEditorContent({
         {/* Title */}
         <Input
           ref={titleInputRef}
+          data-note-title-input
           value={isReadOnly ? title || "Untitled" : title}
           onChange={(e) => !isReadOnly && onTitleChange(e.target.value)}
           placeholder="Title"
