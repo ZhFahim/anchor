@@ -76,6 +76,10 @@ export function Sidebar({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const tagId = searchParams.get("tagId");
+  const newNoteHref = tagId
+    ? `/notes/new?tagId=${encodeURIComponent(tagId)}`
+    : "/notes/new";
   const { theme, setTheme } = useTheme();
   const { logout, user } = useAuth();
   const queryClient = useQueryClient();
@@ -279,7 +283,7 @@ export function Sidebar({
             <Tooltip>
               <TooltipTrigger asChild>
                 <Link
-                  href="/notes/new"
+                  href={newNoteHref}
                   onClick={handleNavClick}
                   className={cn(
                     "group flex items-center justify-center",
@@ -305,7 +309,7 @@ export function Sidebar({
             </Tooltip>
           ) : (
             <Link
-              href="/notes/new"
+              href={newNoteHref}
               onClick={handleNavClick}
               className={cn(
                 "group relative flex items-center gap-3",
