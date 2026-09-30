@@ -150,6 +150,7 @@ export function QuillToolbar({
       <div className={groupClass}>
         <Button
           type="button"
+          tabIndex={-1}
           variant="ghost"
           className={btnClass(false)}
           disabled={!quill || !canUndo}
@@ -160,6 +161,7 @@ export function QuillToolbar({
         </Button>
         <Button
           type="button"
+          tabIndex={-1}
           variant="ghost"
           className={btnClass(false)}
           disabled={!quill || !canRedo}
@@ -175,6 +177,7 @@ export function QuillToolbar({
       <div className={groupClass}>
         <Button
           type="button"
+          tabIndex={-1}
           variant="ghost"
           className={btnClass(isBold)}
           disabled={!quill}
@@ -185,6 +188,7 @@ export function QuillToolbar({
         </Button>
         <Button
           type="button"
+          tabIndex={-1}
           variant="ghost"
           className={btnClass(isItalic)}
           disabled={!quill}
@@ -195,6 +199,7 @@ export function QuillToolbar({
         </Button>
         <Button
           type="button"
+          tabIndex={-1}
           variant="ghost"
           className={btnClass(isUnderline)}
           disabled={!quill}
@@ -205,6 +210,7 @@ export function QuillToolbar({
         </Button>
         <Button
           type="button"
+          tabIndex={-1}
           variant="ghost"
           className={btnClass(isStrike)}
           disabled={!quill}
@@ -220,6 +226,7 @@ export function QuillToolbar({
       <div className={groupClass}>
         <Button
           type="button"
+          tabIndex={-1}
           variant="ghost"
           className={btnClass(headerLevel === 1)}
           disabled={!quill}
@@ -230,6 +237,7 @@ export function QuillToolbar({
         </Button>
         <Button
           type="button"
+          tabIndex={-1}
           variant="ghost"
           className={btnClass(headerLevel === 2)}
           disabled={!quill}
@@ -240,6 +248,7 @@ export function QuillToolbar({
         </Button>
         <Button
           type="button"
+          tabIndex={-1}
           variant="ghost"
           className={btnClass(headerLevel === 3)}
           disabled={!quill}
@@ -255,6 +264,7 @@ export function QuillToolbar({
       <div className={groupClass}>
         <Button
           type="button"
+          tabIndex={-1}
           variant="ghost"
           className={btnClass(isChecklist)}
           disabled={!quill}
@@ -265,6 +275,7 @@ export function QuillToolbar({
         </Button>
         <Button
           type="button"
+          tabIndex={-1}
           variant="ghost"
           className={btnClass(isOrdered)}
           disabled={!quill}
@@ -275,6 +286,7 @@ export function QuillToolbar({
         </Button>
         <Button
           type="button"
+          tabIndex={-1}
           variant="ghost"
           className={btnClass(isBullet)}
           disabled={!quill}
@@ -285,6 +297,7 @@ export function QuillToolbar({
         </Button>
         <Button
           type="button"
+          tabIndex={-1}
           variant="ghost"
           className={btnClass(false)}
           disabled={!quill || !canOutdent}
@@ -295,6 +308,7 @@ export function QuillToolbar({
         </Button>
         <Button
           type="button"
+          tabIndex={-1}
           variant="ghost"
           className={btnClass(false)}
           disabled={!quill || !canIndent}
@@ -310,6 +324,7 @@ export function QuillToolbar({
       <div className={groupClass}>
         <Button
           type="button"
+          tabIndex={-1}
           variant="ghost"
           className={btnClass(isQuote)}
           disabled={!quill}
@@ -320,6 +335,7 @@ export function QuillToolbar({
         </Button>
         <Button
           type="button"
+          tabIndex={-1}
           variant="ghost"
           className={btnClass(isCode)}
           disabled={!quill}
@@ -330,6 +346,7 @@ export function QuillToolbar({
         </Button>
         <Button
           type="button"
+          tabIndex={-1}
           variant="ghost"
           className={btnClass(Boolean(format.link))}
           disabled={!quill}
