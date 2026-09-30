@@ -212,6 +212,7 @@ export function AttachmentsCollapsible({
         <CollapsibleTrigger asChild>
           <button
             type="button"
+            tabIndex={-1}
             className={cn(
               "w-full flex items-center gap-3 py-2.5 px-3 rounded-md transition-colors",
               "hover:bg-muted/50 group text-left",
