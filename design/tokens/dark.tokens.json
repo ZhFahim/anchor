@@ -1,0 +1,2547 @@
+{
+  "$description": "Anchor tokens for the dark theme. Every token here has the same name in the other theme.",
+  "color": {
+    "$type": "color",
+    "app": {
+      "page": {
+        "$value": "{color.brand.night}",
+        "$description": "Page background"
+      },
+      "surface": {
+        "$value": "{color.brand.dusk}",
+        "$description": "Cards, menus and dialogs"
+      },
+      "text": {
+        "$value": "{color.brand.offWhite}",
+        "$description": "Text and primary buttons"
+      },
+      "muted": {
+        "$value": "{color.brand.mist}",
+        "$description": "Secondary text and icons"
+      },
+      "border": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.2275,
+            0.2471,
+            0.2941
+          ],
+          "hex": "#3a3f4b"
+        },
+        "$description": "Borders of cards and menus"
+      },
+      "divider": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.1882,
+            0.2039,
+            0.2471
+          ],
+          "hex": "#30343f"
+        },
+        "$description": "Lines inside a card or list"
+      },
+      "subtle": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.1765,
+            0.1922,
+            0.2588
+          ],
+          "hex": "#2d3142"
+        },
+        "$description": "Muted fills and hover"
+      },
+      "sidebar": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.0902,
+            0.098,
+            0.1216
+          ],
+          "hex": "#17191f"
+        },
+        "$description": "The sidebar, beside the page"
+      },
+      "inverse": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.8941,
+            0.902,
+            0.9216
+          ],
+          "hex": "#e4e6eb"
+        },
+        "$description": "The selection bar, save bar and toasts"
+      },
+      "onInverse": {
+        "$value": "{color.brand.night}",
+        "$description": "Text on those"
+      },
+      "inverseLink": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.6588,
+            0.2667,
+            0.0588
+          ],
+          "hex": "#a8440f"
+        },
+        "$description": "Undo on a toast"
+      },
+      "inverseDanger": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.702,
+            0.149,
+            0.1176
+          ],
+          "hex": "#b3261e"
+        },
+        "$description": "The icon and time line on an error toast"
+      },
+      "overlay": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.0235,
+            0.0275,
+            0.0392
+          ],
+          "hex": "#06070a",
+          "alpha": 0.6
+        },
+        "$description": "Behind dialogs and the phone drawer"
+      },
+      "fieldLine": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.4196,
+            0.4549,
+            0.5098
+          ],
+          "hex": "#6b7482"
+        },
+        "$description": "Text field borders, 3 : 1 on the page"
+      }
+    },
+    "accent": {
+      "strong": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9373,
+            0.5137,
+            0.3294
+          ],
+          "hex": "#ef8354"
+        },
+        "$description": "Anything thin in orange: ticked boxes, rings, focus, the current marker, progress, drop lines"
+      },
+      "ink": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9961,
+            0.5922,
+            0.4235
+          ],
+          "hex": "#fe976c"
+        },
+        "$description": "Orange text, such as links"
+      }
+    },
+    "check": {
+      "mark": {
+        "$value": "{color.app.surface}",
+        "$description": "The tick inside a ticked box. On a note it is cut out in the note's own background.",
+        "$extensions": {
+          "app.anchor": {
+            "perNote": "bg"
+          }
+        }
+      }
+    },
+    "status": {
+      "danger": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1,
+            0.5412,
+            0.502
+          ],
+          "hex": "#ff8a80"
+        },
+        "$description": "Delete buttons, errors, failed uploads"
+      },
+      "late": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1,
+            0.6157,
+            0.5804
+          ],
+          "hex": "#ff9d94"
+        },
+        "$description": "A reminder that has passed"
+      },
+      "added": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.2471,
+            0.8118,
+            0.5569
+          ],
+          "hex": "#3fcf8e"
+        },
+        "$description": "Added text in history (mixed into the note color)"
+      },
+      "removed": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1,
+            0.4196,
+            0.5059
+          ],
+          "hex": "#ff6b81"
+        },
+        "$description": "Removed text in history (mixed into the note color)"
+      },
+      "addedInk": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.4353,
+            0.8902,
+            0.6588
+          ],
+          "hex": "#6fe3a8"
+        },
+        "$description": "The + sign and bar"
+      },
+      "removedInk": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1,
+            0.6039,
+            0.6627
+          ],
+          "hex": "#ff9aa9"
+        },
+        "$description": "The − sign and bar"
+      },
+      "warnText": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9882,
+            0.8314,
+            0.6039
+          ],
+          "hex": "#fcd49a"
+        },
+        "$description": "Warning labels, like “Not saved”"
+      },
+      "warnFill": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.2902,
+            0.2039,
+            0.0745
+          ],
+          "hex": "#4a3413"
+        },
+        "$description": "Behind warning labels"
+      },
+      "onDanger": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.1098,
+            0.1176,
+            0.149
+          ],
+          "hex": "#1c1e26"
+        },
+        "$description": "Text on a red button"
+      }
+    },
+    "note": {
+      "$description": "Note colors use fixed OKLCH lightness steps: light notes L 0.955 (yellow 0.965), dark notes L 0.29 with more chroma. Surface, border, pattern and secondary text are further lightness steps from the same hue.",
+      "paper": {
+        "bg": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.1569,
+              0.1725,
+              0.1882
+            ],
+            "hex": "#282c30"
+          },
+          "$description": "Background"
+        },
+        "surface": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.2,
+              0.2235,
+              0.2471
+            ],
+            "hex": "#33393f"
+          },
+          "$description": "Chips and the toolbar"
+        },
+        "border": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.2667,
+              0.2824,
+              0.298
+            ],
+            "hex": "#44484c"
+          },
+          "$description": "Border"
+        },
+        "pattern": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.2235,
+              0.2588,
+              0.298
+            ],
+            "hex": "#39424c"
+          },
+          "$description": "Pattern strokes"
+        },
+        "muted": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.7255,
+              0.7451,
+              0.7647
+            ],
+            "hex": "#b9bec3"
+          },
+          "$description": "Secondary text on this note"
+        },
+        "today": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.1176,
+              0.1176,
+              0.1176
+            ],
+            "hex": "#1e1e1e"
+          },
+          "$deprecated": "Today's background, kept only so the guidelines can show today's look."
+        }
+      },
+      "slate": {
+        "bg": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.1294,
+              0.1765,
+              0.2078
+            ],
+            "hex": "#212d35"
+          },
+          "$description": "Background"
+        },
+        "surface": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.1647,
+              0.2275,
+              0.2667
+            ],
+            "hex": "#2a3a44"
+          },
+          "$description": "Chips and the toolbar"
+        },
+        "border": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.2353,
+              0.2902,
+              0.3216
+            ],
+            "hex": "#3c4a52"
+          },
+          "$description": "Border"
+        },
+        "pattern": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.1843,
+              0.2667,
+              0.3176
+            ],
+            "hex": "#2f4451"
+          },
+          "$description": "Pattern strokes"
+        },
+        "muted": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.6941,
+              0.7529,
+              0.7922
+            ],
+            "hex": "#b1c0ca"
+          },
+          "$description": "Secondary text on this note"
+        },
+        "today": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.1176,
+              0.1373,
+              0.1451
+            ],
+            "hex": "#1e2325"
+          },
+          "$deprecated": "Today's background, kept only so the guidelines can show today's look."
+        }
+      },
+      "red": {
+        "bg": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.2627,
+              0.1216,
+              0.1137
+            ],
+            "hex": "#431f1d"
+          },
+          "$description": "Background"
+        },
+        "surface": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.3255,
+              0.1686,
+              0.1569
+            ],
+            "hex": "#532b28"
+          },
+          "$description": "Chips and the toolbar"
+        },
+        "border": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.3843,
+              0.2353,
+              0.2235
+            ],
+            "hex": "#623c39"
+          },
+          "$description": "Border"
+        },
+        "pattern": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.3765,
+              0.1961,
+              0.1843
+            ],
+            "hex": "#60322f"
+          },
+          "$description": "Pattern strokes"
+        },
+        "muted": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.8627,
+              0.698,
+              0.6824
+            ],
+            "hex": "#dcb2ae"
+          },
+          "$description": "Secondary text on this note"
+        },
+        "today": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.2,
+              0.1137,
+              0.1294
+            ],
+            "hex": "#331d21"
+          },
+          "$deprecated": "Today's background, kept only so the guidelines can show today's look."
+        }
+      },
+      "orange": {
+        "bg": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.2471,
+              0.1412,
+              0.0471
+            ],
+            "hex": "#3f240c"
+          },
+          "$description": "Background"
+        },
+        "surface": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.3098,
+              0.1843,
+              0.0863
+            ],
+            "hex": "#4f2f16"
+          },
+          "$description": "Chips and the toolbar"
+        },
+        "border": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.3686,
+              0.251,
+              0.1608
+            ],
+            "hex": "#5e4029"
+          },
+          "$description": "Border"
+        },
+        "pattern": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.3569,
+              0.2157,
+              0.102
+            ],
+            "hex": "#5b371a"
+          },
+          "$description": "Pattern strokes"
+        },
+        "muted": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.8431,
+              0.7137,
+              0.6235
+            ],
+            "hex": "#d7b69f"
+          },
+          "$description": "Secondary text on this note"
+        },
+        "today": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.2392,
+              0.1647,
+              0.102
+            ],
+            "hex": "#3d2a1a"
+          },
+          "$deprecated": "Today's background, kept only so the guidelines can show today's look."
+        }
+      },
+      "yellow": {
+        "bg": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.2157,
+              0.1608,
+              0.0157
+            ],
+            "hex": "#372904"
+          },
+          "$description": "Background"
+        },
+        "surface": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.2706,
+              0.2118,
+              0.051
+            ],
+            "hex": "#45360d"
+          },
+          "$description": "Chips and the toolbar"
+        },
+        "border": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.3294,
+              0.2745,
+              0.1373
+            ],
+            "hex": "#544623"
+          },
+          "$description": "Border"
+        },
+        "pattern": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.3137,
+              0.2471,
+              0.0588
+            ],
+            "hex": "#503f0f"
+          },
+          "$description": "Pattern strokes"
+        },
+        "muted": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.7961,
+              0.7373,
+              0.6039
+            ],
+            "hex": "#cbbc9a"
+          },
+          "$description": "Secondary text on this note"
+        },
+        "today": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.2275,
+              0.2275,
+              0.102
+            ],
+            "hex": "#3a3a1a"
+          },
+          "$deprecated": "Today's background, kept only so the guidelines can show today's look."
+        }
+      },
+      "green": {
+        "bg": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.0902,
+              0.1961,
+              0.1176
+            ],
+            "hex": "#17321e"
+          },
+          "$description": "Background"
+        },
+        "surface": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.1333,
+              0.251,
+              0.1569
+            ],
+            "hex": "#224028"
+          },
+          "$description": "Chips and the toolbar"
+        },
+        "border": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.2039,
+              0.3098,
+              0.2235
+            ],
+            "hex": "#344f39"
+          },
+          "$description": "Border"
+        },
+        "pattern": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.1529,
+              0.2902,
+              0.1843
+            ],
+            "hex": "#274a2f"
+          },
+          "$description": "Pattern strokes"
+        },
+        "muted": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.6588,
+              0.7804,
+              0.6784
+            ],
+            "hex": "#a8c7ad"
+          },
+          "$description": "Secondary text on this note"
+        },
+        "today": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.1059,
+              0.1882,
+              0.1333
+            ],
+            "hex": "#1b3022"
+          },
+          "$deprecated": "Today's background, kept only so the guidelines can show today's look."
+        }
+      },
+      "teal": {
+        "bg": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.0314,
+              0.1961,
+              0.1961
+            ],
+            "hex": "#083232"
+          },
+          "$description": "Background"
+        },
+        "surface": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.0667,
+              0.251,
+              0.251
+            ],
+            "hex": "#114040"
+          },
+          "$description": "Chips and the toolbar"
+        },
+        "border": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.1608,
+              0.3098,
+              0.3098
+            ],
+            "hex": "#294f4f"
+          },
+          "$description": "Border"
+        },
+        "pattern": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.0706,
+              0.2902,
+              0.2902
+            ],
+            "hex": "#124a4a"
+          },
+          "$description": "Pattern strokes"
+        },
+        "muted": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.6196,
+              0.7804,
+              0.7765
+            ],
+            "hex": "#9ec7c6"
+          },
+          "$description": "Secondary text on this note"
+        },
+        "today": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.098,
+              0.1922,
+              0.2078
+            ],
+            "hex": "#193135"
+          },
+          "$deprecated": "Today's background, kept only so the guidelines can show today's look."
+        }
+      },
+      "blue": {
+        "bg": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.0627,
+              0.1804,
+              0.2706
+            ],
+            "hex": "#102e45"
+          },
+          "$description": "Background"
+        },
+        "surface": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.102,
+              0.2314,
+              0.3333
+            ],
+            "hex": "#1a3b55"
+          },
+          "$description": "Chips and the toolbar"
+        },
+        "border": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.1765,
+              0.2941,
+              0.3922
+            ],
+            "hex": "#2d4b64"
+          },
+          "$description": "Border"
+        },
+        "pattern": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.1216,
+              0.2667,
+              0.3843
+            ],
+            "hex": "#1f4462"
+          },
+          "$description": "Pattern strokes"
+        },
+        "muted": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.6431,
+              0.7608,
+              0.8627
+            ],
+            "hex": "#a4c2dc"
+          },
+          "$description": "Secondary text on this note"
+        },
+        "today": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.098,
+              0.1647,
+              0.2275
+            ],
+            "hex": "#192a3a"
+          },
+          "$deprecated": "Today's background, kept only so the guidelines can show today's look."
+        }
+      },
+      "dark_blue": {
+        "bg": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.149,
+              0.1529,
+              0.2824
+            ],
+            "hex": "#262748"
+          },
+          "$description": "Background"
+        },
+        "surface": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.1961,
+              0.2039,
+              0.349
+            ],
+            "hex": "#323459"
+          },
+          "$description": "Chips and the toolbar"
+        },
+        "border": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.2549,
+              0.2667,
+              0.4078
+            ],
+            "hex": "#414468"
+          },
+          "$description": "Border"
+        },
+        "pattern": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.2275,
+              0.2353,
+              0.4
+            ],
+            "hex": "#3a3c66"
+          },
+          "$description": "Pattern strokes"
+        },
+        "muted": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.7176,
+              0.7333,
+              0.8706
+            ],
+            "hex": "#b7bbde"
+          },
+          "$description": "Secondary text on this note"
+        },
+        "today": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.102,
+              0.1216,
+              0.2275
+            ],
+            "hex": "#1a1f3a"
+          },
+          "$deprecated": "Today's background, kept only so the guidelines can show today's look."
+        }
+      },
+      "purple": {
+        "bg": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.2157,
+              0.1333,
+              0.2353
+            ],
+            "hex": "#37223c"
+          },
+          "$description": "Background"
+        },
+        "surface": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.2745,
+              0.1765,
+              0.2941
+            ],
+            "hex": "#462d4b"
+          },
+          "$description": "Chips and the toolbar"
+        },
+        "border": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.3333,
+              0.2431,
+              0.3529
+            ],
+            "hex": "#553e5a"
+          },
+          "$description": "Border"
+        },
+        "pattern": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.3176,
+              0.2078,
+              0.3412
+            ],
+            "hex": "#513557"
+          },
+          "$description": "Pattern strokes"
+        },
+        "muted": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.8039,
+              0.7059,
+              0.8235
+            ],
+            "hex": "#cdb4d2"
+          },
+          "$description": "Secondary text on this note"
+        },
+        "today": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.1765,
+              0.1137,
+              0.1922
+            ],
+            "hex": "#2d1d31"
+          },
+          "$deprecated": "Today's background, kept only so the guidelines can show today's look."
+        },
+        "highlight": {
+          "purple": {
+            "fill": {
+              "$value": "{color.highlight.purple.fill}"
+            }
+          }
+        }
+      },
+      "pink": {
+        "bg": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.2471,
+              0.1216,
+              0.1843
+            ],
+            "hex": "#3f1f2f"
+          },
+          "$description": "Background"
+        },
+        "surface": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.3098,
+              0.1647,
+              0.2353
+            ],
+            "hex": "#4f2a3c"
+          },
+          "$description": "Chips and the toolbar"
+        },
+        "border": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.3686,
+              0.2314,
+              0.298
+            ],
+            "hex": "#5e3b4c"
+          },
+          "$description": "Border"
+        },
+        "pattern": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.3569,
+              0.1922,
+              0.2745
+            ],
+            "hex": "#5b3146"
+          },
+          "$description": "Pattern strokes"
+        },
+        "muted": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.8471,
+              0.6941,
+              0.7608
+            ],
+            "hex": "#d8b1c2"
+          },
+          "$description": "Secondary text on this note"
+        },
+        "today": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.2,
+              0.1137,
+              0.1294
+            ],
+            "hex": "#331d21"
+          },
+          "$deprecated": "Today's background, kept only so the guidelines can show today's look."
+        }
+      },
+      "brown": {
+        "bg": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.2078,
+              0.1569,
+              0.1255
+            ],
+            "hex": "#352820"
+          },
+          "$description": "Background"
+        },
+        "surface": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.2667,
+              0.2039,
+              0.1647
+            ],
+            "hex": "#44342a"
+          },
+          "$description": "Chips and the toolbar"
+        },
+        "border": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.3216,
+              0.2706,
+              0.2353
+            ],
+            "hex": "#52453c"
+          },
+          "$description": "Border"
+        },
+        "pattern": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.3137,
+              0.2353,
+              0.1843
+            ],
+            "hex": "#503c2f"
+          },
+          "$description": "Pattern strokes"
+        },
+        "muted": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.7961,
+              0.7294,
+              0.6863
+            ],
+            "hex": "#cbbaaf"
+          },
+          "$description": "Secondary text on this note"
+        },
+        "today": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.1804,
+              0.1216,
+              0.102
+            ],
+            "hex": "#2e1f1a"
+          },
+          "$deprecated": "Today's background, kept only so the guidelines can show today's look."
+        }
+      },
+      "none": {
+        "$description": "A plain note is the page itself, a step darker than the colored notes (C3).",
+        "bg": {
+          "$value": "{color.app.page}",
+          "$description": "Background"
+        },
+        "surface": {
+          "$value": "{color.app.surface}",
+          "$description": "Chips and the toolbar"
+        },
+        "border": {
+          "$value": "{color.app.border}",
+          "$description": "Border"
+        },
+        "pattern": {
+          "$value": "{color.app.page}",
+          "$description": "Pattern strokes"
+        },
+        "muted": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.6118,
+              0.6588,
+              0.7216
+            ],
+            "hex": "#9ca8b8"
+          },
+          "$description": "Secondary text on this note"
+        },
+        "today": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.149,
+              0.1647,
+              0.2118
+            ],
+            "hex": "#262a36"
+          },
+          "$deprecated": "Today's background, kept only so the guidelines can show today's look."
+        }
+      }
+    },
+    "highlight": {
+      "yellow": {
+        "fill": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.502,
+              0.3608,
+              0.0118
+            ],
+            "hex": "#805c03"
+          },
+          "$description": "Behind highlighted text"
+        },
+        "ink": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.6941,
+              0.502,
+              0.0039
+            ],
+            "hex": "#b18001"
+          },
+          "$description": "The edge of this color's swatch, 3 : 1 on every note, bar, menu and page"
+        }
+      },
+      "green": {
+        "fill": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.0157,
+              0.4471,
+              0.2235
+            ],
+            "hex": "#047239"
+          },
+          "$description": "Behind highlighted text"
+        },
+        "ink": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.0118,
+              0.6196,
+              0.3176
+            ],
+            "hex": "#039e51"
+          },
+          "$description": "The edge of this color's swatch, 3 : 1 on every note, bar, menu and page"
+        }
+      },
+      "blue": {
+        "fill": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.0392,
+              0.4078,
+              0.6
+            ],
+            "hex": "#0a6899"
+          },
+          "$description": "Behind highlighted text"
+        },
+        "ink": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.0078,
+              0.5765,
+              0.8471
+            ],
+            "hex": "#0293d8"
+          },
+          "$description": "The edge of this color's swatch, 3 : 1 on every note, bar, menu and page"
+        }
+      },
+      "pink": {
+        "fill": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.6235,
+              0.2627,
+              0.4196
+            ],
+            "hex": "#9f436b"
+          },
+          "$description": "Behind highlighted text"
+        },
+        "ink": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.8902,
+              0.2863,
+              0.5686
+            ],
+            "hex": "#e34991"
+          },
+          "$description": "The edge of this color's swatch, 3 : 1 on every note, bar, menu and page"
+        }
+      },
+      "purple": {
+        "fill": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.4706,
+              0.3137,
+              0.6314
+            ],
+            "hex": "#7850a1"
+          },
+          "$description": "Behind highlighted text"
+        },
+        "ink": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.6588,
+              0.3882,
+              0.9176
+            ],
+            "hex": "#a863ea"
+          },
+          "$description": "The edge of this color's swatch, 3 : 1 on every note, bar, menu and page"
+        }
+      }
+    },
+    "tag": {
+      "red": {
+        "hash": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              1,
+              0.5647,
+              0.5608
+            ],
+            "hex": "#ff908f"
+          },
+          "$description": "The # on a chip, 3 : 1 on the chip"
+        },
+        "tintFill": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.3608,
+              0.1961,
+              0.1961
+            ],
+            "hex": "#5c3232"
+          },
+          "$description": "This color's swatch in the tag color menus"
+        }
+      },
+      "pink": {
+        "hash": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              1,
+              0.502,
+              0.6824
+            ],
+            "hex": "#ff80ae"
+          },
+          "$description": "The # on a chip, 3 : 1 on the chip"
+        },
+        "tintFill": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.3529,
+              0.1961,
+              0.2392
+            ],
+            "hex": "#5a323d"
+          },
+          "$description": "This color's swatch in the tag color menus"
+        }
+      },
+      "purple": {
+        "hash": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.9059,
+              0.5725,
+              0.9608
+            ],
+            "hex": "#e792f5"
+          },
+          "$description": "The # on a chip, 3 : 1 on the chip"
+        },
+        "tintFill": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.3059,
+              0.2078,
+              0.3255
+            ],
+            "hex": "#4e3553"
+          },
+          "$description": "This color's swatch in the tag color menus"
+        }
+      },
+      "deepPurple": {
+        "hash": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.7686,
+              0.6431,
+              1
+            ],
+            "hex": "#c4a4ff"
+          },
+          "$description": "The # on a chip, 3 : 1 on the chip"
+        },
+        "tintFill": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.2667,
+              0.2196,
+              0.3569
+            ],
+            "hex": "#44385b"
+          },
+          "$description": "This color's swatch in the tag color menus"
+        }
+      },
+      "indigo": {
+        "hash": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.6431,
+              0.698,
+              0.9843
+            ],
+            "hex": "#a4b2fb"
+          },
+          "$description": "The # on a chip, 3 : 1 on the chip"
+        },
+        "tintFill": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.2118,
+              0.2392,
+              0.3725
+            ],
+            "hex": "#363d5f"
+          },
+          "$description": "This color's swatch in the tag color menus"
+        }
+      },
+      "blue": {
+        "hash": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.4314,
+              0.749,
+              1
+            ],
+            "hex": "#6ebfff"
+          },
+          "$description": "The # on a chip, 3 : 1 on the chip"
+        },
+        "tintFill": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.1333,
+              0.2627,
+              0.3647
+            ],
+            "hex": "#22435d"
+          },
+          "$description": "This color's swatch in the tag color menus"
+        }
+      },
+      "lightBlue": {
+        "hash": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.3216,
+              0.7725,
+              0.9804
+            ],
+            "hex": "#52c5fa"
+          },
+          "$description": "The # on a chip, 3 : 1 on the chip"
+        },
+        "tintFill": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.0941,
+              0.2706,
+              0.3529
+            ],
+            "hex": "#18455a"
+          },
+          "$description": "This color's swatch in the tag color menus"
+        }
+      },
+      "cyan": {
+        "hash": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.2824,
+              0.8,
+              0.8667
+            ],
+            "hex": "#48ccdd"
+          },
+          "$description": "The # on a chip, 3 : 1 on the chip"
+        },
+        "tintFill": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.0353,
+              0.2824,
+              0.3137
+            ],
+            "hex": "#094850"
+          },
+          "$description": "This color's swatch in the tag color menus"
+        }
+      },
+      "teal": {
+        "hash": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.3843,
+              0.8,
+              0.7608
+            ],
+            "hex": "#62ccc2"
+          },
+          "$description": "The # on a chip, 3 : 1 on the chip"
+        },
+        "tintFill": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.0431,
+              0.2902,
+              0.2706
+            ],
+            "hex": "#0b4a45"
+          },
+          "$description": "This color's swatch in the tag color menus"
+        }
+      },
+      "green": {
+        "hash": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.5216,
+              0.8,
+              0.5333
+            ],
+            "hex": "#85cc88"
+          },
+          "$description": "The # on a chip, 3 : 1 on the chip"
+        },
+        "tintFill": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.1647,
+              0.2824,
+              0.1725
+            ],
+            "hex": "#2a482c"
+          },
+          "$description": "This color's swatch in the tag color menus"
+        }
+      },
+      "lightGreen": {
+        "hash": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.6275,
+              0.7765,
+              0.451
+            ],
+            "hex": "#a0c673"
+          },
+          "$description": "The # on a chip, 3 : 1 on the chip"
+        },
+        "tintFill": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.2118,
+              0.2745,
+              0.1333
+            ],
+            "hex": "#364622"
+          },
+          "$description": "This color's swatch in the tag color menus"
+        }
+      },
+      "lime": {
+        "hash": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.7176,
+              0.7569,
+              0.3059
+            ],
+            "hex": "#b7c14e"
+          },
+          "$description": "The # on a chip, 3 : 1 on the chip"
+        },
+        "tintFill": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.2471,
+              0.2627,
+              0.1059
+            ],
+            "hex": "#3f431b"
+          },
+          "$description": "This color's swatch in the tag color menus"
+        }
+      },
+      "amber": {
+        "hash": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.8627,
+              0.698,
+              0.1137
+            ],
+            "hex": "#dcb21d"
+          },
+          "$description": "The # on a chip, 3 : 1 on the chip"
+        },
+        "tintFill": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.2941,
+              0.2431,
+              0.0863
+            ],
+            "hex": "#4b3e16"
+          },
+          "$description": "This color's swatch in the tag color menus"
+        }
+      },
+      "orange": {
+        "hash": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.9333,
+              0.6549,
+              0.2275
+            ],
+            "hex": "#eea73a"
+          },
+          "$description": "The # on a chip, 3 : 1 on the chip"
+        },
+        "tintFill": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.3255,
+              0.2275,
+              0.0941
+            ],
+            "hex": "#533a18"
+          },
+          "$description": "This color's swatch in the tag color menus"
+        }
+      },
+      "deepOrange": {
+        "hash": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              1,
+              0.5725,
+              0.4275
+            ],
+            "hex": "#ff926d"
+          },
+          "$description": "The # on a chip, 3 : 1 on the chip"
+        },
+        "tintFill": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.3569,
+              0.2039,
+              0.1569
+            ],
+            "hex": "#5b3428"
+          },
+          "$description": "This color's swatch in the tag color menus"
+        }
+      },
+      "brown": {
+        "hash": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.8275,
+              0.6824,
+              0.6314
+            ],
+            "hex": "#d3aea1"
+          },
+          "$description": "The # on a chip, 3 : 1 on the chip"
+        },
+        "tintFill": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.3098,
+              0.2275,
+              0.1961
+            ],
+            "hex": "#4f3a32"
+          },
+          "$description": "This color's swatch in the tag color menus"
+        }
+      },
+      "blueGrey": {
+        "hash": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.6275,
+              0.7412,
+              0.7961
+            ],
+            "hex": "#a0bdcb"
+          },
+          "$description": "The # on a chip, 3 : 1 on the chip"
+        },
+        "tintFill": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.1922,
+              0.2627,
+              0.2941
+            ],
+            "hex": "#31434b"
+          },
+          "$description": "This color's swatch in the tag color menus"
+        }
+      }
+    },
+    "patternToday": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          1,
+          1,
+          1
+        ],
+        "hex": "#ffffff",
+        "alpha": 0.1
+      },
+      "$deprecated": "Today's pattern color, kept only so the guidelines can show today's look."
+    }
+  },
+  "shadow": {
+    "$type": "shadow",
+    "raised": {
+      "$value": [
+        {
+          "color": {
+            "colorSpace": "srgb",
+            "components": [
+              0,
+              0,
+              0
+            ],
+            "hex": "#000000",
+            "alpha": 0.3
+          },
+          "offsetX": {
+            "value": 0,
+            "unit": "px"
+          },
+          "offsetY": {
+            "value": 1,
+            "unit": "px"
+          },
+          "blur": {
+            "value": 2,
+            "unit": "px"
+          },
+          "spread": {
+            "value": 0,
+            "unit": "px"
+          }
+        },
+        {
+          "color": {
+            "colorSpace": "srgb",
+            "components": [
+              0,
+              0,
+              0
+            ],
+            "hex": "#000000",
+            "alpha": 0.25
+          },
+          "offsetX": {
+            "value": 0,
+            "unit": "px"
+          },
+          "offsetY": {
+            "value": 8,
+            "unit": "px"
+          },
+          "blur": {
+            "value": 24,
+            "unit": "px"
+          },
+          "spread": {
+            "value": 0,
+            "unit": "px"
+          }
+        }
+      ],
+      "$description": "Notes and cards"
+    },
+    "floating": {
+      "$value": [
+        {
+          "color": {
+            "colorSpace": "srgb",
+            "components": [
+              0,
+              0,
+              0
+            ],
+            "hex": "#000000",
+            "alpha": 0.14
+          },
+          "offsetX": {
+            "value": 0,
+            "unit": "px"
+          },
+          "offsetY": {
+            "value": 8,
+            "unit": "px"
+          },
+          "blur": {
+            "value": 22,
+            "unit": "px"
+          },
+          "spread": {
+            "value": 0,
+            "unit": "px"
+          }
+        }
+      ],
+      "$description": "Floating bars on a note"
+    },
+    "menu": {
+      "$value": [
+        {
+          "color": {
+            "colorSpace": "srgb",
+            "components": [
+              1,
+              1,
+              1
+            ],
+            "hex": "#ffffff",
+            "alpha": 0.06
+          },
+          "offsetX": {
+            "value": 0,
+            "unit": "px"
+          },
+          "offsetY": {
+            "value": 1,
+            "unit": "px"
+          },
+          "blur": {
+            "value": 0,
+            "unit": "px"
+          },
+          "spread": {
+            "value": 0,
+            "unit": "px"
+          },
+          "inset": true
+        },
+        {
+          "color": {
+            "colorSpace": "srgb",
+            "components": [
+              0,
+              0,
+              0
+            ],
+            "hex": "#000000",
+            "alpha": 0.35
+          },
+          "offsetX": {
+            "value": 0,
+            "unit": "px"
+          },
+          "offsetY": {
+            "value": 1,
+            "unit": "px"
+          },
+          "blur": {
+            "value": 2,
+            "unit": "px"
+          },
+          "spread": {
+            "value": 0,
+            "unit": "px"
+          }
+        },
+        {
+          "color": {
+            "colorSpace": "srgb",
+            "components": [
+              0,
+              0,
+              0
+            ],
+            "hex": "#000000",
+            "alpha": 0.35
+          },
+          "offsetX": {
+            "value": 0,
+            "unit": "px"
+          },
+          "offsetY": {
+            "value": 8,
+            "unit": "px"
+          },
+          "blur": {
+            "value": 18,
+            "unit": "px"
+          },
+          "spread": {
+            "value": -4,
+            "unit": "px"
+          }
+        },
+        {
+          "color": {
+            "colorSpace": "srgb",
+            "components": [
+              0,
+              0,
+              0
+            ],
+            "hex": "#000000",
+            "alpha": 0.45
+          },
+          "offsetX": {
+            "value": 0,
+            "unit": "px"
+          },
+          "offsetY": {
+            "value": 22,
+            "unit": "px"
+          },
+          "blur": {
+            "value": 44,
+            "unit": "px"
+          },
+          "spread": {
+            "value": -12,
+            "unit": "px"
+          }
+        }
+      ],
+      "$description": "Menus and pop-overs"
+    },
+    "lift": {
+      "$value": [
+        {
+          "color": {
+            "colorSpace": "srgb",
+            "components": [
+              0,
+              0,
+              0
+            ],
+            "hex": "#000000",
+            "alpha": 0.6
+          },
+          "offsetX": {
+            "value": 0,
+            "unit": "px"
+          },
+          "offsetY": {
+            "value": 16,
+            "unit": "px"
+          },
+          "blur": {
+            "value": 32,
+            "unit": "px"
+          },
+          "spread": {
+            "value": -10,
+            "unit": "px"
+          }
+        }
+      ],
+      "$description": "A card being hovered or dragged"
+    },
+    "dialog": {
+      "$value": [
+        {
+          "color": {
+            "colorSpace": "srgb",
+            "components": [
+              1,
+              1,
+              1
+            ],
+            "hex": "#ffffff",
+            "alpha": 0.07
+          },
+          "offsetX": {
+            "value": 0,
+            "unit": "px"
+          },
+          "offsetY": {
+            "value": 1,
+            "unit": "px"
+          },
+          "blur": {
+            "value": 0,
+            "unit": "px"
+          },
+          "spread": {
+            "value": 0,
+            "unit": "px"
+          },
+          "inset": true
+        },
+        {
+          "color": {
+            "colorSpace": "srgb",
+            "components": [
+              1,
+              1,
+              1
+            ],
+            "hex": "#ffffff",
+            "alpha": 0.05
+          },
+          "offsetX": {
+            "value": 0,
+            "unit": "px"
+          },
+          "offsetY": {
+            "value": 0,
+            "unit": "px"
+          },
+          "blur": {
+            "value": 0,
+            "unit": "px"
+          },
+          "spread": {
+            "value": 1,
+            "unit": "px"
+          }
+        },
+        {
+          "color": {
+            "colorSpace": "srgb",
+            "components": [
+              0,
+              0,
+              0
+            ],
+            "hex": "#000000",
+            "alpha": 0.4
+          },
+          "offsetX": {
+            "value": 0,
+            "unit": "px"
+          },
+          "offsetY": {
+            "value": 2,
+            "unit": "px"
+          },
+          "blur": {
+            "value": 6,
+            "unit": "px"
+          },
+          "spread": {
+            "value": 0,
+            "unit": "px"
+          }
+        },
+        {
+          "color": {
+            "colorSpace": "srgb",
+            "components": [
+              0,
+              0,
+              0
+            ],
+            "hex": "#000000",
+            "alpha": 0.7
+          },
+          "offsetX": {
+            "value": 0,
+            "unit": "px"
+          },
+          "offsetY": {
+            "value": 32,
+            "unit": "px"
+          },
+          "blur": {
+            "value": 70,
+            "unit": "px"
+          },
+          "spread": {
+            "value": -18,
+            "unit": "px"
+          }
+        }
+      ],
+      "$description": "Dialogs"
+    },
+    "edge": {
+      "$value": [
+        {
+          "color": {
+            "colorSpace": "srgb",
+            "components": [
+              1,
+              1,
+              1
+            ],
+            "hex": "#ffffff",
+            "alpha": 0.06
+          },
+          "offsetX": {
+            "value": 0,
+            "unit": "px"
+          },
+          "offsetY": {
+            "value": 0,
+            "unit": "px"
+          },
+          "blur": {
+            "value": 0,
+            "unit": "px"
+          },
+          "spread": {
+            "value": 1,
+            "unit": "px"
+          }
+        }
+      ],
+      "$description": "A hairline around the logo and pictures"
+    },
+    "xs": {
+      "$value": [
+        {
+          "color": {
+            "colorSpace": "srgb",
+            "components": [
+              0,
+              0,
+              0
+            ],
+            "hex": "#000000",
+            "alpha": 0.3
+          },
+          "offsetX": {
+            "value": 0,
+            "unit": "px"
+          },
+          "offsetY": {
+            "value": 1,
+            "unit": "px"
+          },
+          "blur": {
+            "value": 2,
+            "unit": "px"
+          },
+          "spread": {
+            "value": 0,
+            "unit": "px"
+          }
+        }
+      ],
+      "$description": "A control that sits a little above its row"
+    },
+    "sm": {
+      "$value": [
+        {
+          "color": {
+            "colorSpace": "srgb",
+            "components": [
+              0,
+              0,
+              0
+            ],
+            "hex": "#000000",
+            "alpha": 0.3
+          },
+          "offsetX": {
+            "value": 0,
+            "unit": "px"
+          },
+          "offsetY": {
+            "value": 2,
+            "unit": "px"
+          },
+          "blur": {
+            "value": 6,
+            "unit": "px"
+          },
+          "spread": {
+            "value": 0,
+            "unit": "px"
+          }
+        }
+      ],
+      "$description": "Small buttons over a picture or card"
+    },
+    "control": {
+      "$value": [
+        {
+          "color": {
+            "colorSpace": "srgb",
+            "components": [
+              0,
+              0,
+              0
+            ],
+            "hex": "#000000",
+            "alpha": 0.3
+          },
+          "offsetX": {
+            "value": 0,
+            "unit": "px"
+          },
+          "offsetY": {
+            "value": 1,
+            "unit": "px"
+          },
+          "blur": {
+            "value": 2,
+            "unit": "px"
+          },
+          "spread": {
+            "value": 0,
+            "unit": "px"
+          }
+        },
+        {
+          "color": {
+            "colorSpace": "srgb",
+            "components": [
+              0,
+              0,
+              0
+            ],
+            "hex": "#000000",
+            "alpha": 0.6
+          },
+          "offsetX": {
+            "value": 0,
+            "unit": "px"
+          },
+          "offsetY": {
+            "value": 6,
+            "unit": "px"
+          },
+          "blur": {
+            "value": 14,
+            "unit": "px"
+          },
+          "spread": {
+            "value": -8,
+            "unit": "px"
+          }
+        }
+      ],
+      "$description": "The dark New note button"
+    },
+    "knob": {
+      "$value": [
+        {
+          "color": {
+            "colorSpace": "srgb",
+            "components": [
+              0,
+              0,
+              0
+            ],
+            "hex": "#000000",
+            "alpha": 0.28
+          },
+          "offsetX": {
+            "value": 0,
+            "unit": "px"
+          },
+          "offsetY": {
+            "value": 1,
+            "unit": "px"
+          },
+          "blur": {
+            "value": 3,
+            "unit": "px"
+          },
+          "spread": {
+            "value": 0,
+            "unit": "px"
+          }
+        }
+      ],
+      "$description": "The knob of a switch"
+    },
+    "bar": {
+      "$value": [
+        {
+          "color": {
+            "colorSpace": "srgb",
+            "components": [
+              0,
+              0,
+              0
+            ],
+            "hex": "#000000",
+            "alpha": 0.7
+          },
+          "offsetX": {
+            "value": 0,
+            "unit": "px"
+          },
+          "offsetY": {
+            "value": 18,
+            "unit": "px"
+          },
+          "blur": {
+            "value": 40,
+            "unit": "px"
+          },
+          "spread": {
+            "value": -14,
+            "unit": "px"
+          }
+        }
+      ],
+      "$description": "The selection bar, save bar and toasts"
+    },
+    "fab": {
+      "$value": [
+        {
+          "color": {
+            "colorSpace": "srgb",
+            "components": [
+              0,
+              0,
+              0
+            ],
+            "hex": "#000000",
+            "alpha": 0.7
+          },
+          "offsetX": {
+            "value": 0,
+            "unit": "px"
+          },
+          "offsetY": {
+            "value": 10,
+            "unit": "px"
+          },
+          "blur": {
+            "value": 24,
+            "unit": "px"
+          },
+          "spread": {
+            "value": -8,
+            "unit": "px"
+          }
+        },
+        {
+          "color": {
+            "colorSpace": "srgb",
+            "components": [
+              0,
+              0,
+              0
+            ],
+            "hex": "#000000",
+            "alpha": 0.3
+          },
+          "offsetX": {
+            "value": 0,
+            "unit": "px"
+          },
+          "offsetY": {
+            "value": 2,
+            "unit": "px"
+          },
+          "blur": {
+            "value": 6,
+            "unit": "px"
+          },
+          "spread": {
+            "value": 0,
+            "unit": "px"
+          }
+        }
+      ],
+      "$description": "The new-note button on phones"
+    },
+    "ghost": {
+      "$value": [
+        {
+          "color": {
+            "colorSpace": "srgb",
+            "components": [
+              0,
+              0,
+              0
+            ],
+            "hex": "#000000",
+            "alpha": 0.22
+          },
+          "offsetX": {
+            "value": 0,
+            "unit": "px"
+          },
+          "offsetY": {
+            "value": 6,
+            "unit": "px"
+          },
+          "blur": {
+            "value": 18,
+            "unit": "px"
+          },
+          "spread": {
+            "value": 0,
+            "unit": "px"
+          }
+        },
+        {
+          "color": {
+            "colorSpace": "srgb",
+            "components": [
+              0,
+              0,
+              0
+            ],
+            "hex": "#000000",
+            "alpha": 0.12
+          },
+          "offsetX": {
+            "value": 0,
+            "unit": "px"
+          },
+          "offsetY": {
+            "value": 2,
+            "unit": "px"
+          },
+          "blur": {
+            "value": 5,
+            "unit": "px"
+          },
+          "spread": {
+            "value": 0,
+            "unit": "px"
+          }
+        }
+      ],
+      "$description": "The small picture that follows the pointer while dragging"
+    }
+  },
+  "blend": {
+    "$type": "number",
+    "addedLine": {
+      "$value": 14,
+      "$description": "Percent of green behind an added line"
+    },
+    "addedWord": {
+      "$value": 26,
+      "$description": "Percent of green behind an added word"
+    },
+    "removedLine": {
+      "$value": 16,
+      "$description": "Percent of red behind a removed line"
+    },
+    "removedWord": {
+      "$value": 26,
+      "$description": "Percent of red behind a removed word"
+    }
+  }
+}
