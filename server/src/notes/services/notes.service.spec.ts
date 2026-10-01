@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
+import { Prisma } from '../../generated/prisma/client';
 import { NotesService } from './notes.service';
 import { NoteAccessService } from './note-access.service';
 import { NoteAttachmentsService } from './note-attachments.service';
@@ -106,6 +107,8 @@ describe('NotesService tag reconciliation (shared notes)', () => {
       .map((t) => ({ id: t.id, userId: t.userId }));
 
   const noteUpdateMock = vi.fn(noteUpdate);
+  const noteUpdateManyMock = vi.fn().mockResolvedValue({ count: 1 });
+  const notePinUpsert = vi.fn();
   let storedReminder: {
     remindAt: string;
     recurrence: string;
@@ -124,6 +127,7 @@ describe('NotesService tag reconciliation (shared notes)', () => {
     $transaction: (cb: (tx: PrismaService) => unknown) => cb(prisma),
     note: {
       update: noteUpdateMock,
+      updateMany: noteUpdateManyMock,
       findUniqueOrThrow: vi.fn(({ where }: { where: { id: string } }) =>
         Promise.resolve({
           id: where.id,
@@ -131,6 +135,7 @@ describe('NotesService tag reconciliation (shared notes)', () => {
           content: null,
           background: null,
           state: 'active',
+          version: 3,
           createdAt: new Date(),
           updatedAt: new Date(),
           userId: OWNER,
@@ -141,7 +146,7 @@ describe('NotesService tag reconciliation (shared notes)', () => {
       ),
     },
     tag: { findMany: vi.fn(tagFindMany) },
-    notePin: { upsert: vi.fn(), deleteMany: vi.fn() },
+    notePin: { upsert: notePinUpsert, deleteMany: vi.fn() },
     noteArchive: {
       createMany: vi.fn().mockResolvedValue({ count: 1 }),
       deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
@@ -334,6 +339,44 @@ describe('NotesService tag reconciliation (shared notes)', () => {
     ]);
   });
 
+  it('a save that loses a race to another writer is a conflict, with nothing else applied', async () => {
+    noteUpdateManyMock.mockResolvedValueOnce({ count: 0 });
+
+    await expect(
+      service.update(OWNER, NOTE_ID, {
+        title: 'Mine',
+        baseVersion: 3,
+        isPinned: true,
+      }),
+    ).rejects.toMatchObject({ status: 409 });
+    expect(noteUpdateManyMock).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: NOTE_ID, version: 3 } }),
+    );
+    expect(notePinUpsert).not.toHaveBeenCalled();
+  });
+
+  it('keeps a stale save in History only when its text differs', async () => {
+    const revisions = createMockNoteRevisions();
+    service = new NotesService(
+      prisma,
+      noteAccess,
+      {} as unknown as NoteAttachmentsService,
+      noteShares,
+      asSyncEmitter(createMockSyncEmitter()),
+      asNoteRevisions(revisions),
+    );
+
+    await expect(
+      service.update(OWNER, NOTE_ID, { title: 'Groceries', baseVersion: 2 }),
+    ).rejects.toMatchObject({ status: 409 });
+    expect(revisions.recordConflict).not.toHaveBeenCalled();
+
+    await expect(
+      service.update(OWNER, NOTE_ID, { title: 'Mine', baseVersion: 2 }),
+    ).rejects.toMatchObject({ status: 409 });
+    expect(revisions.recordConflict).toHaveBeenCalledTimes(1);
+  });
+
   it('a save that edits the note still needs editor permission', async () => {
     await service.update(EDITOR, NOTE_ID, {
       title: 'Groceries',
@@ -353,3 +396,61 @@ const emittedTypes = (emitter: { emit: Mock<Emit> }): string[] =>
   emitter.emit.mock.calls.flatMap(([, emissions]) =>
     emissions.map((emission) => emission.entityType),
   );
+
+describe('NotesService.create with a client id', () => {
+  const USER = 'user-1';
+  const ID = '0b6f6c1e-3d52-4d3a-9d2b-2c7f7b8a9e10';
+  const findUnique = vi.fn();
+  const create = vi.fn();
+  const prisma = {
+    $transaction: (cb: (tx: PrismaService) => unknown) => cb(prisma),
+    note: { findUnique, create },
+  } as unknown as PrismaService;
+  let service: NotesService;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    service = new NotesService(
+      prisma,
+      {} as unknown as NoteAccessService,
+      {} as unknown as NoteAttachmentsService,
+      {} as unknown as NoteSharesService,
+      asSyncEmitter(createMockSyncEmitter()),
+      asNoteRevisions(createMockNoteRevisions()),
+    );
+    vi.spyOn(service, 'findOne').mockResolvedValue({ id: ID } as never);
+  });
+
+  it('a create sent again gets the note the first one made', async () => {
+    findUnique.mockResolvedValue({ userId: USER });
+
+    await expect(
+      service.create(USER, { id: ID, title: 'Groceries' }),
+    ).resolves.toEqual({ id: ID });
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it("refuses an id that belongs to someone else's note", async () => {
+    findUnique.mockResolvedValue({ userId: 'someone-else' });
+
+    await expect(
+      service.create(USER, { id: ID, title: 'Groceries' }),
+    ).rejects.toMatchObject({ status: 409 });
+  });
+
+  it('two sends at the same time make one note', async () => {
+    findUnique
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ userId: USER });
+    create.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+        code: 'P2002',
+        clientVersion: 'test',
+      }),
+    );
+
+    await expect(
+      service.create(USER, { id: ID, title: 'Groceries' }),
+    ).resolves.toEqual({ id: ID });
+  });
+});

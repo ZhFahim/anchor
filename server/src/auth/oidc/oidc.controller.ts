@@ -7,6 +7,7 @@ import {
   Req,
   Res,
   BadRequestException,
+  HttpException,
   InternalServerErrorException,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
@@ -74,9 +75,10 @@ export class OidcController {
       );
     }
 
+    // Anchor's own errors carry a status; the provider's come without one.
     if (!code || !state) {
       return res.redirect(
-        `${frontendUrl}/login?error=${encodeURIComponent('Missing authorization code or state')}`,
+        `${frontendUrl}/login?error=${encodeURIComponent('Missing authorization code or state')}&status=400`,
       );
     }
 
@@ -94,8 +96,9 @@ export class OidcController {
         error,
         'Failed to process OIDC callback',
       );
+      const status = error instanceof HttpException ? error.getStatus() : 500;
       return res.redirect(
-        `${frontendUrl}/login?error=${encodeURIComponent(errorMsg)}`,
+        `${frontendUrl}/login?error=${encodeURIComponent(errorMsg)}&status=${status}`,
       );
     }
   }

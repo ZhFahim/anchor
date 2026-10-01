@@ -36,7 +36,7 @@ export enum SyncReminderRecurrence {
 }
 
 // For pins and reminders `id` is the noteId; neither has an entity of its own.
-export class SyncChangeBaseDto {
+class SyncChangeBaseDto {
   @IsIn(['note', 'tag', 'pin', 'reminder'])
   type: 'note' | 'tag' | 'pin' | 'reminder';
 

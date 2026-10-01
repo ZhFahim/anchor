@@ -111,7 +111,7 @@ export class ImportNotesDto {
   skipExisting?: boolean;
 }
 
-export type ImportNoteStatus = 'created' | 'skipped' | 'remapped' | 'failed';
+type ImportNoteStatus = 'created' | 'skipped' | 'remapped' | 'failed';
 
 export interface ImportNoteResult {
   ref: string;

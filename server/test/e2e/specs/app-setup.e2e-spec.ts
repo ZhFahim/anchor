@@ -67,6 +67,9 @@ describe('app setup', () => {
     const image = await request(ctx.http).get(profileImage).expect(200);
 
     expect(image.headers['content-type']).toBe('image/png');
+    expect(image.headers['cache-control']).toBe(
+      'private, max-age=31536000, immutable',
+    );
     expect(image.body).toEqual(PNG_1PX);
   });
 

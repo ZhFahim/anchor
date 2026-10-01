@@ -118,7 +118,7 @@ export interface SyncEntry {
   reminder?: ReminderOnWire;
 }
 
-export interface SyncResult {
+interface SyncResult {
   type: 'note' | 'tag' | 'pin' | 'reminder';
   id: string;
   status: 'applied' | 'conflict' | 'denied';
@@ -136,7 +136,7 @@ export interface SyncResponse {
   resetRequired?: boolean;
 }
 
-export interface ExportManifestNoteOnWire {
+interface ExportManifestNoteOnWire {
   id: string;
   origin: 'owned' | 'shared';
   title: string;

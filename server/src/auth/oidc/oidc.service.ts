@@ -261,9 +261,9 @@ export class OidcService {
   }
 
   /**
-   * Validate redirect URL: allow relative paths or same-origin URLs only.
-   * Returns validated URL or undefined for empty. Throws if provided and invalid.
-   * When fallback is provided, returns fallback instead of throwing on invalid.
+   * Resolves a redirect against the app URL and returns its path, search and
+   * hash; anything that leaves the app's origin is rejected. Returns undefined
+   * for empty. Throws if invalid, unless a fallback is given.
    */
   private validateRedirectUrl(
     redirectUrl: string | undefined,
@@ -273,26 +273,16 @@ export class OidcService {
     if (!trimmed) {
       return fallback;
     }
-    // Reject protocol-relative URLs
-    if (trimmed.startsWith('//')) {
-      if (fallback !== undefined) return fallback;
-      throw new BadRequestException('Invalid redirect URL');
-    }
-    // Allow relative paths (must start with single / and not contain //)
-    if (trimmed.startsWith('/') && !trimmed.includes('//')) {
-      return trimmed;
-    }
-    // Allow same-origin absolute URLs
-    const appUrl = this.oidcConfigService.getAppUrl();
     try {
-      const redirect = new URL(trimmed);
-      const app = new URL(appUrl);
+      const app = new URL(this.oidcConfigService.getAppUrl());
+      const redirect = new URL(trimmed, app);
       if (redirect.origin === app.origin) {
-        return trimmed;
+        return redirect.pathname + redirect.search + redirect.hash;
       }
     } catch {
-      this.logger.warn(`Invalid redirect URL: ${trimmed}`);
+      // Not a URL.
     }
+    this.logger.warn(`Invalid redirect URL: ${trimmed}`);
     if (fallback !== undefined) return fallback;
     throw new BadRequestException('Invalid redirect URL');
   }

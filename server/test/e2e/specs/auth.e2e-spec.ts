@@ -91,3 +91,80 @@ describe('auth token refresh', () => {
     expect(b.status).toBe(200);
   });
 });
+
+describe('provider-only sign-in', () => {
+  let ctx: E2EApp;
+  let user: Actor;
+
+  beforeAll(async () => {
+    ctx = await createE2EApp();
+  });
+
+  afterAll(async () => {
+    await ctx.close();
+  });
+
+  beforeEach(async () => {
+    await ctx.resetDb();
+    user = await ctx.registerUser();
+  });
+
+  const setOidc = (settings: Record<string, string>) =>
+    ctx.prisma.settings.createMany({
+      data: Object.entries(settings).map(([key, value]) => ({ key, value })),
+    });
+
+  const providerOnly = {
+    oidc_enabled: 'true',
+    oidc_provider_name: 'Pocket ID',
+    oidc_issuer_url: 'https://auth.e2e.test',
+    oidc_client_id: 'anchor',
+    oidc_disable_internal_auth: 'true',
+  };
+
+  const login = () =>
+    request(ctx.http)
+      .post('/api/auth/login')
+      .send({ email: user.email, password: 'password-123' });
+
+  it('refuses email and password sign-in and sign-up', async () => {
+    await setOidc(providerOnly);
+
+    const signIn = await login().expect(403);
+    expect(bodyOf<{ message: string }>(signIn).message).toBe(
+      'Email and password sign-in is turned off. Sign in with Pocket ID.',
+    );
+    await request(ctx.http)
+      .post('/api/auth/register')
+      .send({ email: 'new@e2e.test', password: 'password-123', name: 'New' })
+      .expect(403);
+    expect(await ctx.prisma.user.count()).toBe(1);
+
+    const config = await request(ctx.http)
+      .get('/api/auth/oidc/config')
+      .expect(200);
+    expect(bodyOf<{ disableInternalAuth: boolean }>(config)).toMatchObject({
+      enabled: true,
+      disableInternalAuth: true,
+    });
+  });
+
+  it('keeps sessions that are already signed in', async () => {
+    await setOidc(providerOnly);
+
+    await user.http.get('/api/auth/me').expect(200);
+  });
+
+  it('keeps password sign-in while the provider is not set up', async () => {
+    await setOidc({ ...providerOnly, oidc_issuer_url: '' });
+
+    await login().expect(200);
+    const config = await request(ctx.http)
+      .get('/api/auth/oidc/config')
+      .expect(200);
+    expect(bodyOf<{ disableInternalAuth: boolean }>(config)).toMatchObject({
+      enabled: false,
+      disableInternalAuth: false,
+    });
+  });
+});

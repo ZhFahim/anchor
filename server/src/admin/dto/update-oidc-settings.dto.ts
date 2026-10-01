@@ -12,7 +12,11 @@ export class UpdateOidcSettingsDto {
   providerName?: string;
 
   @IsOptional()
-  @IsUrl()
+  @IsUrl({
+    protocols: ['http', 'https'],
+    require_protocol: true,
+    require_tld: false,
+  })
   issuerUrl?: string;
 
   @IsOptional()

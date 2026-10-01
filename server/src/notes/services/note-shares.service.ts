@@ -17,7 +17,7 @@ import {
   ERROR_MESSAGES,
 } from '../constants/notes.constants';
 import { reconcileUserTags } from '../utils/note-tags.util';
-import type { Prisma } from 'src/generated/prisma/client';
+import { Prisma } from '../../generated/prisma/client';
 
 @Injectable()
 export class NoteSharesService {
@@ -53,7 +53,7 @@ export class NoteSharesService {
       },
     });
 
-    const share = await this.prisma.$transaction(async (tx) => {
+    const writeShare = this.prisma.$transaction(async (tx) => {
       const written = existingShare
         ? await tx.noteShare.update({
             where: { id: existingShare.id },
@@ -90,6 +90,24 @@ export class NoteSharesService {
       ]);
 
       return written;
+    });
+
+    const share = await writeShare.catch(async (error: unknown) => {
+      const isCreateRace =
+        !existingShare &&
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002';
+      if (!isCreateRace) {
+        throw error;
+      }
+      const racedShare = await this.prisma.noteShare.findUnique({
+        where: { noteId_sharedWithUserId: { noteId, sharedWithUserId } },
+        include: { sharedWithUser: { select: SHARED_WITH_USER_SELECT } },
+      });
+      if (!racedShare) {
+        throw error;
+      }
+      return racedShare;
     });
 
     return {

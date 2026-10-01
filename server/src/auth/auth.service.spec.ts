@@ -10,6 +10,7 @@ import * as bcrypt from 'bcrypt';
 import { AuthService } from './auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
+import { OidcConfigService } from './oidc/oidc-config.service';
 import { REFRESH_TOKEN_REUSE_WINDOW_MS } from './constants/auth.constants';
 
 /**
@@ -41,6 +42,7 @@ describe('AuthService', () => {
   let users: Map<string, UserRecord>; // by id
   let refreshTokens: Map<string, RefreshTokenRecord>; // by token
   let registrationMode: 'open' | 'review' | 'disabled';
+  let isProviderOnly: boolean;
   let service: AuthService;
 
   // Cost 4 keeps the suite fast; production uses 10 via the service itself.
@@ -182,6 +184,16 @@ describe('AuthService', () => {
     getRegistrationMode: vi.fn(() => Promise.resolve(registrationMode)),
   } as unknown as SettingsService;
 
+  const oidcConfigService = {
+    getPublicConfig: vi.fn(() =>
+      Promise.resolve({
+        enabled: true,
+        providerName: 'Pocket ID',
+        disableInternalAuth: isProviderOnly,
+      }),
+    ),
+  } as unknown as OidcConfigService;
+
   const storageConfig = {
     root: '/data',
     uploadsDir: '/data/uploads',
@@ -193,10 +205,12 @@ describe('AuthService', () => {
     users = new Map();
     refreshTokens = new Map();
     registrationMode = 'open';
+    isProviderOnly = false;
     service = new AuthService(
       prisma,
       jwtService,
       settingsService,
+      oidcConfigService,
       storageConfig,
     );
     vi.clearAllMocks();
@@ -212,6 +226,16 @@ describe('AuthService', () => {
     it('is forbidden when registration is disabled', async () => {
       registrationMode = 'disabled';
       await expect(service.register(dto)).rejects.toThrow(ForbiddenException);
+    });
+
+    it('is forbidden when only provider sign-in is allowed', async () => {
+      isProviderOnly = true;
+      await expect(service.register(dto)).rejects.toThrow(
+        new ForbiddenException(
+          'Email and password sign-up is turned off. Sign up with Pocket ID.',
+        ),
+      );
+      expect(users.size).toBe(0);
     });
 
     it('rejects an already-registered email', async () => {
@@ -261,6 +285,20 @@ describe('AuthService', () => {
     });
   });
 
+  describe('getMe', () => {
+    it('says a person with a password has one, without sending it', async () => {
+      addUser({ id: 'u1' });
+      const me = await service.getMe({ id: 'u1', name: 'Test User' });
+      expect(me).toEqual({ id: 'u1', name: 'Test User', hasPassword: true });
+    });
+
+    it('says a person who signs in with a provider has none', async () => {
+      addUser({ id: 'u1', password: null });
+      const me = await service.getMe({ id: 'u1' });
+      expect(me.hasPassword).toBe(false);
+    });
+  });
+
   describe('login', () => {
     it('rejects an unknown email', async () => {
       await expect(
@@ -273,6 +311,18 @@ describe('AuthService', () => {
       await expect(
         service.login({ email: 'u1@example.com', password: 'anything' }),
       ).rejects.toThrow(/OIDC/);
+    });
+
+    it('is forbidden when only provider sign-in is allowed', async () => {
+      addUser({ id: 'u1' });
+      isProviderOnly = true;
+      await expect(
+        service.login({ email: 'u1@example.com', password: 'correct horse' }),
+      ).rejects.toThrow(
+        new ForbiddenException(
+          'Email and password sign-in is turned off. Sign in with Pocket ID.',
+        ),
+      );
     });
 
     it('rejects a wrong password', async () => {

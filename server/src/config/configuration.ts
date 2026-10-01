@@ -1,12 +1,11 @@
 import { registerAs } from '@nestjs/config';
 import * as path from 'path';
 
-export const DEFAULT_DATA_DIR = '/data';
+const DEFAULT_DATA_DIR = '/data';
 const DEFAULT_APP_URL = 'http://localhost:3000';
 const DEFAULT_PORT = 3001;
 
 export const AppConfig = registerAs('app', () => ({
-  nodeEnv: process.env.NODE_ENV ?? 'development',
   port: parseInt(process.env.PORT ?? String(DEFAULT_PORT), 10),
   appUrl: (process.env.APP_URL?.trim() || DEFAULT_APP_URL).replace(/\/+$/, ''),
   corsOrigins:

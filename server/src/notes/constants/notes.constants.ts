@@ -112,6 +112,8 @@ export const BULK_MAX_TAG_IDS = 50;
 export const DEFAULT_REVISION_PAGE_SIZE = 30;
 export const MAX_REVISION_PAGE_SIZE = 100;
 
+export const TRASH_RETENTION_DAYS = 30;
+
 // Attachment constants
 export const ATTACHMENT_MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 

@@ -13,6 +13,18 @@ describe('escapeInlineText', () => {
     expect(escapeInlineText('a ~~b~~')).toBe('a \\~\\~b\\~\\~');
   });
 
+  it('escapes the equals signs that could form a highlight', () => {
+    expect(escapeInlineText('a == b')).toBe('a \\=\\= b');
+    expect(escapeInlineText('x===y')).toBe('x\\=\\=\\=y');
+    expect(escapeInlineText('=a=')).toBe('\\=a\\=');
+    expect(escapeInlineText('a = b')).toBe('a = b');
+  });
+
+  it('escapes what could start an HTML tag', () => {
+    expect(escapeInlineText('<mark>x</mark>')).toBe('\\<mark>x\\</mark>');
+    expect(escapeInlineText('a < b <3')).toBe('a < b <3');
+  });
+
   it('leaves intraword underscores alone', () => {
     expect(escapeInlineText('snake_case_name')).toBe('snake_case_name');
     expect(escapeInlineText('_leading')).toBe('\\_leading');
@@ -70,6 +82,59 @@ describe('renderInline', () => {
         },
       ]),
     ).toBe('[~~<u>***x***</u>~~](https://example.com)');
+  });
+
+  it('writes a yellow highlight as ==text== and other colors as <mark>', () => {
+    expect(
+      renderInline([
+        { insert: 'a', attributes: { highlight: 'yellow' } },
+        { insert: ' ' },
+        { insert: 'b', attributes: { highlight: 'green' } },
+      ]),
+    ).toBe('==a== <mark data-color="green">b</mark>');
+  });
+
+  it('writes an unknown highlight color as yellow', () => {
+    expect(
+      renderInline([{ insert: 'a', attributes: { highlight: 'orange' } }]),
+    ).toBe('==a==');
+  });
+
+  it('wraps a highlight around the other marks and links', () => {
+    expect(
+      renderInline([
+        {
+          insert: 'x',
+          attributes: {
+            bold: true,
+            italic: true,
+            strike: true,
+            highlight: 'pink',
+            link: 'https://example.com',
+          },
+        },
+      ]),
+    ).toBe('<mark data-color="pink">[~~***x***~~](https://example.com)</mark>');
+  });
+
+  it('keeps one highlighted phrase in one piece', () => {
+    expect(
+      renderInline([
+        { insert: ' buy ', attributes: { highlight: 'yellow' } },
+        { insert: 'milk', attributes: { highlight: 'yellow', bold: true } },
+        { insert: ' today ', attributes: { highlight: 'yellow' } },
+        { insert: 'please' },
+      ]),
+    ).toBe(' ==buy **milk** today== please');
+  });
+
+  it('escapes an equals sign next to a highlight', () => {
+    expect(
+      renderInline([
+        { insert: 'x=' },
+        { insert: 'y', attributes: { highlight: 'yellow' } },
+      ]),
+    ).toBe('x\\===y==');
   });
 
   it('wraps link targets containing spaces in angle brackets', () => {

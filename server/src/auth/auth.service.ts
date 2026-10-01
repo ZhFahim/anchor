@@ -11,6 +11,7 @@ import type { ConfigType } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
+import { OidcConfigService } from './oidc/oidc-config.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -40,6 +41,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private settingsService: SettingsService,
+    private oidcConfigService: OidcConfigService,
     @Inject(StorageConfig.KEY)
     private storageConfig: ConfigType<typeof StorageConfig>,
   ) {}
@@ -51,6 +53,13 @@ export class AuthService {
   }
 
   async register(registerDto: RegisterDto) {
+    const oidc = await this.oidcConfigService.getPublicConfig();
+    if (oidc.disableInternalAuth) {
+      throw new ForbiddenException(
+        `Email and password sign-up is turned off. Sign up with ${oidc.providerName}.`,
+      );
+    }
+
     const registrationMode = await this.settingsService.getRegistrationMode();
 
     if (registrationMode === 'disabled') {
@@ -116,6 +125,13 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto) {
+    const oidc = await this.oidcConfigService.getPublicConfig();
+    if (oidc.disableInternalAuth) {
+      throw new ForbiddenException(
+        `Email and password sign-in is turned off. Sign in with ${oidc.providerName}.`,
+      );
+    }
+
     const user = await this.prisma.user.findUnique({
       where: { email: loginDto.email },
       select: {
@@ -164,8 +180,16 @@ export class AuthService {
     const tokens = await this.createTokenPair(user.id, user.email);
     return {
       ...tokens,
-      user: userWithoutPassword,
+      user: { ...userWithoutPassword, hasPassword: true },
     };
+  }
+
+  async getMe<T extends { id: string }>(user: T) {
+    const row = await this.prisma.user.findUnique({
+      where: { id: user.id },
+      select: { password: true },
+    });
+    return { ...user, hasPassword: !!row?.password };
   }
 
   async refreshTokens(refreshToken: string) {

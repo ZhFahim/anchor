@@ -11,6 +11,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { NoteState } from 'src/generated/prisma/enums';
 import { UserStatus } from 'src/generated/prisma/enums';
+import type { Prisma } from 'src/generated/prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { BCRYPT_SALT_ROUNDS } from '../auth/constants/auth.constants';
@@ -54,9 +55,25 @@ export class AdminService {
     return this.settingsService.getRegistrationSettings();
   }
 
-  async findAllUsers(skip = 0, take = 50) {
+  async findUsers(
+    skip = 0,
+    take = 50,
+    filter: { q?: string; status?: UserStatus } = {},
+  ) {
+    const where: Prisma.UserWhereInput = {
+      ...(filter.status ? { status: filter.status } : {}),
+      ...(filter.q
+        ? {
+            OR: [
+              { name: { contains: filter.q, mode: 'insensitive' } },
+              { email: { contains: filter.q, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+    };
     const [users, total] = await Promise.all([
       this.prisma.user.findMany({
+        where,
         skip,
         take,
         orderBy: { createdAt: 'desc' },
@@ -64,6 +81,7 @@ export class AdminService {
           id: true,
           email: true,
           name: true,
+          profileImage: true,
           isAdmin: true,
           status: true,
           oidcSubject: true,
@@ -76,12 +94,12 @@ export class AdminService {
                   state: { not: NoteState.deleted },
                 },
               },
-              tags: true,
+              tags: { where: { isDeleted: false } },
             },
           },
         },
       }),
-      this.prisma.user.count(),
+      this.prisma.user.count({ where }),
     ]);
 
     const usersWithAuthMethod = users.map(({ oidcSubject, ...rest }) => ({
@@ -105,6 +123,7 @@ export class AdminService {
         id: true,
         email: true,
         name: true,
+        profileImage: true,
         isAdmin: true,
         status: true,
         oidcSubject: true,

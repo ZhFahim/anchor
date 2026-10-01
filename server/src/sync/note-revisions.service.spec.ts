@@ -69,6 +69,18 @@ describe('NoteRevisionsService', () => {
     expect(revisionCreate).not.toHaveBeenCalled();
   });
 
+  it('keeps the replaced text when told the edit replaces one made elsewhere', async () => {
+    newest = {
+      cause: RevisionCause.edit,
+      authorUserId: 'author-1',
+      createdAt: new Date(),
+    };
+
+    await service.recordEdit(tx, prior, 'author-1', { collapse: false });
+
+    expect(revisionCreate).toHaveBeenCalled();
+  });
+
   it('never collapses across authors', async () => {
     newest = {
       cause: RevisionCause.edit,
