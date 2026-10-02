@@ -5,17 +5,17 @@ export type ViewMode = "masonry" | "grid" | "list";
 export type SortBy = "updatedAt" | "createdAt" | "title";
 export type SortOrder = "asc" | "desc";
 
-export interface UIPreferences {
+interface UIPreferences {
   sidebarCollapsed: boolean;
 }
 
-export interface NotesPreferences {
+interface NotesPreferences {
   viewMode: ViewMode;
   sortBy: SortBy;
   sortOrder: SortOrder;
 }
 
-export interface EditorPreferences {
+interface EditorPreferences {
   sortChecklistItems: boolean;
 }
 
@@ -35,7 +35,6 @@ interface PreferencesState {
     key: K,
     value: EditorPreferences[K],
   ) => void;
-  resetPreferences: () => void;
 }
 
 const defaultUIPreferences: UIPreferences = {
@@ -74,7 +73,6 @@ export const usePreferencesStore = create<PreferencesState>()(
         set((state) => ({
           editor: { ...state.editor, [key]: value },
         })),
-      resetPreferences: () => set(initialState),
     }),
     {
       name: "preferences",

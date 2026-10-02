@@ -3,4 +3,3 @@ packages:
 
 allowBuilds:
   sharp: true
-  unrs-resolver: false

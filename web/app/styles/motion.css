@@ -1,0 +1,281 @@
+@theme {
+  --animate-fade-in: fade-in var(--duration-fade) var(--ease-standard);
+  --animate-fade-out: fade-out var(--duration-exit) var(--ease-exit) forwards;
+  --animate-splash: fade-in var(--duration-slow) var(--ease-standard)
+    var(--duration-slow) backwards;
+  --animate-drawer-in: drawer-in var(--duration-header) var(--ease-standard);
+  --animate-drawer-out: drawer-out var(--duration-move) var(--ease-exit)
+    forwards;
+  --animate-pop-in: pop-in var(--duration-fade) var(--ease-standard);
+  --animate-pop-up: pop-up var(--duration-fade) var(--ease-standard);
+  --animate-pop-out: pop-out var(--duration-exit) var(--ease-exit) forwards;
+  --animate-pop-down-out: pop-down-out var(--duration-exit) var(--ease-exit)
+    forwards;
+  --animate-dialog-in: dialog-in var(--duration-move) var(--ease-pop);
+  --animate-dialog-out: dialog-out var(--duration-exit) var(--ease-exit)
+    forwards;
+  --animate-sheet-in: sheet-in var(--duration-slow) var(--ease-standard);
+  --animate-sheet-out: sheet-out var(--duration-move) var(--ease-exit) forwards;
+  --animate-rise-in: rise-in var(--duration-move) var(--ease-standard);
+  --animate-rise-out: rise-out var(--duration-exit) var(--ease-exit) forwards;
+  --animate-toast-in: toast-in var(--duration-move) var(--ease-pop);
+  --animate-toast-out: toast-out var(--duration-exit) var(--ease-exit) forwards;
+  --animate-open: open var(--duration-move) var(--ease-standard);
+  --animate-roll-in: roll-in var(--duration-slow) var(--ease-roll);
+  --animate-roll-out: roll-out var(--duration-move) var(--ease-exit) forwards;
+  --animate-tick: tick var(--duration-tick) var(--ease-pop);
+  --animate-shimmer: shimmer var(--duration-shimmer) linear infinite;
+  --animate-drain: drain var(--toast-time, 6s) linear forwards;
+  --animate-spin: spin var(--duration-spin) linear infinite;
+  --animate-flash: flash var(--duration-flash) var(--ease-standard);
+  --animate-nudge: nudge var(--duration-nudge) var(--ease-standard);
+  --animate-bell-ring: bell-ring var(--duration-ring) var(--ease-standard)
+    var(--duration-slow) 1 backwards;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes fade-out {
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      transform: translateY(-4px) scale(0.97);
+    }
+  }
+  @keyframes pop-up {
+    from {
+      opacity: 0;
+      transform: translateY(4px) scale(0.97);
+    }
+  }
+  @keyframes pop-out {
+    to {
+      opacity: 0;
+      transform: translateY(-4px) scale(0.97);
+    }
+  }
+  @keyframes pop-down-out {
+    to {
+      opacity: 0;
+      transform: translateY(4px) scale(0.97);
+    }
+  }
+  @keyframes dialog-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.97);
+    }
+  }
+  @keyframes dialog-out {
+    to {
+      opacity: 0;
+      transform: translateY(6px) scale(0.98);
+    }
+  }
+  @keyframes sheet-in {
+    from {
+      transform: translateY(100%);
+    }
+  }
+  @keyframes sheet-out {
+    to {
+      transform: translateY(100%);
+    }
+  }
+  @keyframes rise-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+  }
+  @keyframes rise-out {
+    to {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+  }
+  @keyframes toast-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.97);
+    }
+  }
+  @keyframes toast-out {
+    to {
+      opacity: 0;
+      transform: translateY(6px) scale(0.98);
+    }
+  }
+  @keyframes drawer-in {
+    from {
+      transform: translateX(-102%);
+    }
+  }
+  @keyframes drawer-out {
+    to {
+      transform: translateX(-102%);
+    }
+  }
+  @keyframes open {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+  }
+  @keyframes roll-in {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+  }
+  @keyframes roll-out {
+    to {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+  }
+  @keyframes tick {
+    from {
+      transform: rotate(-45deg) scale(0.2);
+      opacity: 0;
+    }
+  }
+  @keyframes shimmer {
+    from {
+      background-position: 150% 0;
+    }
+    to {
+      background-position: -50% 0;
+    }
+  }
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @keyframes drain {
+    to {
+      transform: scaleX(0);
+    }
+  }
+  @keyframes flash {
+    0%,
+    40% {
+      background-color: color-mix(in srgb, var(--accent) 14%, transparent);
+    }
+  }
+  @keyframes nudge {
+    0%,
+    100% {
+      transform: none;
+    }
+    20% {
+      transform: translateX(-5px);
+    }
+    40% {
+      transform: translateX(5px);
+    }
+    60% {
+      transform: translateX(-3px);
+    }
+    80% {
+      transform: translateX(2px);
+    }
+  }
+  @keyframes bell-ring {
+    0%,
+    100% {
+      transform: none;
+    }
+    10% {
+      transform: rotate(14deg);
+    }
+    25% {
+      transform: rotate(-12deg);
+    }
+    40% {
+      transform: rotate(9deg);
+    }
+    55% {
+      transform: rotate(-6deg);
+    }
+    70% {
+      transform: rotate(3deg);
+    }
+    85% {
+      transform: rotate(-1deg);
+    }
+  }
+}
+
+/* The pill's target while the pill travels to it. */
+.pill-to {
+  background: transparent;
+  box-shadow: none;
+  transition: none;
+}
+.pill-snap {
+  transition: none;
+}
+
+/* The theme view transition starts in app/providers.tsx. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--duration-fade);
+  animation-timing-function: var(--ease-standard);
+}
+
+@keyframes hourglass-turn {
+  0%,
+  20% {
+    rotate: 0deg;
+  }
+  45%,
+  70% {
+    rotate: 180deg;
+  }
+  95%,
+  100% {
+    rotate: 360deg;
+  }
+}
+.hourglass-turn {
+  transform-box: view-box;
+  transform-origin: 130px 106px;
+  animation: hourglass-turn var(--duration-sway) var(--ease-in-out);
+}
+
+@keyframes floaty {
+  to {
+    translate: 0 -8px;
+  }
+}
+
+/* biome-ignore-start lint/complexity/noImportantStyles: reduced motion beats every animation. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0s !important;
+    transition-delay: 0s !important;
+    scroll-behavior: auto !important;
+  }
+  [data-toast-bar] {
+    animation-duration: var(--toast-time, 6s) !important;
+  }
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+/* biome-ignore-end lint/complexity/noImportantStyles: reduced motion beats every animation. */

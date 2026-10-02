@@ -1,6 +1,5 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,18 +10,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useLastShown } from "@/lib/hooks/use-last-shown";
 
 interface ConfirmationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
-  title: string | ReactNode;
-  description: string | ReactNode;
-  confirmLabel?: string;
+  title: ReactNode;
+  description: ReactNode;
+  confirmLabel: string;
+  busyLabel?: string;
   cancelLabel?: string;
-  variant?: "default" | "destructive";
-  icon?: ReactNode;
+  variant?: "destructive" | "primary";
   isPending?: boolean;
+  fallbackFocus?: () => HTMLElement | null | undefined;
 }
 
 export function ConfirmationDialog({
@@ -31,55 +32,47 @@ export function ConfirmationDialog({
   onConfirm,
   title,
   description,
-  confirmLabel = "Confirm",
+  confirmLabel,
+  busyLabel,
   cancelLabel = "Cancel",
-  variant = "default",
-  icon,
+  variant = "destructive",
   isPending = false,
+  fallbackFocus,
 }: ConfirmationDialogProps) {
+  const shownTitle = useLastShown(title, open);
+  const shownDescription = useLastShown(description, open);
+  const shownConfirmLabel = useLastShown(confirmLabel, open);
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog
+      open={open}
+      onOpenChange={(next) => !isPending && onOpenChange(next)}
+    >
+      <DialogContent
+        alert
+        showClose={false}
+        fallbackFocus={fallbackFocus}
+        onEscapeKeyDown={(e) => isPending && e.preventDefault()}
+      >
         <DialogHeader>
-          <DialogTitle
-            className={
-              icon || (typeof title !== "string" && title)
-                ? "flex items-center gap-3"
-                : ""
-            }
-          >
-            {icon}
-            {title}
-          </DialogTitle>
-          <DialogDescription
-            className={
-              icon || (typeof title !== "string" && title) ? "pt-2" : ""
-            }
-          >
-            {description}
+          <DialogTitle className="pr-0">{shownTitle}</DialogTitle>
+          <DialogDescription asChild>
+            <div>{shownDescription}</div>
           </DialogDescription>
         </DialogHeader>
-        <DialogFooter className="gap-2 sm:gap-1">
+        <DialogFooter>
           <Button
-            variant="ghost"
+            variant="quiet"
             onClick={() => onOpenChange(false)}
             disabled={isPending}
           >
             {cancelLabel}
           </Button>
           <Button
-            variant={variant === "destructive" ? "destructive" : "default"}
+            variant={variant}
             onClick={onConfirm}
-            disabled={isPending}
+            busy={isPending && (busyLabel ?? `${shownConfirmLabel}…`)}
           >
-            {isPending ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Processing...
-              </>
-            ) : (
-              confirmLabel
-            )}
+            {shownConfirmLabel}
           </Button>
         </DialogFooter>
       </DialogContent>
