@@ -1,391 +1,307 @@
 "use client";
 
-import { format } from "date-fns";
-import { BellRing, Paperclip, Pin } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import type { Note } from "@/features/notes";
-import { QuillPreview } from "@/features/notes";
-import { isReminderPast, reminderLabel } from "@/features/notes/reminder";
-import { hasTitle } from "@/features/notes/title";
+import { Check, ImageOff, Paperclip, Users } from "lucide-react";
+import Link from "next/link";
+import * as React from "react";
+import { Avatar } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tip } from "@/components/ui/tooltip";
+import { MoreChip, TagChip } from "@/features/tags/components/tag-chip";
+import type { TagLabel } from "@/features/tags/types";
+import { useHighlightPaint } from "@/lib/highlight-paint";
+import { useNearScreen } from "@/lib/hooks/use-near-screen";
+import { rememberCard } from "@/lib/morph";
 import { cn } from "@/lib/utils";
-import { NoteBackground } from "./backgrounds";
-import { ListImageThumbnail, NoteCardImages } from "./note-card-images";
-import { SharedByMeIndicator } from "./shared-by-me-indicator";
-import { SharedNoteIndicator } from "./shared-note-indicator";
+import { useAttachmentBlob } from "../hooks/use-attachment-blob";
+import { deltaToBlocks, type NoteBlock } from "../note-blocks";
+import { hasTitle } from "../title";
+import type { Note } from "../types";
+import { NoteBody } from "./note-body";
+import { ReminderChip } from "./reminder-chip";
 
-type ViewMode = "masonry" | "grid" | "list";
+export type CardLayout = "masonry" | "grid" | "list";
 
 interface NoteCardProps {
   note: Note;
-  index?: number;
-  viewMode?: ViewMode;
-  isSelectionMode?: boolean;
-  isSelected?: boolean;
-  onSelectChange?: (noteId: string, ctrlOrCmd: boolean, shift: boolean) => void;
-  footerLeft?: React.ReactNode;
-  footerRight?: React.ReactNode;
-  onClick?: (e: React.MouseEvent) => void;
+  tagMap: Map<string, TagLabel>;
+  layout?: CardLayout;
+  picking?: boolean;
+  picked?: boolean;
+  onPick?: (noteId: string, range: boolean) => void;
+  onShare?: (note: Note) => void;
+  renderActions?: (note: Note) => React.ReactNode;
+  dateLabel?: string;
 }
 
-export function NoteCard({
+const ROW_LIMIT: Record<CardLayout, number> = { list: 2, grid: 4, masonry: 6 };
+
+const dayFormat = new Intl.DateTimeFormat(undefined, {
+  month: "short",
+  day: "numeric",
+});
+const dayAndYearFormat = new Intl.DateTimeFormat(undefined, {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+});
+
+/** “Today”, “Yesterday”, “Sep 22”, or “Sep 22, 2025” in another year. */
+export function formatCardDate(iso: string, now = new Date()): string {
+  const date = new Date(iso);
+  const startOfDay = (d: Date) =>
+    new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const daysAgo = Math.round((startOfDay(now) - startOfDay(date)) / 86400000);
+  if (daysAgo === 0) return "Today";
+  if (daysAgo === 1) return "Yesterday";
+  return (
+    date.getFullYear() === now.getFullYear() ? dayFormat : dayAndYearFormat
+  ).format(date);
+}
+
+const blocksByNote = new WeakMap<Note, NoteBlock[]>();
+
+function cardBlocks(note: Note) {
+  let blocks = blocksByNote.get(note);
+  if (!blocks) {
+    blocks = deltaToBlocks(note.content);
+    blocksByNote.set(note, blocks);
+  }
+  return blocks;
+}
+
+export const NoteCard = React.memo(function NoteCard({
   note,
-  index = 0,
-  viewMode = "masonry",
-  isSelectionMode = false,
-  isSelected = false,
-  onSelectChange,
-  footerLeft,
-  footerRight,
-  onClick: onClickProp,
+  tagMap,
+  layout = "masonry",
+  picking,
+  picked,
+  onPick,
+  onShare,
+  renderActions,
+  dateLabel,
 }: NoteCardProps) {
-  const router = useRouter();
+  const blocks = cardBlocks(note);
+  const hasHighlights = blocks.some((block) =>
+    block.runs.some((run) => run.highlight),
+  );
+  const cardRef = React.useRef<HTMLElement>(null);
+  const bodyRef = React.useRef<HTMLDivElement>(null);
+  useHighlightPaint(
+    cardRef,
+    bodyRef,
+    [note.content, layout, note.background],
+    hasHighlights,
+  );
+  const title = hasTitle(note.title) ? note.title : "";
+  const label = title || "Untitled";
+  const isList = layout === "list";
+  const pictureIds = note.imagePreviewIds ?? [];
+  const attachmentCount = note.attachmentCount ?? 0;
+  const loadPictures = useNearScreen(cardRef, pictureIds.length > 0);
+  const tags = (note.tagIds ?? []).flatMap((id) => tagMap.get(id) ?? []);
+  const actions = renderActions?.(note);
 
-  // Handle note click - store note in sessionStorage and navigate
-  const handleNoteClick = (e: React.MouseEvent) => {
-    const ctrlOrCmd = e.ctrlKey || e.metaKey;
-    const shift = e.shiftKey;
+  const tagRow = tags.length > 0 && (
+    <div className="nc-tags">
+      {tags.slice(0, 3).map((t) => (
+        <TagChip key={t.id} name={t.name} color={t.color} size="sm" />
+      ))}
+      {tags.length > 3 && <MoreChip count={tags.length - 3} />}
+    </div>
+  );
 
-    // If in selection mode or using keyboard modifiers, handle selection
-    if (isSelectionMode || ctrlOrCmd || shift) {
-      e.preventDefault();
-      e.stopPropagation();
-      // Prevent text selection
-      if (window.getSelection) {
-        window.getSelection()?.removeAllRanges();
-      }
-      onSelectChange?.(note.id, ctrlOrCmd, shift);
-      return;
-    }
+  const shareCount =
+    note.permission === "owner" ? (note.shareIds?.length ?? 0) : 0;
+  const sharedWithLabel = `Shared with ${shareCount} ${shareCount === 1 ? "person" : "people"}`;
+  const footer = (
+    <div className="nc-foot">
+      {note.reminder && (
+        <ReminderChip noteId={note.id} reminder={note.reminder} size="sm" />
+      )}
+      {note.sharedBy && (
+        <Tip label={`Shared by ${note.sharedBy.name.split(" ")[0]}`}>
+          <span className="relative z-5">
+            <Avatar
+              id={note.sharedBy.id}
+              name={note.sharedBy.name}
+              src={note.sharedBy.profileImage}
+              size="xs"
+              ring
+            />
+          </span>
+        </Tip>
+      )}
+      {shareCount > 0 &&
+        (onShare ? (
+          <Tip label={sharedWithLabel}>
+            <button
+              type="button"
+              className="nc-count relative z-5 -mx-1 min-h-6 min-w-6 cursor-pointer justify-center rounded-xs bg-transparent px-1 py-0 text-inherit hover:text-foreground"
+              aria-label={`${sharedWithLabel}. Open Share`}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onShare(note);
+              }}
+            >
+              <Users aria-hidden />
+              {shareCount}
+            </button>
+          </Tip>
+        ) : (
+          <span className="nc-count" title={sharedWithLabel}>
+            <Users aria-hidden />
+            {shareCount}
+          </span>
+        ))}
+      {attachmentCount > 0 && !pictureIds.length && (
+        <span
+          className="nc-count"
+          title={`${attachmentCount} ${attachmentCount === 1 ? "attachment" : "attachments"}`}
+        >
+          <Paperclip aria-hidden />
+          {attachmentCount}
+        </span>
+      )}
+      <span className={cn("nc-date", dateLabel && "nc-status")}>
+        {dateLabel ?? formatCardDate(note.updatedAt)}
+      </span>
+    </div>
+  );
 
-    e.preventDefault();
-    // Store note in sessionStorage for the editor page to use
-    sessionStorage.setItem(`note-${note.id}`, JSON.stringify(note));
-    router.push(`/notes/${note.id}`);
-  };
+  const shownPictures =
+    !isList && pictureIds.length
+      ? pictureIds.slice(0, layout === "grid" ? 1 : 4)
+      : [];
+  const hiddenCount = attachmentCount - shownPictures.length;
 
-  // Handle checkbox change
-  const handleCheckboxChange = (_checked: boolean) => {
-    // Checkbox click is treated as a simple toggle (no modifiers, but in selection mode)
-    onSelectChange?.(note.id, false, false);
-  };
-
-  const previewMaxLines = viewMode === "list" ? 2 : viewMode === "grid" ? 4 : 6;
-  const hasImages = !!note.imagePreviewIds?.length;
-
-  // Calculate stagger delay (max 500ms for first 10 items)
-  const staggerDelay = Math.min(index * 50, 500);
-
-  const effectiveOnClick = onClickProp ?? handleNoteClick;
-
-  // List view layout
-  if (viewMode === "list") {
-    return (
-      <div
-        onClick={effectiveOnClick}
-        onMouseDown={(e) => {
-          // Prevent text selection when using modifier keys
-          if (e.ctrlKey || e.metaKey || e.shiftKey) {
+  return (
+    <article
+      ref={cardRef}
+      data-note={note.background ?? ""}
+      data-flip={note.id}
+      aria-label={label}
+      className={cn("nc", picked && "picked")}
+    >
+      <Link
+        href={`/notes/${note.id}`}
+        aria-label={label}
+        className="nc-link absolute inset-0 z-1 rounded-[inherit] outline-none"
+        onClick={(e) => {
+          if (picking || e.metaKey || e.ctrlKey || e.shiftKey) {
             e.preventDefault();
+            window.getSelection()?.removeAllRanges();
+            onPick?.(note.id, e.shiftKey);
+            return;
+          }
+          sessionStorage.setItem(`note-${note.id}`, JSON.stringify(note));
+          if (cardRef.current) rememberCard(note.id, cardRef.current);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === " " && onPick) {
+            e.preventDefault();
+            onPick(note.id, e.shiftKey);
           }
         }}
-        className="block cursor-pointer select-none"
-      >
-        <Card
-          className={cn(
-            "group relative overflow-hidden cursor-pointer",
-            "border border-border/40",
-            "shadow-sm hover:shadow-md",
-            "transition-all duration-200 ease-out",
-            "hover:border-border",
-            "animate-in fade-in-0 slide-in-from-left-4",
-            isSelected && "ring-1 ring-primary/50 ring-offset-1",
-          )}
-          style={{
-            animationDelay: `${staggerDelay}ms`,
-            animationFillMode: "backwards",
+      />
+      {onPick && (
+        <button
+          type="button"
+          className="nc-pick"
+          aria-label={`Select ${label}`}
+          aria-pressed={!!picked}
+          onClick={(e) => {
+            e.stopPropagation();
+            onPick(note.id, e.shiftKey);
           }}
         >
-          <NoteBackground
-            styleId={note.background}
-            className="absolute inset-0"
-          />
-          <div className="relative">
-            <CardContent>
-              <div className="flex items-start gap-3">
-                {/* Checkbox for selection mode */}
-                {isSelectionMode && (
-                  <div
-                    className="shrink-0 mt-0.5"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <Checkbox
-                      checked={isSelected}
-                      onCheckedChange={handleCheckboxChange}
-                      className="h-4 w-4"
-                    />
-                  </div>
-                )}
-
-                {/* Pin indicator */}
-                {note.isPinned && !isSelectionMode && (
-                  <div className="shrink-0 mt-0.5">
-                    <Pin className="h-4 w-4 text-accent fill-accent" />
-                  </div>
-                )}
-
-                <div className="flex-1 min-w-0">
-                  {/* Title */}
-                  {hasTitle(note.title) && (
-                    <h3 className="font-semibold text-base leading-tight mb-1.5 line-clamp-1 group-hover:text-accent transition-colors duration-200">
-                      {note.title}
-                    </h3>
-                  )}
-
-                  {/* Content Preview */}
-                  <QuillPreview
-                    content={note.content}
-                    maxLines={previewMaxLines}
-                    className="mb-2"
-                  />
-
-                  {/* Tags, Shared Indicator, and Date */}
-                  <div className="flex items-center gap-3 flex-wrap">
-                    {note.tags && note.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5">
-                        {note.tags.slice(0, 3).map((tag) => (
-                          <Badge
-                            key={tag.id}
-                            variant="secondary"
-                            className="text-xs px-2 py-0.5 rounded-full font-medium"
-                            style={{
-                              backgroundColor: tag.color
-                                ? `${tag.color}20`
-                                : undefined,
-                              color: tag.color || undefined,
-                            }}
-                          >
-                            {tag.name}
-                          </Badge>
-                        ))}
-                        {note.tags.length > 3 && (
-                          <Badge
-                            variant="secondary"
-                            className="text-xs px-2 py-0.5 rounded-full"
-                          >
-                            +{note.tags.length - 3}
-                          </Badge>
-                        )}
-                      </div>
-                    )}
-                    {footerLeft ?? (
-                      <>
-                        <SharedNoteIndicator note={note} />
-                        <SharedByMeIndicator note={note} />
-                        {/* Only show paperclip count if no image previews */}
-                        {(note.attachmentCount ?? 0) > 0 &&
-                          (!note.imagePreviewIds ||
-                            note.imagePreviewIds.length === 0) && (
-                            <div className="flex items-center gap-1 text-muted-foreground">
-                              <Paperclip className="h-3 w-3" />
-                              <span>{note.attachmentCount}</span>
-                            </div>
-                          )}
-                        {note.reminder && (
-                          <span
-                            className={cn(
-                              "flex items-center gap-1",
-                              isReminderPast(note.reminder)
-                                ? "text-destructive"
-                                : "text-muted-foreground",
-                            )}
-                          >
-                            <BellRing className="h-3 w-3" />
-                            <span>{reminderLabel(note.reminder)}</span>
-                          </span>
-                        )}
-                        <span className="text-xs text-muted-foreground font-medium">
-                          {format(new Date(note.updatedAt), "MMM d, yyyy")}
-                        </span>
-                      </>
-                    )}
-                    {footerRight}
-                  </div>
-                </div>
-
-                {/* Image thumbnail for list view */}
-                {note.imagePreviewIds && note.imagePreviewIds.length > 0 && (
-                  <ListImageThumbnail
-                    noteId={note.id}
-                    attachmentId={note.imagePreviewIds[0]}
-                    count={note.attachmentCount ?? 0}
-                  />
-                )}
-              </div>
-            </CardContent>
-          </div>
-        </Card>
-      </div>
-    );
-  }
-
-  // Grid and Masonry view (similar layout, different sizing)
-  return (
-    <div
-      onClick={effectiveOnClick}
-      onMouseDown={(e) => {
-        // Prevent text selection when using modifier keys
-        if (e.ctrlKey || e.metaKey || e.shiftKey) {
-          e.preventDefault();
-        }
-      }}
-      className="block cursor-pointer select-none"
-    >
-      <Card
-        className={cn(
-          "group relative overflow-hidden cursor-pointer",
-          "border border-border/40",
-          "shadow-sm hover:shadow-xl",
-          "transition-all duration-300 ease-out",
-          "hover:border-border hover:-translate-y-1",
-          "animate-in fade-in-0 slide-in-from-bottom-4",
-          viewMode === "grid" && "h-full",
-          isSelected && "ring-1 ring-primary/50 ring-offset-1",
-        )}
-        style={{
-          animationDelay: `${staggerDelay}ms`,
-          animationFillMode: "backwards",
-        }}
-      >
-        <NoteBackground
-          styleId={note.background}
-          className="absolute inset-0"
-        />
-        <div className="relative">
-          <CardContent
-            className={cn(viewMode === "grid" && "flex flex-col h-full")}
-          >
-            {/* Checkbox for selection mode */}
-            {isSelectionMode && (
-              <div
-                className="absolute top-3 right-3 z-10"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Checkbox
-                  checked={isSelected}
-                  onCheckedChange={handleCheckboxChange}
-                  className="h-4 w-4 bg-background/90 backdrop-blur-sm shadow-sm"
-                />
-              </div>
-            )}
-
-            {/* Pin indicator */}
-            {note.isPinned && !isSelectionMode && (
-              <div className="absolute top-3 right-3 z-10">
-                <div className="w-7 h-7 rounded-full bg-accent/10 backdrop-blur-sm flex items-center justify-center border border-accent/20">
-                  <Pin className="h-3.5 w-3.5 text-accent fill-accent" />
-                </div>
-              </div>
-            )}
-
-            {/* Image previews */}
-            {note.imagePreviewIds && note.imagePreviewIds.length > 0 && (
-              <NoteCardImages
+          <Check aria-hidden />
+        </button>
+      )}
+      {shownPictures.length > 0 && (
+        <div className={cn("nc-pics", `n${shownPictures.length}`)}>
+          {shownPictures.map((id, i) => (
+            <div key={id} className="ph">
+              <CardPicture
                 noteId={note.id}
-                imageIds={note.imagePreviewIds}
-                totalAttachments={note.attachmentCount ?? 0}
+                attachmentId={id}
+                isWanted={loadPictures}
               />
-            )}
-
-            {/* Title */}
-            {hasTitle(note.title) && (
-              <h3
-                className={cn(
-                  "font-bold leading-tight mb-2 pr-8 line-clamp-2 group-hover:text-accent transition-colors duration-200",
-                  viewMode === "grid" ? "text-base" : "text-lg",
-                )}
-              >
-                {note.title}
-              </h3>
-            )}
-
-            {/* Content Preview */}
-            <QuillPreview
-              content={note.content}
-              maxLines={previewMaxLines}
-              className={cn(
-                "mb-3",
-                viewMode === "grid" && "flex-1 min-h-0",
-                !hasTitle(note.title) && !hasImages && "pr-8",
+              {i === shownPictures.length - 1 && hiddenCount > 0 && (
+                <span className="more">+{hiddenCount}</span>
               )}
-            />
-
-            {/* Tags */}
-            {note.tags && note.tags.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mb-3">
-                {note.tags.slice(0, 3).map((tag) => (
-                  <Badge
-                    key={tag.id}
-                    variant="secondary"
-                    className="text-xs px-2 py-0.5 rounded-full font-medium"
-                    style={{
-                      backgroundColor: tag.color ? `${tag.color}20` : undefined,
-                      color: tag.color || undefined,
-                    }}
-                  >
-                    {tag.name}
-                  </Badge>
-                ))}
-                {note.tags.length > 3 && (
-                  <Badge
-                    variant="secondary"
-                    className="text-xs px-2 py-0.5 rounded-full"
-                  >
-                    +{note.tags.length - 3}
-                  </Badge>
-                )}
-              </div>
-            )}
-
-            {/* Footer */}
-            <div className="flex items-center justify-between text-xs text-muted-foreground mt-auto">
-              <div className="flex items-center gap-2 flex-wrap">
-                {footerLeft ?? (
-                  <>
-                    <SharedNoteIndicator note={note} />
-                    <SharedByMeIndicator note={note} />
-                    {(note.attachmentCount ?? 0) > 0 && (
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <Paperclip className="h-3 w-3" />
-                        <span>{note.attachmentCount}</span>
-                      </div>
-                    )}
-                    {note.reminder && (
-                      <span
-                        className={cn(
-                          "flex items-center gap-1",
-                          isReminderPast(note.reminder)
-                            ? "text-destructive"
-                            : "text-muted-foreground",
-                        )}
-                      >
-                        <BellRing className="h-3 w-3" />
-                        <span>{reminderLabel(note.reminder)}</span>
-                      </span>
-                    )}
-                    <span className="font-medium">
-                      {format(new Date(note.updatedAt), "MMM d, yyyy")}
-                    </span>
-                  </>
-                )}
-              </div>
-              {footerRight}
             </div>
-          </CardContent>
+          ))}
         </div>
-      </Card>
-    </div>
+      )}
+      <div className="nc-in">
+        {title && <div className="nc-title">{title}</div>}
+        <NoteBody
+          ref={bodyRef}
+          blocks={blocks}
+          variant="card"
+          maxRows={ROW_LIMIT[layout]}
+        />
+        {isList ? (
+          <div className="nc-row">
+            {tagRow}
+            {footer}
+          </div>
+        ) : (
+          <>
+            {tagRow}
+            {footer}
+          </>
+        )}
+      </div>
+      {isList && pictureIds.length > 0 && (
+        <div className="nc-thumb">
+          <CardPicture
+            noteId={note.id}
+            attachmentId={pictureIds[0]}
+            isWanted={loadPictures}
+          />
+          {attachmentCount > 1 && (
+            <span className="more">+{attachmentCount - 1}</span>
+          )}
+        </div>
+      )}
+      {actions && <div className="nc-acts">{actions}</div>}
+    </article>
+  );
+});
+
+function CardPicture({
+  noteId,
+  attachmentId,
+  isWanted,
+}: {
+  noteId: string;
+  attachmentId: string;
+  isWanted: boolean;
+}) {
+  const { blobUrl, isLoading, error } = useAttachmentBlob(
+    noteId,
+    attachmentId,
+    isWanted,
+  );
+  const [isArriving] = React.useState(!blobUrl);
+  if (isLoading || (!blobUrl && !isWanted))
+    return <Skeleton shape="block" className="size-full rounded-none" />;
+  if (error || !blobUrl)
+    return (
+      <span
+        className="grid size-full place-items-center text-note-muted"
+        title="Couldn’t load this picture"
+      >
+        <ImageOff aria-hidden className="size-4.5" />
+      </span>
+    );
+  return (
+    <img
+      src={blobUrl}
+      alt=""
+      className={isArriving ? "animate-fade-in" : undefined}
+    />
   );
 }

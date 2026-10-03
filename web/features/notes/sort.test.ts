@@ -86,3 +86,26 @@ describe("compareNotes", () => {
     expect(sort(backwards)).toEqual(["d", "c", "b", "a"]);
   });
 });
+
+describe("compareNotes by title", () => {
+  const titled = (id: string, title: string) =>
+    note(id, "2026-01-01T00:00:00.000Z", title);
+  const notes = [
+    titled("1", "Zebra"),
+    titled("2", ""),
+    titled("3", "apple"),
+    titled("4", "   "),
+  ];
+  const ids = (sortOrder: SortOrder) =>
+    [...notes].sort(compareNotes("title", sortOrder)).map((n) => n.id);
+
+  it("puts untitled notes after the titled ones, A to Z", () => {
+    expect(ids("asc").slice(0, 2)).toEqual(["3", "1"]);
+    expect(ids("asc").slice(2).sort()).toEqual(["2", "4"]);
+  });
+
+  it("puts untitled notes last, Z to A too", () => {
+    expect(ids("desc").slice(0, 2)).toEqual(["1", "3"]);
+    expect(ids("desc").slice(2).sort()).toEqual(["2", "4"]);
+  });
+});

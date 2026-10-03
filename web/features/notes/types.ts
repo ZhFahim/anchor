@@ -1,10 +1,8 @@
-import type { Tag } from "@/features/tags/types";
-
-export type NoteState = "active" | "trashed" | "deleted";
+type NoteState = "active" | "trashed" | "deleted";
 export type NoteSharePermission = "viewer" | "editor";
-export type NotePermission = "owner" | NoteSharePermission;
+type NotePermission = "owner" | NoteSharePermission;
 
-export type AttachmentType = "image" | "audio";
+type AttachmentType = "image" | "audio";
 
 export interface NoteAttachment {
   id: string;
@@ -57,7 +55,6 @@ export interface Note {
   updatedAt: string;
   userId: string;
   tagIds?: string[];
-  tags?: Tag[];
   permission: NotePermission;
   shareIds?: string[];
   sharedBy?: {
@@ -69,6 +66,7 @@ export interface Note {
   attachmentCount?: number;
   imagePreviewIds?: string[];
   reminder?: NoteReminder | null;
+  stateChangedAt?: string;
 }
 
 // "conflict" holds content the server turned down, which never reached the note.
@@ -108,6 +106,7 @@ export interface UserSearchResult {
 }
 
 export interface CreateNoteDto {
+  id?: string;
   title: string;
   content?: string;
   isPinned?: boolean;
@@ -126,6 +125,7 @@ export interface UpdateNoteDto {
   tagIds?: string[];
   reminder?: NoteReminderInput | null;
   baseVersion?: number;
+  replacesOtherEdit?: boolean;
 }
 
 export interface NoteReminderInput {
