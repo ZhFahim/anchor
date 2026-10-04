@@ -1,0 +1,452 @@
+/* Text styles match .doc in note-body.css. */
+
+.anchor-quill {
+  --indent: var(--size-list-indent);
+  --box: var(--size-checkbox);
+  position: relative;
+}
+.anchor-quill .quill {
+  display: flex;
+  flex-direction: column;
+  min-height: inherit;
+}
+.anchor-quill[data-building] .quill {
+  display: none;
+}
+.anchor-quill .ql-container.ql-snow {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  border: 0;
+  background: transparent;
+  font-family: var(--font-sans);
+}
+.anchor-quill .ql-editor {
+  flex: 1;
+  padding: --spacing(1) 0 0;
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: 1.7;
+  color: var(--foreground);
+  overflow-y: visible;
+  counter-reset: none;
+}
+.anchor-quill .slash-hint {
+  position: absolute;
+  margin-left: 3px;
+  color: var(--note-muted);
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+}
+.anchor-quill .ql-editor.ql-blank::before {
+  left: 0;
+  right: 0;
+  top: --spacing(1);
+  color: var(--note-muted);
+  opacity: 1;
+  font-style: normal;
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+}
+
+/* Text */
+.anchor-quill .ql-editor p {
+  margin: 0 0 0.6em;
+}
+.anchor-quill .ql-editor > :first-child {
+  margin-top: 0;
+}
+.anchor-quill .ql-editor h1 {
+  margin: 1.45em 0 0.45em;
+  font-size: var(--heading-h1);
+  font-weight: var(--heading-h1--font-weight);
+  letter-spacing: var(--heading-h1--letter-spacing);
+  line-height: var(--heading-h1--line-height);
+  color: var(--foreground);
+}
+.anchor-quill .ql-editor h2 {
+  margin: 1.3em 0 0.35em;
+  font-size: var(--heading-h2);
+  font-weight: var(--heading-h2--font-weight);
+  letter-spacing: var(--heading-h2--letter-spacing);
+  line-height: var(--heading-h2--line-height);
+  color: var(--foreground);
+}
+.anchor-quill .ql-editor h3 {
+  margin: 1.15em 0 0.2em;
+  font-size: var(--heading-h3);
+  font-weight: var(--heading-h3--font-weight);
+  letter-spacing: var(--heading-h3--letter-spacing);
+  line-height: var(--heading-h3--line-height);
+  color: var(--note-muted);
+}
+.anchor-quill .ql-editor strong {
+  font-weight: var(--font-weight-bold);
+}
+.anchor-quill .ql-editor u {
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.anchor-quill .ql-editor s {
+  color: var(--note-muted);
+  text-decoration-thickness: 1.5px;
+}
+.anchor-quill .ql-editor a {
+  color: var(--accent-ink);
+  font-weight: var(--font-weight-medium);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3.5px;
+  text-decoration-color: color-mix(in srgb, var(--accent-ink) 38%, transparent);
+  border-radius: 3px;
+  transition: text-decoration-color var(--duration-hover);
+}
+.anchor-quill .ql-editor a:hover,
+.anchor-quill .ql-editor a.open {
+  text-decoration-color: currentColor;
+}
+
+/* Quotes */
+.anchor-quill .ql-editor blockquote {
+  margin: 0.9em 0 1em;
+  padding: 0.6em 1.1em 0.65em 1.15em;
+  border-left: 3px solid color-mix(in srgb, var(--accent) 75%, transparent);
+  border-radius: 3px var(--radius-xl) var(--radius-xl) 3px;
+  background: color-mix(in srgb, var(--note-surface) 70%, transparent);
+  color: inherit;
+  font-style: normal;
+}
+.anchor-quill .ql-editor blockquote:has(+ blockquote) {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.anchor-quill .ql-editor blockquote + blockquote {
+  margin-top: 0;
+  padding-top: 0;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+/* Code blocks */
+.anchor-quill .ql-editor .ql-code-block-container {
+  position: relative;
+  margin: 0.8em 0 1em;
+  padding: --spacing(3.5) --spacing(4);
+  border-radius: var(--radius-lg);
+  background: var(--note-surface);
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--note-border) 70%, transparent);
+  color: var(--foreground);
+  font-family: var(--font-mono);
+  font-size: var(--text-code);
+  line-height: 1.7;
+  overflow-x: auto;
+  white-space: pre;
+  scrollbar-width: thin;
+}
+.anchor-quill .ql-editor .ql-code-block {
+  white-space: pre;
+}
+@media (hover: none) {
+  .anchor-quill .ql-editor .ql-code-block-container {
+    padding-top: --spacing(10);
+  }
+}
+
+/* Lists. Nesting must stay a margin: the drag handle aligns to the li box. */
+.anchor-quill .ql-editor ol {
+  margin: 0.15em 0 0.75em;
+  padding: 0;
+}
+.anchor-quill .ql-editor li {
+  --lvl: 0;
+  --lead: --spacing(7);
+  position: relative;
+  margin-left: calc(var(--lvl) * var(--indent));
+  padding: 0.1em 0 0.1em var(--lead);
+  list-style: none;
+}
+/* snow.css indents with padding; ours is the margin above. */
+.anchor-quill .ql-editor li[class*="ql-indent-"]:not(.ql-direction-rtl) {
+  padding-left: var(--lead);
+}
+.anchor-quill .ql-editor li.ql-indent-1 {
+  --lvl: 1;
+}
+.anchor-quill .ql-editor li.ql-indent-2 {
+  --lvl: 2;
+}
+.anchor-quill .ql-editor li.ql-indent-3 {
+  --lvl: 3;
+}
+.anchor-quill .ql-editor li[class*="ql-indent-"]::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--lvl) * var(--indent) * -1);
+  width: calc(var(--lvl) * var(--indent));
+  background:
+    repeating-linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--note-border) 85%, transparent) 0 1px,
+      transparent 1px var(--indent)
+    )
+    11px 0 / 100% 100% no-repeat;
+  pointer-events: none;
+}
+.anchor-quill .ql-editor li > .ql-ui {
+  position: absolute;
+  top: 0.1em;
+  left: 0;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 1.7em;
+  margin: 0;
+  color: var(--note-muted);
+}
+.anchor-quill .ql-editor li > .ql-ui::before {
+  margin: 0;
+  width: auto;
+  text-align: inherit;
+}
+
+/* Bullets */
+.anchor-quill .ql-editor li[data-list="bullet"] > .ql-ui::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.anchor-quill .ql-editor li[data-list="bullet"].ql-indent-1 > .ql-ui::before {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px currentColor;
+}
+.anchor-quill .ql-editor li[data-list="bullet"].ql-indent-2 > .ql-ui::before {
+  width: 7px;
+  height: 2px;
+  border-radius: 1px;
+}
+
+/* Numbers */
+.anchor-quill .ql-editor li[data-list="ordered"] > .ql-ui {
+  left: auto;
+  right: calc(100% - 22px);
+  width: max-content;
+  min-width: 22px;
+  place-items: center end;
+  padding-right: 3px;
+  font-size: 0.9em;
+  /* The same box as the text line, in this smaller font's units. */
+  top: calc(0.1em / 0.9);
+  height: calc(1.7em / 0.9);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Checklists */
+.anchor-quill .ql-editor li[data-list="checked"],
+.anchor-quill .ql-editor li[data-list="unchecked"] {
+  --lead: --spacing(8);
+}
+.anchor-quill .ql-editor li[data-list="checked"] > .ql-ui,
+.anchor-quill .ql-editor li[data-list="unchecked"] > .ql-ui {
+  top: calc(0.1em + 0.85em - var(--box) / 2);
+  left: 2px;
+  width: var(--box);
+  height: var(--box);
+  box-sizing: border-box;
+  border: 1.5px solid var(--note-muted);
+  border-radius: var(--radius-checkbox);
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-hover),
+    border-color var(--duration-hover),
+    transform var(--duration-press);
+}
+.anchor-quill .ql-editor li[data-list="checked"] > .ql-ui::before,
+.anchor-quill .ql-editor li[data-list="unchecked"] > .ql-ui::before {
+  content: none;
+}
+.anchor-quill .ql-editor li[data-list="unchecked"] > .ql-ui:hover {
+  border-color: var(--accent-strong);
+}
+.anchor-quill .ql-editor li[data-list] > .ql-ui:active {
+  transform: scale(0.9);
+}
+.anchor-quill .ql-editor li[data-list="checked"] > .ql-ui {
+  border-color: var(--accent-strong);
+  background: var(--accent-strong);
+}
+.anchor-quill .ql-editor li[data-list="checked"] > .ql-ui::after {
+  content: "";
+  width: calc(var(--box) / 2);
+  height: calc(var(--box) / 3.6);
+  margin-top: -2px;
+  border: solid var(--check-mark, var(--note));
+  border-width: 0 0 2px 2px;
+  transform: rotate(-45deg);
+}
+.anchor-quill .ql-editor li[data-list="checked"].ticked > .ql-ui::after {
+  animation: tick var(--duration-tick) var(--ease-pop);
+}
+/* A sort can rewrite a row into another line. */
+.anchor-quill.sorting .ql-editor li > .ql-ui {
+  transition: none;
+}
+.anchor-quill .ql-editor li[data-list="checked"] {
+  color: var(--note-muted);
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+  text-decoration-color: color-mix(in srgb, var(--note-muted) 55%, transparent);
+}
+
+/* Read-only */
+.anchor-quill.read-only .ql-editor li[data-list] > .ql-ui {
+  cursor: default;
+}
+.anchor-quill.read-only .ql-editor li[data-list="unchecked"] > .ql-ui:hover {
+  border-color: var(--note-muted);
+}
+.anchor-quill.read-only .ql-editor li[data-list] > .ql-ui:active {
+  transform: none;
+}
+
+/* Checklist drag */
+.anchor-checklist-handle {
+  position: absolute;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--note-muted);
+  cursor: grab;
+  touch-action: none;
+  animation: fade-in var(--duration-hover) var(--ease-standard);
+  transition:
+    top var(--duration-press) var(--ease-standard),
+    left var(--duration-press) var(--ease-standard);
+}
+.anchor-checklist-handle:hover {
+  background: color-mix(in srgb, var(--foreground) 7%, transparent);
+}
+.anchor-checklist-handle:active {
+  cursor: grabbing;
+}
+@media (hover: none) {
+  .anchor-checklist-handle {
+    display: none;
+  }
+}
+.anchor-quill .ql-editor li.anchor-checklist-dragging {
+  opacity: 0.35;
+}
+.anchor-checklist-drag-indicator {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--accent-strong);
+  pointer-events: none;
+  transition:
+    top var(--duration-press) var(--ease-standard),
+    left var(--duration-press) var(--ease-standard);
+}
+.anchor-checklist-drag-indicator::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: -3px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-strong);
+  transform: translateY(-50%);
+}
+.anchor-checklist-ghost {
+  position: absolute;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: --spacing(1.5);
+  max-width: 300px;
+  padding: 5px --spacing(2.5);
+  border-radius: 9px;
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: var(--sh-floating);
+  font-size: var(--text-small);
+  font-weight: var(--font-weight-medium);
+  pointer-events: none;
+}
+.anchor-checklist-ghost-box {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  box-sizing: border-box;
+  border: 1.5px solid var(--muted-foreground);
+  border-radius: 4.5px;
+}
+.anchor-checklist-ghost-box[data-checked="true"] {
+  border-color: var(--accent-strong);
+  background: var(--accent-strong);
+}
+.anchor-checklist-ghost-text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.anchor-checklist-ghost-text[data-checked="true"] {
+  color: var(--muted-foreground);
+  text-decoration: line-through;
+}
+.anchor-checklist-ghost-count {
+  flex: none;
+  color: var(--muted-foreground);
+}
+
+.lb {
+  max-width: 100%;
+}
+.lb > button {
+  flex: none;
+}
+
+.tb .b[aria-disabled="true"],
+.tb .b[aria-disabled="true"]:hover {
+  background: transparent;
+  color: var(--note-muted);
+  box-shadow: none;
+  cursor: default;
+}
+.tb .b[aria-disabled="true"] > * {
+  opacity: 0.4;
+}
+.hl-bubble .fb[aria-disabled="true"],
+.hl-bubble .fb[aria-disabled="true"]:hover {
+  background: transparent;
+  color: var(--note-muted);
+  cursor: default;
+}
+.hl-bubble .fb[aria-disabled="true"] > * {
+  opacity: 0.35;
+}
+
+@media (width < 768px) {
+  .anchor-quill {
+    --indent: 22px;
+  }
+}

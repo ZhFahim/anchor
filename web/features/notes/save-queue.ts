@@ -38,6 +38,10 @@ export interface NoteSaveQueueHandlers {
 
 export interface NoteSaveQueue {
   push: (draft: NoteDraft) => void;
+  retryNow: () => void;
+  sendingDraft: () => NoteDraft | null;
+  /** The newest draft not yet saved: waiting, retrying or on its way. */
+  newestDraft: () => NoteDraft | null;
   setBaseVersion: (version: number | undefined) => void;
   settled: () => Promise<void>;
 }
@@ -52,7 +56,7 @@ export function noteToDraft(note: Note): NoteDraft {
     content: note.content || "",
     isPinned: note.isPinned,
     background: note.background || null,
-    tagIds: note.tagIds || note.tags?.map((tag) => tag.id) || [],
+    tagIds: note.tagIds || [],
     reminder: note.reminder ?? null,
   };
 }
@@ -176,6 +180,7 @@ export function createNoteSaveQueue(
 ): NoteSaveQueue {
   let baseVersion: number | undefined;
   let pending: NoteDraft | null = null;
+  let sending: NoteDraft | null = null;
   let inFlight: Promise<void> | null = null;
   let conflicts = 0;
   let failures = 0;
@@ -209,6 +214,7 @@ export function createNoteSaveQueue(
 
     const draft = pending;
     pending = null;
+    sending = draft;
     setBusy(true);
 
     inFlight = handlers
@@ -218,6 +224,7 @@ export function createNoteSaveQueue(
           conflicts = 0;
           failures = 0;
           baseVersion = outcome.note.version;
+          if (pending && noteDraftsEqual(pending, draft)) pending = null;
           handlers.onSaved(draft, outcome.note);
           return;
         }
@@ -238,6 +245,7 @@ export function createNoteSaveQueue(
       })
       .finally(() => {
         inFlight = null;
+        sending = null;
         if (retryIn === 0) {
           run();
           return;
@@ -255,8 +263,15 @@ export function createNoteSaveQueue(
 
   return {
     push(draft) {
+      // The same draft again waits out the backoff; a fresh edit goes now.
+      if (retryTimer && pending && noteDraftsEqual(pending, draft)) return;
       pending = draft;
       failures = 0;
+      clearTimeout(retryTimer);
+      retryTimer = undefined;
+      run();
+    },
+    retryNow() {
       clearTimeout(retryTimer);
       retryTimer = undefined;
       run();
@@ -265,6 +280,8 @@ export function createNoteSaveQueue(
       baseVersion = version;
       conflicts = 0;
     },
+    sendingDraft: () => sending,
+    newestDraft: () => pending ?? sending,
     async settled() {
       while (inFlight) {
         await inFlight;

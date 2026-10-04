@@ -648,6 +648,71 @@ describe("createNoteSaveQueue", () => {
     }
   });
 
+  it("waits out the retry delay when the same draft is pushed again", async () => {
+    vi.useFakeTimers();
+    let attempts = 0;
+    const queue = makeQueue({
+      retryDelayMs: 1000,
+      save: () => {
+        attempts += 1;
+        return Promise.resolve(offline);
+      },
+    });
+
+    try {
+      queue.push(makeDraft("a"));
+      await queue.settled();
+      queue.push(makeDraft("a"));
+      queue.push(makeDraft("a"));
+      await vi.advanceTimersByTimeAsync(999);
+      expect(attempts).toBe(1);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(attempts).toBe(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("sends at once on retryNow", async () => {
+    let attempts = 0;
+    const queue = makeQueue({
+      retryDelayMs: 10_000,
+      save: () => {
+        attempts += 1;
+        return Promise.resolve(
+          attempts === 1 ? offline : { status: "saved", note: makeNote(2) },
+        );
+      },
+    });
+
+    queue.push(makeDraft("a"));
+    await queue.settled();
+    queue.retryNow();
+    await queue.settled();
+
+    expect(attempts).toBe(2);
+  });
+
+  it("does not send the same draft twice when it was pushed again mid-save", async () => {
+    const sent: string[] = [];
+    let answer: (outcome: SaveOutcome) => void = () => {};
+    const queue = makeQueue({
+      save: (draft) => {
+        sent.push(draft.title);
+        return new Promise((resolve) => {
+          answer = resolve;
+        });
+      },
+    });
+
+    queue.push(makeDraft("a"));
+    queue.push(makeDraft("a"));
+    answer({ status: "saved", note: makeNote(2) });
+    await queue.settled();
+
+    expect(sent).toEqual(["a"]);
+  });
+
   it("is busy only while a save is running", async () => {
     const gate = deferred<SaveOutcome>();
     const busy: boolean[] = [];

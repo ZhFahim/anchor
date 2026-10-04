@@ -4,319 +4,300 @@ import {
   Archive,
   ArchiveRestore,
   ArrowLeft,
+  Bell,
+  BellRing,
   Check,
-  Eye,
+  CircleAlert,
+  CloudOff,
+  Ellipsis,
   History,
-  Loader2,
+  LoaderCircle,
+  LogOut,
+  Palette,
   Pin,
   PinOff,
-  RotateCcw,
   Trash2,
   UserPlus,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import * as React from "react";
+import { IconButton } from "@/components/ui/button";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { NoteBackgroundPicker, ReminderPicker } from "@/features/notes";
-import type { NoteReminder } from "@/features/notes/types";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Tip } from "@/components/ui/tooltip";
+import { useSyncStatus } from "@/features/sync";
+import { useRovingFocus } from "@/lib/hooks/use-roving-focus";
 import { cn } from "@/lib/utils";
+import { isReminderPast, reminderLabel } from "../../reminder";
+import type { NoteReminder, ReminderRecurrence } from "../../types";
+import { BackgroundPicker } from "../background-picker";
+import { ReminderPopoverContent } from "../reminder-picker";
+
+export type SaveState = "new" | "saving" | "saved" | "offline" | "failed";
 
 interface NoteEditorHeaderProps {
-  isNew: boolean;
-  isReadOnly: boolean;
+  saveState: SaveState;
+  onRetrySave: () => void;
+  onBack: () => void;
+  trashed?: boolean;
+  readOnly?: boolean;
+  canSetReminder: boolean;
+  saved: boolean;
+  isOwner: boolean;
+  canViewHistory: boolean;
   isPinned: boolean;
   isArchived: boolean;
   background: string | null;
   reminder: NoteReminder | null;
-  isSaving: boolean;
-  hasUnsavedChanges: boolean;
-  isSaved: boolean;
-  isOwner?: boolean;
-  permission?: "owner" | "viewer" | "editor";
-  isTrashed?: boolean;
-  hasShares?: boolean;
-  onBack: () => void;
+  sharedWithCount: number;
   onTogglePin: () => void;
-  onBackgroundChange: (background: string | null) => void;
-  onReminderChange: (reminder: NoteReminder | null) => void;
-  onArchiveClick: () => void;
-  onDeleteClick: () => void;
-  onRestoreClick: () => void;
-  onPermanentDeleteClick: () => void;
-  onShareClick?: () => void;
-  onHistoryClick?: () => void;
-  restorePending?: boolean;
-  permanentDeletePending?: boolean;
+  onBackground: (background: string | null) => void;
+  onPreviewBackground: (background: string | null | false) => void;
+  onReminder: (
+    reminder: { remindAt: string; recurrence: ReminderRecurrence } | null,
+  ) => void;
+  onShare: () => void;
+  onHistory: () => void;
+  onArchive: () => void;
+  onUnarchive: () => void;
+  onTrash: () => void;
 }
 
-export function NoteEditorHeader({
-  isNew,
-  isReadOnly,
-  isPinned,
-  isArchived,
-  background,
-  reminder,
-  isSaving,
-  hasUnsavedChanges,
-  isSaved,
-  isOwner = true,
-  permission = "owner",
-  isTrashed = false,
-  hasShares = false,
-  onBack,
-  onTogglePin,
-  onBackgroundChange,
-  onReminderChange,
-  onArchiveClick,
-  onDeleteClick,
-  onRestoreClick,
-  onPermanentDeleteClick,
-  onShareClick,
-  onHistoryClick,
-  restorePending = false,
-  permanentDeletePending = false,
-}: NoteEditorHeaderProps) {
+export function NoteEditorHeader(props: NoteEditorHeaderProps) {
+  const [reminderOpen, setReminderOpen] = React.useState(false);
+  const roving = useRovingFocus<HTMLDivElement>();
+  const [startedUnsaved] = React.useState(!props.saved);
+  const afterSave = startedUnsaved && "after-save";
+  // Runs once the menu has closed and let go of focus.
+  const afterMenu = React.useRef<(() => void) | null>(null);
+  const late = !!props.reminder && isReminderPast(props.reminder);
+  const bellLabel = props.reminder
+    ? `${late ? "Late reminder" : "Reminder"}: ${reminderLabel(props.reminder)}`
+    : "Add a reminder";
+
   return (
-    <TooltipProvider delayDuration={0}>
-      <header
-        className={cn(
-          "sticky top-0 z-40 flex h-16 items-center justify-between",
-          "border-b border-border/30 backdrop-blur-sm px-4 lg:px-6",
-          "bg-background/60 dark:bg-background/40",
-        )}
-      >
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onBack}
-              className="h-9 w-9 rounded-xl"
+    <div
+      ref={roving.ref}
+      className="ed-head"
+      role="toolbar"
+      aria-label="Note"
+      onFocus={roving.onFocus}
+      onKeyDown={roving.onKeyDown}
+    >
+      <div className="ed-head-l">
+        <Tip label="Back">
+          <IconButton label="Back" onClick={props.onBack}>
+            <ArrowLeft />
+          </IconButton>
+        </Tip>
+        <SaveStatus state={props.saveState} onRetry={props.onRetrySave} />
+      </div>
+      {props.trashed && props.canViewHistory && (
+        <div className="ed-head-r">
+          <Tip label="Version history">
+            <IconButton label="Version history" onClick={props.onHistory}>
+              <History />
+            </IconButton>
+          </Tip>
+        </div>
+      )}
+      {!props.trashed && (
+        <div className="ed-head-r">
+          {!props.readOnly && (
+            <Popover
+              onOpenChange={(open) => !open && props.onPreviewBackground(false)}
             >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">Back to notes</TooltipContent>
-        </Tooltip>
-
-        <div className="flex items-center gap-2">
-          {/* Save status indicator (hidden when read-only) */}
-          {!isReadOnly && (
-            <div
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-300",
-                "backdrop-blur-sm",
-                isSaving && "bg-muted/80 text-muted-foreground",
-                hasUnsavedChanges &&
-                  !isSaving &&
-                  "bg-amber-500/20 text-amber-600 dark:text-amber-400",
-                isSaved &&
-                  "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400",
-              )}
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  <span>Saving...</span>
-                </>
-              ) : hasUnsavedChanges ? (
-                <>
-                  <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                  <span>Unsaved</span>
-                </>
-              ) : isSaved ? (
-                <>
-                  <Check className="h-3 w-3" />
-                  <span>Saved</span>
-                </>
-              ) : null}
-            </div>
+              <Tip label="Background">
+                <PopoverTrigger asChild>
+                  <IconButton label="Background">
+                    <Palette />
+                  </IconButton>
+                </PopoverTrigger>
+              </Tip>
+              <PopoverContent align="end" className="p-0">
+                <BackgroundPicker
+                  value={props.background}
+                  onChange={props.onBackground}
+                  onPreview={props.onPreviewBackground}
+                />
+              </PopoverContent>
+            </Popover>
           )}
-
-          {/* Read-only indicator or permission badge */}
-          {(isReadOnly || permission === "viewer") && (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm bg-muted/80 text-muted-foreground">
-              <Eye className="h-3 w-3" />
-              <span>
-                {isReadOnly
-                  ? "Read-only"
-                  : permission === "viewer"
-                    ? "Viewer"
-                    : "Read-only"}
-              </span>
-            </div>
-          )}
-
-          <div className="h-6 w-px bg-border/50 mx-1" />
-
-          {!isReadOnly && (
-            <NoteBackgroundPicker
-              selectedBackground={background}
-              onBackgroundChange={onBackgroundChange}
-            />
-          )}
-
-          {!isTrashed && (
-            <>
-              <ReminderPicker
-                reminder={reminder}
-                onReminderChange={onReminderChange}
-              />
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={onTogglePin}
+          {props.canSetReminder && (
+            <Popover open={reminderOpen} onOpenChange={setReminderOpen}>
+              <Tip label={bellLabel}>
+                <PopoverTrigger asChild>
+                  <IconButton
+                    label={bellLabel}
                     className={cn(
-                      "h-9 w-9 rounded-xl transition-colors",
-                      isPinned && "text-accent bg-accent/10",
+                      props.reminder &&
+                        (late ? "text-late" : "text-accent-strong"),
                     )}
                   >
-                    {isPinned ? (
-                      <Pin className="h-4 w-4 fill-current" />
-                    ) : (
-                      <PinOff className="h-4 w-4" />
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">
-                  {isPinned ? "Unpin note" : "Pin note"}
-                </TooltipContent>
-              </Tooltip>
-            </>
+                    {late ? <BellRing /> : <Bell />}
+                  </IconButton>
+                </PopoverTrigger>
+              </Tip>
+              <ReminderPopoverContent
+                align="end"
+                reminder={props.reminder}
+                onReminder={props.onReminder}
+                onClose={() => setReminderOpen(false)}
+              />
+            </Popover>
           )}
-
-          {!isNew && onHistoryClick && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={onHistoryClick}
-                  className="h-9 w-9 rounded-xl"
-                >
-                  <History className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">Version history</TooltipContent>
-            </Tooltip>
+          {props.saved && (
+            <Tip label={props.isPinned ? "Unpin" : "Pin"}>
+              <IconButton
+                label={props.isPinned ? "Unpin" : "Pin"}
+                aria-pressed={props.isPinned}
+                onClick={props.onTogglePin}
+                className={cn(
+                  "max-md:hidden aria-pressed:[&_svg]:fill-current",
+                  afterSave,
+                )}
+              >
+                <Pin />
+              </IconButton>
+            </Tip>
           )}
-
-          {!isNew && isOwner && !isTrashed && onShareClick && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={onShareClick}
-                  className={cn(
-                    "h-9 w-9 rounded-xl transition-colors",
-                    hasShares && "text-primary bg-primary/10",
+          {props.saved && props.isOwner && (
+            <Tip label={props.sharedWithCount ? "Sharing" : "Share"}>
+              <IconButton
+                label={props.sharedWithCount ? "Sharing" : "Share"}
+                onClick={props.onShare}
+                className={cn("max-md:hidden", afterSave)}
+              >
+                <UserPlus />
+              </IconButton>
+            </Tip>
+          )}
+          {props.saved && (
+            <DropdownMenu>
+              <Tip label="More">
+                <DropdownMenuTrigger asChild>
+                  <IconButton label="More" className={cn(afterSave)}>
+                    <Ellipsis />
+                  </IconButton>
+                </DropdownMenuTrigger>
+              </Tip>
+              <DropdownMenuContent
+                align="end"
+                className="min-w-55"
+                onCloseAutoFocus={(e) => {
+                  const next = afterMenu.current;
+                  if (!next) return;
+                  afterMenu.current = null;
+                  e.preventDefault();
+                  next();
+                }}
+              >
+                <div className="contents md:hidden">
+                  <DropdownMenuItem onSelect={props.onTogglePin}>
+                    {props.isPinned ? <PinOff /> : <Pin />}
+                    {props.isPinned ? "Unpin" : "Pin"}
+                  </DropdownMenuItem>
+                  {props.isOwner && (
+                    <DropdownMenuItem onSelect={props.onShare}>
+                      <UserPlus />
+                      Share
+                    </DropdownMenuItem>
                   )}
-                >
-                  <UserPlus className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">
-                {hasShares ? "Manage shares" : "Share note"}
-              </TooltipContent>
-            </Tooltip>
+                  <DropdownMenuSeparator />
+                </div>
+                {props.canViewHistory && (
+                  <DropdownMenuItem
+                    onSelect={() => {
+                      afterMenu.current = props.onHistory;
+                    }}
+                  >
+                    <History />
+                    Version history
+                  </DropdownMenuItem>
+                )}
+                {props.isArchived ? (
+                  <DropdownMenuItem onSelect={props.onUnarchive}>
+                    <ArchiveRestore />
+                    Unarchive
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem onSelect={props.onArchive}>
+                    <Archive />
+                    Archive
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem tone="danger" onSelect={props.onTrash}>
+                  {props.isOwner ? <Trash2 /> : <LogOut />}
+                  {props.isOwner ? "Move to trash" : "Remove from my notes"}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
-
-          {!isNew &&
-            (isTrashed ? (
-              <>
-                {/* Restore button (only for trashed notes) */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={onRestoreClick}
-                      disabled={restorePending}
-                      className={cn(
-                        "h-9 w-9 rounded-xl transition-colors",
-                        "text-primary bg-primary/10",
-                      )}
-                    >
-                      <RotateCcw className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">Restore note</TooltipContent>
-                </Tooltip>
-
-                {/* Permanent Delete button (only for trashed notes) */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={onPermanentDeleteClick}
-                      disabled={permanentDeletePending}
-                      className="h-9 w-9 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                    >
-                      {permanentDeletePending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    Delete permanently
-                  </TooltipContent>
-                </Tooltip>
-              </>
-            ) : (
-              <>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={onArchiveClick}
-                      className={cn(
-                        "h-9 w-9 rounded-xl transition-colors",
-                        isArchived && "text-primary bg-primary/10",
-                      )}
-                    >
-                      {isArchived ? (
-                        <ArchiveRestore className="h-4 w-4" />
-                      ) : (
-                        <Archive className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    {isArchived ? "Unarchive note" : "Archive note"}
-                  </TooltipContent>
-                </Tooltip>
-
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={onDeleteClick}
-                      className="h-9 w-9 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    {isOwner ? "Move to trash" : "Remove note"}
-                  </TooltipContent>
-                </Tooltip>
-              </>
-            ))}
         </div>
-      </header>
-    </TooltipProvider>
+      )}
+    </div>
+  );
+}
+
+function SaveStatus({
+  state,
+  onRetry,
+}: {
+  state: SaveState;
+  onRetry: () => void;
+}) {
+  const online = useSyncStatus((s) => s.online);
+  if (state === "new") return null;
+  const labelClass = "max-md:sr-only";
+  const waitingHint = online
+    ? "The server isn’t answering. Keep this tab open so your changes can be saved."
+    : "You’re offline. Keep this tab open so your changes can be saved.";
+  return (
+    <span className="save" aria-live="polite">
+      {state === "saved" && (
+        <span data-s>
+          <Check aria-hidden />
+          <span className={labelClass}>Saved</span>
+        </span>
+      )}
+      {state === "saving" && (
+        <span data-s>
+          <LoaderCircle aria-hidden className="animate-spin" />
+          <span className={labelClass}>Saving…</span>
+        </span>
+      )}
+      {state === "offline" && (
+        <Tip label={waitingHint}>
+          <span data-s>
+            <CloudOff aria-hidden />
+            <span className={labelClass}>Waiting to save</span>
+            <span className="sr-only">. {waitingHint}</span>
+          </span>
+        </Tip>
+      )}
+      {state === "failed" && (
+        <span data-s className="font-medium text-late">
+          <CircleAlert aria-hidden />
+          <span className={labelClass}>Couldn’t save</span>
+          <button
+            type="button"
+            onClick={onRetry}
+            className="ml-0.5 cursor-pointer border-0 bg-transparent p-0 font-semibold text-inherit underline decoration-current/35 underline-offset-3 hover:decoration-current"
+          >
+            Try again
+          </button>
+        </span>
+      )}
+    </span>
   );
 }
