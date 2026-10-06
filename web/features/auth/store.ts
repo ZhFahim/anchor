@@ -1,11 +1,11 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { User } from "@/features/auth";
+import type { User } from "./types";
 
 const TOKEN_KEY = "access_token";
 const REFRESH_TOKEN_KEY = "refresh_token";
 
-// Standalone token functions for use by API client (avoids circular deps)
+// Plain functions the API client can import without a circular dependency.
 export function getAccessToken(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem(TOKEN_KEY);
@@ -27,7 +27,6 @@ export function hasAccessToken(): boolean {
   return !!getAccessToken();
 }
 
-// Refresh token functions
 export function getRefreshToken(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem(REFRESH_TOKEN_KEY);
@@ -45,25 +44,27 @@ export function clearRefreshToken(): void {
   }
 }
 
-export function hasRefreshToken(): boolean {
-  return !!getRefreshToken();
-}
-
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   isInitialized: boolean;
+  unreachable: boolean;
+  /** Signed out from the menu, not by a session that ended. */
+  hasSignedOut: boolean;
+  setUnreachable: (unreachable: boolean) => void;
   setAuth: (user: User, accessToken: string, refreshToken: string) => void;
   setUser: (user: User | null) => void;
+  mergeUser: (changes: Partial<User>) => void;
   setInitialized: (initialized: boolean) => void;
-  logout: () => void;
-  reset: () => void;
+  logout: (options?: { hasSignedOut?: boolean }) => void;
 }
 
 const initialState = {
   user: null,
   isAuthenticated: false,
   isInitialized: false,
+  unreachable: false,
+  hasSignedOut: false,
 };
 
 export const useAuthStore = create<AuthState>()(
@@ -84,16 +85,16 @@ export const useAuthStore = create<AuthState>()(
           user,
           isAuthenticated: !!user,
         }),
+      mergeUser: (changes) =>
+        set((state) =>
+          state.user ? { user: { ...state.user, ...changes } } : {},
+        ),
       setInitialized: (isInitialized) => set({ isInitialized }),
-      logout: () => {
+      setUnreachable: (unreachable) => set({ unreachable }),
+      logout: ({ hasSignedOut = false } = {}) => {
         clearAccessToken();
         clearRefreshToken();
-        set({ ...initialState, isInitialized: true });
-      },
-      reset: () => {
-        clearAccessToken();
-        clearRefreshToken();
-        set(initialState);
+        set({ ...initialState, isInitialized: true, hasSignedOut });
       },
     }),
     {

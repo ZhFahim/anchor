@@ -4,6 +4,8 @@ export interface User {
   name: string;
   profileImage?: string;
   isAdmin?: boolean;
+  /** Older servers leave it out. */
+  hasPassword?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -58,3 +60,5 @@ export interface OidcExchangeResponse {
   user: User;
   redirectUrl: string;
 }
+
+export type RegistrationMode = "disabled" | "enabled" | "review";

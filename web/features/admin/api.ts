@@ -19,10 +19,16 @@ export async function getAdminStats(): Promise<AdminStats> {
 export async function getUsers(
   skip = 0,
   take = 50,
+  filter: { q?: string; status?: "active" | "pending" } = {},
 ): Promise<UsersListResponse> {
   return api
     .get("api/admin/users", {
-      searchParams: { skip: skip.toString(), take: take.toString() },
+      searchParams: {
+        skip: skip.toString(),
+        take: take.toString(),
+        ...(filter.q ? { q: filter.q } : {}),
+        ...(filter.status ? { status: filter.status } : {}),
+      },
     })
     .json<UsersListResponse>();
 }

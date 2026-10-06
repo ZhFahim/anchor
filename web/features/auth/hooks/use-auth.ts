@@ -1,11 +1,13 @@
 "use client";
 
-import { useMutation } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
-import { useCallback, useEffect } from "react";
-import { toast } from "sonner";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { HTTPError } from "ky";
+import { useCallback } from "react";
+import { toast } from "@/components/ui/toast";
+import { firstName } from "@/lib/utils";
 import {
   getMe,
+  getRegistrationMode,
   login as loginApi,
   register as registerApi,
   revokeRefreshToken,
@@ -13,103 +15,90 @@ import {
 import { getRefreshToken, hasAccessToken, useAuthStore } from "../store";
 import type { LoginCredentials, RegisterCredentials } from "../types";
 
+async function initialize() {
+  const { isInitialized, setUser, setInitialized, setUnreachable, logout } =
+    useAuthStore.getState();
+  if (isInitialized) return;
+
+  if (!hasAccessToken()) {
+    logout();
+    return;
+  }
+
+  try {
+    const user = await getMe();
+    setUnreachable(false);
+    setUser(user);
+    setInitialized(true);
+  } catch (error) {
+    if (
+      error instanceof HTTPError &&
+      (error.response.status === 401 || error.response.status === 403)
+    )
+      logout();
+    else setUnreachable(true);
+  }
+}
+
 export function useAuth() {
-  const router = useRouter();
   const {
     user,
     isAuthenticated,
     isInitialized,
-    setAuth,
-    setUser,
-    setInitialized,
+    unreachable,
     logout: clearAuth,
   } = useAuthStore();
-
-  // Initialize auth state by validating token with server
-  const initialize = useCallback(async () => {
-    if (!hasAccessToken()) {
-      setInitialized(true);
-      return;
-    }
-
-    try {
-      const user = await getMe();
-      setUser(user);
-      setInitialized(true);
-    } catch {
-      // Token is invalid, clear auth state
-      clearAuth();
-    }
-  }, [setUser, setInitialized, clearAuth]);
-
-  // Listen for unauthorized events from API client
-  useEffect(() => {
-    const handleUnauthorized = () => {
-      clearAuth();
-      router.push("/login");
-    };
-
-    window.addEventListener("auth:unauthorized", handleUnauthorized);
-    return () => {
-      window.removeEventListener("auth:unauthorized", handleUnauthorized);
-    };
-  }, [clearAuth, router]);
-
-  const loginMutation = useMutation({
-    mutationFn: (credentials: LoginCredentials) => loginApi(credentials),
-    onSuccess: (data) => {
-      if (data.access_token && data.refresh_token) {
-        setAuth(data.user, data.access_token, data.refresh_token);
-        toast.success("Welcome back!");
-        router.push("/");
-      }
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to login");
-    },
-  });
-
-  const registerMutation = useMutation({
-    mutationFn: (credentials: RegisterCredentials) => registerApi(credentials),
-    onSuccess: (data) => {
-      if (data.access_token && data.refresh_token) {
-        // User is active, log them in
-        setAuth(data.user, data.access_token, data.refresh_token);
-        toast.success("Account created successfully!");
-        router.push("/");
-      } else {
-        // User is pending approval
-        toast.success(
-          data.message ||
-            "Registration successful. Your account is pending approval.",
-        );
-        router.push("/login");
-      }
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to create account");
-    },
-  });
 
   const logout = useCallback(async () => {
     try {
       await revokeRefreshToken(getRefreshToken());
     } catch {
-      // Ignore - ensure local logout always completes
+      // Sign out locally anyway.
     }
-    clearAuth();
-    router.push("/login");
-  }, [clearAuth, router]);
+    clearAuth({ hasSignedOut: true });
+  }, [clearAuth]);
 
   return {
     user,
     isAuthenticated,
     isInitialized,
+    unreachable,
     initialize,
-    login: loginMutation.mutate,
-    register: registerMutation.mutate,
     logout,
-    isLoginPending: loginMutation.isPending,
-    isRegisterPending: registerMutation.isPending,
   };
+}
+
+export function useRegistrationMode() {
+  return useQuery({
+    queryKey: ["registration-mode"],
+    queryFn: getRegistrationMode,
+    retryOnMount: false,
+  });
+}
+
+export function useLogin() {
+  const setAuth = useAuthStore((state) => state.setAuth);
+  return useMutation({
+    mutationFn: (credentials: LoginCredentials) => loginApi(credentials),
+    onSuccess: (data) => {
+      if (data.access_token && data.refresh_token) {
+        setAuth(data.user, data.access_token, data.refresh_token);
+        toast.success(`Welcome back, ${firstName(data.user.name)}`);
+      }
+    },
+  });
+}
+
+export function useRegister() {
+  const setAuth = useAuthStore((state) => state.setAuth);
+  return useMutation({
+    mutationFn: (credentials: RegisterCredentials) => registerApi(credentials),
+    onSuccess: (data) => {
+      // A pending account gets no tokens.
+      if (data.access_token && data.refresh_token) {
+        setAuth(data.user, data.access_token, data.refresh_token);
+        toast.success(`Welcome to Anchor, ${firstName(data.user.name)}`);
+      }
+    },
+  });
 }

@@ -83,6 +83,60 @@ describe("parseInline", () => {
     ]);
   });
 
+  it("reads ==text== as a yellow highlight", () => {
+    expect(parseInline("buy ==milk== now")).toEqual([
+      { insert: "buy " },
+      { insert: "milk", attributes: { highlight: "yellow" } },
+      { insert: " now" },
+    ]);
+    expect(parseInline("==a **b**==")).toEqual([
+      { insert: "a ", attributes: { highlight: "yellow" } },
+      { insert: "b", attributes: { bold: true, highlight: "yellow" } },
+    ]);
+    expect(parseInline("**==b==**")).toEqual([
+      { insert: "b", attributes: { bold: true, highlight: "yellow" } },
+    ]);
+    expect(parseInline("[==site==](https://example.com)")).toEqual([
+      {
+        insert: "site",
+        attributes: { highlight: "yellow", link: "https://example.com" },
+      },
+    ]);
+  });
+
+  it("reads <mark> with its color, and yellow without a known one", () => {
+    expect(parseInline('<mark data-color="green">a</mark>')).toEqual([
+      { insert: "a", attributes: { highlight: "green" } },
+    ]);
+    expect(parseInline("<MARK data-color='Purple'>*a*</MARK>")).toEqual([
+      { insert: "a", attributes: { italic: true, highlight: "purple" } },
+    ]);
+    expect(parseInline("<mark>a</mark>")).toEqual([
+      { insert: "a", attributes: { highlight: "yellow" } },
+    ]);
+    expect(parseInline('<mark data-color="orange">a</mark>')).toEqual([
+      { insert: "a", attributes: { highlight: "yellow" } },
+    ]);
+  });
+
+  it("leaves == alone when it doesn't wrap text", () => {
+    expect(parseInline("a == b == c")).toEqual([{ insert: "a == b == c" }]);
+    expect(parseInline("==open")).toEqual([{ insert: "==open" }]);
+    expect(parseInline("x \\=\\=y\\=\\=")).toEqual([{ insert: "x ==y==" }]);
+    expect(parseInline("<mark>open")).toEqual([{ insert: "<mark>open" }]);
+  });
+
+  it("keeps == inside inline code and code blocks as text", () => {
+    expect(parseInline("`a ==b==` c")).toEqual([{ insert: "a ==b== c" }]);
+    expect(parseInline("==`a==b`==")).toEqual([
+      { insert: "a==b", attributes: { highlight: "yellow" } },
+    ]);
+    expect(markdownToDelta(lines("```", "==b==", "```")).ops).toEqual([
+      { insert: "==b==" },
+      { insert: "\n", attributes: { "code-block": true } },
+    ]);
+  });
+
   it("keeps inline code as plain text", () => {
     expect(parseInline("run `npm test` now")).toEqual([
       { insert: "run npm test now" },
@@ -94,6 +148,12 @@ describe("parseInline", () => {
     expect(parseInline("2 \\* 3")).toEqual([{ insert: "2 * 3" }]);
     expect(parseInline("a &amp; b &lt;c&gt;")).toEqual([
       { insert: "a & b <c>" },
+    ]);
+    expect(parseInline("https://example.com/?q\\=")).toEqual([
+      {
+        insert: "https://example.com/?q=",
+        attributes: { link: "https://example.com/?q=" },
+      },
     ]);
   });
 

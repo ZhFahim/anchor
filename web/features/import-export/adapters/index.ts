@@ -22,15 +22,10 @@ export async function detectFormat(
 ): Promise<{ adapter: ImportAdapter; zip: ZipArchive } | null> {
   if (!files.length) return null;
 
-  let zip: ZipArchive;
-  try {
-    zip =
-      files.length === 1 && isZip(files[0].file)
-        ? readZip(new Uint8Array(await files[0].file.arrayBuffer()))
-        : await readFiles(files);
-  } catch {
-    return null;
-  }
+  const zip =
+    files.length === 1 && isZip(files[0].file)
+      ? readZip(new Uint8Array(await files[0].file.arrayBuffer()))
+      : await readFiles(files);
 
   for (const adapter of ADAPTERS) {
     if (await adapter.detect(zip)) {

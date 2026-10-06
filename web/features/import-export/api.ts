@@ -1,4 +1,5 @@
 import { stringifyDelta } from "@/features/notes/quill";
+import { toWallClock } from "@/features/notes/reminder";
 import type { NoteAttachment } from "@/features/notes/types";
 import { api } from "@/lib/api/client";
 import type {
@@ -22,12 +23,14 @@ export async function downloadExport(
   const blob = await response.blob();
 
   const disposition = response.headers.get("Content-Disposition") ?? "";
-  const match = disposition.match(/filename="([^"]+)"/);
+  const serverName = disposition.match(/filename="([^"]+)"/)?.[1];
   const fallbackName =
     format === "markdown" ? "anchor-markdown" : "anchor-export";
+  const today = toWallClock(new Date()).slice(0, 10);
+  // The server dates the name in its own time zone.
   const filename =
-    match?.[1] ??
-    `${fallbackName}-${new Date().toISOString().slice(0, 10)}.zip`;
+    serverName?.replace(/\d{4}-\d{2}-\d{2}/, today) ??
+    `${fallbackName}-${today}.zip`;
 
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");

@@ -1,458 +1,466 @@
 "use client";
 
 import {
-  AlertTriangle,
-  CheckCircle2,
   ChevronDown,
+  CircleAlert,
+  CircleCheck,
   FileArchive,
-  FileText,
-  Loader2,
-  type LucideIcon,
-  Paperclip,
-  Tag as TagIcon,
+  Folder,
+  LoaderCircle,
+  RotateCw,
+  TriangleAlert,
   Upload,
 } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
+import * as React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
+import { FieldDescription, FieldError } from "@/components/ui/field";
+import { cn, plural } from "@/lib/utils";
 import type { PickedFile } from "../adapters/zip";
-import type { ImportOptions } from "../hooks/use-import";
-import { useImport } from "../hooks/use-import";
-import { fromDataTransfer, fromFileList } from "../picked-files";
+import { type ImportReport, useImport } from "../hooks/use-import";
+import {
+  fromDataTransfer,
+  fromFileList,
+  MAX_PICKED_FILES,
+} from "../picked-files";
+import type { ImportSkippedItem } from "../types";
 
 interface ImportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
-  const {
-    step,
-    parsed,
-    isDetecting,
-    pickError,
-    runError,
-    progress,
-    report,
-    isRunning,
-    options,
-    setOption,
-    previewTagCount,
-    selectFiles,
-    start,
-    retry,
-    reset,
-  } = useImport();
+/** “takeout.zip”, “Obsidian vault” (a folder), or “12 files”. */
+function pickedName(files: PickedFile[]) {
+  if (files.length === 1) return files[0].file.name;
+  const roots = new Set(files.map((f) => f.path.split("/")[0]));
+  return roots.size === 1 && files[0].path.includes("/")
+    ? [...roots][0]
+    : plural(files.length, "file");
+}
 
-  const handleOpenChange = (next: boolean) => {
-    // Don't allow closing mid-import
-    if (!next && isRunning) return;
-    if (!next) reset();
+export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
+  const importer = useImport();
+  const [name, setName] = React.useState("");
+  const [isFolder, setIsFolder] = React.useState(false);
+  const [isTruncated, setIsTruncated] = React.useState(false);
+
+  const close = (next: boolean) => {
+    if (!next && importer.isRunning) return;
+    if (!next) importer.reset();
     onOpenChange(next);
   };
 
+  const pick = (files: PickedFile[], isDropTruncated = false) => {
+    if (!files.length) return;
+    setName(pickedName(files));
+    setIsFolder(files.length > 1 && files[0].path.includes("/"));
+    setIsTruncated(isDropTruncated);
+    importer.selectFiles(files);
+  };
+
+  const { step, parsed, progress, report } = importer;
+  const stopped = step === "running" && !!importer.runError;
+
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+    <Dialog open={open} onOpenChange={close}>
+      <DialogContent
+        size="md"
+        showClose={!importer.isRunning}
+        onEscapeKeyDown={(e) => importer.isRunning && e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>Import notes</DialogTitle>
           <DialogDescription>
-            Restore an Anchor backup, migrate from Google Keep, or import
-            Markdown files from Obsidian, Nextcloud Notes and the like.
+            Import from an Anchor backup, a Google Keep export, or Markdown
+            files.
           </DialogDescription>
         </DialogHeader>
+        <DialogBody className="gap-3">
+          {step === "pick" && (
+            <DropArea
+              reading={importer.isDetecting}
+              name={name}
+              error={importer.pickError}
+              onFiles={pick}
+            />
+          )}
 
-        {step === "pick" && (
-          <PickStep
-            isDetecting={isDetecting}
-            error={pickError}
-            onFiles={selectFiles}
-          />
-        )}
-        {step === "preview" && parsed && (
-          <PreviewStep
-            parsed={parsed}
-            options={options}
-            tagCount={previewTagCount}
-            onOptionChange={setOption}
-            onConfirm={start}
-            onCancel={() => handleOpenChange(false)}
-          />
-        )}
-        {step === "running" && (
-          <RunningStep progress={progress} error={runError} onRetry={retry} />
-        )}
-        {step === "report" && report && (
-          <ReportStep report={report} onClose={() => handleOpenChange(false)} />
-        )}
+          {step === "preview" && parsed && (
+            <>
+              <div className="flex items-center gap-3 rounded-xl bg-muted px-3.5 py-3 [&>svg]:size-5.5 [&>svg]:text-muted-foreground">
+                {isFolder ? (
+                  <Folder aria-hidden />
+                ) : (
+                  <FileArchive aria-hidden />
+                )}
+                <div className="grid flex-1 leading-[1.35]">
+                  <b className="truncate font-semibold text-ui">{name}</b>
+                  <small className="text-muted-foreground text-small">
+                    {parsed.formatLabel}
+                  </small>
+                </div>
+                <Button variant="quiet" size="sm" onClick={importer.reset}>
+                  Change
+                </Button>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <Stat count={parsed.notes.length} one="note" />
+                <Stat count={importer.previewTagCount} one="tag" />
+                <Stat count={parsed.attachmentCount} one="attachment" />
+              </div>
+              {isTruncated && (
+                <FieldDescription>
+                  {`Only the first ${MAX_PICKED_FILES.toLocaleString("en-US")} files were read.`}
+                </FieldDescription>
+              )}
+              {parsed.skipped.length > 0 && (
+                <Issues
+                  title={`${plural(parsed.skipped.length, "item")} will be skipped`}
+                  items={parsed.skipped}
+                />
+              )}
+              {parsed.formatId === "anchor" && (
+                <CheckRow
+                  checked={importer.options.skipExisting}
+                  onChange={(v) => importer.setOption("skipExisting", v)}
+                  label="Skip notes that already exist"
+                  hint="Otherwise they are imported as copies."
+                />
+              )}
+              {parsed.formatId === "markdown" && parsed.hasFolders && (
+                <CheckRow
+                  checked={importer.options.folderTags}
+                  onChange={(v) => importer.setOption("folderTags", v)}
+                  label="Use folder names as tags"
+                  hint="Nextcloud categories and Obsidian folders become tags."
+                />
+              )}
+            </>
+          )}
+
+          {step === "running" && (
+            <div className="grid gap-2">
+              <div className="flex justify-between font-medium text-control tabular-nums">
+                <span>
+                  {progress?.phase === "attachments"
+                    ? `Uploading attachments ${progress.done} of ${progress.total}`
+                    : `Importing notes ${progress?.done ?? 0} of ${progress?.total ?? parsed?.notes.length ?? 0}`}
+                </span>
+                <span>
+                  {progress?.total
+                    ? Math.round((progress.done / progress.total) * 100)
+                    : 0}
+                  %
+                </span>
+              </div>
+              <div
+                role="progressbar"
+                aria-label="Import"
+                aria-valuemin={0}
+                aria-valuemax={progress?.total ?? 0}
+                aria-valuenow={progress?.done ?? 0}
+                className="h-1.5 overflow-hidden rounded-xs bg-muted"
+              >
+                <div
+                  className={cn(
+                    "h-full rounded-xs bg-accent-strong transition-[width] duration-(--duration-slow) ease-standard",
+                    stopped && "bg-muted-foreground",
+                  )}
+                  style={{
+                    width: `${progress?.total ? (progress.done / progress.total) * 100 : 0}%`,
+                  }}
+                />
+              </div>
+              {stopped ? (
+                <FieldError>{importer.runError}</FieldError>
+              ) : (
+                <FieldDescription>
+                  Keep this tab open until the import finishes.
+                </FieldDescription>
+              )}
+            </div>
+          )}
+
+          {step === "report" && report && <Report report={report} />}
+        </DialogBody>
+        <DialogFooter>
+          {step === "pick" && (
+            <Button variant="quiet" onClick={() => close(false)}>
+              Cancel
+            </Button>
+          )}
+          {step === "preview" && parsed && (
+            <>
+              <Button variant="quiet" onClick={() => close(false)}>
+                Cancel
+              </Button>
+              <Button onClick={importer.start} disabled={!parsed.notes.length}>
+                <Upload aria-hidden />
+                Import {plural(parsed.notes.length, "note")}
+              </Button>
+            </>
+          )}
+          {stopped && (
+            <>
+              <Button variant="quiet" onClick={() => close(false)}>
+                Close
+              </Button>
+              <Button onClick={importer.retry}>
+                <RotateCw aria-hidden />
+                Try again
+              </Button>
+            </>
+          )}
+          {step === "report" && (
+            <Button onClick={() => close(false)}>Done</Button>
+          )}
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
 
-function PickStep({
-  isDetecting,
+function DropArea({
+  reading,
+  name,
   error,
   onFiles,
 }: {
-  isDetecting: boolean;
+  reading: boolean;
+  name: string;
   error: string | null;
-  onFiles: (files: PickedFile[]) => void;
+  onFiles: (files: PickedFile[], isTruncated?: boolean) => void;
 }) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
-
-  const submit = useCallback(
-    (picked: PickedFile[]) => {
-      if (picked.length) onFiles(picked);
-    },
-    [onFiles],
-  );
-
-  const handleDrop = useCallback(
-    (event: React.DragEvent) => {
-      event.preventDefault();
-      setIsDragging(false);
-      // Entries must be read before the first await or the browser clears them
-      fromDataTransfer(event.dataTransfer).then(submit);
-    },
-    [submit],
-  );
-
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  const [dragOver, setDragOver] = React.useState(false);
+  const errorId = React.useId();
+  const isMountedRef = React.useRef(false);
+  React.useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
   return (
-    <div className="min-w-0 space-y-3">
+    <>
+      {/* biome-ignore lint/a11y/useSemanticElements: a drop area that also opens the file picker */}
       <div
-        className={cn(
-          "border-2 border-dashed rounded-lg p-8 flex flex-col items-center gap-3 cursor-pointer",
-          "text-muted-foreground text-sm transition-colors duration-150",
-          isDragging
-            ? "border-primary bg-primary/5 text-primary"
-            : "border-border/60 hover:border-border hover:bg-muted/30",
-        )}
+        role="button"
+        tabIndex={0}
+        aria-busy={reading || undefined}
+        aria-describedby={error ? errorId : undefined}
+        onClick={() => !reading && inputRef.current?.click()}
+        onKeyDown={(e) => {
+          if ((e.key === "Enter" || e.key === " ") && !reading) {
+            e.preventDefault();
+            inputRef.current?.click();
+          }
+        }}
         onDragOver={(e) => {
           e.preventDefault();
-          setIsDragging(true);
+          setDragOver(true);
         }}
-        onDragLeave={() => setIsDragging(false)}
-        onDrop={handleDrop}
-        onClick={() => inputRef.current?.click()}
-      >
-        {isDetecting ? (
-          <Loader2 className="h-8 w-8 animate-spin" />
-        ) : (
-          <FileArchive className="h-8 w-8" />
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragOver(false);
+          // Entries must be read before the first await, or the browser clears them.
+          void fromDataTransfer(e.dataTransfer).then(
+            ({ files, isTruncated }) => {
+              // A large folder can still be walking after the dialog closed
+              if (isMountedRef.current) onFiles(files, isTruncated);
+            },
+          );
+        }}
+        className={cn(
+          "grid cursor-pointer justify-items-center gap-2 rounded-2xl border-[1.5px] border-muted-foreground/55 border-dashed px-5 py-8 text-center transition-colors duration-(--duration-hover) hover:bg-foreground/3 hover:not-focus-visible:border-accent-strong hover:[&>svg]:text-accent-strong [&>svg]:size-7.5 [&>svg]:text-muted-foreground [&>svg]:transition-colors [&>svg]:duration-(--duration-hover)",
+          dragOver &&
+            "border-accent-strong bg-accent/7 [&>svg]:text-accent-strong",
+          error &&
+            "border-destructive hover:not-focus-visible:border-destructive",
+          reading &&
+            "cursor-progress border-muted-foreground/30 border-solid bg-foreground/3 hover:not-focus-visible:border-muted-foreground/30 hover:[&>svg]:text-muted-foreground [&>svg]:size-6.5",
         )}
-        <span className="text-center">
-          {isDetecting
-            ? "Reading files..."
-            : "Drop a zip or a folder here, or click to choose files"}
-        </span>
+      >
+        {reading ? (
+          <>
+            <LoaderCircle aria-hidden className="animate-spin" />
+            <b className="font-semibold text-lead">Reading {name}…</b>
+            <span className="text-meta text-muted-foreground">
+              Large exports can take a few seconds.
+            </span>
+          </>
+        ) : (
+          <>
+            <FileArchive aria-hidden />
+            <b className="font-semibold text-lead">
+              Drop a zip or a folder here
+            </b>
+            <span className="text-meta text-muted-foreground">
+              or click to choose files
+            </span>
+            <span className="mt-1 flex flex-wrap justify-center gap-1.5">
+              <Badge className="bg-foreground/5">Anchor backup</Badge>
+              <Badge className="bg-foreground/5">Google Keep</Badge>
+              <Badge className="bg-foreground/5">Markdown</Badge>
+            </span>
+          </>
+        )}
         <input
           ref={inputRef}
           type="file"
           multiple
+          hidden
           accept=".zip,application/zip,.md,.markdown,text/markdown,image/*,audio/*"
-          className="hidden"
-          onChange={(e) => submit(fromFileList(e.target.files))}
+          onChange={(e) => {
+            const files = fromFileList(e.target.files);
+            e.target.value = "";
+            onFiles(files);
+          }}
         />
       </div>
-      {error && (
-        <p className="text-sm text-destructive flex items-start gap-2">
-          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
-          {error}
-        </p>
-      )}
-    </div>
+      {error && <FieldError id={errorId}>{error}</FieldError>}
+    </>
   );
 }
 
-function PreviewStep({
-  parsed,
-  options,
-  tagCount,
-  onOptionChange,
-  onConfirm,
-  onCancel,
-}: {
-  parsed: NonNullable<ReturnType<typeof useImport>["parsed"]>;
-  options: ImportOptions;
-  tagCount: number;
-  onOptionChange: ReturnType<typeof useImport>["setOption"];
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
+function Stat({ count, one }: { count: number; one: string }) {
   return (
-    <div className="min-w-0 space-y-4">
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <FileArchive className="h-4 w-4 shrink-0" />
-        <span>Detected format</span>
-        <Badge variant="secondary">{parsed.formatLabel}</Badge>
-      </div>
-      <div className="grid grid-cols-3 gap-2">
-        <PreviewStat
-          icon={FileText}
-          value={parsed.notes.length}
-          singular="note"
-          plural="notes"
-        />
-        <PreviewStat
-          icon={TagIcon}
-          value={tagCount}
-          singular="tag"
-          plural="tags"
-        />
-        <PreviewStat
-          icon={Paperclip}
-          value={parsed.attachmentCount}
-          singular="attachment"
-          plural="attachments"
-        />
-      </div>
-      {parsed.skipped.length > 0 && (
-        <SkippedList
-          title={`${parsed.skipped.length} ${parsed.skipped.length === 1 ? "item" : "items"} will be skipped`}
-          items={parsed.skipped}
-        />
-      )}
-      {/* Only Anchor backups carry note ids, so only they can skip existing notes */}
-      {parsed.formatId === "anchor" && (
-        <ImportOption
-          id="skip-existing-notes"
-          label="Skip notes that already exist"
-          checked={options.skipExisting}
-          onChange={(value) => onOptionChange("skipExisting", value)}
-        />
-      )}
-      {parsed.formatId === "markdown" && parsed.hasFolders && (
-        <ImportOption
-          id="folder-tags"
-          label="Use folder names as tags"
-          hint="Nextcloud categories and Obsidian folders become tags"
-          checked={options.folderTags}
-          onChange={(value) => onOptionChange("folderTags", value)}
-        />
-      )}
-      <DialogFooter>
-        <Button variant="outline" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button onClick={onConfirm}>
-          <Upload className="h-4 w-4 mr-2" />
-          Import {parsed.notes.length}{" "}
-          {parsed.notes.length === 1 ? "note" : "notes"}
-        </Button>
-      </DialogFooter>
-    </div>
-  );
-}
-
-function ImportOption({
-  id,
-  label,
-  hint,
-  checked,
-  onChange,
-}: {
-  id: string;
-  label: string;
-  hint?: string;
-  checked: boolean;
-  onChange: (value: boolean) => void;
-}) {
-  return (
-    <div className="flex items-start gap-2">
-      <Checkbox
-        id={id}
-        checked={checked}
-        className="mt-0.5"
-        onCheckedChange={(value) => onChange(value === true)}
-      />
-      <div className="space-y-0.5">
-        <Label
-          htmlFor={id}
-          className="text-sm font-normal leading-snug cursor-pointer"
-        >
-          {label}
-        </Label>
-        {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
-      </div>
-    </div>
-  );
-}
-
-function PreviewStat({
-  icon: Icon,
-  value,
-  singular,
-  plural,
-}: {
-  icon: LucideIcon;
-  value: number;
-  singular: string;
-  plural: string;
-}) {
-  return (
-    <div className="flex flex-col items-center gap-0.5 rounded-lg border border-border/60 bg-muted/30 p-3">
-      <Icon className="h-4 w-4 text-muted-foreground" />
-      <span className="text-xl font-semibold leading-tight">{value}</span>
-      <span className="text-xs text-muted-foreground">
-        {value === 1 ? singular : plural}
+    <div className="grid gap-0.5 rounded-xl px-3.5 py-3 shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--border)_70%,transparent)]">
+      <b className="text-page tabular-nums">{count}</b>
+      <span className="text-muted-foreground text-small">
+        {count === 1 ? one : `${one}s`}
       </span>
     </div>
   );
 }
 
-function RunningStep({
-  progress,
-  error,
-  onRetry,
+function CheckRow({
+  checked,
+  onChange,
+  label,
+  hint,
 }: {
-  progress: {
-    phase: "notes" | "attachments";
-    done: number;
-    total: number;
-  } | null;
-  error: string | null;
-  onRetry: () => void;
+  checked: boolean;
+  onChange: (value: boolean) => void;
+  label: string;
+  hint: string;
 }) {
-  const percent =
-    progress && progress.total > 0
-      ? Math.round((progress.done / progress.total) * 100)
-      : 0;
-  const label =
-    progress?.phase === "attachments"
-      ? `Uploading attachments ${progress.done}/${progress.total}`
-      : `Importing notes ${progress?.done ?? 0}/${progress?.total ?? 0}`;
-
+  const id = React.useId();
   return (
-    <div className="min-w-0 space-y-4">
-      <div className="space-y-2">
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <span className="flex items-center gap-2">
-            {!error && <Loader2 className="h-4 w-4 animate-spin" />}
-            {label}
-          </span>
-          <span>{percent}%</span>
-        </div>
-        <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-          <div
-            className="h-full rounded-full bg-primary transition-all duration-300"
-            style={{ width: `${percent}%` }}
-          />
-        </div>
-      </div>
-      {error && (
-        <div className="space-y-3">
-          <p className="text-sm text-destructive flex items-start gap-2">
-            <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
-            {error}
-          </p>
-          <DialogFooter>
-            <Button onClick={onRetry}>Retry</Button>
-          </DialogFooter>
-        </div>
-      )}
-      {!error && (
-        <p className="text-xs text-muted-foreground">
-          Keep this dialog open until the import finishes.
-        </p>
-      )}
+    <div className="flex items-start gap-2.5 text-ui">
+      <Checkbox
+        id={id}
+        checked={checked}
+        onCheckedChange={(v) => onChange(v === true)}
+        className="mt-px"
+      />
+      <label htmlFor={id} className="cursor-pointer">
+        {label}
+        <small className="mt-0.5 block text-muted-foreground text-small">
+          {hint}
+        </small>
+      </label>
     </div>
   );
 }
 
-function ReportStep({
-  report,
-  onClose,
-}: {
-  report: NonNullable<ReturnType<typeof useImport>["report"]>;
-  onClose: () => void;
-}) {
-  const summary: string[] = [];
-  if (report.created) summary.push(`${report.created} imported`);
-  if (report.remapped) summary.push(`${report.remapped} imported as copies`);
-  if (report.skipped) summary.push(`${report.skipped} already existed`);
-  if (report.failed) summary.push(`${report.failed} failed`);
-  if (report.attachmentsUploaded)
-    summary.push(`${report.attachmentsUploaded} attachments uploaded`);
-  if (report.attachmentsFailed)
-    summary.push(`${report.attachmentsFailed} attachments failed`);
-
-  return (
-    <div className="min-w-0 space-y-4">
-      <p className="text-sm flex items-start gap-2">
-        {report.failed || report.attachmentsFailed ? (
-          <AlertTriangle className="h-4 w-4 mt-0.5 text-amber-500 shrink-0" />
-        ) : (
-          <CheckCircle2 className="h-4 w-4 mt-0.5 text-green-500 shrink-0" />
-        )}
-        {summary.join(" · ") || "Nothing to import"}
-      </p>
-      {report.issues.length > 0 && (
-        <SkippedList
-          title={`${report.issues.length} ${report.issues.length === 1 ? "item needs" : "items need"} attention`}
-          items={report.issues}
-        />
-      )}
-      {report.restoredTrashed && (
-        <p className="text-xs text-muted-foreground">
-          Restored trashed notes start a fresh 30-day trash window.
-        </p>
-      )}
-      <DialogFooter>
-        <Button onClick={onClose}>Done</Button>
-      </DialogFooter>
-    </div>
-  );
-}
-
-function SkippedList({
+function Issues({
   title,
   items,
+  open,
 }: {
   title: string;
-  items: { item: string; reason: string }[];
+  items: ImportSkippedItem[];
+  open?: boolean;
 }) {
   return (
-    <Collapsible className="min-w-0 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2">
-      <CollapsibleTrigger className="group flex w-full items-center gap-2 text-sm text-amber-600 dark:text-amber-400 transition-opacity hover:opacity-80">
-        <AlertTriangle className="h-4 w-4 shrink-0" />
-        <span className="min-w-0 flex-1 text-left">{title}</span>
-        <ChevronDown className="h-4 w-4 shrink-0 transition-transform group-data-[state=open]:rotate-180" />
-      </CollapsibleTrigger>
-      <CollapsibleContent>
-        <ul className="mt-2 max-h-40 min-w-0 space-y-2 overflow-y-auto text-xs text-muted-foreground">
-          {items.map((entry, index) => (
-            <li key={`${entry.item}-${index}`} className="min-w-0">
-              <p
-                className="truncate font-medium text-foreground/80"
-                title={entry.item}
-              >
-                {entry.item}
-              </p>
-              <p className="truncate" title={entry.reason}>
-                {entry.reason}
-              </p>
+    <details
+      open={open}
+      className="group rounded-lg bg-warn text-meta text-warn-foreground"
+    >
+      <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2.5 font-semibold [&::-webkit-details-marker]:hidden [&>svg]:size-3.75">
+        <TriangleAlert aria-hidden />
+        {title}
+        <ChevronDown
+          aria-hidden
+          className="ml-auto transition-transform duration-(--duration-fade) group-open:rotate-180"
+        />
+      </summary>
+      <ul className="m-0 grid max-h-44 gap-1 overflow-auto pr-3 pb-2.5 pl-8">
+        {items.map((entry, i) => (
+          <li key={i} className="wrap-break-word">
+            <b className="font-semibold">{entry.item}</b>: {entry.reason}
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
+}
+
+function Report({ report }: { report: ImportReport }) {
+  const issueCount = report.issues.length;
+  const imported = report.created + report.remapped;
+  const pills = [
+    [report.created, "imported"],
+    [report.remapped, "imported as copies"],
+    [report.skipped, "already there"],
+    [report.failed, "failed"],
+    [report.attachmentsUploaded, "attachments uploaded"],
+    [report.attachmentsFailed, "attachments failed"],
+  ].filter(([count]) => count) as [number, string][];
+  return (
+    <>
+      <div className="flex items-center gap-2.5 font-semibold text-lead [&>svg]:size-5.5">
+        {issueCount ? (
+          <TriangleAlert aria-hidden className="text-warn-foreground" />
+        ) : imported || report.skipped ? (
+          <CircleCheck aria-hidden className="text-added-ink" />
+        ) : (
+          <CircleAlert aria-hidden className="text-muted-foreground" />
+        )}
+        {imported || report.skipped
+          ? `${plural(imported, "note")} imported${issueCount ? `, ${issueCount} need${issueCount === 1 ? "s" : ""} attention` : ""}`
+          : "Nothing was imported"}
+      </div>
+      {pills.length > 1 && (
+        <ul className="m-0 flex list-none flex-wrap gap-1.5 p-0">
+          {pills.map(([count, label]) => (
+            <li
+              key={label}
+              className="rounded-pill bg-muted px-2.5 py-1 text-meta text-muted-foreground"
+            >
+              <b className="font-semibold text-foreground tabular-nums">
+                {count}
+              </b>{" "}
+              {label}
             </li>
           ))}
         </ul>
-      </CollapsibleContent>
-    </Collapsible>
+      )}
+      {issueCount > 0 && (
+        <Issues
+          title={`${plural(issueCount, "item")} need${issueCount === 1 ? "s" : ""} attention`}
+          items={report.issues}
+          open
+        />
+      )}
+      {report.restoredTrashed && (
+        <FieldDescription>
+          Notes restored to the trash get a fresh 30 days there.
+        </FieldDescription>
+      )}
+    </>
   );
 }

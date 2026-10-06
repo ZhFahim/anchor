@@ -7,12 +7,10 @@ export const IMPORT_MAX_CONTENT_LENGTH = 1_000_000;
 
 // Mirrors ATTACHMENT_ALLOWED_MIME_TYPES on the server
 export const IMPORT_ALLOWED_MIME_TYPES = new Set([
-  // Image
   "image/jpeg",
   "image/png",
   "image/webp",
   "image/gif",
-  // Audio
   "audio/mpeg",
   "audio/wav",
   "audio/mp4",
@@ -87,13 +85,7 @@ export type ImportNoteItem = {
   updatedAt?: string;
 };
 
-export type ImportNotesRequest = {
-  notes: ImportNoteItem[];
-  tags?: { name: string; color?: string }[];
-  skipExisting?: boolean;
-};
-
-export type ImportNoteStatus = "created" | "skipped" | "remapped" | "failed";
+type ImportNoteStatus = "created" | "skipped" | "remapped" | "failed";
 
 export type ImportNoteResult = {
   ref: string;

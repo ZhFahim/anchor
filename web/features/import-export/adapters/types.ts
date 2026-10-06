@@ -1,6 +1,9 @@
 import type { ParsedImport } from "../types";
 import type { ZipArchive } from "./zip";
 
+/** An error whose message can be shown as it is. */
+export class ImportFileError extends Error {}
+
 export interface ImportAdapter {
   id: ParsedImport["formatId"];
   label: string;

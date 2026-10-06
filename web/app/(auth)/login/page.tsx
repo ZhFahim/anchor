@@ -1,195 +1,215 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { Loader2, Lock, LogIn, Mail } from "lucide-react";
-import Image from "next/image";
+import { HTTPError } from "ky";
+import { ArrowLeft, KeyRound, LoaderCircle } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+import * as React from "react";
 import { Button } from "@/components/ui/button";
+import { Field } from "@/components/ui/field";
+import { Input, PasswordInput } from "@/components/ui/input";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  getRegistrationMode,
-  useAuth,
+  useLogin,
   useOidcCallback,
   useOidcConfig,
   useOidcLogin,
+  useRegistrationMode,
 } from "@/features/auth";
+import {
+  AuthHeading,
+  AuthMessage,
+  AuthStatusScreen,
+  linkButtonClass,
+  OrDivider,
+  PendingApprovalScreen,
+} from "@/features/auth/components/auth-parts";
 import { getSafeRedirectUrl } from "@/features/auth/utils/redirect";
+import {
+  serverSignInError,
+  signInError,
+} from "@/features/auth/utils/sign-in-error";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const searchParams = useSearchParams();
-  const { login, isLoginPending } = useAuth();
-  const {
-    data: oidcConfig,
-    isLoading: oidcConfigLoading,
-    error: oidcConfigError,
-  } = useOidcConfig();
-  const { initiate: initiateOidcLogin } = useOidcLogin();
-  const { isProcessing: isOidcCallbackProcessing } = useOidcCallback();
-  const { data: registrationMode, isLoading: registrationModeLoading } =
-    useQuery({
-      queryKey: ["registration-mode"],
-      queryFn: getRegistrationMode,
-    });
+  const login = useLogin();
+  const oidc = useOidcConfig();
+  const { initiate } = useOidcLogin();
+  const oidcCallback = useOidcCallback();
+  const registrationMode = useRegistrationMode();
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const passwordRef = React.useRef<HTMLInputElement>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    login({ email, password });
+  const providerName = oidc.data?.providerName || "your provider";
+  const providerNameAtStart =
+    providerName[0].toUpperCase() + providerName.slice(1);
+  const isProviderOnly =
+    !!oidc.data?.enabled && !!oidc.data?.disableInternalAuth;
+  const errorMessage = signInError(login.error, providerName);
+
+  const signInWithProvider = () => {
+    const returnTo = getSafeRedirectUrl(searchParams.get("returnTo") || "/");
+    initiate(returnTo !== "/" ? returnTo : undefined);
   };
 
-  const handleOidcLogin = () => {
-    const returnTo = searchParams.get("returnTo");
-    const redirectUrl = getSafeRedirectUrl(returnTo || "/");
-    initiateOidcLogin(redirectUrl !== "/" ? redirectUrl : undefined);
-  };
+  if (oidcCallback.isProcessing)
+    return (
+      <p
+        role="status"
+        className="m-0 mt-3.5 flex items-center gap-2.5 text-lead text-muted-foreground [&_svg]:size-4.5"
+      >
+        <LoaderCircle aria-hidden className="animate-spin" />
+        Signing you in…
+      </p>
+    );
 
-  const showLocalLogin = !oidcConfig?.disableInternalAuth;
-  const isLoading =
-    oidcConfigLoading || isOidcCallbackProcessing || registrationModeLoading;
+  const { failure } = oidcCallback;
+  const isPending =
+    errorMessage === "pending" ||
+    (failure?.by === "server" && /pending/i.test(failure.message));
+  if (failure && !isPending)
+    return (
+      <AuthStatusScreen
+        illustration="callback"
+        title="Sign-in didn’t finish"
+        text={
+          failure.by === "provider"
+            ? `${providerNameAtStart} sent you back without signing you in. ${isProviderOnly ? "Try again." : "Try again, or sign in with your email."}`
+            : serverSignInError(failure.status, isProviderOnly)
+        }
+      >
+        {failure.by === "provider" && (
+          <p className="m-0 -mt-1.5 mb-1 text-muted-foreground text-small">
+            {providerNameAtStart} said:{" "}
+            <code className="rounded-[5px] bg-foreground/7 px-1.25 py-px font-mono text-foreground">
+              {failure.message}
+            </code>
+          </p>
+        )}
+        <Button size="lg" className="w-full" onClick={signInWithProvider}>
+          <KeyRound aria-hidden />
+          Try again with {providerName}
+        </Button>
+        <Button
+          size="lg"
+          variant="quiet"
+          className="w-full"
+          onClick={oidcCallback.clearFailure}
+        >
+          <ArrowLeft aria-hidden />
+          Back to sign in
+        </Button>
+      </AuthStatusScreen>
+    );
+
+  if (isPending)
+    return (
+      <PendingApprovalScreen
+        onBack={() => {
+          login.reset();
+          oidcCallback.clearFailure();
+        }}
+      />
+    );
 
   return (
-    <Card className="border-0 shadow-xl bg-card/80 backdrop-blur-sm overflow-hidden">
-      <div
-        className="transition-[max-height] duration-500 ease-out"
-        style={{ maxHeight: isLoading ? 240 : 700 }}
-      >
-        {isLoading ? (
-          <CardContent className="py-16">
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          </CardContent>
-        ) : (
-          <div className="animate-card-entrance">
-            <CardHeader className="space-y-4 text-center pb-2">
-              <div className="mx-auto flex items-center justify-center">
-                <Image
-                  src="/icons/anchor_icon.png"
-                  alt="Anchor"
-                  width={64}
-                  height={64}
-                />
-              </div>
-              <div className="space-y-1">
-                <CardTitle className="text-3xl font-serif">
-                  Welcome Back
-                </CardTitle>
-                <CardDescription className="text-muted-foreground">
-                  Sign in to continue to Anchor
-                </CardDescription>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-4">
-              {oidcConfigError && (
-                <p className="text-sm text-destructive mb-4" role="alert">
-                  Could not load sign-in options. Please try again.
-                </p>
-              )}
-              {/* OIDC Login Button */}
-              {oidcConfig?.enabled && (
-                <div className="space-y-4">
-                  <Button
-                    type="button"
-                    onClick={handleOidcLogin}
-                    className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
-                  >
-                    <LogIn className="mr-2 h-4 w-4" />
-                    Login with {oidcConfig.providerName}
-                  </Button>
-                  {showLocalLogin && (
-                    <div className="relative">
-                      <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t" />
-                      </div>
-                      <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-card px-2 text-muted-foreground">
-                          Or continue with
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Local Login Form */}
-              {showLocalLogin && (
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="you@example.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="pl-10 h-12 bg-background/50"
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="password">Password</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="password"
-                        type="password"
-                        placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="pl-10 h-12 bg-background/50"
-                        required
-                      />
-                    </div>
-                  </div>
-                  <Button
-                    type="submit"
-                    className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
-                    disabled={isLoginPending}
-                  >
-                    {isLoginPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Signing in...
-                      </>
-                    ) : (
-                      "Sign In"
-                    )}
-                  </Button>
-                </form>
-              )}
-
-              {/* Registration Link */}
-              {showLocalLogin && registrationMode?.mode !== "disabled" && (
-                <div className="mt-6 text-center">
-                  <p className="text-sm text-muted-foreground">
-                    Don&apos;t have an account?{" "}
-                    <Link
-                      href="/register"
-                      className="font-medium text-accent hover:text-accent/80 transition-colors"
-                    >
-                      Create one
-                    </Link>
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </div>
-        )}
-      </div>
-    </Card>
+    <>
+      <AuthHeading title="Welcome back" sub="Sign in to continue to Anchor." />
+      {oidc.data?.enabled && (
+        <>
+          <Button
+            size="lg"
+            variant="secondary"
+            className="w-full"
+            onClick={signInWithProvider}
+          >
+            <KeyRound aria-hidden />
+            Continue with {providerName}
+          </Button>
+          {!isProviderOnly && <OrDivider />}
+        </>
+      )}
+      {oidc.isError && (
+        <AuthMessage
+          action={
+            <button
+              type="button"
+              className={`${linkButtonClass} self-center whitespace-nowrap`}
+              onClick={() => oidc.refetch()}
+            >
+              Try again
+            </button>
+          }
+        >
+          Couldn’t load the sign-in options. You can still sign in with your
+          email.
+        </AuthMessage>
+      )}
+      {errorMessage && <AuthMessage>{errorMessage}</AuthMessage>}
+      {!isProviderOnly && (
+        <form
+          className="grid gap-3.5"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (login.isPending) return;
+            login.mutate(
+              { email: email.trim(), password },
+              {
+                onError: (error) => {
+                  if (!(error instanceof HTTPError)) return;
+                  if (error.response.status === 401) {
+                    setPassword("");
+                    passwordRef.current?.focus();
+                  } else if (error.response.status === 403) void oidc.refetch();
+                },
+              },
+            );
+          }}
+        >
+          <Field label="Email">
+            <Input
+              type="email"
+              autoComplete="email"
+              value={email}
+              required
+              boxClassName="h-field-large"
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (login.error) login.reset();
+              }}
+            />
+          </Field>
+          <Field label="Password">
+            <PasswordInput
+              ref={passwordRef}
+              autoComplete="current-password"
+              value={password}
+              required
+              boxClassName="h-field-large"
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (login.error) login.reset();
+              }}
+            />
+          </Field>
+          <Button
+            type="submit"
+            size="lg"
+            className="w-full"
+            busy={login.isPending && "Signing in…"}
+          >
+            Sign in
+          </Button>
+        </form>
+      )}
+      {!isProviderOnly && registrationMode.data?.mode !== "disabled" && (
+        <p className="m-0 text-center text-muted-foreground text-ui">
+          New to Anchor?{" "}
+          <Link href="/register" className={linkButtonClass}>
+            Create an account
+          </Link>
+        </p>
+      )}
+    </>
   );
 }

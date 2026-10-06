@@ -1,5 +1,6 @@
 import type { QuillDelta, QuillOp } from "@/features/notes/quill";
 import { MAX_LIST_INDENT } from "@/features/notes/quill-lines";
+import { HIGHLIGHTS } from "@/lib/design/tokens";
 
 /**
  * Markdown to Quill Delta. Anything outside the editor's formats (tables,
@@ -13,6 +14,7 @@ type Marks = {
   italic?: true;
   underline?: true;
   strike?: true;
+  highlight?: string;
   link?: string;
 };
 
@@ -42,6 +44,7 @@ function attributesOf(marks: Marks): Record<string, unknown> | null {
   if (marks.italic) attrs.italic = true;
   if (marks.underline) attrs.underline = true;
   if (marks.strike) attrs.strike = true;
+  if (marks.highlight) attrs.highlight = marks.highlight;
   if (marks.link) attrs.link = marks.link;
   return Object.keys(attrs).length ? attrs : null;
 }
@@ -128,6 +131,54 @@ function matchLink(text: string, start: number): LinkMatch | null {
   dest = dest.replace(/\\(.)/g, "$1");
 
   return { label, dest, end: j + 1 };
+}
+
+/** Index of [close] at or after [from], ignoring case and escaped text. */
+function indexOfClose(text: string, close: string, from: number): number {
+  const lower = text.toLowerCase();
+  for (let i = from; i < text.length; i++) {
+    if (text[i] === "\\") i++;
+    else if (lower.startsWith(close, i)) return i;
+  }
+  return -1;
+}
+
+/** Matches `==text==` at [start]; the closing `==` can't sit in code or a link. */
+function matchHighlight(
+  text: string,
+  start: number,
+): { inner: string; length: number } | null {
+  const first = start + 2;
+  if (!/\S/.test(text[first] ?? " ")) return null;
+  for (let i = first; i < text.length; i++) {
+    const char = text[i];
+    if (char === "\\") {
+      i++;
+    } else if (char === "`") {
+      const run = /^`+/.exec(text.slice(i))?.[0] ?? "`";
+      const close = text.indexOf(run, i + run.length);
+      i = (close === -1 ? i : close) + run.length - 1;
+    } else if (char === "[") {
+      const link = matchLink(text, i);
+      if (link) i = link.end - 1;
+    } else if (
+      i > first &&
+      char === "=" &&
+      text[i + 1] === "=" &&
+      /\S/.test(text[i - 1])
+    ) {
+      return { inner: text.slice(first, i), length: i + 2 - start };
+    }
+  }
+  return null;
+}
+
+/** A `<mark>`'s color, yellow when it's missing or unknown. */
+function markColor(attributes: string): string {
+  const color = /\bdata-color\s*=\s*["']?([\w-]+)/i
+    .exec(attributes)?.[1]
+    ?.toLowerCase();
+  return HIGHLIGHTS.find((name) => name === color) ?? "yellow";
 }
 
 type Emphasis = { inner: string; length: number; marks: Marks };
@@ -229,11 +280,26 @@ function scanInline(text: string, marks: Marks, ops: QuillOp[]): void {
     }
 
     if (/^<u>/i.test(rest)) {
-      const close = rest.toLowerCase().indexOf("</u>", 3);
+      const close = indexOfClose(rest, "</u>", 3);
       if (close !== -1) {
         flush();
         scanInline(rest.slice(3, close), { ...marks, underline: true }, ops);
         i += close + 4;
+        continue;
+      }
+    }
+
+    const markOpen = /^<mark(\s[^>]*)?>/i.exec(rest);
+    if (markOpen) {
+      const close = indexOfClose(rest, "</mark>", markOpen[0].length);
+      if (close !== -1) {
+        flush();
+        scanInline(
+          rest.slice(markOpen[0].length, close),
+          { ...marks, highlight: markColor(markOpen[1] ?? "") },
+          ops,
+        );
+        i += close + "</mark>".length;
         continue;
       }
     }
@@ -282,6 +348,16 @@ function scanInline(text: string, marks: Marks, ops: QuillOp[]): void {
       }
     }
 
+    if (char === "=" && text[i + 1] === "=") {
+      const highlight = matchHighlight(text, i);
+      if (highlight) {
+        flush();
+        scanInline(highlight.inner, { ...marks, highlight: "yellow" }, ops);
+        i += highlight.length;
+        continue;
+      }
+    }
+
     if (char === "*" || char === "_" || char === "~") {
       const emphasis = matchEmphasis(text, i);
       if (emphasis) {
@@ -297,8 +373,9 @@ function scanInline(text: string, marks: Marks, ops: QuillOp[]): void {
       if (bare) {
         let url = bare[0].replace(/[.,;:!?]+$/, "");
         if (url.endsWith(")") && !url.includes("(")) url = url.slice(0, -1);
+        const target = url.replace(/\\([!-/:-@[-`{-~])/g, "$1");
         flush();
-        pushText(ops, url, { ...marks, link: url });
+        pushText(ops, target, { ...marks, link: target });
         i += url.length;
         continue;
       }
@@ -409,7 +486,6 @@ function listTypeOf(marker: string, task: string | null): string {
   return /^\d/.test(marker) ? "ordered" : "bullet";
 }
 
-/** Parses a markdown body into canonical Quill Delta content. */
 export function markdownToDelta(text: string): QuillDelta {
   const source = text.replace(/^﻿/, "");
   const rawLines = source.split(/\r\n|\r|\n/);

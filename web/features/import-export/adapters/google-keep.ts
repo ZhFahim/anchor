@@ -23,14 +23,26 @@ function keepJsonEntries(zip: ZipArchive): string[] {
   );
 }
 
-function looksLikeKeepJson(zip: ZipArchive, path: string): boolean {
-  try {
-    const parsed = JSON.parse(zip.text(path)) as KeepNote;
-    return typeof parsed.userEditedTimestampUsec === "number";
-  } catch {
-    return false;
+const notesByArchive = new WeakMap<ZipArchive, Map<string, KeepNote | null>>();
+
+function readKeepNote(zip: ZipArchive, path: string): KeepNote | null {
+  let notes = notesByArchive.get(zip);
+  if (!notes) {
+    notes = new Map();
+    notesByArchive.set(zip, notes);
   }
+  if (!notes.has(path)) {
+    try {
+      notes.set(path, JSON.parse(zip.text(path)) as KeepNote);
+    } catch {
+      notes.set(path, null);
+    }
+  }
+  return notes.get(path) ?? null;
 }
+
+const looksLikeKeepJson = (zip: ZipArchive, path: string) =>
+  typeof readKeepNote(zip, path)?.userEditedTimestampUsec === "number";
 
 // Takeout localizes the "Keep" folder name, so fall back to sniffing any
 // .json entry for a Keep-specific field.
@@ -73,10 +85,8 @@ export const googleKeepAdapter: ImportAdapter = {
     const notes: CanonicalNote[] = [];
 
     for (const entryPath of noteEntries) {
-      let keepNote: KeepNote;
-      try {
-        keepNote = JSON.parse(zip.text(entryPath)) as KeepNote;
-      } catch {
+      const keepNote = readKeepNote(zip, entryPath);
+      if (!keepNote) {
         skipped.push({ item: entryPath, reason: "Unreadable note file" });
         continue;
       }

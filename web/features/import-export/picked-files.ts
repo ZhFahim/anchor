@@ -11,6 +11,10 @@ export function fromFileList(files: FileList | null): PickedFile[] {
   }));
 }
 
+const isIgnored = (name: string) => name.startsWith(".") || name === "__MACOSX";
+
+type DroppedFiles = { files: PickedFile[]; isTruncated: boolean };
+
 function readFile(entry: FileSystemFileEntry): Promise<File> {
   return new Promise((resolve, reject) => entry.file(resolve, reject));
 }
@@ -24,12 +28,16 @@ function readBatch(
 async function walkEntry(
   entry: FileSystemEntry,
   prefix: string,
-  out: PickedFile[],
+  out: DroppedFiles,
 ): Promise<void> {
-  if (out.length >= MAX_PICKED_FILES) return;
+  if (out.isTruncated || isIgnored(entry.name)) return;
 
   if (entry.isFile) {
-    out.push({
+    if (out.files.length >= MAX_PICKED_FILES) {
+      out.isTruncated = true;
+      return;
+    }
+    out.files.push({
       path: `${prefix}${entry.name}`,
       file: await readFile(entry as FileSystemFileEntry),
     });
@@ -39,7 +47,7 @@ async function walkEntry(
 
   // readEntries hands back at most 100 children per call
   const reader = (entry as FileSystemDirectoryEntry).createReader();
-  for (;;) {
+  while (!out.isTruncated) {
     const batch = await readBatch(reader);
     if (!batch.length) return;
     for (const child of batch) {
@@ -49,24 +57,25 @@ async function walkEntry(
 }
 
 /**
- * Files from a drop, walking any folders that came with it. Entries must be
- * read from the event before the first await.
+ * Files from a drop, walking any folders that came with it, and whether the
+ * walk stopped at MAX_PICKED_FILES. Entries must be read from the event
+ * before the first await.
  */
 export async function fromDataTransfer(
   transfer: DataTransfer,
-): Promise<PickedFile[]> {
+): Promise<DroppedFiles> {
   const entries = Array.from(transfer.items ?? [])
     .map((item) => item.webkitGetAsEntry?.() ?? null)
     .filter((entry): entry is FileSystemEntry => entry !== null);
   const fallback = fromFileList(transfer.files);
 
   if (entries.length) {
-    const out: PickedFile[] = [];
+    const out: DroppedFiles = { files: [], isTruncated: false };
     for (const entry of entries) {
       await walkEntry(entry, "", out);
     }
-    if (out.length) return out;
+    if (out.files.length) return out;
   }
 
-  return fallback;
+  return { files: fallback, isTruncated: false };
 }

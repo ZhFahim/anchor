@@ -1,9 +1,6 @@
 import { strFromU8, unzipSync } from "fflate";
 
-/**
- * Minimal read-only archive access, so adapters don't depend on a zip
- * library. Also backs files picked without a zip around them.
- */
+/** Read-only archive access. Also backs files picked without a zip around them. */
 export type ZipArchive = {
   names: string[];
   has(path: string): boolean;
@@ -11,9 +8,11 @@ export type ZipArchive = {
   blob(path: string): Blob;
 };
 
+const TEXT_ENTRY = /\.(json|md|markdown)$/i;
+
 export function readZip(data: Uint8Array): ZipArchive {
-  // fflate has no list-without-inflate API, but its filter runs per entry
-  // before decompression - returning false enumerates names, inflating nothing.
+  // fflate's filter runs before decompression: returning false lists names
+  // without inflating anything.
   const names: string[] = [];
   unzipSync(data, {
     filter: (file) => {
@@ -23,7 +22,7 @@ export function readZip(data: Uint8Array): ZipArchive {
   });
   const nameSet = new Set(names);
 
-  // Inflate a single entry on demand to keep attachment reads lazy.
+  // unzipSync walks the whole archive on every call, so text entries inflate in one pass.
   const inflate = (path: string): Uint8Array => {
     const out = unzipSync(data, { filter: (file) => file.name === path });
     const bytes = out[path];
@@ -31,10 +30,28 @@ export function readZip(data: Uint8Array): ZipArchive {
     return bytes;
   };
 
+  let texts: Map<string, string> | undefined;
+  const readTexts = () => {
+    try {
+      const out = unzipSync(data, {
+        filter: (file) => TEXT_ENTRY.test(file.name),
+      });
+      return new Map(
+        Object.entries(out).map(([name, bytes]) => [name, strFromU8(bytes)]),
+      );
+    } catch {
+      // A damaged entry fails the whole pass; text() then inflates one by one.
+      return new Map<string, string>();
+    }
+  };
+
   return {
     names,
     has: (path) => nameSet.has(path),
-    text: (path) => strFromU8(inflate(path)),
+    text: (path) => {
+      texts ??= readTexts();
+      return texts.get(path) ?? strFromU8(inflate(path));
+    },
     // fflate's Uint8Array is ArrayBufferLike-typed but never SharedArrayBuffer.
     blob: (path) => new Blob([inflate(path) as Uint8Array<ArrayBuffer>]),
   };
@@ -44,37 +61,31 @@ export function readZip(data: Uint8Array): ZipArchive {
 export type PickedFile = { path: string; file: File };
 
 /**
- * Presents picked files as an archive. Bytes are read up front; only the zip
- * path stays lazy.
+ * Presents picked files as an archive. Text files are read up front;
+ * attachments stay on disk until uploaded.
  */
 export async function readFiles(picked: PickedFile[]): Promise<ZipArchive> {
-  const buffers = await Promise.all(
-    picked.map(({ file }) => file.arrayBuffer()),
+  const files = new Map(picked.map(({ path, file }) => [path, file]));
+  const texts = new Map(
+    await Promise.all(
+      [...files]
+        .filter(([path]) => TEXT_ENTRY.test(path))
+        .map(async ([path, file]) => [path, await file.text()] as const),
+    ),
   );
-  const entries = new Map<string, { bytes: Uint8Array; type: string }>();
-
-  picked.forEach(({ path, file }, index) => {
-    entries.set(path, {
-      bytes: new Uint8Array(buffers[index]),
-      type: file.type,
-    });
-  });
-
-  const read = (path: string) => {
-    const entry = entries.get(path);
-    if (!entry) throw new Error(`File not found: ${path}`);
-    return entry;
-  };
 
   return {
-    names: [...entries.keys()],
-    has: (path) => entries.has(path),
-    text: (path) => strFromU8(read(path).bytes),
+    names: [...files.keys()],
+    has: (path) => files.has(path),
+    text: (path) => {
+      const text = texts.get(path);
+      if (text === undefined) throw new Error(`Text file not found: ${path}`);
+      return text;
+    },
     blob: (path) => {
-      const entry = read(path);
-      return new Blob([entry.bytes as Uint8Array<ArrayBuffer>], {
-        type: entry.type,
-      });
+      const file = files.get(path);
+      if (!file) throw new Error(`File not found: ${path}`);
+      return file;
     },
   };
 }

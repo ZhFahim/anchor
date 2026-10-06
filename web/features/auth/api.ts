@@ -7,6 +7,7 @@ import type {
   OidcConfig,
   OidcExchangeResponse,
   RegisterCredentials,
+  RegistrationMode,
   UpdateProfileDto,
   User,
 } from "./types";
@@ -30,11 +31,11 @@ export async function getMe(): Promise<User> {
 }
 
 export async function getRegistrationMode(): Promise<{
-  mode: "disabled" | "enabled" | "review";
+  mode: RegistrationMode;
 }> {
   return api
     .get("api/auth/registration-mode")
-    .json<{ mode: "disabled" | "enabled" | "review" }>();
+    .json<{ mode: RegistrationMode }>();
 }
 
 export async function changePassword(

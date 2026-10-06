@@ -1,8 +1,10 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
+import { HTTPError } from "ky";
 import { useCallback, useRef, useState } from "react";
 import { detectFormat } from "../adapters";
+import { ImportFileError } from "../adapters/types";
 import type { PickedFile } from "../adapters/zip";
 import {
   IMPORT_BATCH_SIZE,
@@ -76,6 +78,50 @@ function chunk<T>(items: T[], size: number): T[][] {
   return chunks;
 }
 
+function serverUnreachable(error: unknown) {
+  if (!(error instanceof HTTPError)) return true;
+  const status = error.response.status;
+  return status >= 500 || status === 408 || status === 429;
+}
+
+function isRefused(error: unknown): error is HTTPError {
+  if (!(error instanceof HTTPError)) return false;
+  const status = error.response.status;
+  return status === 400 || status === 413;
+}
+
+function attachmentUploads(
+  parsed: ParsedImport,
+  results: ImportNoteResult[],
+): AttachmentUpload[] {
+  const noteByRef = new Map(parsed.notes.map((note) => [note.ref, note]));
+  const uploads: AttachmentUpload[] = [];
+  for (const result of results) {
+    if (
+      (result.status !== "created" && result.status !== "remapped") ||
+      !result.noteId
+    ) {
+      continue;
+    }
+    const note = noteByRef.get(result.ref);
+    if (!note) continue;
+    note.attachments
+      .filter((attachment) => attachment.supported)
+      .forEach((attachment, index) => {
+        uploads.push({
+          noteId: result.noteId as string,
+          noteRef: result.ref,
+          filename: attachment.filename,
+          mimeType: attachment.mimeType,
+          position: index,
+          getBlob: attachment.getBlob,
+        });
+      });
+  }
+
+  return uploads;
+}
+
 export function useImport() {
   const queryClient = useQueryClient();
 
@@ -88,12 +134,23 @@ export function useImport() {
   const [report, setReport] = useState<ImportReport | null>(null);
   const [options, setOptions] = useState<ImportOptions>(DEFAULT_OPTIONS);
 
-  // Retry resumes from the last unprocessed batch
   const batchIndexRef = useRef(0);
   const resultsRef = useRef<ImportNoteResult[]>([]);
+  const uploadsRef = useRef<AttachmentUpload[] | null>(null);
+  const waitingUploadsRef = useRef<number[]>([]);
+  const uploadedRef = useRef(0);
+  const attachmentFailuresRef = useRef<ImportSkippedItem[]>([]);
   const isRunningRef = useRef(false);
+  const pickIdRef = useRef(0);
+
+  const refreshLists = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["notes"] });
+    queryClient.invalidateQueries({ queryKey: ["tags"] });
+  }, [queryClient]);
 
   const reset = useCallback(() => {
+    if (step === "running" && resultsRef.current.length) refreshLists();
+    pickIdRef.current++;
     setStep("pick");
     setParsed(null);
     setIsDetecting(false);
@@ -104,21 +161,29 @@ export function useImport() {
     setOptions(DEFAULT_OPTIONS);
     batchIndexRef.current = 0;
     resultsRef.current = [];
+    uploadsRef.current = null;
+    waitingUploadsRef.current = [];
+    uploadedRef.current = 0;
+    attachmentFailuresRef.current = [];
     isRunningRef.current = false;
-  }, []);
+  }, [step, refreshLists]);
 
   const selectFiles = useCallback(async (files: PickedFile[]) => {
+    const pickId = ++pickIdRef.current;
+    const isAbandoned = () => pickId !== pickIdRef.current;
     setPickError(null);
     setIsDetecting(true);
     try {
       const detected = await detectFormat(files);
+      if (isAbandoned()) return;
       if (!detected) {
         setPickError(
-          "Nothing importable here. Drop an Anchor backup zip, a Google Takeout zip, or a folder of Markdown (.md) files.",
+          "Nothing to import here. Drop an Anchor backup, a Google Takeout zip, or a folder of Markdown (.md) files.",
         );
         return;
       }
       const result = await detected.adapter.parse(detected.zip);
+      if (isAbandoned()) return;
       if (!result.notes.length) {
         setPickError("No importable notes found in this file.");
         return;
@@ -130,11 +195,14 @@ export function useImport() {
       });
       setStep("preview");
     } catch (error) {
+      if (isAbandoned()) return;
       setPickError(
-        error instanceof Error ? error.message : "Failed to read file",
+        error instanceof ImportFileError
+          ? error.message
+          : "Couldn’t read this file.",
       );
     } finally {
-      setIsDetecting(false);
+      if (!isAbandoned()) setIsDetecting(false);
     }
   }, []);
 
@@ -161,7 +229,7 @@ export function useImport() {
           .filter((result) => result.status === "failed")
           .map((result) => ({
             item: labelOf(result.ref),
-            reason: result.error ?? "Failed to import",
+            reason: "Couldn’t import this note",
           })),
         ...results
           .filter((result) => result.warning)
@@ -187,11 +255,9 @@ export function useImport() {
         ),
       });
       setStep("report");
-
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
-      queryClient.invalidateQueries({ queryKey: ["tags"] });
+      refreshLists();
     },
-    [queryClient],
+    [refreshLists],
   );
 
   const run = useCallback(async () => {
@@ -205,79 +271,100 @@ export function useImport() {
     const colorByName = new Map(
       parsed.tags.map((tag) => [tag.name, tag.color]),
     );
+    const results = resultsRef.current;
+    const sentRefs = new Set(results.map((result) => result.ref));
+    const showNoteProgress = () =>
+      setProgress({ phase: "notes", done: results.length, total: totalNotes });
+
+    const send = async (notes: CanonicalNote[]) => {
+      // Only send colors for tags these notes actually reference
+      const tags = [
+        ...new Set(notes.flatMap((note) => effectiveTagNames(note, options))),
+      ].map((name) => ({ name, color: colorByName.get(name) ?? null }));
+      const response = await importNotes(
+        notes.map((note) =>
+          toImportNoteItem(note, effectiveTagNames(note, options)),
+        ),
+        tags,
+        options.skipExisting,
+      );
+      results.push(...response.results);
+    };
 
     try {
       for (let i = batchIndexRef.current; i < batches.length; i++) {
-        setProgress({
-          phase: "notes",
-          done: i * IMPORT_BATCH_SIZE,
-          total: totalNotes,
-        });
-        // Only send colors for tags this batch's notes actually reference
-        const batchTags = [
-          ...new Set(
-            batches[i].flatMap((note) => effectiveTagNames(note, options)),
-          ),
-        ].map((name) => ({ name, color: colorByName.get(name) ?? null }));
-        const response = await importNotes(
-          batches[i].map((note) =>
-            toImportNoteItem(note, effectiveTagNames(note, options)),
-          ),
-          batchTags,
-          options.skipExisting,
-        );
-        resultsRef.current.push(...response.results);
+        showNoteProgress();
+        const batch = batches[i].filter((note) => !sentRefs.has(note.ref));
+        try {
+          await send(batch);
+        } catch (error) {
+          if (!isRefused(error)) throw error;
+          for (const note of batch) {
+            try {
+              await send([note]);
+            } catch (noteError) {
+              if (!isRefused(noteError)) throw noteError;
+              results.push({
+                ref: note.ref,
+                status: "failed",
+                error: noteError.message,
+              });
+            }
+            showNoteProgress();
+          }
+        }
         batchIndexRef.current = i + 1;
       }
       setProgress({ phase: "notes", done: totalNotes, total: totalNotes });
     } catch (error) {
       isRunningRef.current = false;
-      setRunError(
-        error instanceof Error
-          ? error.message
-          : "Import failed. Check your connection and retry.",
-      );
+      const done = results.length;
+      const stoppedAt = `The import stopped at ${done} of ${totalNotes} notes; the notes before that are saved.`;
+      if (serverUnreachable(error))
+        setRunError(
+          `Couldn’t reach the server. ${done ? stoppedAt : "Check your connection, then try again."}`,
+        );
+      else
+        setRunError(
+          done
+            ? `Couldn’t import your notes. ${stoppedAt}`
+            : "Couldn’t import your notes.",
+        );
       return;
     }
 
-    // Upload attachments for notes that were just created
-    const noteByRef = new Map(parsed.notes.map((note) => [note.ref, note]));
-    const uploads: AttachmentUpload[] = [];
-    for (const result of resultsRef.current) {
-      if (
-        (result.status !== "created" && result.status !== "remapped") ||
-        !result.noteId
-      ) {
-        continue;
-      }
-      const note = noteByRef.get(result.ref);
-      if (!note) continue;
-      note.attachments
-        .filter((attachment) => attachment.supported)
-        .forEach((attachment, index) => {
-          uploads.push({
-            noteId: result.noteId as string,
-            noteRef: result.ref,
-            filename: attachment.filename,
-            mimeType: attachment.mimeType,
-            position: index,
-            getBlob: attachment.getBlob,
-          });
-        });
+    if (!uploadsRef.current) {
+      uploadsRef.current = attachmentUploads(parsed, resultsRef.current);
+      waitingUploadsRef.current = uploadsRef.current.map((_, index) => index);
     }
+    const uploads = uploadsRef.current;
+    const failures = attachmentFailuresRef.current;
+    const showProgress = () =>
+      setProgress({
+        phase: "attachments",
+        done: uploadedRef.current + failures.length,
+        total: uploads.length,
+      });
+    showProgress();
 
-    let uploaded = 0;
-    const attachmentFailures: ImportSkippedItem[] = [];
-    setProgress({ phase: "attachments", done: 0, total: uploads.length });
-
-    let nextIndex = 0;
+    let stopped = false;
     const worker = async () => {
-      for (;;) {
-        const index = nextIndex++;
-        if (index >= uploads.length) return;
+      while (!stopped) {
+        const index = waitingUploadsRef.current.shift();
+        if (index === undefined) return;
         const upload = uploads[index];
+        let blob: Blob;
         try {
-          const blob = await upload.getBlob();
+          blob = await upload.getBlob();
+        } catch {
+          failures.push({
+            item: upload.filename,
+            reason: "Couldn’t read the file",
+          });
+          showProgress();
+          continue;
+        }
+        try {
           await importAttachment(
             upload.noteId,
             blob,
@@ -285,18 +372,19 @@ export function useImport() {
             upload.mimeType,
             upload.position,
           );
-          uploaded++;
-        } catch {
-          attachmentFailures.push({
+          uploadedRef.current++;
+        } catch (error) {
+          if (serverUnreachable(error)) {
+            waitingUploadsRef.current.unshift(index);
+            stopped = true;
+            return;
+          }
+          failures.push({
             item: upload.filename,
-            reason: "Failed to upload attachment",
+            reason: "Couldn’t upload the attachment",
           });
         }
-        setProgress({
-          phase: "attachments",
-          done: uploaded + attachmentFailures.length,
-          total: uploads.length,
-        });
+        showProgress();
       }
     };
     await Promise.all(
@@ -307,7 +395,14 @@ export function useImport() {
     );
 
     isRunningRef.current = false;
-    finishRun(parsed, uploaded, attachmentFailures);
+    if (stopped) {
+      const done = uploadedRef.current + failures.length;
+      setRunError(
+        `Couldn’t reach the server. The import stopped at ${done} of ${uploads.length} attachments; the notes and the attachments before that are saved.`,
+      );
+      return;
+    }
+    finishRun(parsed, uploadedRef.current, failures);
   }, [parsed, finishRun, options]);
 
   const setOption = useCallback(

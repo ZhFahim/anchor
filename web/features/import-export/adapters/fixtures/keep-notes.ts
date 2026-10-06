@@ -60,7 +60,7 @@ export const keepNoteWithMedia: KeepNote = {
   isArchived: false,
   userEditedTimestampUsec: 1660000000000000,
   attachments: [
-    // Referenced as .jpeg but stored as .jpg — a real Takeout quirk
+    // Referenced as .jpeg but stored as .jpg, a real Takeout quirk
     { filePath: "receipt.jpeg", mimetype: "image/jpeg" },
     { filePath: "voice-memo.3gp", mimetype: "audio/3gpp" },
   ],

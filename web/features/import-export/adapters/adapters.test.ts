@@ -24,7 +24,7 @@ import {
 import { googleKeepAdapter } from "./google-keep";
 import { detectFormat } from "./index";
 import { markdownAdapter } from "./markdown";
-import { readZip, type ZipArchive } from "./zip";
+import { readFiles, readZip, type ZipArchive } from "./zip";
 
 function anchorZipBytes(): Uint8Array {
   return zipSync({
@@ -117,6 +117,24 @@ describe("format detection", () => {
     expect(await googleKeepAdapter.detect(zip)).toBe(true);
   });
 
+  it("reads each keep note once across detect and parse", async () => {
+    const zip = buildKeepZip("Takeout/Notizen/");
+    const reads = new Map<string, number>();
+    const counting: ZipArchive = {
+      ...zip,
+      text: (path) => {
+        reads.set(path, (reads.get(path) ?? 0) + 1);
+        return zip.text(path);
+      },
+    };
+
+    await googleKeepAdapter.detect(counting);
+    await googleKeepAdapter.parse(counting);
+
+    expect(reads.size).toBe(5);
+    expect([...reads.values()].every((count) => count === 1)).toBe(true);
+  });
+
   it("detects markdown files, and only after the specific formats", async () => {
     expect(await markdownAdapter.detect(nextcloudZip())).toBe(true);
     expect(
@@ -132,6 +150,43 @@ describe("format detection", () => {
       ".trash/gone.md": "junk",
     });
     expect(await markdownAdapter.detect(zip)).toBe(false);
+  });
+});
+
+describe("readZip", () => {
+  it("reads text entries and attachments from the same archive", async () => {
+    const zip = markdownZip({
+      "Notes/A.md": "first",
+      "Notes/B.MARKDOWN": "second",
+      "Notes/data.json": "{}",
+      "Notes/readme.txt": "plain",
+      "Notes/shot.png": new Uint8Array([1, 2, 3]),
+    });
+
+    expect(zip.text("Notes/A.md")).toBe("first");
+    expect(zip.text("Notes/B.MARKDOWN")).toBe("second");
+    expect(zip.text("Notes/data.json")).toBe("{}");
+    expect(zip.text("Notes/readme.txt")).toBe("plain");
+    expect(
+      new Uint8Array(await zip.blob("Notes/shot.png").arrayBuffer()),
+    ).toEqual(new Uint8Array([1, 2, 3]));
+    expect(() => zip.text("Notes/missing.md")).toThrow();
+  });
+});
+
+describe("readFiles", () => {
+  it("reads text files and hands attachments back as the picked file", async () => {
+    const image = new File([new Uint8Array([1, 2])], "shot.png", {
+      type: "image/png",
+    });
+    const zip = await readFiles([
+      { path: "Vault/Note.md", file: new File(["body"], "Note.md") },
+      { path: "Vault/shot.png", file: image },
+    ]);
+
+    expect(zip.names).toEqual(["Vault/Note.md", "Vault/shot.png"]);
+    expect(zip.text("Vault/Note.md")).toBe("body");
+    expect(zip.blob("Vault/shot.png")).toBe(image);
   });
 });
 
@@ -466,5 +521,12 @@ describe("detectFormat", () => {
     const file = new File([new Uint8Array([1, 2, 3])], "junk.bin");
     expect(await detectFormat(picked([file]))).toBeNull();
     expect(await detectFormat([])).toBeNull();
+  });
+
+  it("fails on a zip it can't read instead of finding nothing", async () => {
+    const file = new File([new Uint8Array([1, 2, 3])], "broken.zip", {
+      type: "application/zip",
+    });
+    await expect(detectFormat(picked([file]))).rejects.toThrow();
   });
 });
