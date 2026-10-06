@@ -29,29 +29,8 @@ const labels: Record<NoteRevisionCause, string> = {
   restore: "Before a restore",
 };
 
-const hints: Record<NoteRevisionCause, string | null> = {
-  edit: null,
-  conflict: "Not saved. The note had already changed.",
-  restore: "What the note said before a restore.",
-};
-
-const authorColors = [
-  "bg-sky-500/20 text-sky-600 dark:text-sky-400",
-  "bg-violet-500/20 text-violet-600 dark:text-violet-400",
-  "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400",
-  "bg-amber-500/20 text-amber-600 dark:text-amber-400",
-  "bg-rose-500/20 text-rose-600 dark:text-rose-400",
-  "bg-teal-500/20 text-teal-600 dark:text-teal-400",
-];
-
-const unknownAuthorColor = "bg-muted text-muted-foreground";
-
 export function revisionLabel(cause: NoteRevisionCause): string {
   return labels[cause];
-}
-
-export function revisionHint(cause: NoteRevisionCause): string | null {
-  return hints[cause];
 }
 
 export function revisionAuthorName(
@@ -60,22 +39,6 @@ export function revisionAuthorName(
 ): string {
   if (!entry.author) return "Someone";
   return entry.author.id === currentUserId ? "You" : entry.author.name;
-}
-
-export function revisionAuthorInitial(
-  author: NoteRevisionAuthor | null,
-): string {
-  return author?.name.trim().charAt(0).toUpperCase() || "?";
-}
-
-export function revisionAuthorColor(author: NoteRevisionAuthor | null): string {
-  if (!author) return unknownAuthorColor;
-
-  let hash = 0;
-  for (const char of author.id) {
-    hash = (hash + char.charCodeAt(0)) % authorColors.length;
-  }
-  return authorColors[hash];
 }
 
 export function revisionTime(entry: { createdAt: string }): string {
@@ -120,17 +83,6 @@ export function timelineEntries(
     author: revision.author,
     revision,
   }));
-}
-
-export function currentTimelineEntry(note: Note | null): TimelineEntry | null {
-  if (!note) return null;
-  return {
-    id: CURRENT_ENTRY_ID,
-    createdAt: note.updatedAt,
-    title: note.title,
-    author: null,
-    revision: null,
-  };
 }
 
 export function comparisonTargetId(

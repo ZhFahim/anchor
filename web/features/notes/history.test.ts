@@ -1,13 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
-  CURRENT_ENTRY_ID,
   canRestoreRevisions,
   comparisonTargetId,
-  currentTimelineEntry,
   groupTimelineByDay,
   historyHasMultipleAuthors,
-  revisionAuthorColor,
-  revisionAuthorInitial,
   revisionAuthorName,
   revisionDayTime,
   revisionsFromPages,
@@ -68,46 +64,6 @@ describe("revisionAuthorName", () => {
   });
 });
 
-describe("revisionAuthorColor", () => {
-  const author = (id: string) => ({
-    id,
-    name: "Ada",
-    email: "ada@example.com",
-  });
-
-  it("gives one person the same colour every time", () => {
-    expect(revisionAuthorColor(author("user-1"))).toBe(
-      revisionAuthorColor(author("user-1")),
-    );
-  });
-
-  it("tells two people apart", () => {
-    expect(revisionAuthorColor(author("user-1"))).not.toBe(
-      revisionAuthorColor(author("user-2")),
-    );
-  });
-
-  it("falls back to a plain colour for a lost author", () => {
-    expect(revisionAuthorColor(null)).toContain("muted");
-  });
-});
-
-describe("revisionAuthorInitial", () => {
-  it("takes the first letter of the name", () => {
-    expect(
-      revisionAuthorInitial({
-        id: "user-1",
-        name: "ada",
-        email: "ada@example.com",
-      }),
-    ).toBe("A");
-  });
-
-  it("marks a lost author", () => {
-    expect(revisionAuthorInitial(null)).toBe("?");
-  });
-});
-
 describe("historyHasMultipleAuthors", () => {
   const by = (id: string) => ({
     author: { id, name: id, email: `${id}@example.com` },
@@ -160,6 +116,7 @@ describe("revisionDayTime", () => {
 describe("canRestoreRevisions", () => {
   it("allows an owner or editor on an active note", () => {
     expect(canRestoreRevisions(note())).toBe(true);
+    expect(canRestoreRevisions(note({ isArchived: true }))).toBe(true);
     expect(canRestoreRevisions(note({ permission: "editor" }))).toBe(true);
   });
 
@@ -188,26 +145,6 @@ describe("revisionsFromPages", () => {
 
   it("has nothing to join before the first page lands", () => {
     expect(revisionsFromPages(undefined)).toEqual([]);
-  });
-});
-
-describe("currentTimelineEntry", () => {
-  it("stands for the note as it is now", () => {
-    expect(
-      currentTimelineEntry(
-        note({ updatedAt: "2026-08-16T11:00:00.000Z", title: "shopping" }),
-      ),
-    ).toEqual({
-      id: CURRENT_ENTRY_ID,
-      createdAt: "2026-08-16T11:00:00.000Z",
-      title: "shopping",
-      author: null,
-      revision: null,
-    });
-  });
-
-  it("has nothing to stand for before the note has loaded", () => {
-    expect(currentTimelineEntry(null)).toBeNull();
   });
 });
 
