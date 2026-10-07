@@ -15,7 +15,11 @@ import * as React from "react";
 import { Button, IconButton } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
-import { PopoverContent } from "@/components/ui/popover";
+import {
+  PopoverContent,
+  PopoverDescription,
+  PopoverTitle,
+} from "@/components/ui/popover";
 import { RollingText } from "@/components/ui/rolling-text";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Switch } from "@/components/ui/switch";
@@ -128,17 +132,15 @@ function ReminderPicker({
     "overflow-hidden rounded-xl bg-card shadow-[0_0_0_1px_color-mix(in_srgb,var(--border)_55%,transparent)] [&>*+*]:border-border/55 [&>*+*]:border-t";
 
   return (
-    <div
-      role="dialog"
-      aria-label="Reminder"
-      className="grid w-87 max-w-full gap-2 bg-background px-3.5 pt-3 pb-3.5 max-md:w-auto"
-    >
+    <div className="grid w-87 max-w-full gap-2 bg-background px-3.5 pt-3 pb-3.5 max-md:w-auto">
       <div className="flex items-start gap-2.5 p-0.5 pl-1">
         <div className="grid flex-1 gap-px">
-          <b className="font-semibold text-lead">Reminder</b>
-          <small className="text-muted-foreground text-small">
+          <PopoverTitle className="font-semibold text-lead">
+            Reminder
+          </PopoverTitle>
+          <PopoverDescription className="text-muted-foreground text-small">
             Sent to the Anchor app on your phone
-          </small>
+          </PopoverDescription>
         </div>
         {onClose && (
           <IconButton size="sm" label="Close" onClick={onClose}>

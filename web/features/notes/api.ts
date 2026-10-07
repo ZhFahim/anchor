@@ -1,6 +1,6 @@
 import { HTTPError } from "ky";
 import { getAccessToken } from "@/features/auth/store";
-import { api } from "@/lib/api/client";
+import { api, getJson } from "@/lib/api/client";
 import { uploadWithProgress } from "@/lib/api/upload";
 import { fitsKeepalive } from "@/lib/page-close";
 import type { SaveOutcome } from "./save-queue";
@@ -20,11 +20,11 @@ export async function getNotes(params?: { tagId?: string }): Promise<Note[]> {
   const url = params?.tagId
     ? `api/notes?${new URLSearchParams({ tagId: params.tagId })}`
     : "api/notes";
-  return api.get(url).json<Note[]>();
+  return getJson<Note[]>(url);
 }
 
 export async function getNote(id: string): Promise<Note> {
-  return api.get(`api/notes/${id}`).json<Note>();
+  return getJson<Note>(`api/notes/${id}`);
 }
 
 export async function createNote(data: CreateNoteDto): Promise<Note> {
@@ -97,7 +97,7 @@ export async function deleteNote(
 }
 
 export async function getTrashedNotes(): Promise<Note[]> {
-  return api.get("api/notes/trash").json<Note[]>();
+  return getJson<Note[]>("api/notes/trash");
 }
 
 export async function restoreNote(id: string): Promise<Note> {
@@ -109,7 +109,7 @@ export async function permanentDeleteNote(id: string): Promise<void> {
 }
 
 export async function getArchivedNotes(): Promise<Note[]> {
-  return api.get("api/notes/archive").json<Note[]>();
+  return getJson<Note[]>("api/notes/archive");
 }
 
 export async function archiveNote(id: string): Promise<Note> {
@@ -184,20 +184,16 @@ export async function getNoteRevisions(
   noteId: string,
   cursor?: string,
 ): Promise<NoteRevisionPage> {
-  return api
-    .get(`api/notes/${noteId}/revisions`, {
-      searchParams: cursor ? { cursor } : {},
-    })
-    .json<NoteRevisionPage>();
+  return getJson<NoteRevisionPage>(`api/notes/${noteId}/revisions`, {
+    searchParams: cursor ? { cursor } : {},
+  });
 }
 
 export async function getNoteRevision(
   noteId: string,
   revisionId: string,
 ): Promise<NoteRevision> {
-  return api
-    .get(`api/notes/${noteId}/revisions/${revisionId}`)
-    .json<NoteRevision>();
+  return getJson<NoteRevision>(`api/notes/${noteId}/revisions/${revisionId}`);
 }
 
 export async function restoreNoteRevision(

@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import dtcg from "./dtcg.mjs";
 
 const ROOT = path.resolve(
@@ -235,12 +235,12 @@ ${block(".light", themed("light"), "\n  color-scheme: light;")}`;
 const svgUri = (w, h, body) =>
   `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}'>${body}</svg>`)}")`;
 const lucide = async (name) => {
-  const src = fs.readFileSync(
-    path.join(ROOT, `web/node_modules/lucide-react/dist/esm/icons/${name}.mjs`),
-    "utf8",
+  const file = path.join(
+    ROOT,
+    `web/node_modules/lucide-react/dist/esm/icons/${name}.mjs`,
   );
-  const node = src.match(/const __iconNode = (\[[\s\S]*?\]);\n/)[1];
-  return Function(`return ${node}`)()
+  const icon = await import(pathToFileURL(file).href);
+  return icon.__iconData.node
     .map(
       ([tag, attrs]) =>
         `<${tag} ${Object.entries(attrs)

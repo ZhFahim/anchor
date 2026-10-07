@@ -4,6 +4,7 @@ import { Check, Hash, Plus, Search } from "lucide-react";
 import * as React from "react";
 import { LoadFailedRow } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
+import { PopoverTitle } from "@/components/ui/popover";
 import { ShortcutHints } from "@/components/ui/shortcut-hints";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { useDelayedFlag } from "@/lib/hooks/use-delayed-flag";
@@ -99,11 +100,10 @@ export function TagPicker({
   const keepFocus = (e: React.MouseEvent) => e.preventDefault();
 
   return (
-    <div
-      role="dialog"
-      aria-label={bulk ? "Add tags" : "Tags"}
-      className="grid w-72.5 max-w-full p-1.5 max-md:w-auto"
-    >
+    <div className="grid w-72.5 max-w-full p-1.5 max-md:w-auto">
+      <PopoverTitle className="sr-only">
+        {bulk ? "Add tags" : "Tags"}
+      </PopoverTitle>
       <Input
         autoFocus
         icon={<Search aria-hidden />}

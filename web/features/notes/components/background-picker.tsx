@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { PopoverTitle } from "@/components/ui/popover";
 import { BACKGROUNDS } from "@/lib/design/tokens";
 import { cn } from "@/lib/utils";
 
@@ -34,11 +35,10 @@ export function BackgroundPicker({
     list.find((b) => b.id === value)?.name ?? "";
   return (
     <div
-      role="dialog"
-      aria-label="Background"
       className="grid w-75 max-w-full gap-3.5 p-3.5 max-md:w-auto"
       onPointerLeave={() => onPreview?.(false)}
     >
+      <PopoverTitle className="sr-only">Background</PopoverTitle>
       <Section
         label="Color"
         chosen={isPattern ? "" : chosenName(BACKGROUNDS.colors)}

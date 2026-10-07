@@ -1,4 +1,4 @@
-import ky, { HTTPError } from "ky";
+import ky, { HTTPError, type Options } from "ky";
 import {
   clearAccessToken,
   clearRefreshToken,
@@ -125,3 +125,9 @@ export const api = ky.create({
     ],
   },
 });
+
+/** Reads the body without ky's timeout. */
+export async function getJson<T>(url: string, options?: Options): Promise<T> {
+  const response = await api.get(url, options);
+  return response.json<T>();
+}

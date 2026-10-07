@@ -9,6 +9,7 @@ import {
   Popover,
   PopoverAnchor,
   PopoverContent,
+  PopoverTitle,
 } from "@/components/ui/popover";
 import { isLikelyUrl, normalizeUrl } from "../../link-utils";
 
@@ -72,9 +73,8 @@ export function LinkPopover({
         }}
         className="w-80 p-3.5"
       >
+        <PopoverTitle className="sr-only">Link</PopoverTitle>
         <form
-          role="dialog"
-          aria-label="Link"
           className="grid gap-3"
           onSubmit={(e) => {
             e.preventDefault();

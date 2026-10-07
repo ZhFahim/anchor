@@ -8,6 +8,8 @@ import { cn } from "@/lib/utils";
 const Popover = PopoverPrimitive.Root;
 const PopoverTrigger = PopoverPrimitive.Trigger;
 const PopoverAnchor = PopoverPrimitive.Anchor;
+const PopoverTitle = PopoverPrimitive.Title;
+const PopoverDescription = PopoverPrimitive.Description;
 
 function PopoverContent({
   className,
@@ -40,4 +42,11 @@ function PopoverContent({
   );
 }
 
-export { Popover, PopoverAnchor, PopoverContent, PopoverTrigger };
+export {
+  Popover,
+  PopoverAnchor,
+  PopoverContent,
+  PopoverDescription,
+  PopoverTitle,
+  PopoverTrigger,
+};
