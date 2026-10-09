@@ -1,5 +1,6 @@
-import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Inject, Injectable, Logger, ForbiddenException } from '@nestjs/common';
+import { ConfigService, type ConfigType } from '@nestjs/config';
+import { AppConfig } from '../../config/configuration';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { OidcConfig } from './oidc.types';
 
@@ -10,6 +11,8 @@ export class OidcConfigService {
   constructor(
     private configService: ConfigService,
     private prisma: PrismaService,
+    @Inject(AppConfig.KEY)
+    private appConfig: ConfigType<typeof AppConfig>,
   ) {}
 
   /**
@@ -113,10 +116,7 @@ export class OidcConfigService {
    * Used by OIDC callback URL, frontend redirects, and redirect validation.
    */
   getAppUrl(): string {
-    const raw =
-      this.configService.get<string>('APP_URL')?.trim() ||
-      'http://localhost:3000';
-    return raw.replace(/\/+$/, '');
+    return this.appConfig.appUrl;
   }
 
   /**
@@ -145,12 +145,13 @@ export class OidcConfigService {
     disableInternalAuth: boolean;
   }> {
     const config = await this.getConfig();
+    const enabled = config.enabled && !!config.issuerUrl && !!config.clientId;
     return {
-      enabled: config.enabled && !!config.issuerUrl && !!config.clientId,
+      enabled,
       providerName: config.providerName,
       issuerUrl: config.issuerUrl,
       clientId: config.clientId,
-      disableInternalAuth: config.disableInternalAuth,
+      disableInternalAuth: enabled && config.disableInternalAuth,
     };
   }
 

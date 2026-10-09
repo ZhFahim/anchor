@@ -14,7 +14,7 @@ export const ANCHOR_PROTOCOL_HEADER = 'x-anchor-protocol';
 // Nest's HttpStatus enum has no 426.
 const UPGRADE_REQUIRED = 426;
 
-export type ProtocolErrorCode = 'APP_OUTDATED' | 'SERVER_OUTDATED';
+type ProtocolErrorCode = 'APP_OUTDATED' | 'SERVER_OUTDATED';
 
 @Injectable()
 export class ProtocolGuard implements CanActivate {

@@ -1,7 +1,7 @@
 import * as path from 'path';
 
-export const EXPORT_FORMAT = 'anchor-export';
-export const EXPORT_VERSION = 1;
+const EXPORT_FORMAT = 'anchor-export';
+const EXPORT_VERSION = 1;
 
 export interface ExportManifestTag {
   id: string;
@@ -9,7 +9,7 @@ export interface ExportManifestTag {
   color: string | null;
 }
 
-export interface ExportManifestAttachment {
+interface ExportManifestAttachment {
   id: string;
   type: string;
   originalFilename: string;

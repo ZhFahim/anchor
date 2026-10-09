@@ -8,12 +8,12 @@ import {
   sanitizeFilenameStem,
 } from './note-filename';
 
-export type MarkdownExportAttachment = {
+type MarkdownExportAttachment = {
   attachmentId: string;
   archivePath: string;
 };
 
-export type MarkdownExportEntry = {
+type MarkdownExportEntry = {
   /** Path inside the zip, e.g. "Archived/Groceries (2).md" */
   path: string;
   markdown: string;

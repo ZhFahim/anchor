@@ -14,6 +14,7 @@ import { AdminGuard } from './admin.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UserStatus } from 'src/generated/prisma/enums';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { UpdateRegistrationModeDto } from './dto/update-registration-mode.dto';
 import { UpdateOidcSettingsDto } from './dto/update-oidc-settings.dto';
@@ -39,10 +40,22 @@ export class AdminController {
   }
 
   @Get('users')
-  findAllUsers(@Query('skip') skip?: string, @Query('take') take?: string) {
-    return this.adminService.findAllUsers(
+  findUsers(
+    @Query('skip') skip?: string,
+    @Query('take') take?: string,
+    @Query('q') q?: string,
+    @Query('status') status?: string,
+  ) {
+    return this.adminService.findUsers(
       skip ? parseInt(skip, 10) : 0,
       take ? parseInt(take, 10) : 50,
+      {
+        q: q?.trim() || undefined,
+        status:
+          status === UserStatus.active || status === UserStatus.pending
+            ? status
+            : undefined,
+      },
     );
   }
 

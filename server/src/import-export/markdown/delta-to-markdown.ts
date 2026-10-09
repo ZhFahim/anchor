@@ -12,6 +12,8 @@ const MAX_HEADER = 3;
 
 const ALPHANUMERIC = /[\p{L}\p{N}]/u;
 
+const HIGHLIGHT_COLORS = ['yellow', 'green', 'blue', 'pink', 'purple'];
+
 /** Line starts a markdown reader would take as a block marker. */
 const BLOCK_START =
   /^(?:#{1,6}(?:\s|$)|[-+](?:\s|$)|\d{1,9}[.)](?:\s|$)|>|-{2,}\s*$|=+\s*$)/;
@@ -21,8 +23,17 @@ type Marks = {
   italic: boolean;
   underline: boolean;
   strike: boolean;
+  highlight: string | null;
   link: string | null;
 };
+
+/** Unknown colors come out as yellow. */
+function highlightOf(value: unknown): string | null {
+  if (!value) return null;
+  return typeof value === 'string' && HIGHLIGHT_COLORS.includes(value)
+    ? value
+    : 'yellow';
+}
 
 function marksOf(op: QuillOp): Marks {
   const attrs = op.attributes ?? {};
@@ -31,12 +42,13 @@ function marksOf(op: QuillOp): Marks {
     italic: attrs.italic === true,
     underline: attrs.underline === true,
     strike: attrs.strike === true,
+    highlight: highlightOf(attrs.highlight),
     link: typeof attrs.link === 'string' ? attrs.link : null,
   };
 }
 
 const marksKey = (marks: Marks) =>
-  `${marks.bold}|${marks.italic}|${marks.underline}|${marks.strike}|${marks.link ?? ''}`;
+  `${marks.bold}|${marks.italic}|${marks.underline}|${marks.strike}|${marks.highlight ?? ''}|${marks.link ?? ''}`;
 
 /** Escapes characters a markdown reader would treat as formatting. */
 export function escapeInlineText(text: string): string {
@@ -50,6 +62,22 @@ export function escapeInlineText(text: string): string {
     if (char === '~' && text[i + 1] === '~') {
       out += '\\~\\~';
       i++;
+      continue;
+    }
+    // Could form the "==" around a highlight
+    if (
+      char === '=' &&
+      (i === 0 ||
+        i === text.length - 1 ||
+        text[i - 1] === '=' ||
+        text[i + 1] === '=')
+    ) {
+      out += '\\=';
+      continue;
+    }
+    // Could start an HTML tag, like <u> or <mark>
+    if (char === '<' && /[A-Za-z/]/.test(text[i + 1] ?? '')) {
+      out += '\\<';
       continue;
     }
     if (char === '_') {
@@ -70,21 +98,33 @@ export function escapeLineStart(line: string): string {
   return BLOCK_START.test(line) ? `\\${line}` : line;
 }
 
-function applyMarks(text: string, marks: Marks): string {
-  // Delimiters must hug non-whitespace, so edge spaces move outside
+/** Markdown delimiters must hug non-whitespace. */
+function wrapCore(text: string, wrap: (core: string) => string): string {
   const lead = /^\s*/.exec(text)?.[0] ?? '';
   const rest = text.slice(lead.length);
   const trail = /\s*$/.exec(rest)?.[0] ?? '';
   const core = rest.slice(0, rest.length - trail.length);
-  if (!core) return escapeInlineText(text);
+  return core ? `${lead}${wrap(core)}${trail}` : text;
+}
 
-  let out = escapeInlineText(core);
-  if (marks.italic) out = `*${out}*`;
-  if (marks.bold) out = `**${out}**`;
-  if (marks.underline) out = `<u>${out}</u>`;
-  if (marks.strike) out = `~~${out}~~`;
-  if (marks.link) out = `[${out}](${encodeLinkDestination(marks.link)})`;
-  return `${lead}${out}${trail}`;
+function applyMarks(text: string, marks: Marks): string {
+  return wrapCore(text, (core) => {
+    let out = escapeInlineText(core);
+    if (marks.italic) out = `*${out}*`;
+    if (marks.bold) out = `**${out}**`;
+    if (marks.underline) out = `<u>${out}</u>`;
+    if (marks.strike) out = `~~${out}~~`;
+    if (marks.link) out = `[${out}](${encodeLinkDestination(marks.link)})`;
+    return out;
+  });
+}
+
+function applyHighlight(markdown: string, color: string): string {
+  return wrapCore(markdown, (core) =>
+    color === 'yellow'
+      ? `==${core}==`
+      : `<mark data-color="${color}">${core}</mark>`,
+  );
 }
 
 /** Angle-bracket form for destinations a bare (…) can't hold. */
@@ -105,7 +145,17 @@ export function renderInline(ops: QuillOp[]): string {
       runs.push({ text: op.insert, marks });
     }
   }
-  return runs.map((run) => applyMarks(run.text, run.marks)).join('');
+
+  let out = '';
+  for (let i = 0; i < runs.length;) {
+    const { highlight } = runs[i].marks;
+    let inner = '';
+    for (; i < runs.length && runs[i].marks.highlight === highlight; i++) {
+      inner += applyMarks(runs[i].text, runs[i].marks);
+    }
+    out += highlight ? applyHighlight(inner, highlight) : inner;
+  }
+  return out;
 }
 
 function longestBacktickRun(lines: string[]): number {

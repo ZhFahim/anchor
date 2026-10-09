@@ -1,307 +1,251 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { format } from "date-fns";
-import { Loader2, RotateCcw, Trash2 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { RotateCcw, Trash2 } from "lucide-react";
 import * as React from "react";
-import { useMemo, useState } from "react";
-import Masonry from "react-masonry-css";
-import { toast } from "sonner";
-import { Header } from "@/components/layout";
-import { Button } from "@/components/ui/button";
+import { AppPage, PageTitle, TopBarButton } from "@/components/layout/app-page";
+import { IconButton } from "@/components/ui/button";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
+import { EmptyState, LoadFailedState } from "@/components/ui/empty-state";
+import { SelectionBar } from "@/components/ui/selection-bar";
+import { toast } from "@/components/ui/toast";
+import { Tip } from "@/components/ui/tooltip";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import type { Note } from "@/features/notes";
-import {
-  deltaToFullPlainText,
+  deleteNote,
   getTrashedNotes,
-  NoteCard,
-  PermanentDeleteDialog,
   permanentDeleteNote,
-  RestoreDialog,
   restoreNote,
-} from "@/features/notes";
-import { getTags } from "@/features/tags";
+} from "@/features/notes/api";
+import {
+  NoSearchResults,
+  NoteListActions,
+} from "@/features/notes/components/note-list-actions";
+import {
+  NotesBoard,
+  NotesBoardSkeleton,
+} from "@/features/notes/components/notes-board";
+import { useNoteList } from "@/features/notes/hooks/use-note-list";
+import { useRefreshNotes } from "@/features/notes/hooks/use-refresh-notes";
+import {
+  daysUntilDeletion,
+  TRASH_RETENTION_DAYS,
+} from "@/features/notes/trash";
+import type { Note } from "@/features/notes/types";
+import { eachLimited } from "@/lib/each";
+import { plural } from "@/lib/utils";
 
-const masonryBreakpoints = {
-  default: 4,
-  1536: 4,
-  1280: 3,
-  1024: 3,
-  768: 2,
-  640: 1,
-};
+const NO_NOTES: Note[] = [];
+
+const timeLeft = (note: Note) =>
+  `${plural(daysUntilDeletion(note), "day")} left`;
 
 export default function TrashPage() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const queryClient = useQueryClient();
-  const router = useRouter();
-
-  const { data: notes = [], isLoading } = useQuery({
-    queryKey: ["notes", "trash"],
+  const refresh = useRefreshNotes();
+  const [pendingDelete, setPendingDelete] = React.useState<{
+    ids: string[];
+    all?: boolean;
+  } | null>(null);
+  const { data, isLoading, isError, isFetching, refetch } = useQuery({
+    queryKey: ["notes", "trashed"],
     queryFn: getTrashedNotes,
   });
+  const notes = data ?? NO_NOTES;
+  const loadFailed = isError && !data;
+  const list = useNoteList(notes);
 
-  const { data: tags = [] } = useQuery({
-    queryKey: ["tags"],
-    queryFn: getTags,
+  const restore = useMutation({
+    mutationFn: (ids: string[]) => eachLimited(ids, restoreNote),
+    onMutate: (ids) => {
+      list.prepareCardMotion();
+      return new Map(
+        ids.map((id) => [id, notes.find((n) => n.id === id)?.stateChangedAt]),
+      );
+    },
+    onSuccess: (_, ids, trashDates) => {
+      refresh();
+      list.stopPicking();
+      toast.success(
+        ids.length === 1
+          ? "Note restored"
+          : `${plural(ids.length, "note")} restored`,
+        {
+          undo: async () => {
+            list.prepareCardMotion();
+            try {
+              await eachLimited(ids, (id) =>
+                deleteNote(id, trashDates?.get(id)),
+              );
+            } catch {
+              toast.error("Couldn’t undo that");
+            }
+            refresh();
+          },
+        },
+      );
+    },
+    onError: (_, ids) =>
+      toast.error(`Couldn’t restore ${ids.length === 1 ? "note" : "notes"}`, {
+        retry: () => restore.mutate(ids),
+      }),
   });
 
-  // Join tags with notes based on tagIds
-  const notesWithTags = useMemo(() => {
-    return notes.map((note) => ({
-      ...note,
-      tags: note.tagIds
-        ? note.tagIds
-            .map((tagId) => tags.find((tag) => tag.id === tagId))
-            .filter((tag): tag is NonNullable<typeof tag> => tag !== undefined)
-        : [],
-    }));
-  }, [notes, tags]);
-
-  const restoreMutation = useMutation({
-    mutationFn: restoreNote,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
-      queryClient.invalidateQueries({ queryKey: ["notes", "trash"] });
-      queryClient.invalidateQueries({ queryKey: ["tags"] });
-      toast.success("Note restored");
+  const remove = useMutation({
+    mutationFn: ({ ids }: { ids: string[]; all?: boolean }) =>
+      eachLimited(ids, permanentDeleteNote),
+    onMutate: () => list.prepareCardMotion(),
+    onSuccess: async (_, { ids, all }) => {
+      await refresh();
+      list.stopPicking();
+      setPendingDelete(null);
+      toast.success(
+        all
+          ? "Trash emptied"
+          : ids.length === 1
+            ? "Note permanently deleted"
+            : `${plural(ids.length, "note")} permanently deleted`,
+      );
     },
-    onError: () => {
-      toast.error("Failed to restore note");
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: permanentDeleteNote,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notes", "trash"] });
-      queryClient.invalidateQueries({ queryKey: ["tags"] });
-      toast.success("Note permanently deleted");
-    },
-    onError: () => {
-      toast.error("Failed to delete note");
+    onError: (_, variables) => {
+      refresh();
+      toast.error(
+        variables.all
+          ? "Couldn’t empty trash"
+          : `Couldn’t delete ${variables.ids.length === 1 ? "note" : "notes"}`,
+        { retry: () => remove.mutate(variables) },
+      );
     },
   });
 
-  const filteredNotes = notesWithTags.filter((note) => {
-    if (!searchQuery.trim()) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      note.title.toLowerCase().includes(query) ||
-      deltaToFullPlainText(note.content).toLowerCase().includes(query)
-    );
-  });
-
-  const handleNoteClick = (note: Note) => {
-    // Store note in sessionStorage for quick access
-    if (typeof window !== "undefined") {
-      sessionStorage.setItem(`note-${note.id}`, JSON.stringify(note));
-    }
-    router.push(`/notes/${note.id}`);
-  };
-
-  return (
-    <div className="min-h-screen flex flex-col">
-      <Header searchQuery={searchQuery} onSearchChange={setSearchQuery} />
-
-      <div className="flex-1 p-4 lg:p-6">
-        <div className="mb-6">
-          <h1 className="font-serif text-2xl font-bold">Trash</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Notes in trash are permanently deleted after 30 days
-          </p>
-        </div>
-
-        {isLoading ? (
-          <div className="flex items-center justify-center h-64">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
-        ) : filteredNotes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 text-center">
-            <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center mb-4">
-              <Trash2 className="h-10 w-10 text-muted-foreground/50" />
-            </div>
-            <h3 className="text-xl font-medium text-foreground">
-              Trash is empty
-            </h3>
-            <p className="text-sm text-muted-foreground mt-1">
-              Deleted notes will appear here
-            </p>
-          </div>
-        ) : (
-          <Masonry
-            breakpointCols={masonryBreakpoints}
-            className="flex w-auto -ml-4"
-            columnClassName="pl-4 bg-clip-padding"
+  const restoreNotes = restore.mutate;
+  const renderActions = React.useCallback(
+    (note: Note) => (
+      <>
+        <Tip label="Restore">
+          <IconButton
+            size="sm"
+            label="Restore"
+            onClick={() => restoreNotes([note.id])}
           >
-            {filteredNotes.map((note) => (
-              <div key={note.id} className="mb-4">
-                <TrashNoteCard
-                  note={note}
-                  onRestore={() => restoreMutation.mutate(note.id)}
-                  onDelete={() => deleteMutation.mutate(note.id)}
-                  onClick={() => handleNoteClick(note)}
-                  isRestoring={restoreMutation.isPending}
-                  isDeleting={deleteMutation.isPending}
-                />
-              </div>
-            ))}
-          </Masonry>
-        )}
-      </div>
-    </div>
+            <RotateCcw />
+          </IconButton>
+        </Tip>
+        <Tip label="Delete permanently">
+          <IconButton
+            size="sm"
+            tone="danger"
+            label="Delete permanently"
+            onClick={() => setPendingDelete({ ids: [note.id] })}
+          >
+            <Trash2 />
+          </IconButton>
+        </Tip>
+      </>
+    ),
+    [restoreNotes],
   );
-}
 
-interface TrashNoteCardProps {
-  note: Note;
-  onRestore: () => void;
-  onDelete: () => void;
-  onClick: () => void;
-  isRestoring: boolean;
-  isDeleting: boolean;
-}
-
-function TrashNoteCard({
-  note,
-  onRestore,
-  onDelete,
-  onClick,
-  isRestoring,
-  isDeleting,
-}: TrashNoteCardProps) {
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
-  const [restoreTooltipOpen, setRestoreTooltipOpen] = useState(false);
-  const [deleteTooltipOpen, setDeleteTooltipOpen] = useState(false);
-  const dialogJustClosedRef = React.useRef(false);
-
-  const handleRestoreClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setRestoreTooltipOpen(false);
-    setRestoreDialogOpen(true);
-  };
-
-  const handleRestoreConfirm = () => {
-    onRestore();
-    setRestoreDialogOpen(false);
-  };
-
-  const handleRestoreDialogClose = (open: boolean) => {
-    setRestoreDialogOpen(open);
-    if (!open) {
-      setRestoreTooltipOpen(false);
-      dialogJustClosedRef.current = true;
-      setTimeout(() => {
-        dialogJustClosedRef.current = false;
-      }, 100);
-    }
-  };
-
-  const handleDeleteButtonClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setDeleteTooltipOpen(false);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleDialogClose = (open: boolean) => {
-    setDeleteDialogOpen(open);
-    if (!open) {
-      setDeleteTooltipOpen(false);
-      dialogJustClosedRef.current = true;
-      setTimeout(() => {
-        dialogJustClosedRef.current = false;
-      }, 100);
-    }
-  };
-
-  const handleCardClick = (e: React.MouseEvent) => {
-    if (
-      (e.target as HTMLElement).closest("button") ||
-      (e.target as HTMLElement).closest("[data-slot='dialog-content']") ||
-      (e.target as HTMLElement).closest("[data-slot='dialog-overlay']") ||
-      deleteDialogOpen ||
-      restoreDialogOpen ||
-      dialogJustClosedRef.current
-    ) {
-      return;
-    }
-    onClick();
-  };
-
+  const hasNotes = notes.length > 0;
+  const chosenIds = list.chosen.map((n) => n.id);
+  const deleteCount = pendingDelete?.ids.length ?? 0;
   return (
-    <NoteCard
-      note={note}
-      viewMode="masonry"
-      footerLeft={
-        <span className="font-medium">
-          Deleted {format(new Date(note.updatedAt), "MMM d, yyyy")}
-        </span>
-      }
-      footerRight={
-        <div
-          onClick={(e) => e.stopPropagation()}
-          className="flex items-center gap-2"
-        >
-          <TooltipProvider>
-            <Tooltip
-              open={restoreTooltipOpen}
-              onOpenChange={setRestoreTooltipOpen}
-            >
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleRestoreClick}
-                  disabled={isRestoring}
-                  className="h-7 w-7 hover:bg-accent hover:text-accent-foreground opacity-0 group-hover:opacity-100 transition-all duration-200 bg-background/80 backdrop-blur-sm border border-border/50"
-                >
-                  <RotateCcw className="h-3.5 w-3.5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="top">Restore</TooltipContent>
-            </Tooltip>
-            <Tooltip
-              open={deleteTooltipOpen && !deleteDialogOpen}
-              onOpenChange={setDeleteTooltipOpen}
-            >
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all duration-200 bg-background/80 backdrop-blur-sm border border-border/50"
-                  onClick={handleDeleteButtonClick}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="top">Delete permanently</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          <RestoreDialog
-            open={restoreDialogOpen}
-            onOpenChange={handleRestoreDialogClose}
-            onConfirm={handleRestoreConfirm}
-            isPending={isRestoring}
+    <>
+      <AppPage
+        scrollKey="trash"
+        title={
+          <PageTitle
+            count={isLoading || loadFailed ? undefined : list.visible.length}
+          >
+            Trash
+          </PageTitle>
+        }
+        actions={
+          hasNotes && (
+            <NoteListActions list={list} placeholder="Search trash">
+              <TopBarButton
+                icon={<Trash2 aria-hidden />}
+                onClick={() =>
+                  setPendingDelete({ ids: notes.map((x) => x.id), all: true })
+                }
+              >
+                Empty trash
+              </TopBarButton>
+            </NoteListActions>
+          )
+        }
+      >
+        <p className="m-0 -mt-2 mb-1 text-muted-foreground text-ui">
+          {`Notes in the trash are permanently deleted after ${TRASH_RETENTION_DAYS} days.`}
+        </p>
+        <NotesBoardSkeleton loading={isLoading} />
+        {loadFailed && (
+          <LoadFailedState
+            title="Couldn’t load your trash"
+            onRetry={() => refetch()}
+            isRetrying={isFetching}
           />
-          <PermanentDeleteDialog
-            open={deleteDialogOpen}
-            onOpenChange={handleDialogClose}
-            onConfirm={() => {
-              onDelete();
-              setDeleteDialogOpen(false);
-            }}
-            isPending={isDeleting}
+        )}
+        {!isLoading && !loadFailed && !hasNotes && (
+          <EmptyState illustration="trash" title="Trash is empty">
+            {`Notes you delete stay here for ${TRASH_RETENTION_DAYS} days.`}
+          </EmptyState>
+        )}
+        {hasNotes && !list.visible.length && <NoSearchResults list={list} />}
+        {list.visible.length > 0 && (
+          <NotesBoard
+            ref={list.boardRef}
+            layout={list.layout}
+            picking={list.picking}
+            picked={list.picked}
+            onPick={list.onPick}
+            renderActions={renderActions}
+            dateLabel={timeLeft}
+            groups={[{ key: "all", notes: list.shown }]}
           />
-        </div>
-      }
-      onClick={handleCardClick}
-    />
+        )}
+      </AppPage>
+
+      <SelectionBar
+        open={list.picking}
+        count={list.chosen.length}
+        total={list.shown.length}
+        onToggleAll={list.toggleAll}
+        onClose={list.stopPicking}
+        actions={[
+          {
+            key: "restore",
+            label: "Restore",
+            icon: <RotateCcw aria-hidden />,
+            onClick: () => restore.mutate(chosenIds),
+          },
+          {
+            key: "forever",
+            label: "Delete permanently",
+            icon: <Trash2 aria-hidden />,
+            onClick: () => setPendingDelete({ ids: chosenIds }),
+          },
+        ]}
+      />
+
+      <ConfirmationDialog
+        open={!!pendingDelete}
+        onOpenChange={(open) => !open && setPendingDelete(null)}
+        title={
+          pendingDelete?.all
+            ? "Empty trash?"
+            : deleteCount === 1
+              ? "Permanently delete this note?"
+              : `Permanently delete ${deleteCount} notes?`
+        }
+        description={
+          pendingDelete?.all
+            ? `${plural(deleteCount, "note")} will be permanently deleted. This can’t be undone.`
+            : `This can’t be undone. People you shared ${deleteCount === 1 ? "it" : "them"} with will lose access too.`
+        }
+        confirmLabel={pendingDelete?.all ? "Empty trash" : "Delete permanently"}
+        busyLabel={pendingDelete?.all ? "Emptying trash…" : "Deleting…"}
+        isPending={remove.isPending}
+        onConfirm={() => pendingDelete && remove.mutate(pendingDelete)}
+      />
+    </>
   );
 }

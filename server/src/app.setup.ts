@@ -1,9 +1,13 @@
 import type { ConfigType } from '@nestjs/config';
+import type { Response } from 'express';
 import helmet from 'helmet';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import * as fs from 'fs';
 import { AppConfig, StorageConfig } from './config/configuration';
-import { PUBLIC_PROFILES_PREFIX } from './config/storage.constants';
+import {
+  PROFILE_IMAGE_CACHE_CONTROL,
+  PUBLIC_PROFILES_PREFIX,
+} from './config/storage.constants';
 import { AppValidationPipe } from './common/pipes/app-validation.pipe';
 
 export function setupApp(app: NestExpressApplication): void {
@@ -31,6 +35,8 @@ export function setupApp(app: NestExpressApplication): void {
   // Serve profile images only
   app.useStaticAssets(storageConfig.profilesDir, {
     prefix: PUBLIC_PROFILES_PREFIX,
+    setHeaders: (res: Response) =>
+      res.setHeader('Cache-Control', PROFILE_IMAGE_CACHE_CONTROL),
   });
 
   app.useGlobalPipes(new AppValidationPipe());

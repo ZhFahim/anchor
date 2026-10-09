@@ -1,5 +1,8 @@
+import { HTTPError } from "ky";
 import { getAccessToken } from "@/features/auth/store";
-import { api } from "@/lib/api/client";
+import { api, getJson } from "@/lib/api/client";
+import { uploadWithProgress } from "@/lib/api/upload";
+import { fitsKeepalive } from "@/lib/page-close";
 import type { SaveOutcome } from "./save-queue";
 import type {
   CreateNoteDto,
@@ -13,24 +16,15 @@ import type {
   UserSearchResult,
 } from "./types";
 
-interface NotesQueryParams {
-  search?: string;
-  tagId?: string;
-}
-
-export async function getNotes(params?: NotesQueryParams): Promise<Note[]> {
-  const searchParams = new URLSearchParams();
-  if (params?.search) searchParams.set("search", params.search);
-  if (params?.tagId) searchParams.set("tagId", params.tagId);
-
-  const queryString = searchParams.toString();
-  const url = queryString ? `api/notes?${queryString}` : "api/notes";
-
-  return api.get(url).json<Note[]>();
+export async function getNotes(params?: { tagId?: string }): Promise<Note[]> {
+  const url = params?.tagId
+    ? `api/notes?${new URLSearchParams({ tagId: params.tagId })}`
+    : "api/notes";
+  return getJson<Note[]>(url);
 }
 
 export async function getNote(id: string): Promise<Note> {
-  return api.get(`api/notes/${id}`).json<Note>();
+  return getJson<Note>(`api/notes/${id}`);
 }
 
 export async function createNote(data: CreateNoteDto): Promise<Note> {
@@ -39,6 +33,12 @@ export async function createNote(data: CreateNoteDto): Promise<Note> {
 
 function isWorthAnotherTry(httpStatus: number): boolean {
   return httpStatus >= 500 || httpStatus === 408 || httpStatus === 429;
+}
+
+export function isRetryableError(error: unknown): boolean {
+  return (
+    !(error instanceof HTTPError) || isWorthAnotherTry(error.response.status)
+  );
 }
 
 export async function saveNote(
@@ -73,24 +73,31 @@ export async function saveNote(
 // screen wins.
 export function flushNoteUpdate(id: string, data: UpdateNoteDto): void {
   const token = getAccessToken();
+  const body = JSON.stringify(data);
 
   void fetch(`/api/notes/${id}`, {
     method: "PATCH",
-    keepalive: true,
+    keepalive: fitsKeepalive(body),
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    body: JSON.stringify(data),
+    body,
   }).catch(() => {});
 }
 
-export async function deleteNote(id: string): Promise<void> {
-  await api.delete(`api/notes/${id}`);
+/** `trashedAt` puts back the old trash date when a restore is undone. */
+export async function deleteNote(
+  id: string,
+  trashedAt?: string,
+): Promise<void> {
+  await api.delete(`api/notes/${id}`, {
+    searchParams: trashedAt ? { trashedAt } : undefined,
+  });
 }
 
 export async function getTrashedNotes(): Promise<Note[]> {
-  return api.get("api/notes/trash").json<Note[]>();
+  return getJson<Note[]>("api/notes/trash");
 }
 
 export async function restoreNote(id: string): Promise<Note> {
@@ -102,7 +109,7 @@ export async function permanentDeleteNote(id: string): Promise<void> {
 }
 
 export async function getArchivedNotes(): Promise<Note[]> {
-  return api.get("api/notes/archive").json<Note[]>();
+  return getJson<Note[]>("api/notes/archive");
 }
 
 export async function archiveNote(id: string): Promise<Note> {
@@ -177,20 +184,16 @@ export async function getNoteRevisions(
   noteId: string,
   cursor?: string,
 ): Promise<NoteRevisionPage> {
-  return api
-    .get(`api/notes/${noteId}/revisions`, {
-      searchParams: cursor ? { cursor } : {},
-    })
-    .json<NoteRevisionPage>();
+  return getJson<NoteRevisionPage>(`api/notes/${noteId}/revisions`, {
+    searchParams: cursor ? { cursor } : {},
+  });
 }
 
 export async function getNoteRevision(
   noteId: string,
   revisionId: string,
 ): Promise<NoteRevision> {
-  return api
-    .get(`api/notes/${noteId}/revisions/${revisionId}`)
-    .json<NoteRevision>();
+  return getJson<NoteRevision>(`api/notes/${noteId}/revisions/${revisionId}`);
 }
 
 export async function restoreNoteRevision(
@@ -256,13 +259,15 @@ export async function getRecentContacts(): Promise<UserSearchResult[]> {
 export async function uploadAttachment(
   noteId: string,
   file: File,
+  options: { onProgress?: (done: number) => void; signal?: AbortSignal } = {},
 ): Promise<NoteAttachment> {
   const formData = new FormData();
   formData.append("file", file);
-
-  return api
-    .post(`api/notes/${noteId}/attachments`, { body: formData })
-    .json<NoteAttachment>();
+  return uploadWithProgress<NoteAttachment>(
+    `api/notes/${noteId}/attachments`,
+    formData,
+    options,
+  );
 }
 
 export async function getNoteAttachments(

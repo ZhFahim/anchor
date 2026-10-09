@@ -1,0 +1,405 @@
+.cards {
+  --gap: 16px;
+  min-width: 0;
+}
+.cards.masonry {
+  --masonry-columns: 4;
+  --masonry-min: 200px;
+  position: relative;
+  height: var(--masonry-height, auto);
+}
+.cards.masonry > * {
+  position: absolute;
+  top: var(--masonry-y, 0);
+  left: var(--masonry-x, 0);
+  width: var(--masonry-width, 100%);
+}
+.cards.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--gap);
+}
+.cards.list {
+  display: grid;
+  gap: --spacing(2.5);
+  max-width: 780px;
+  width: 100%;
+  justify-self: center;
+}
+.nc {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  isolation: isolate;
+  background-color: var(--note);
+  background-image: var(--note-image, none);
+  color: var(--foreground);
+  cursor: pointer;
+  box-shadow: var(--sh-xs);
+  transition:
+    transform var(--duration-fade) var(--ease-standard),
+    box-shadow var(--duration-fade);
+}
+.nc::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px var(--note-border);
+  pointer-events: none;
+  z-index: 3;
+  transition: box-shadow var(--duration-fade);
+}
+@media (hover: hover) {
+  .nc:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--sh-lift);
+  }
+}
+.nc:hover::after {
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--note-muted) 40%, var(--note-border));
+}
+@media (hover: hover) {
+  .cards.picking .nc:hover {
+    transform: none;
+  }
+}
+.nc.picked {
+  box-shadow:
+    0 0 0 2px var(--background),
+    0 0 0 4px var(--accent-strong);
+}
+.nc.picked::after {
+  box-shadow: none;
+}
+.nc-pics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: --spacing(0.5);
+}
+.nc-pics .ph {
+  position: relative;
+  overflow: hidden;
+  background: var(--note-surface);
+  aspect-ratio: 1;
+  max-width: 100%;
+}
+.nc-pics .ph > :is(svg, img) {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.nc-pics.n1 .ph {
+  grid-column: 1 / -1;
+  aspect-ratio: 16 / 10;
+}
+.nc-pics.n3 .ph:first-child {
+  grid-column: 1 / -1;
+  aspect-ratio: 2 / 1;
+}
+.cards.grid .nc-pics.n1 .ph {
+  aspect-ratio: 2 / 1;
+}
+.nc-pics .more {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--color-media-shade);
+  color: var(--color-media-text);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--text-lead);
+}
+.nc-in {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: --spacing(3.5) --spacing(4) 13px;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+.nc-title {
+  font-size: var(--text-card-title);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.3;
+  letter-spacing: -0.012em;
+  padding-right: 22px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.nc-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-width: 0;
+}
+.nc-foot {
+  display: flex;
+  align-items: center;
+  gap: --spacing(1.5);
+  min-width: 0;
+  font-size: var(--text-footnote);
+  color: var(--note-muted);
+  margin-top: auto;
+  padding-top: 1px;
+}
+.nc-foot > * {
+  flex: none;
+}
+.nc-foot svg {
+  width: 13px;
+  height: 13px;
+}
+.nc-foot [data-slot="reminder-chip"] {
+  flex-shrink: 1;
+  min-width: 0;
+}
+.nc-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-weight: var(--font-weight-medium);
+}
+.nc-date {
+  margin-left: auto;
+  white-space: nowrap;
+}
+.nc-pick {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  z-index: 4;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 0;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  background: color-mix(in srgb, var(--note) 82%, transparent);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  box-shadow:
+    inset 0 0 0 1.5px var(--note-muted),
+    var(--sh-knob);
+  color: transparent;
+  opacity: 0;
+  transform: scale(0.85);
+  transition:
+    opacity var(--duration-hover),
+    transform var(--duration-hover),
+    background-color var(--duration-hover),
+    color var(--duration-hover),
+    box-shadow var(--duration-hover);
+}
+.nc-pick svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 3;
+}
+.nc:hover .nc-pick,
+.nc:focus-within .nc-pick,
+.cards.picking .nc-pick {
+  opacity: 1;
+  transform: none;
+}
+.nc-pick:hover {
+  color: var(--note-muted);
+}
+.nc.picked .nc-pick {
+  background: var(--accent-strong);
+  box-shadow: none;
+  color: var(--check-mark, var(--note));
+}
+.nc.picked .nc-pick svg {
+  animation: check-pop var(--duration-tick) var(--ease-pop);
+}
+@keyframes check-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+:root:not([data-input="pointer"]) .nc-pick:focus-visible {
+  box-shadow:
+    inset 0 0 0 1.5px var(--note-muted),
+    0 0 0 2px var(--note),
+    var(--sh-knob);
+}
+:root:not([data-input="pointer"]) .nc.picked .nc-pick:focus-visible {
+  box-shadow:
+    0 0 0 2px var(--note),
+    var(--sh-knob);
+}
+@media (hover: none) {
+  .nc-pick {
+    opacity: 1;
+    transform: none;
+  }
+}
+.cards.list .nc {
+  flex-direction: row;
+  align-items: stretch;
+}
+.cards.list .nc-in {
+  padding: --spacing(3) --spacing(4);
+  gap: --spacing(1.5);
+}
+.cards.list .nc-title {
+  -webkit-line-clamp: 1;
+  padding-right: 26px;
+}
+.cards.list .doc.is-card p {
+  -webkit-line-clamp: 1;
+}
+.cards.list .doc.is-card.cut {
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+.nc-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: --spacing(1.5) --spacing(2.5);
+  min-width: 0;
+}
+.nc-row .nc-foot {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.nc-thumb {
+  position: relative;
+  flex: none;
+  align-self: center;
+  order: -1;
+  width: 60px;
+  height: 60px;
+  margin: 0 0 0 --spacing(3);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--note-surface);
+}
+.nc-thumb > :is(svg, img) {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.nc-thumb .more {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  font-size: var(--text-caption);
+  font-weight: var(--font-weight-semibold);
+  padding: 1px --spacing(1.5);
+  border-radius: var(--radius-pill);
+  background: var(--color-media-shade-strong);
+  color: var(--color-media-text);
+}
+
+@media (width < 768px) {
+  .cards {
+    --gap: 10px;
+  }
+  .cards.masonry {
+    --masonry-columns: 2;
+    --masonry-min: 0px;
+  }
+  .cards.grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .nc-pick {
+    display: none;
+  }
+  .cards.picking .nc-pick {
+    display: grid;
+  }
+  .nc-thumb {
+    width: 52px;
+    height: 52px;
+  }
+  .nc-in {
+    padding: --spacing(3) --spacing(3) 11px;
+    gap: 7px;
+  }
+  .nc-title {
+    font-size: var(--text-ui);
+    padding-right: 0;
+  }
+  .cards.picking .nc-title {
+    padding-right: 26px;
+  }
+  .doc.is-card {
+    font-size: var(--text-meta);
+  }
+  .nc-foot .nc-date {
+    display: none;
+  }
+  .cards.list .nc-foot .nc-date,
+  .nc-foot .nc-status {
+    display: inline;
+  }
+}
+
+:root:not([data-input="pointer"]) .nc:has(> .nc-link:focus-visible) {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.nc-acts {
+  position: absolute;
+  right: --spacing(2);
+  bottom: --spacing(2);
+  z-index: 5;
+  display: flex;
+  gap: --spacing(1);
+  opacity: 0;
+  transition: opacity var(--duration-hover);
+}
+.nc:hover .nc-acts,
+.nc:focus-within .nc-acts {
+  opacity: 1;
+}
+.nc-acts [data-slot="icon-button"] {
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--border) 80%, transparent),
+    var(--sh-sm);
+}
+.nc-acts [data-slot="icon-button"]:hover {
+  background: var(--card);
+  color: var(--accent-strong);
+}
+.nc-acts [data-slot="icon-button"][data-tone="danger"]:hover {
+  color: var(--destructive);
+}
+.nc .nc-date {
+  transition: opacity var(--duration-hover);
+}
+@media (hover: hover) {
+  .nc:has(.nc-acts):is(:hover, :focus-within) .nc-date {
+    opacity: 0;
+  }
+}
+@media (hover: none) {
+  .nc-acts {
+    position: static;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0 --spacing(2) --spacing(2);
+    opacity: 1;
+  }
+  .cards.list .nc-acts {
+    padding: --spacing(2);
+  }
+}

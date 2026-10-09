@@ -19,9 +19,7 @@ import {
 // ============================================================================
 
 /**
- * Check if a change delta indicates a checkbox was clicked to toggle its state.
- *
- * When clicking a checkbox, Quill produces a very specific delta pattern:
+ * A checkbox click gives a change delta of this shape:
  * { ops: [{ retain: N }, { retain: 1, attributes: { list: "checked" | "unchecked" } }] }
  */
 export function didChangeChecklistItemState(changeDelta: unknown): boolean {
@@ -30,7 +28,6 @@ export function didChangeChecklistItemState(changeDelta: unknown): boolean {
   const delta = changeDelta as { ops?: unknown[] };
   if (!Array.isArray(delta.ops) || delta.ops.length === 0) return false;
 
-  // Check that there are no inserts or deletes (pure format change)
   const hasInsertOrDelete = delta.ops.some((op) => {
     if (!op || typeof op !== "object") return false;
     const operation = op as { insert?: unknown; delete?: number };
@@ -39,7 +36,6 @@ export function didChangeChecklistItemState(changeDelta: unknown): boolean {
 
   if (hasInsertOrDelete) return false;
 
-  // Find operations that change list format to checked/unchecked
   const listFormatChanges = delta.ops.filter((op) => {
     if (!op || typeof op !== "object") return false;
 
@@ -48,7 +44,6 @@ export function didChangeChecklistItemState(changeDelta: unknown): boolean {
       attributes?: { list?: string };
     };
 
-    // Must be a retain operation with list attribute
     if (operation.retain === undefined) return false;
     if (!operation.attributes) return false;
 
@@ -56,18 +51,13 @@ export function didChangeChecklistItemState(changeDelta: unknown): boolean {
     return list === LIST_FORMATS.CHECKED || list === LIST_FORMATS.UNCHECKED;
   });
 
-  // A checkbox toggle should have exactly one list format change
-  // and it should retain exactly 1 character (the newline)
   if (listFormatChanges.length !== 1) return false;
 
   const formatChange = listFormatChanges[0] as { retain?: number };
   return formatChange.retain === 1;
 }
 
-/**
- * Extract the position from a change delta where a checkbox was toggled.
- * Returns the character position of the toggled line's newline, or -1 if not found.
- */
+/** The toggled line's newline position in a change delta, or -1 if none. */
 export function getToggledLinePosition(changeDelta: QuillDelta): number {
   let position = 0;
   for (const op of changeDelta.ops) {
@@ -83,16 +73,22 @@ export function getToggledLinePosition(changeDelta: QuillDelta): number {
   return -1;
 }
 
+export function isChecklistLineAt(delta: QuillDelta, position: number) {
+  const lines = deltaToLines(delta.ops);
+  const line = lines[findLineIndexAtPosition(lines, position)];
+  return !!line && isChecklistLine(line);
+}
+
 // ============================================================================
 // Checklist Sorting
 // ============================================================================
 
 /**
- * Order of the group's line indices after a toggle: at each nesting level a
- * stable partition of sibling blocks (a line plus its indented children) —
- * unchecked blocks first, checked blocks last, each keeping document order,
- * with the toggled block at the end of its own section — applied recursively
- * within each block. Null when the group is already in that order.
+ * Order of the group's line indices after a toggle. At each nesting level,
+ * sibling blocks (a line plus its indented children) keep document order with
+ * unchecked blocks first, checked blocks last and the toggled block at the end
+ * of its own section; the same applies within each block. Null when the group
+ * is already in that order.
  */
 function checklistSortOrder(
   lines: DeltaLine[],
@@ -142,13 +138,9 @@ function orderSiblingBlocks(
 }
 
 /**
- * Create a delta for `updateContents` that re-sorts the toggled item's
- * checklist group: unchecked on top, checked at the bottom. A minimal diff
- * of the group slice, so cursor positions survive.
- *
- * @param togglePosition - Position where the checkbox was toggled (from change delta)
- * @param currentDelta - Current document content
- * @returns A delta to pass to updateContents, or null if no move needed
+ * Delta for `updateContents` that re-sorts the toggled item's checklist group:
+ * unchecked on top, checked at the bottom. A minimal diff of the group slice,
+ * so cursor positions survive. Null when nothing moves.
  */
 export function createChecklistSortDelta(
   togglePosition: number,
@@ -264,7 +256,7 @@ function buildSpanMoveDelta(
   return { ops };
 }
 
-export type ChecklistDropGap = {
+type ChecklistDropGap = {
   /** Insertion point: the block drops before line [gap]. */
   gap: number;
   /** Lowest indent the block's head line may take at this gap. */
@@ -415,10 +407,10 @@ export function checklistLineIndexFromOrdinal(
 }
 
 /**
- * Delta for `updateContents` that drops the dragged line — together with its
- * indented children, all shifted to put the head at [targetIndent] — into
- * [gap]. A gap at the block's own boundaries re-indents in place. Null when
- * the drop changes nothing or the gap falls inside the dragged block.
+ * Delta for `updateContents` that drops the dragged line and its indented
+ * children into [gap], all shifted to put the head at [targetIndent]. A gap at
+ * the block's own boundaries re-indents in place. Null when the drop changes
+ * nothing or the gap falls inside the dragged block.
  */
 export function buildChecklistDropDelta(
   currentDelta: QuillDelta,

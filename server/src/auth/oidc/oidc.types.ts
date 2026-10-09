@@ -18,7 +18,7 @@ export interface OidcConfig {
   disableInternalAuth: boolean;
 }
 
-export interface OidcUserPayload {
+interface OidcUserPayload {
   id: string;
   email: string;
   name: string;

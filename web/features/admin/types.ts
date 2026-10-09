@@ -1,3 +1,5 @@
+import type { RegistrationMode } from "@/features/auth/types";
+
 export interface AdminStats {
   totalUsers: number;
   totalNotes: number;
@@ -8,6 +10,7 @@ export interface AdminUser {
   id: string;
   email: string;
   name: string;
+  profileImage?: string | null;
   isAdmin: boolean;
   status: "active" | "pending";
   authMethod?: "oidc" | "local";
@@ -43,7 +46,7 @@ export interface ResetPasswordResponse {
   message: string;
 }
 
-export type RegistrationMode = "disabled" | "enabled" | "review";
+export type { RegistrationMode };
 
 export interface RegistrationSettings {
   mode: RegistrationMode;

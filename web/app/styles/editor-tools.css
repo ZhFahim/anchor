@@ -1,0 +1,288 @@
+/* Highlight tools */
+.hl-bubble {
+  position: absolute;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 5px;
+  white-space: nowrap;
+}
+.hl-pop {
+  z-index: var(--z-popover);
+  display: flex;
+  gap: 2px;
+  padding: 6px;
+}
+.hl-dot {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  cursor: pointer;
+}
+.hl-dot::before {
+  content: "";
+  width: 24px;
+  height: 13px;
+  border-radius: 3px;
+  transform: skewX(-20deg);
+  background: var(--hlc);
+  box-shadow: inset 0 0 0 1.5px var(--hli);
+  transition: transform var(--duration-hover) var(--ease-standard);
+}
+@media (hover: hover) {
+  .hl-dot:hover::before {
+    transform: skewX(-20deg) scale(1.12);
+  }
+}
+.hl-dot[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--foreground) 9%, transparent);
+  box-shadow: inset 0 0 0 1.5px var(--note-muted);
+}
+.hl-bubble .fb {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--note-muted);
+  cursor: pointer;
+}
+.hl-bubble .fb:hover {
+  background: color-mix(in srgb, var(--foreground) 8%, transparent);
+  color: var(--foreground);
+}
+.hl-bubble .fb[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--foreground) 10%, transparent);
+  color: var(--foreground);
+  box-shadow: inset 0 0 0 1.5px var(--note-muted);
+}
+.hl-bubble .fb svg {
+  width: 15px;
+  height: 15px;
+}
+.hl-split {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+}
+.hl-split .hl-main {
+  position: relative;
+}
+.hl-split .hl-bar {
+  position: absolute;
+  right: 7px;
+  bottom: 3px;
+  left: 7px;
+  height: 5px;
+  border-radius: 2px;
+  transform: skewX(-20deg);
+  background: var(--hlc);
+  box-shadow: inset 0 0 0 1px var(--hli);
+}
+.tb .hl-split .hl-more {
+  width: var(--size-target-min);
+}
+.tb .hl-split .hl-more svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* Link bubble */
+.lb {
+  position: absolute;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 4px 4px 6px;
+  font-size: var(--text-meta);
+  white-space: nowrap;
+}
+.lb .fav {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-xs);
+  background: var(--foreground);
+  color: var(--note);
+  font-size: 11px;
+  font-weight: var(--font-weight-bold);
+}
+.lb .url {
+  max-width: 220px;
+  overflow: hidden;
+  padding: 0 6px;
+  color: inherit;
+  text-decoration: none;
+  text-overflow: ellipsis;
+}
+.lb .url:hover {
+  text-decoration: underline;
+}
+
+/* Outline */
+.outline {
+  position: absolute;
+  top: 50%;
+  right: --spacing(3);
+  z-index: 8;
+  transform: translateY(-50%);
+  /* The class name also makes Tailwind's `outline` utility. */
+  outline: none;
+}
+.ol-peek {
+  display: grid;
+  justify-items: end;
+  gap: 9px;
+  padding: --spacing(2.5) --spacing(1.5);
+  border: 0;
+  border-radius: var(--radius-xl);
+  background: transparent;
+  cursor: pointer;
+  transition: opacity var(--duration-exit) var(--ease-exit);
+}
+.ol-peek:has(> .dash:nth-child(50)) {
+  gap: 5px;
+}
+.ol-peek:has(> .dash:nth-child(80)) {
+  gap: 3px;
+}
+.ol-peek:has(> .dash:nth-child(120)) {
+  gap: 2px;
+}
+.outline .dash {
+  flex: none;
+  height: 2px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--note-muted) 75%, transparent);
+  transition: background-color var(--duration-fade);
+}
+.outline [data-l="1"] .dash,
+.outline .dash[data-l="1"] {
+  width: 18px;
+}
+.outline [data-l="2"] .dash,
+.outline .dash[data-l="2"] {
+  width: 12px;
+}
+.outline [data-l="3"] .dash,
+.outline .dash[data-l="3"] {
+  width: 7px;
+}
+.outline .on .dash,
+.outline .dash.on {
+  background: var(--accent-strong);
+}
+.ol-list {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  display: grid;
+  visibility: hidden;
+  max-height: calc(100dvh - --spacing(8));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  padding: --spacing(3) --spacing(3) --spacing(3) --spacing(4);
+  border-radius: var(--radius-xl);
+  background: color-mix(in srgb, var(--popover) 94%, transparent);
+  backdrop-filter: blur(10px);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--border) 70%, transparent),
+    var(--sh-menu);
+  opacity: 0;
+  transform: translateY(-50%) scale(0.97);
+  transform-origin: right center;
+  transition:
+    opacity var(--duration-exit) var(--ease-exit),
+    transform var(--duration-exit) var(--ease-exit),
+    visibility 0s var(--duration-exit);
+}
+.outline.open .ol-list {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(-50%);
+}
+.outline.open .ol-peek {
+  opacity: 0;
+}
+.outline.open :is(.ol-list, .ol-peek) {
+  transition:
+    opacity var(--duration-fade) var(--ease-standard),
+    transform var(--duration-fade) var(--ease-standard);
+}
+@media (hover: hover) {
+  .outline:hover .ol-list {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(-50%);
+  }
+  .outline:hover .ol-peek {
+    opacity: 0;
+  }
+  .outline:hover :is(.ol-list, .ol-peek) {
+    transition:
+      opacity var(--duration-fade) var(--ease-standard),
+      transform var(--duration-fade) var(--ease-standard);
+  }
+}
+.ol-list button {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: --spacing(2.5);
+  min-height: var(--size-target-min);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--note-muted);
+  font: inherit;
+  font-size: var(--text-small);
+  line-height: 1.3;
+  text-align: right;
+  cursor: pointer;
+}
+.ol-list .lab {
+  max-width: 190px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ol-list .on,
+.ol-list button:hover {
+  color: var(--foreground);
+}
+.ol-list .on .lab {
+  font-weight: var(--font-weight-semibold);
+}
+.ol-list .on {
+  /* biome-ignore lint/correctness/noUnknownProperty: newer than the linter's list */
+  scroll-initial-target: nearest;
+  scroll-snap-align: center;
+}
+@container (width < 800px) {
+  .outline {
+    display: none;
+  }
+}
+.heading-tint {
+  position: absolute;
+  pointer-events: none;
+  border-radius: var(--radius-xs);
+  background: color-mix(in srgb, var(--foreground) 8%, transparent);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--foreground) 8%, transparent);
+}

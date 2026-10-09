@@ -6,7 +6,7 @@ import {
   type ImportSkippedItem,
   type ParsedImport,
 } from "../types";
-import type { ImportAdapter } from "./types";
+import { type ImportAdapter, ImportFileError } from "./types";
 import type { ZipArchive } from "./zip";
 
 const MANIFEST_PATH = "manifest.json";
@@ -71,8 +71,8 @@ export const anchorAdapter: ImportAdapter = {
       typeof manifest.version !== "number" ||
       manifest.version > SUPPORTED_VERSION
     ) {
-      throw new Error(
-        `This backup was created by a newer version of Anchor (format v${manifest.version}). Please update your server.`,
+      throw new ImportFileError(
+        "This backup is from a newer version of Anchor. Update your server, then try again.",
       );
     }
 
@@ -100,8 +100,7 @@ export const anchorAdapter: ImportAdapter = {
 
       notes.push({
         ref: `anchor:${note.id}`,
-        // Shared-with-me notes become owned copies with a new identity;
-        // the server also remaps foreign-owned ids as a backstop.
+        // Shared-with-me notes become owned copies with a new identity.
         id: note.origin === "shared" ? undefined : note.id,
         title: note.title,
         contentDelta: parseStoredContent(note.content),

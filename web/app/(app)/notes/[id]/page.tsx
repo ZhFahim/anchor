@@ -1,973 +1,345 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
+import { HTTPError } from "ky";
+import { useParams, usePathname } from "next/navigation";
+import { useRef, useState } from "react";
+import { flushSync } from "react-dom";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
+import { toast } from "@/components/ui/toast";
 import { useAuth } from "@/features/auth";
-import type {
-  CreateNoteDto,
-  Note,
-  NoteDraft,
-  NoteReminder,
-  NoteSaveQueue,
-  SaveFailure,
-} from "@/features/notes";
 import {
-  ArchiveDialog,
-  archiveNote,
-  createNote,
-  createNoteSaveQueue,
-  DeleteDialog,
-  deleteNote,
-  draftTitle,
-  draftUpdate,
-  flushNoteUpdate,
-  flushUpdate,
-  getNote,
-  isStoredContentEmpty,
-  NoteBackground,
+  deletionDate,
+  EditorSkeleton,
+  getNoteShares,
+  HistoryView,
+  type Note,
   NoteEditorContent,
   NoteEditorHeader,
-  NoteHistorySheet,
-  noteDraftsEqual,
-  noteToDraft,
-  PermanentDeleteDialog,
-  permanentDeleteNote,
-  ReadOnlyBanner,
-  RestoreDialog,
-  rebaseDraft,
-  replacesText,
-  restoreNote,
+  NoteLoadFailed,
+  NoteUnavailable,
+  ReadOnlyBar,
+  type SaveState,
   ShareDialog,
-  sameReminder,
-  saveNote,
-  unarchiveNote,
+  useEditorChrome,
+  useNoteActions,
+  useNoteEditor,
 } from "@/features/notes";
 import type { RichTextEditorHandle } from "@/features/notes/components/editor";
-
-const autoSaveDelayMs = 1000;
-
-const conflictToastId = "note-conflict";
-const saveErrorToastId = "note-save-error";
-
-function saveFailureMessage(failure: SaveFailure): string {
-  if (failure.retryable) {
-    return "Can't reach the server. Still trying to save.";
-  }
-
-  if (failure.httpStatus === 403 || failure.httpStatus === 404) {
-    return "This note is no longer available to edit";
-  }
-
-  return "Failed to save note";
-}
-
-type PendingFocusRestore =
-  | {
-      target: "title";
-      selectionStart: number;
-      selectionEnd: number;
-    }
-  | {
-      target: "content";
-      index?: number;
-      length?: number;
-    };
-
-function getFocusRestoreStorageKey(noteId: string) {
-  return `note-focus-restore-${noteId}`;
-}
-
-function getStoredNoteKey(noteId: string) {
-  return `note-${noteId}`;
-}
-
-// Written by the note card so the editor can paint before the fetch lands.
-function readStoredNote(noteId: string): Note | null {
-  if (typeof window === "undefined") return null;
-
-  try {
-    const stored = sessionStorage.getItem(getStoredNoteKey(noteId));
-    return stored ? (JSON.parse(stored) as Note) : null;
-  } catch {
-    return null;
-  }
-}
+import { createTag, nextTagColor, type Tag, useTags } from "@/features/tags";
+import { useDelayedFlag } from "@/lib/hooks/use-delayed-flag";
+import { swapView } from "@/lib/morph";
+import { cn } from "@/lib/utils";
 
 export default function NoteEditorPage() {
-  const { user } = useAuth();
   const params = useParams();
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const queryClient = useQueryClient();
-  const noteId = params.id as string;
-  const isNew = noteId === "new";
-  const tagIdFromUrl = searchParams.get("tagId");
-
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [isPinned, setIsPinned] = useState(false);
-  const [isArchived, setIsArchived] = useState(false);
-  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
-  const [background, setBackground] = useState<string | null>(null);
-  const [reminder, setReminder] = useState<NoteReminder | null>(null);
-  const [lastSaved, setLastSaved] = useState<NoteDraft | null>(null);
-  const [isSavingDraft, setIsSavingDraft] = useState(false);
-  const [isSaveStuck, setIsSaveStuck] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
-  const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
-  const [permanentDeleteDialogOpen, setPermanentDeleteDialogOpen] =
-    useState(false);
-  const [shareDialogOpen, setShareDialogOpen] = useState(false);
-  const [historyOpen, setHistoryOpen] = useState(false);
-
-  const restoreFocusFrameRef = useRef<number | null>(null);
-  const titleInputRef = useRef<HTMLInputElement | null>(null);
-  const contentEditorRef = useRef<RichTextEditorHandle | null>(null);
-  const hydratedNoteIdRef = useRef<string | null>(null);
-  const initializedNewNoteRef = useRef(false);
-  const autoFocusedNewNoteRef = useRef(false);
-  const pendingFocusRestoreRef = useRef<PendingFocusRestore | null>(null);
-  const pendingCreateNoteRef = useRef<Promise<Note> | null>(null);
-  const noteVersionRef = useRef<number | undefined>(undefined);
-  // The reminder the server last told us about.
-  const serverReminderRef = useRef<NoteReminder | null>(null);
-
-  // The queue outlives every render and reaches the current handlers here.
-  const live = useRef({
-    noteId,
-    isViewer: false,
-    onSaved: (_draft: NoteDraft, _note: Note) => {},
-    onConflict: (_serverNote: Note, _canRetry: boolean): NoteDraft | null =>
-      null,
-    save: () => {},
-    flush: () => {},
-  });
-
-  const queueRef = useRef<NoteSaveQueue | null>(null);
-  queueRef.current ??= createNoteSaveQueue({
-    save: (draft, baseVersion) =>
-      saveNote(
-        live.current.noteId,
-        draftUpdate(draft, serverReminderRef.current, {
-          isViewer: live.current.isViewer,
-          baseVersion,
-        }),
-      ),
-    onSaved: (draft, note) => live.current.onSaved(draft, note),
-    onConflict: (serverNote, _draft, canRetry) =>
-      live.current.onConflict(serverNote, canRetry),
-    onFailed: (failure) => {
-      setIsSaveStuck(failure.retryable);
-      toast.error(saveFailureMessage(failure), {
-        id: saveErrorToastId,
-        duration: failure.retryable ? Number.POSITIVE_INFINITY : undefined,
-      });
-    },
-    onBusyChange: setIsSavingDraft,
-  });
-  const queue = queueRef.current;
-
-  const [storedNote] = useState<Note | null>(() =>
-    isNew ? null : readStoredNote(noteId),
+  const pathname = usePathname();
+  // After a create in place, params.id stays "new"; the address has the id.
+  const routeId = pathname.startsWith("/notes/")
+    ? decodeURIComponent(pathname.slice("/notes/".length))
+    : (params.id as string);
+  const [newVisit, setNewVisit] = useState(0);
+  const [createdHere, setCreatedHere] = useState<string | null>(null);
+  const [seenPath, setSeenPath] = useState(pathname);
+  if (pathname !== seenPath) {
+    setSeenPath(pathname);
+    if (pathname === "/notes/new") setNewVisit((visit) => visit + 1);
+    if (createdHere && pathname !== `/notes/${createdHere}`)
+      setCreatedHere(null);
+  }
+  const editsInPlace = routeId === "new" || routeId === createdHere;
+  return (
+    <NoteEditor
+      key={editsInPlace ? `new-${newVisit}` : routeId}
+      routeId={routeId}
+      onCreated={setCreatedHere}
+    />
   );
+}
 
-  useEffect(() => {
-    if (typeof window === "undefined" || isNew) return;
-    sessionStorage.removeItem(getStoredNoteKey(noteId));
-  }, [isNew, noteId]);
+function NoteEditor({
+  routeId,
+  onCreated,
+}: {
+  routeId: string;
+  onCreated: (id: string) => void;
+}) {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const pageRef = useRef<HTMLDivElement>(null);
+  const editorTop = useRef(0);
+  const editor = useNoteEditor({
+    routeId,
+    onCreated,
+    onOpenHistory: () => showHistory(true),
+  });
+  const {
+    noteId,
+    isNew,
+    note,
+    isLoading,
+    isOwner,
+    isViewer,
+    saveFailure,
+    save,
+  } = editor;
+  const actions = useNoteActions({
+    noteId,
+    note,
+    isOwner,
+    save,
+    refetchNote: editor.refetchNote,
+    setIsArchived: editor.setIsArchived,
+  });
+  const contentEditorRef = useRef<RichTextEditorHandle | null>(null);
+  const { articleRef, scrollRef } = useEditorChrome({
+    noteId,
+    isLoading,
+    isNew,
+    contentEditorRef,
+  });
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [previewBackground, setPreviewBackground] = useState<
+    string | null | false
+  >(false);
+  const [nudge, setNudge] = useState(0);
 
   const {
-    data: noteFromApi,
-    isLoading,
-    refetch: refetchNote,
-  } = useQuery({
-    queryKey: ["notes", noteId],
-    queryFn: () => getNote(noteId),
-    enabled: !isNew,
-    placeholderData: storedNote ?? undefined,
-    staleTime: 0,
-    refetchOnMount: "always",
+    data: allTags = [],
+    isLoading: tagsLoading,
+    isLoadingError: tagsLoadFailed,
+    isFetching: tagsFetching,
+    refetch: refetchTags,
+  } = useTags();
+  const shareCount = note?.shareIds?.length ?? 0;
+  const { data: shares = [] } = useQuery({
+    queryKey: ["note-shares", noteId],
+    queryFn: () => getNoteShares(noteId),
+    enabled: !isNew && isOwner && shareCount > 0,
   });
 
-  const note = isNew ? null : (noteFromApi ?? null);
-
-  // Check permissions
-  const isOwner = note ? note.permission === "owner" : true;
-  const isViewer = note ? note.permission === "viewer" : false;
-  const isEditor = note ? note.permission === "editor" : false;
-
-  // Check if note is read-only (trashed notes or viewers are read-only)
-  const isReadOnly = note ? note.state === "trashed" || isViewer : false;
-  const canSaveDraft = note ? note.state !== "trashed" : true;
-  const canUpload = isOwner || isEditor;
-
-  const draft = useMemo<NoteDraft>(
-    () => ({
-      title: draftTitle(title),
-      content,
-      isPinned,
-      background,
-      tagIds: selectedTagIds,
-      reminder,
-    }),
-    [title, content, isPinned, background, selectedTagIds, reminder],
-  );
-
-  const hasUnsavedChanges = lastSaved
-    ? !noteDraftsEqual(draft, lastSaved)
-    : isNew && (draft.title !== "" || !isStoredContentEmpty(content));
-
-  const capturePendingFocusRestore =
-    useCallback((): PendingFocusRestore | null => {
-      const titleInput = titleInputRef.current;
-      if (titleInput && document.activeElement === titleInput) {
-        const fallbackPosition = titleInput.value.length;
-        return {
-          target: "title",
-          selectionStart: titleInput.selectionStart ?? fallbackPosition,
-          selectionEnd: titleInput.selectionEnd ?? fallbackPosition,
-        };
-      }
-
-      const editorSelection = contentEditorRef.current?.getSelection();
-      if (editorSelection) {
-        return {
-          target: "content",
-          index: editorSelection.index,
-          length: editorSelection.length,
-        };
-      }
-
-      const activeElement = document.activeElement;
-      if (
-        activeElement instanceof HTMLElement &&
-        activeElement.closest(".ql-editor")
-      ) {
-        return { target: "content" };
-      }
-
-      return null;
-    }, []);
-
-  const applyServerNote = useCallback(
-    (serverNote: Note) => {
-      const incoming = noteToDraft(serverNote);
-      setTitle(incoming.title);
-      setContent(incoming.content);
-      setIsPinned(incoming.isPinned);
-      setBackground(incoming.background);
-      setReminder(incoming.reminder);
-      setSelectedTagIds(incoming.tagIds);
-      setLastSaved(incoming);
-      noteVersionRef.current = serverNote.version;
-      serverReminderRef.current = incoming.reminder;
-      queue.setBaseVersion(serverNote.version);
-    },
-    [queue],
-  );
-
-  // Viewers can't change the text, so the server's copy always wins.
-  const applyServerText = useCallback(
-    (serverNote: Note) => {
-      const incoming = noteToDraft(serverNote);
-      setTitle(incoming.title);
-      setContent(incoming.content);
-      setBackground(incoming.background);
-      setLastSaved((saved) =>
-        saved
-          ? {
-              ...saved,
-              title: incoming.title,
-              content: incoming.content,
-              background: incoming.background,
-            }
-          : saved,
-      );
-      noteVersionRef.current = serverNote.version;
-      queue.setBaseVersion(serverNote.version);
-    },
-    [queue],
-  );
-
-  // Moves what is on screen onto a newer server copy, keeping unsaved edits.
-  const rebaseOnto = useCallback(
-    (serverNote: Note) => {
-      const incoming = noteToDraft(serverNote);
-      const base = lastSaved ?? incoming;
-      const merge =
-        <K extends keyof NoteDraft>(field: K) =>
-        (current: NoteDraft[K]) =>
-          rebaseDraft({ ...base, [field]: current }, base, incoming)[field];
-
-      setTitle((current) => merge("title")(draftTitle(current)));
-      setContent(merge("content"));
-      setIsPinned(merge("isPinned"));
-      setBackground(merge("background"));
-      setSelectedTagIds(merge("tagIds"));
-      setReminder(merge("reminder"));
-      setLastSaved(incoming);
-      noteVersionRef.current = serverNote.version;
-      serverReminderRef.current = incoming.reminder;
-    },
-    [lastSaved],
-  );
-
-  // Initialize brand-new note state once per /new session.
-  useEffect(() => {
-    if (!isNew) {
-      initializedNewNoteRef.current = false;
-      autoFocusedNewNoteRef.current = false;
-      return;
-    }
-
-    if (initializedNewNoteRef.current) return;
-
-    initializedNewNoteRef.current = true;
-    hydratedNoteIdRef.current = null;
-    noteVersionRef.current = undefined;
-    pendingFocusRestoreRef.current = null;
-    setLastSaved(null);
-    setTitle("");
-    setContent("");
-    setIsPinned(false);
-    setIsArchived(false);
-    setBackground(null);
-    setReminder(null);
-    serverReminderRef.current = null;
-    setSelectedTagIds(tagIdFromUrl ? [tagIdFromUrl] : []);
-  }, [isNew, tagIdFromUrl]);
-
-  useEffect(() => {
-    if (
-      typeof window === "undefined" ||
-      !isNew ||
-      autoFocusedNewNoteRef.current
-    )
-      return;
-
-    let frameId: number | null = null;
-
-    const focusTitle = () => {
-      const activeElement = document.activeElement;
-      const hasInteractiveFocus =
-        activeElement instanceof HTMLElement &&
-        activeElement !== document.body &&
-        (activeElement.tagName === "INPUT" ||
-          activeElement.tagName === "TEXTAREA" ||
-          activeElement.isContentEditable ||
-          activeElement.closest(".ql-editor") !== null);
-
-      if (hasInteractiveFocus) {
-        autoFocusedNewNoteRef.current = true;
-        return;
-      }
-
-      const titleInput = titleInputRef.current;
-      if (!titleInput) return;
-
-      titleInput.focus();
-      const cursorPosition = titleInput.value.length;
-      titleInput.setSelectionRange(cursorPosition, cursorPosition);
-      autoFocusedNewNoteRef.current = true;
-    };
-
-    frameId = window.requestAnimationFrame(focusTitle);
-
-    return () => {
-      if (frameId !== null) {
-        window.cancelAnimationFrame(frameId);
-      }
-    };
-  }, [isNew]);
-
-  // Initialize editor fields once per note id so background refetches don't reset focus.
-  useEffect(() => {
-    if (!note || hydratedNoteIdRef.current === note.id) return;
-
-    const hydrated = noteToDraft(note);
-    setTitle(hydrated.title);
-    setContent(hydrated.content);
-    setIsPinned(hydrated.isPinned);
-    setSelectedTagIds(hydrated.tagIds);
-    setBackground(hydrated.background);
-    setReminder(hydrated.reminder);
-    setLastSaved(hydrated);
-    noteVersionRef.current = note.version;
-    serverReminderRef.current = hydrated.reminder;
-    queue.setBaseVersion(note.version);
-    hydratedNoteIdRef.current = note.id;
-  }, [note, queue]);
-
-  // A reminder set elsewhere leaves the note version alone, so the rebase
-  // below never sees it.
-  useEffect(() => {
-    if (!note || hydratedNoteIdRef.current !== note.id) return;
-
-    const incoming = note.reminder ?? null;
-    if (sameReminder(incoming, serverReminderRef.current)) return;
-
-    const untouched = sameReminder(reminder, serverReminderRef.current);
-    serverReminderRef.current = incoming;
-    if (!untouched) return;
-
-    setReminder(incoming);
-    setLastSaved((saved) => (saved ? { ...saved, reminder: incoming } : saved));
-  }, [note, reminder]);
-
-  // A newer copy arrived from somewhere else: it replaces what is on screen,
-  // apart from any unsaved edit, which stays and goes up next.
-  useEffect(() => {
-    if (!note || hydratedNoteIdRef.current !== note.id) return;
-
-    const base = noteVersionRef.current;
-    if (base !== undefined && note.version <= base) return;
-
-    if (hasUnsavedChanges) {
-      rebaseOnto(note);
-      queue.setBaseVersion(note.version);
-      return;
-    }
-
-    applyServerNote(note);
-  }, [note, hasUnsavedChanges, applyServerNote, rebaseOnto, queue]);
-
-  // Keep lightweight metadata in sync with fresh query data.
-  useEffect(() => {
-    if (note) {
-      setIsArchived(note.isArchived);
-    }
-  }, [note]);
-
-  // Create note mutation
-  const createMutation = useMutation({
-    mutationFn: (data: CreateNoteDto) => createNote(data),
-    onSuccess: (newNote) => {
-      // Pre-populate the cache with the new note data before navigation
-      // This prevents the loading state when the component remounts with the new URL
-      queryClient.setQueryData(["notes", newNote.id], newNote);
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
+  const createTagMutation = useMutation({
+    mutationFn: (name: string) =>
+      createTag({ name, color: nextTagColor(allTags.length) }),
+    onSuccess: (tag) => {
+      queryClient.setQueryData<Tag[]>(["tags"], (list = []) => [
+        ...list.filter((t) => t.id !== tag.id),
+        tag,
+      ]);
       queryClient.invalidateQueries({ queryKey: ["tags"] });
-
-      // Anything typed while the note was being created stays and goes up next.
-      hydratedNoteIdRef.current = newNote.id;
-      noteVersionRef.current = newNote.version;
-      serverReminderRef.current = newNote.reminder ?? null;
-      queue.setBaseVersion(newNote.version);
-      setLastSaved(noteToDraft(newNote));
-
-      if (typeof window !== "undefined" && pendingFocusRestoreRef.current) {
-        sessionStorage.setItem(
-          getFocusRestoreStorageKey(newNote.id),
-          JSON.stringify(pendingFocusRestoreRef.current),
-        );
-      }
-      toast.success("Note created");
-      router.replace(`/notes/${newNote.id}`);
     },
-    onError: () => {
-      pendingFocusRestoreRef.current = null;
-      toast.error("Failed to create note");
-    },
+    onError: () => toast.error("Couldn’t create tag"),
   });
 
-  const createNewNote = useCallback(
-    (focusRestore: PendingFocusRestore | null) => {
-      if (!isNew) {
-        return Promise.resolve(note);
-      }
-
-      if (pendingCreateNoteRef.current) {
-        return pendingCreateNoteRef.current;
-      }
-
-      pendingFocusRestoreRef.current = focusRestore;
-
-      const createPromise = createMutation.mutateAsync({
-        title: draft.title,
-        content: draft.content || undefined,
-        isPinned: draft.isPinned,
-        background: draft.background,
-        tagIds: draft.tagIds,
-      });
-
-      pendingCreateNoteRef.current = createPromise.finally(() => {
-        pendingCreateNoteRef.current = null;
-      });
-
-      return pendingCreateNoteRef.current;
-    },
-    [createMutation, draft, isNew, note],
-  );
-
-  const handleSaved = useCallback(
-    (savedDraft: NoteDraft, savedNote: Note) => {
-      setLastSaved(savedDraft);
-      noteVersionRef.current = savedNote.version;
-      if (isViewer) {
-        applyServerText(savedNote);
-      }
-      serverReminderRef.current = savedNote.reminder ?? null;
-      setIsSaveStuck(false);
-      toast.dismiss(saveErrorToastId);
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
-      queryClient.invalidateQueries({ queryKey: ["tags"] });
-    },
-    [applyServerText, isViewer, queryClient],
-  );
-
-  const handleConflict = useCallback(
-    (serverNote: Note, canRetry: boolean): NoteDraft | null => {
-      const serverWins =
-        !canRetry ||
-        serverNote.permission === "viewer" ||
-        serverNote.state !== "active";
-
-      if (serverWins) {
-        applyServerNote(serverNote);
-        toast.info("This note was changed elsewhere, so it has been reloaded", {
-          id: conflictToastId,
-        });
-        return null;
-      }
-
-      const isNewer = serverNote.version > (noteVersionRef.current ?? 0);
-      const incoming =
-        isNewer || !lastSaved ? noteToDraft(serverNote) : lastSaved;
-      const base = lastSaved ?? incoming;
-      const next = rebaseDraft(draft, base, incoming);
-      if (isNewer) rebaseOnto(serverNote);
-      if (replacesText(next, base, incoming)) {
-        toast.info(
-          "This note was changed elsewhere. Your version is kept and the other one is in its history.",
-          { id: conflictToastId },
-        );
-      }
-      return noteDraftsEqual(next, incoming) ? null : next;
-    },
-    [applyServerNote, draft, lastSaved, rebaseOnto],
-  );
-
-  const save = useCallback(() => {
-    if (!canSaveDraft || !hasUnsavedChanges) return;
-
-    if (isNew) {
-      void createNewNote(capturePendingFocusRestore());
-      return;
-    }
-
-    pendingFocusRestoreRef.current = null;
-    queue.push(draft);
-  }, [
-    capturePendingFocusRestore,
-    createNewNote,
-    draft,
-    hasUnsavedChanges,
-    isNew,
-    canSaveDraft,
-    queue,
-  ]);
-
-  const flush = useCallback(() => {
-    if (isNew || !canSaveDraft || !hasUnsavedChanges || !lastSaved) return;
-
-    flushNoteUpdate(
-      noteId,
-      flushUpdate(draft, lastSaved, serverReminderRef.current, { isViewer }),
+  const showHistory = (open: boolean) => {
+    if (open === editor.historyOpen) return;
+    const scroll = scrollRef.current;
+    if (open) editorTop.current = scroll?.scrollTop ?? 0;
+    const swap = () => {
+      flushSync(() => editor.setHistoryOpen(open));
+      if (!open && scroll) scroll.scrollTop = editorTop.current;
+    };
+    const page = pageRef.current;
+    if (!page) return swap();
+    swapView(
+      page,
+      swap,
+      open
+        ? { into: ".hs-paper", side: ".hs-side" }
+        : { from: ".hs-paper", grow: ".note" },
     );
-  }, [
-    canSaveDraft,
-    draft,
-    hasUnsavedChanges,
-    isNew,
-    isViewer,
-    lastSaved,
-    noteId,
-  ]);
-
-  useEffect(() => {
-    live.current = {
-      noteId,
-      isViewer,
-      onSaved: handleSaved,
-      onConflict: handleConflict,
-      save,
-      flush,
-    };
-  });
-
-  const ensureNoteIdForAttachmentUpload = useCallback(async () => {
-    if (isReadOnly || !canUpload) {
-      return null;
-    }
-
-    if (!isNew) {
-      return noteId;
-    }
-
-    const newNote = await createNewNote(null);
-    return newNote?.id ?? null;
-  }, [canUpload, createNewNote, isNew, isReadOnly, noteId]);
-
-  useEffect(() => {
-    if (!hasUnsavedChanges || !canSaveDraft) return;
-
-    const timeout = setTimeout(save, autoSaveDelayMs);
-
-    return () => clearTimeout(timeout);
-  }, [canSaveDraft, hasUnsavedChanges, save]);
-
-  useEffect(() => {
-    const save = () => live.current.save();
-    const flush = () => live.current.flush();
-    const saveWhenHidden = () => {
-      if (document.visibilityState === "hidden") live.current.save();
-    };
-
-    window.addEventListener("pagehide", flush);
-    window.addEventListener("online", save);
-    document.addEventListener("visibilitychange", saveWhenHidden);
-
-    return () => {
-      window.removeEventListener("pagehide", flush);
-      window.removeEventListener("online", save);
-      document.removeEventListener("visibilitychange", saveWhenHidden);
-      live.current.save();
-      if (restoreFocusFrameRef.current !== null) {
-        window.cancelAnimationFrame(restoreFocusFrameRef.current);
-      }
-    };
-  }, []);
-
-  // Closing now would drop the text the retries have not managed to send.
-  useEffect(() => {
-    if (!isSaveStuck) return;
-
-    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
-    window.addEventListener("beforeunload", warn);
-
-    return () => window.removeEventListener("beforeunload", warn);
-  }, [isSaveStuck]);
-
-  useEffect(() => {
-    if (typeof window === "undefined" || isNew || !note) return;
-    if (hydratedNoteIdRef.current !== note.id) return;
-
-    const storageKey = getFocusRestoreStorageKey(note.id);
-    const storedRestore = sessionStorage.getItem(storageKey);
-    if (!storedRestore) return;
-
-    let restoreTarget: PendingFocusRestore;
-    try {
-      restoreTarget = JSON.parse(storedRestore) as PendingFocusRestore;
-    } catch {
-      sessionStorage.removeItem(storageKey);
-      return;
-    }
-
-    let attemptCount = 0;
-
-    const restoreFocus = () => {
-      attemptCount += 1;
-
-      if (restoreTarget.target === "title") {
-        const input = titleInputRef.current;
-        if (input) {
-          const maxPosition = input.value.length;
-          const selectionStart = Math.min(
-            restoreTarget.selectionStart,
-            maxPosition,
-          );
-          const selectionEnd = Math.min(
-            restoreTarget.selectionEnd,
-            maxPosition,
-          );
-          input.focus();
-          input.setSelectionRange(selectionStart, selectionEnd);
-          sessionStorage.removeItem(storageKey);
-          restoreFocusFrameRef.current = null;
-          return;
-        }
-      } else {
-        const editor = contentEditorRef.current;
-        if (editor) {
-          editor.focus();
-          if (
-            typeof restoreTarget.index === "number" &&
-            typeof restoreTarget.length === "number"
-          ) {
-            editor.setSelection(restoreTarget.index, restoreTarget.length);
-          }
-          sessionStorage.removeItem(storageKey);
-          restoreFocusFrameRef.current = null;
-          return;
-        }
-      }
-
-      if (attemptCount >= 10) {
-        sessionStorage.removeItem(storageKey);
-        restoreFocusFrameRef.current = null;
-        return;
-      }
-
-      restoreFocusFrameRef.current = window.requestAnimationFrame(restoreFocus);
-    };
-
-    restoreFocusFrameRef.current = window.requestAnimationFrame(restoreFocus);
-
-    return () => {
-      if (restoreFocusFrameRef.current !== null) {
-        window.cancelAnimationFrame(restoreFocusFrameRef.current);
-        restoreFocusFrameRef.current = null;
-      }
-    };
-  }, [isNew, note]);
-
-  // Delete note mutation
-  const deleteMutation = useMutation({
-    mutationFn: () => deleteNote(noteId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
-      queryClient.invalidateQueries({ queryKey: ["tags"] });
-      toast.success(isOwner ? "Note moved to trash" : "Note removed");
-      router.back();
-    },
-    onError: () => {
-      toast.error("Failed to delete note");
-    },
-  });
-
-  // Archive note mutation
-  const archiveMutation = useMutation({
-    mutationFn: () => archiveNote(noteId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
-      queryClient.invalidateQueries({ queryKey: ["notes", "archive"] });
-      queryClient.invalidateQueries({ queryKey: ["notes", noteId] });
-      queryClient.invalidateQueries({ queryKey: ["tags"] });
-      setIsArchived(true);
-      toast.success("Note archived");
-      router.back();
-    },
-    onError: () => {
-      toast.error("Failed to archive note");
-    },
-  });
-
-  // Unarchive note mutation
-  const unarchiveMutation = useMutation({
-    mutationFn: () => unarchiveNote(noteId),
-    onSuccess: async () => {
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
-      queryClient.invalidateQueries({ queryKey: ["notes", "archive"] });
-      queryClient.invalidateQueries({ queryKey: ["notes", noteId] });
-      queryClient.invalidateQueries({ queryKey: ["tags"] });
-      setIsArchived(false);
-      await refetchNote();
-      toast.success("Note unarchived");
-    },
-    onError: () => {
-      toast.error("Failed to unarchive note");
-    },
-  });
-
-  // Restore note mutation (for trashed notes)
-  const restoreMutation = useMutation({
-    mutationFn: () => restoreNote(noteId),
-    onSuccess: async () => {
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
-      queryClient.invalidateQueries({ queryKey: ["notes", "trash"] });
-      queryClient.invalidateQueries({ queryKey: ["notes", noteId] });
-      queryClient.invalidateQueries({ queryKey: ["tags"] });
-      await refetchNote();
-      toast.success("Note restored");
-    },
-    onError: () => {
-      toast.error("Failed to restore note");
-    },
-  });
-
-  // Permanent delete mutation (for trashed notes)
-  const permanentDeleteMutation = useMutation({
-    mutationFn: () => permanentDeleteNote(noteId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
-      queryClient.invalidateQueries({ queryKey: ["notes", "trash"] });
-      queryClient.invalidateQueries({ queryKey: ["tags"] });
-      toast.success("Note permanently deleted");
-      router.back();
-    },
-    onError: () => {
-      toast.error("Failed to delete note");
-    },
-  });
-
-  const handleBack = () => {
-    save();
-    router.back();
   };
-
   const openHistory = () => {
     save();
-    setHistoryOpen(true);
+    showHistory(true);
+  };
+  const closeHistory = () => {
+    showHistory(false);
+    document
+      .querySelector<HTMLElement>(
+        '.ed-head [aria-label="More"], .ed-head [aria-label="Version history"]',
+      )
+      ?.focus({ preventScroll: true });
   };
 
-  const handleRestored = (restored: Note) => {
-    applyServerNote(restored);
-  };
-
-  const togglePin = () => {
-    setIsPinned((prev) => !prev);
-  };
-
-  // Only show loading if we have nothing to render yet
-  if (isLoading && !isNew) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-accent" />
-          <span className="text-sm text-muted-foreground">Loading note...</span>
-        </div>
-      </div>
+  const showSkeleton = useDelayedFlag(isLoading && !isNew);
+  if (isLoading && !isNew) return showSkeleton ? <EditorSkeleton /> : null;
+  if (!isNew && !note && editor.noteError)
+    return isGoneError(editor.noteError) ? (
+      <NoteUnavailable />
+    ) : (
+      <NoteLoadFailed onRetry={() => editor.refetchNote()} />
     );
-  }
 
-  const isSaving = isSavingDraft || createMutation.isPending;
-  const isSaved = !hasUnsavedChanges && !isSaving && !isNew;
+  const trashed = note?.state === "trashed";
+  const saveRefused =
+    saveFailure?.httpStatus === 403 || saveFailure?.httpStatus === 404;
+  const readOnly = editor.isReadOnly || saveRefused;
+  const canSetReminder = !trashed && !saveRefused;
+  const saveState: SaveState =
+    saveFailure && !saveFailure.retryable && !saveRefused
+      ? "failed"
+      : editor.isSaveStuck
+        ? "offline"
+        : isNew && !editor.isCreating
+          ? "new"
+          : editor.isSavingDraft ||
+              editor.isCreating ||
+              editor.hasUnsavedChanges
+            ? "saving"
+            : "saved";
+
+  const readOnlyBar = trashed ? (
+    <ReadOnlyBar
+      kind="trash"
+      nudge={nudge}
+      deletesOn={deletionDate(note as Note)}
+      restoring={actions.isRestoring}
+      onRestore={actions.restore}
+      onDelete={() => actions.setConfirmPermanentDelete(true)}
+    />
+  ) : saveRefused ? (
+    <ReadOnlyBar kind="refused" nudge={nudge} />
+  ) : isViewer && note?.sharedBy ? (
+    <ReadOnlyBar kind="view" nudge={nudge} sharedBy={note.sharedBy} />
+  ) : editor.isArchived ? (
+    <ReadOnlyBar kind="archived" onUnarchive={actions.unarchive} />
+  ) : null;
 
   return (
-    <div className="min-h-screen flex flex-col relative">
-      <NoteBackground styleId={background} className="fixed inset-0 z-0" />
+    <div ref={pageRef} className="pg-editor">
+      <article
+        ref={articleRef}
+        className={cn("note ed", readOnly && "ro")}
+        data-note={
+          (previewBackground === false
+            ? editor.background
+            : previewBackground) ?? ""
+        }
+        data-blank={
+          isNew && !editor.hasUnsavedChanges && !editor.isCreating
+            ? ""
+            : undefined
+        }
+        aria-label="Note"
+      >
+        {editor.historyOpen && !isNew && (
+          <HistoryView
+            noteId={noteId}
+            note={note ?? null}
+            title={editor.title}
+            content={editor.content}
+            currentUserId={user?.id ?? null}
+            saving={editor.isSavingDraft || editor.hasUnsavedChanges}
+            onClose={closeHistory}
+            onRestored={(restored: Note) => editor.applyServerNote(restored)}
+            flushEdits={editor.flushEdits}
+          />
+        )}
+        <div
+          ref={scrollRef}
+          className="ed-scroll scrollbar-slim"
+          hidden={editor.historyOpen && !isNew}
+        >
+          <NoteEditorHeader
+            saveState={trashed || saveRefused ? "new" : saveState}
+            onRetrySave={editor.retrySave}
+            onBack={() => {
+              save();
+              actions.goBack();
+            }}
+            trashed={trashed}
+            readOnly={readOnly}
+            saved={!isNew && !saveRefused}
+            isOwner={isOwner}
+            canViewHistory={!isViewer}
+            canSetReminder={canSetReminder}
+            isPinned={editor.isPinned}
+            isArchived={editor.isArchived}
+            background={editor.background}
+            reminder={editor.reminder}
+            sharedWithCount={shareCount}
+            onTogglePin={() => editor.setIsPinned((was) => !was)}
+            onBackground={editor.setBackground}
+            onPreviewBackground={setPreviewBackground}
+            onReminder={editor.changeReminder}
+            onShare={() => setShareDialogOpen(true)}
+            onHistory={openHistory}
+            onArchive={actions.archive}
+            onUnarchive={actions.unarchive}
+            onTrash={actions.trash}
+          />
+          <NoteEditorContent
+            noteId={!isNew ? noteId : undefined}
+            isNew={isNew}
+            readOnly={readOnly}
+            tagsLocked={trashed || saveRefused}
+            canSetReminder={canSetReminder}
+            readOnlyBar={readOnlyBar}
+            title={editor.title}
+            content={editor.content}
+            updatedAt={note?.updatedAt}
+            sharedBy={note?.sharedBy ?? null}
+            sharedWith={shares.map((sh) => sh.sharedWithUser)}
+            tagIds={editor.selectedTagIds}
+            allTags={allTags}
+            tagsLoading={tagsLoading}
+            tagsLoadFailed={tagsLoadFailed}
+            tagsRetrying={tagsFetching}
+            onRetryTags={() => void refetchTags()}
+            reminder={editor.reminder}
+            canUpload={editor.canUpload && !readOnly}
+            isOwner={isOwner}
+            currentUserId={user?.id ?? null}
+            titleInputRef={editor.titleInputRef}
+            contentEditorRef={contentEditorRef}
+            onEnsureNoteIdForAttachmentUpload={
+              editor.ensureNoteIdForAttachmentUpload
+            }
+            onTitleChange={editor.setTitle}
+            onContentChange={editor.setContent}
+            onTagsChange={editor.setSelectedTagIds}
+            onCreateTag={(name) =>
+              createTagMutation.mutateAsync(name).catch(() => undefined)
+            }
+            onReminder={editor.changeReminder}
+            onReadOnlyAttempt={() => setNudge((n) => n + 1)}
+          />
+        </div>
+      </article>
 
-      {/* Header */}
-      <NoteEditorHeader
-        isNew={isNew}
-        isReadOnly={isReadOnly}
-        isPinned={isPinned}
-        isArchived={isArchived}
-        background={background}
-        reminder={reminder}
-        isSaving={isSaving}
-        hasUnsavedChanges={hasUnsavedChanges}
-        isSaved={isSaved}
-        isOwner={isOwner}
-        permission={note?.permission || "owner"}
-        isTrashed={note?.state === "trashed"}
-        hasShares={(note?.shareIds?.length ?? 0) > 0}
-        onBack={handleBack}
-        onTogglePin={togglePin}
-        onBackgroundChange={setBackground}
-        onReminderChange={setReminder}
-        onArchiveClick={() => setArchiveDialogOpen(true)}
-        onDeleteClick={() => setDeleteDialogOpen(true)}
-        onRestoreClick={() => setRestoreDialogOpen(true)}
-        onPermanentDeleteClick={() => setPermanentDeleteDialogOpen(true)}
-        onShareClick={!isNew ? () => setShareDialogOpen(true) : undefined}
-        onHistoryClick={!isNew && !isViewer ? openHistory : undefined}
-        restorePending={restoreMutation.isPending}
-        permanentDeletePending={permanentDeleteMutation.isPending}
+      <ConfirmationDialog
+        open={actions.confirmPermanentDelete}
+        onOpenChange={actions.setConfirmPermanentDelete}
+        title="Permanently delete this note?"
+        description="This can’t be undone. People you shared it with will lose access too."
+        confirmLabel="Delete permanently"
+        busyLabel="Deleting…"
+        isPending={actions.isDeletingPermanently}
+        onConfirm={actions.deletePermanently}
       />
-
-      {/* Read-only Banner */}
-      {isReadOnly && (
-        <ReadOnlyBanner
-          message={
-            note?.state === "trashed"
-              ? "This note is in trash and cannot be edited. Restore it to make changes."
-              : "You have viewer access. Only the owner can edit this note."
-          }
-        />
-      )}
-
-      {/* Content */}
-      <NoteEditorContent
-        noteId={!isNew ? noteId : undefined}
-        canUpload={canUpload}
-        isOwner={isOwner}
-        currentUserId={user?.id ?? null}
-        title={title}
-        content={content}
-        selectedTagIds={selectedTagIds}
-        attachmentCount={note?.attachmentCount}
-        isReadOnly={isReadOnly}
-        isTrashed={note?.state === "trashed"}
-        titleInputRef={titleInputRef}
-        contentEditorRef={contentEditorRef}
-        onEnsureNoteIdForAttachmentUpload={ensureNoteIdForAttachmentUpload}
-        onTitleChange={setTitle}
-        onContentChange={setContent}
-        onTagsChange={setSelectedTagIds}
+      <ConfirmationDialog
+        open={actions.confirmLeaveShare}
+        onOpenChange={actions.setConfirmLeaveShare}
+        title="Remove this note from your notes?"
+        description="To see it again, its owner has to share it with you again."
+        confirmLabel="Remove"
+        busyLabel="Removing…"
+        isPending={actions.isLeavingShare}
+        onConfirm={actions.leaveShare}
       />
-
-      {/* Dialogs */}
-      <ArchiveDialog
-        open={archiveDialogOpen}
-        onOpenChange={setArchiveDialogOpen}
-        isArchived={isArchived}
-        onConfirm={() => {
-          if (isArchived) {
-            unarchiveMutation.mutate();
-          } else {
-            archiveMutation.mutate();
-          }
-          setArchiveDialogOpen(false);
-        }}
-        isPending={archiveMutation.isPending || unarchiveMutation.isPending}
-      />
-
-      <RestoreDialog
-        open={restoreDialogOpen}
-        onOpenChange={setRestoreDialogOpen}
-        onConfirm={() => {
-          restoreMutation.mutate();
-          setRestoreDialogOpen(false);
-        }}
-        isPending={restoreMutation.isPending}
-      />
-
-      <DeleteDialog
-        open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
-        isShared={!isOwner}
-        onConfirm={() => {
-          deleteMutation.mutate();
-          setDeleteDialogOpen(false);
-        }}
-        isPending={deleteMutation.isPending}
-      />
-
       {!isNew && (
         <ShareDialog
           open={shareDialogOpen}
           onOpenChange={setShareDialogOpen}
           noteId={noteId}
+          title={editor.title}
         />
       )}
-
-      {!isNew && (
-        <NoteHistorySheet
-          open={historyOpen}
-          onOpenChange={setHistoryOpen}
-          noteId={noteId}
-          note={note}
-          currentUserId={user?.id ?? null}
-          isSaving={isSaving || hasUnsavedChanges}
-          onRestored={handleRestored}
-        />
-      )}
-
-      <PermanentDeleteDialog
-        open={permanentDeleteDialogOpen}
-        onOpenChange={setPermanentDeleteDialogOpen}
-        onConfirm={() => {
-          permanentDeleteMutation.mutate();
-          setPermanentDeleteDialogOpen(false);
-        }}
-        isPending={permanentDeleteMutation.isPending}
-      />
     </div>
   );
 }
+
+const isGoneError = (error: unknown) =>
+  error instanceof HTTPError &&
+  (error.response.status === 404 || error.response.status === 403);

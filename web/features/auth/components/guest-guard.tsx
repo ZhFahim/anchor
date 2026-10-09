@@ -2,39 +2,42 @@
 
 import { useRouter } from "next/navigation";
 import { type ReactNode, useEffect } from "react";
-import { useAuth } from "@/features/auth";
+import { useRegistrationMode } from "../hooks/use-auth";
+import { useOidcConfig } from "../hooks/use-oidc";
+import { useAuthStore } from "../store";
+import { getSafeRedirectUrl } from "../utils/redirect";
+import { SessionCheck } from "./session-check";
 
 interface GuestGuardProps {
   children: ReactNode;
 }
 
+// A provider sign-in comes back with the server's own "redirect".
+function afterSignInUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const url = getSafeRedirectUrl(
+    params.get("redirect") ?? params.get("returnTo"),
+    "/notes",
+  );
+  return url === "/" ? "/notes" : url;
+}
+
 export function GuestGuard({ children }: GuestGuardProps) {
   const router = useRouter();
-  const { isAuthenticated, isInitialized, initialize } = useAuth();
-
-  useEffect(() => {
-    initialize();
-  }, [initialize]);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isInitialized = useAuthStore((state) => state.isInitialized);
+  const oidc = useOidcConfig();
+  const registrationMode = useRegistrationMode();
 
   useEffect(() => {
     if (isInitialized && isAuthenticated) {
-      router.push("/");
+      router.replace(afterSignInUrl());
     }
   }, [isInitialized, isAuthenticated, router]);
 
-  // Show loading state while initializing
-  if (!isInitialized) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  // Don't render children if already authenticated
-  if (isAuthenticated) {
-    return null;
-  }
-
-  return <>{children}</>;
+  return (
+    <SessionCheck isWaiting={!oidc.isFetched || !registrationMode.isFetched}>
+      {isAuthenticated ? null : children}
+    </SessionCheck>
+  );
 }

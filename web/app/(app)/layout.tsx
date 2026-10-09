@@ -1,46 +1,13 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Sidebar } from "@/components/layout";
+import { AppShell } from "@/components/layout/app-shell";
 import { AuthGuard } from "@/features/auth";
-import { usePreferencesStore } from "@/features/preferences";
-import { useSync } from "@/features/sync";
-import { cn } from "@/lib/utils";
 
 export default function AppLayout({ children }: { children: ReactNode }) {
-  const { ui, setUIPreference } = usePreferencesStore();
-  useSync();
-  const isCollapsed = ui.sidebarCollapsed;
-  const toggleCollapsed = () =>
-    setUIPreference("sidebarCollapsed", !isCollapsed);
-
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-background">
-        {/* Desktop Sidebar */}
-        <aside
-          className={cn(
-            "fixed inset-y-0 left-0 z-50 hidden border-r border-border lg:block",
-            "transition-all duration-300 ease-in-out",
-            isCollapsed ? "w-18" : "w-64",
-          )}
-        >
-          <Sidebar
-            isCollapsed={isCollapsed}
-            onToggleCollapse={toggleCollapsed}
-          />
-        </aside>
-
-        {/* Main Content */}
-        <main
-          className={cn(
-            "min-h-screen transition-all duration-300 ease-in-out",
-            isCollapsed ? "lg:pl-18" : "lg:pl-64",
-          )}
-        >
-          {children}
-        </main>
-      </div>
+      <AppShell>{children}</AppShell>
     </AuthGuard>
   );
 }

@@ -1,0 +1,367 @@
+/* Note colors outside a note; data-note overrides them. */
+:root {
+  --note: var(--background);
+  --note-surface: color-mix(in srgb, var(--foreground) 7%, transparent);
+  --note-border: var(--border);
+  --note-muted: var(--muted-foreground);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans text-ui antialiased;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+
+  svg {
+    flex: none;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  [data-input="pointer"] :focus-visible {
+    outline: none;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--accent) 30%, transparent);
+    color: inherit;
+  }
+
+  kbd {
+    display: inline-grid;
+    place-items: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    border-radius: var(--radius-xs);
+    font-family: var(--font-sans);
+    font-size: var(--text-caption);
+    font-weight: var(--font-weight-medium);
+    line-height: 1;
+    color: var(--muted-foreground);
+    background: color-mix(in srgb, var(--foreground) 7%, transparent);
+  }
+
+  /* The loaded JetBrains Mono has no joined shapes: "</" or "=>" draw blank. */
+  code,
+  kbd,
+  samp,
+  pre,
+  .font-mono,
+  .ql-code-block-container {
+    font-variant-ligatures: none;
+  }
+}
+
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(
+        in srgb,
+        var(--muted-foreground) 35%,
+        transparent
+      )
+      transparent;
+  }
+}
+
+/* Chrome repaints the thumb when a property it reads changes, not on :hover alone. */
+@property --sb-now {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+@utility scrollbar-slim {
+  --sb: color-mix(in srgb, var(--muted-foreground) 45%, transparent);
+  --sb-strong: color-mix(in srgb, var(--muted-foreground) 75%, transparent);
+  transition: --sb-now var(--duration-fade) var(--ease-standard);
+  &:is(:hover, :focus-within) {
+    --sb-now: var(--sb);
+  }
+  /* Keeps the fade from restyling everything inside. */
+  & > * {
+    --sb-now: transparent;
+  }
+  @supports not selector(::-webkit-scrollbar) {
+    scrollbar-width: thin;
+    scrollbar-color: var(--sb-now) transparent;
+  }
+  @supports selector(::-webkit-scrollbar) {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+    &::-webkit-scrollbar {
+      width: 12px;
+      height: 12px;
+    }
+    &::-webkit-scrollbar-track,
+    &::-webkit-scrollbar-corner {
+      background: transparent;
+    }
+    &::-webkit-scrollbar-thumb {
+      border: 3px solid transparent;
+      border-radius: var(--radius-pill);
+      background: var(--sb-now) padding-box;
+    }
+    &::-webkit-scrollbar-thumb:hover,
+    &::-webkit-scrollbar-thumb:active {
+      border-width: 2px;
+      background-color: var(--sb-strong);
+    }
+  }
+  @media (width < 768px) {
+    scrollbar-width: none;
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+}
+
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* biome-ignore-start lint/complexity/noImportantStyles: Radix places the wrapper with inline styles. */
+@media (width < 768px) {
+  [data-radix-popper-content-wrapper]:has(> [data-phone-sheet]) {
+    transform: none !important;
+    inset: auto 8px 8px !important;
+    min-width: 0 !important;
+  }
+}
+/* biome-ignore-end lint/complexity/noImportantStyles: Radix places the wrapper with inline styles. */
+
+/* Radix's wrapper box takes clicks while its content leaves. */
+[data-radix-popper-content-wrapper]:has(> [data-state="closed"]) {
+  pointer-events: none;
+}
+
+/* The -l and -d values are set inline by tagColorStyle(). */
+.tag-color {
+  --hash: var(--hash-l);
+  --tint: var(--tint-l);
+}
+.dark .tag-color {
+  --hash: var(--hash-d);
+  --tint: var(--tint-d);
+}
+
+.auth-art::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      120% 80% at 80% 10%,
+      color-mix(in srgb, var(--accent) 16%, transparent),
+      transparent 60%
+    ),
+    radial-gradient(
+      90% 70% at 10% 90%,
+      color-mix(in srgb, var(--decor-glow) 12%, transparent),
+      transparent 60%
+    );
+}
+.collage {
+  pointer-events: none;
+  container-type: size;
+}
+/* tan(atan2(a, b)) is a / b as a number. */
+.collage-stage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 548px;
+  height: 670px;
+  translate: -50% -50%;
+  scale: min(1.3, tan(atan2(100cqw, 548px)), tan(atan2(100cqh, 670px)));
+}
+.collage .nc {
+  position: absolute;
+  width: 210px;
+  box-shadow: var(--sh-lift);
+  rotate: var(--r);
+  animation: floaty var(--duration-sway) var(--ease-in-out) 2 alternate;
+  animation-delay: var(--d, 0s);
+}
+.collage.flat .collage-stage {
+  scale: 1;
+}
+.collage.flat .nc {
+  rotate: none;
+}
+
+/* Windows high contrast. :root outranks the note and editor styles that load later. */
+@media (forced-colors: active) {
+  :root
+    :where(
+      [data-slot="popover"],
+      [data-slot="dialog"],
+      [data-slot="selection-bar"],
+      [data-slot="save-bar"],
+      [data-slot="card"],
+      [data-slot="tooltip-content"],
+      [data-toast],
+      [data-slot="picker-group"],
+      [data-slot="input"],
+      [data-search-field],
+      [data-slot="segmented-control"]:not([data-variant="tiles"]),
+      [data-slot="tag-chip"],
+      section[aria-labelledby^="set-"] > header + div,
+      :has(> [role="listbox"][aria-label="Add a block"]),
+      .tb,
+      .float,
+      .hl-pop,
+      .ro-bar,
+      .hs-paper
+    ),
+  :root
+    :where(
+      [data-slot="radio-card"],
+      [data-slot="reminder-chip"],
+      [data-slot="new-note"],
+      [data-slot="button"]:is(
+        [data-variant="primary"],
+        [data-variant="secondary"],
+        [data-variant="destructive"]
+      ),
+      .nc
+    ):not(:focus-visible) {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
+  /* Radix sets the menu's outline inline. */
+  :root [data-slot="menu"] {
+    border: 1px solid CanvasText;
+  }
+  :root
+    :is(
+      [data-slot="radio-card"],
+      [data-slot="top-bar-button"],
+      [data-slot="pill-button"],
+      [data-slot="icon-button"],
+      [data-slot="time-list"] > button,
+      [data-seg],
+      [data-row],
+      [data-settings-nav] a,
+      [role="tab"],
+      button[data-day],
+      [aria-label="Reminder"] [role="radio"],
+      [role="radiogroup"][aria-labelledby="tag-color-label"] > [role="radio"],
+      [data-slot="menu"] [role="menuitemradio"],
+      [aria-label="Background"] [role="radio"],
+      [role="listbox"] > [role="option"],
+      .hs-row,
+      .tb .b,
+      .hl-dot,
+      .hl-bubble .fb
+    ):is(
+      [aria-checked="true"],
+      [aria-pressed="true"],
+      [aria-selected="true"],
+      [aria-current="page"],
+      [aria-current="location"]
+    ),
+  :root [data-slot="pill-button"][aria-expanded="true"],
+  :root .nc.picked {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+  :root [data-slot="segmented-fill"],
+  :root .hl-paint {
+    display: none;
+  }
+  :root [data-slot="switch"]:not(:focus-visible) {
+    outline: 1px solid ButtonText;
+    outline-offset: -1px;
+  }
+  :root [data-slot="switch"] > span {
+    background: ButtonText;
+  }
+  :root [data-slot="switch"][aria-checked="true"] {
+    background: Highlight;
+  }
+  :root [data-slot="switch"][aria-checked="true"] > span {
+    background: HighlightText;
+  }
+  :root
+    :is(
+      [data-slot="checkbox"],
+      [data-slot="selection-bar"] [role="checkbox"]
+    ):is([aria-checked="true"], [aria-checked="mixed"]),
+  :root
+    [role="listbox"][aria-label="Tags"]
+    > [role="option"]:is([aria-checked="true"], [aria-checked="mixed"])
+    > span:last-child,
+  :root .anchor-quill .ql-editor li[data-list="checked"] > .ql-ui,
+  :root .doc .ck li.done > .box,
+  :root .nc.picked .nc-pick,
+  :root [data-slot="radio-card-check"] {
+    background: Highlight;
+    border-color: Highlight;
+    color: HighlightText;
+  }
+  :root [data-slot="checkbox"] i,
+  :root .anchor-quill .ql-editor li[data-list="checked"] > .ql-ui::after,
+  :root .doc .ck li.done > .box::after {
+    border-color: HighlightText;
+  }
+  :root [data-slot="checkbox"] b,
+  :root [data-slot="selection-bar"] [role="checkbox"]::after,
+  :root [role="listbox"][aria-label="Tags"] > [role="option"] > span::after {
+    background: HighlightText;
+  }
+  :root mark.hl {
+    background: Mark;
+    color: MarkText;
+  }
+  :root :is(.hs-row, .hs-day)::before {
+    background: CanvasText;
+  }
+  :root:not([data-input="pointer"])
+    :is(
+      [data-slot="menu"] [role^="menuitem"]:not([data-seg]):focus-visible,
+      [aria-labelledby="sort-by"] > [role="radio"]:focus-visible,
+      [role="option"][data-kbd]
+    )::after {
+    forced-color-adjust: none;
+    background: Highlight;
+  }
+  :root:not([data-input="pointer"])
+    :is(
+      .nc:has(> .nc-link:focus-visible),
+      .att-tile:has(> .t-open:focus-visible)
+    ) {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
+  :root :is([data-slot="input"], [data-search-field]):focus-within {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+  :root:not([data-input="pointer"]) :focus-visible {
+    outline-color: Highlight;
+  }
+  :root .scrollbar-slim {
+    scrollbar-width: thin;
+  }
+}

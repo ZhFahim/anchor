@@ -71,8 +71,12 @@ export class NotesController {
   }
 
   @Delete(':id')
-  remove(@CurrentUser('id') userId: string, @Param('id') id: string) {
-    return this.notesService.remove(userId, id);
+  remove(
+    @CurrentUser('id') userId: string,
+    @Param('id') id: string,
+    @Query('trashedAt') trashedAt?: string,
+  ) {
+    return this.notesService.remove(userId, id, trashedAt);
   }
 
   @Delete(':id/permanent')

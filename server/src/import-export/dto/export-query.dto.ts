@@ -1,6 +1,6 @@
 import { IsIn, IsOptional } from 'class-validator';
 
-export const EXPORT_FORMATS = ['anchor', 'markdown'] as const;
+const EXPORT_FORMATS = ['anchor', 'markdown'] as const;
 
 export type ExportFormat = (typeof EXPORT_FORMATS)[number];
 

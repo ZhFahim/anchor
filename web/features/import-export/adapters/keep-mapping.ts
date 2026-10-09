@@ -21,7 +21,7 @@ export type KeepNote = {
 
 // Keep color names -> Anchor background ids. DEFAULT and GRAY have no
 // Anchor equivalent and fall back to no background.
-export const KEEP_COLOR_TO_BACKGROUND: Record<string, string | null> = {
+const KEEP_COLOR_TO_BACKGROUND: Record<string, string | null> = {
   DEFAULT: null,
   RED: "color_red",
   ORANGE: "color_orange",

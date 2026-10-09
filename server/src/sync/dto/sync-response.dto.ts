@@ -47,7 +47,7 @@ export interface SyncFeedEntry {
 
 // `denied` is final and the client drops the change; `failed` is transient and
 // the client keeps it queued.
-export type SyncApplyStatus = 'applied' | 'conflict' | 'denied' | 'failed';
+type SyncApplyStatus = 'applied' | 'conflict' | 'denied' | 'failed';
 
 export interface SyncApplyResult {
   type: 'note' | 'tag' | 'pin' | 'reminder';

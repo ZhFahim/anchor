@@ -1,4 +1,5 @@
 import type { SortBy, SortOrder } from "@/features/preferences";
+import { hasTitle } from "./title";
 import type { Note } from "./types";
 
 export type SortableNote = Pick<
@@ -11,6 +12,9 @@ export const compareNotes =
   (a: SortableNote, b: SortableNote) => {
     let comparison = 0;
     if (sortBy === "title") {
+      // Untitled notes come last whichever way titles are ordered.
+      const aUntitled = !hasTitle(a.title);
+      if (aUntitled !== !hasTitle(b.title)) return aUntitled ? 1 : -1;
       comparison = a.title.trim().localeCompare(b.title.trim());
     } else if (sortBy === "updatedAt") {
       comparison =

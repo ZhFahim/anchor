@@ -1,6 +1,9 @@
+/** A path on this site with no backslash or whitespace, like "/notes/abc?x=1". */
+const PLAIN_PATH = /^\/(?![/\\])[^\\\s]*$/;
+
 /**
- * Validates that a redirect URL is safe: relative path or same-origin.
- * Returns the URL if safe, otherwise returns fallback (default '/').
+ * The path, search and hash of a redirect that stays on this site, or the
+ * fallback for anything that would leave it.
  */
 export function getSafeRedirectUrl(
   redirectUrl: string | null | undefined,
@@ -10,29 +13,17 @@ export function getSafeRedirectUrl(
   if (!trimmed) {
     return fallback;
   }
-  // Reject protocol-relative URLs
-  if (trimmed.startsWith("//")) {
-    return fallback;
+  if (typeof window === "undefined") {
+    return PLAIN_PATH.test(trimmed) ? trimmed : fallback;
   }
-  // Allow relative paths (single leading /, no // in path)
-  if (trimmed.startsWith("/") && !trimmed.includes("//")) {
-    return trimmed;
-  }
-  // Allow same-origin absolute URLs
   try {
-    const redirect = new URL(trimmed);
-    if (
-      typeof window !== "undefined" &&
-      redirect.origin === window.location.origin
-    ) {
-      return trimmed;
-    }
-    // Server-side or different origin
-    if (typeof window === "undefined") {
-      return trimmed;
+    const { origin } = window.location;
+    const redirect = new URL(trimmed, origin);
+    if (redirect.origin === origin) {
+      return redirect.pathname + redirect.search + redirect.hash;
     }
   } catch {
-    // Invalid URL
+    // Not a URL.
   }
   return fallback;
 }

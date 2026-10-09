@@ -2,35 +2,38 @@
 
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 import type * as React from "react";
-
+import { menuSurface } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
-function Popover({
-  ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Root>) {
-  return <PopoverPrimitive.Root data-slot="popover" {...props} />;
-}
-
-function PopoverTrigger({
-  ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Trigger>) {
-  return <PopoverPrimitive.Trigger data-slot="popover-trigger" {...props} />;
-}
+const Popover = PopoverPrimitive.Root;
+const PopoverTrigger = PopoverPrimitive.Trigger;
+const PopoverAnchor = PopoverPrimitive.Anchor;
+const PopoverTitle = PopoverPrimitive.Title;
+const PopoverDescription = PopoverPrimitive.Description;
 
 function PopoverContent({
   className,
-  align = "center",
-  sideOffset = 4,
+  align = "start",
+  sideOffset = 6,
+  collisionPadding = 8,
+  sheetOnPhone = true,
   ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Content>) {
+}: React.ComponentProps<typeof PopoverPrimitive.Content> & {
+  sheetOnPhone?: boolean;
+}) {
   return (
     <PopoverPrimitive.Portal>
       <PopoverPrimitive.Content
-        data-slot="popover-content"
+        data-slot="popover"
+        data-phone-sheet={sheetOnPhone || undefined}
         align={align}
         sideOffset={sideOffset}
+        collisionPadding={collisionPadding}
         className={cn(
-          "bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 w-72 origin-(--radix-popover-content-transform-origin) rounded-md border p-4 shadow-md outline-hidden",
+          menuSurface,
+          "z-(--z-popover) max-h-(--radix-popover-content-available-height) origin-(--radix-popover-content-transform-origin) overflow-auto rounded-popover outline-none animate-pop-in data-[side=top]:animate-pop-up data-[state=closed]:pointer-events-none! data-[state=closed]:animate-pop-out data-[side=top]:data-[state=closed]:animate-pop-down-out",
+          sheetOnPhone &&
+            "max-md:max-h-[calc(100dvh-60px)] max-md:w-auto! max-md:origin-bottom max-md:rounded-3xl max-md:animate-pop-up max-md:data-[state=closed]:animate-pop-down-out",
           className,
         )}
         {...props}
@@ -39,10 +42,11 @@ function PopoverContent({
   );
 }
 
-function PopoverAnchor({
-  ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Anchor>) {
-  return <PopoverPrimitive.Anchor data-slot="popover-anchor" {...props} />;
-}
-
-export { Popover, PopoverAnchor, PopoverContent, PopoverTrigger };
+export {
+  Popover,
+  PopoverAnchor,
+  PopoverContent,
+  PopoverDescription,
+  PopoverTitle,
+  PopoverTrigger,
+};

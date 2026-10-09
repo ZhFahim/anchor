@@ -50,6 +50,42 @@ export const roundTripCases: RoundTripCase[] = [
     ),
   },
   {
+    name: 'highlights',
+    ops: [
+      { insert: 'plain ' },
+      { insert: 'yellow', attributes: { highlight: 'yellow' } },
+      { insert: ' ' },
+      { insert: 'green', attributes: { highlight: 'green' } },
+      { insert: ' ' },
+      { insert: 'a ', attributes: { highlight: 'yellow' } },
+      { insert: 'bold', attributes: { bold: true, highlight: 'yellow' } },
+      { insert: ' ', attributes: { highlight: 'yellow' } },
+      {
+        insert: 'site',
+        attributes: {
+          highlight: 'yellow',
+          link: 'https://example.com/?key=abc==',
+        },
+      },
+      { insert: ' ' },
+      {
+        insert: 'both',
+        attributes: { bold: true, italic: true, highlight: 'blue' },
+      },
+      { insert: ' ' },
+      {
+        insert: 'link',
+        attributes: { highlight: 'pink', link: 'https://example.com' },
+      },
+      { insert: ' ' },
+      { insert: 'gone', attributes: { strike: true, highlight: 'purple' } },
+      { insert: '\n' },
+    ],
+    markdown: md(
+      'plain ==yellow== <mark data-color="green">green</mark> ==a **bold** [site](https://example.com/?key=abc==)== <mark data-color="blue">***both***</mark> <mark data-color="pink">[link](https://example.com)</mark> <mark data-color="purple">~~gone~~</mark>',
+    ),
+  },
+  {
     name: 'nested lists and checklists',
     ops: [
       { insert: 'one' },
@@ -115,6 +151,24 @@ export const roundTripCases: RoundTripCase[] = [
       '\\# not a heading',
       '\\- not a bullet',
       'snake_case_name stays',
+    ),
+  },
+  {
+    name: 'text that looks like a highlight',
+    ops: [
+      { insert: 'a == b, x==y, 1+1=' },
+      { insert: '\n' },
+      { insert: '<mark>not a highlight</mark>' },
+      { insert: '\n' },
+      { insert: 'x==y' },
+      { insert: '\n', attributes: { 'code-block': true } },
+    ],
+    markdown: md(
+      'a \\=\\= b, x\\=\\=y, 1+1\\=',
+      '\\<mark>not a highlight\\</mark>',
+      '```',
+      'x==y',
+      '```',
     ),
   },
 ];

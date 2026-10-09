@@ -1,5 +1,4 @@
-import ky, { HTTPError } from "ky";
-import type { RefreshTokenResponse } from "@/features/auth";
+import ky, { HTTPError, type Options } from "ky";
 import {
   clearAccessToken,
   clearRefreshToken,
@@ -7,16 +6,20 @@ import {
   getRefreshToken,
   setAccessToken,
   setRefreshToken,
-} from "@/features/auth";
+} from "@/features/auth/store";
+import type { RefreshTokenResponse } from "@/features/auth/types";
+import { fitsKeepalive, isPageClosing } from "@/lib/page-close";
 
 let refreshPromise: Promise<boolean> | null = null;
+
+class RefreshRefused extends Error {}
 
 // Use fetch directly to avoid interceptor loops
 async function requestNewTokens(): Promise<RefreshTokenResponse> {
   const storedRefreshToken = getRefreshToken();
 
   if (!storedRefreshToken) {
-    throw new Error("No refresh token available");
+    throw new RefreshRefused("No refresh token available");
   }
 
   const response = await fetch("/api/auth/refresh", {
@@ -26,18 +29,23 @@ async function requestNewTokens(): Promise<RefreshTokenResponse> {
   });
 
   if (!response.ok) {
-    throw new Error("Failed to refresh token");
+    if (response.status >= 500) throw new Error("Server unavailable");
+    throw new RefreshRefused("Failed to refresh token");
   }
 
   return response.json();
 }
 
-function signOut(): void {
-  clearAccessToken();
-  clearRefreshToken();
+function endSession(): void {
   if (typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent("auth:unauthorized"));
   }
+}
+
+function signOut(): void {
+  clearAccessToken();
+  clearRefreshToken();
+  endSession();
 }
 
 async function runRefresh(): Promise<boolean> {
@@ -46,8 +54,9 @@ async function runRefresh(): Promise<boolean> {
     setAccessToken(tokens.access_token);
     setRefreshToken(tokens.refresh_token);
     return true;
-  } catch {
-    signOut();
+  } catch (error) {
+    // Only a refused token signs out; an unreachable server keeps you in.
+    if (error instanceof RefreshRefused) signOut();
     return false;
   } finally {
     refreshPromise = null;
@@ -64,11 +73,14 @@ export const api = ky.create({
   timeout: 30000,
   hooks: {
     beforeRequest: [
-      ({ request }) => {
+      ({ request, options }) => {
         const token = getAccessToken();
         if (token) {
           request.headers.set("Authorization", `Bearer ${token}`);
         }
+        // keepalive: the page is closing.
+        if (isPageClosing() && fitsKeepalive(options.body))
+          return new Request(request, { keepalive: true });
       },
     ],
     beforeError: [
@@ -88,13 +100,14 @@ export const api = ky.create({
       },
     ],
     afterResponse: [
-      async ({ request, response }) => {
-        if (response.status !== 401) {
+      async ({ request, response, retryCount }) => {
+        if (response.status !== 401 || retryCount > 0) {
           return response;
         }
 
-        if (request.url.includes("/api/auth/refresh")) {
-          signOut();
+        // A failed sign-in, or a session that ended in another tab.
+        if (!request.headers.has("Authorization")) {
+          endSession();
           return response;
         }
 
@@ -102,9 +115,19 @@ export const api = ky.create({
           return response;
         }
 
-        request.headers.set("Authorization", `Bearer ${getAccessToken()}`);
-        return ky(request);
+        const headers = new Headers(request.headers);
+        headers.set("Authorization", `Bearer ${getAccessToken()}`);
+        return ky.retry({
+          request: new Request(request, { headers }),
+          delay: 0,
+        });
       },
     ],
   },
 });
+
+/** Reads the body without ky's timeout. */
+export async function getJson<T>(url: string, options?: Options): Promise<T> {
+  const response = await api.get(url, options);
+  return response.json<T>();
+}

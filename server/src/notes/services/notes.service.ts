@@ -11,7 +11,7 @@ import {
   NoteSharePermission,
   ReminderRecurrence,
 } from 'src/generated/prisma/enums';
-import type { Prisma } from 'src/generated/prisma/client';
+import { Prisma } from '../../generated/prisma/client';
 import { NoteAccessService } from './note-access.service';
 import { NoteAttachmentsService } from './note-attachments.service';
 import { NoteSharesService } from './note-shares.service';
@@ -39,7 +39,9 @@ import {
   noteArchiveInclude,
   notePinInclude,
   noteReminderInclude,
+  TRASH_RETENTION_DAYS,
 } from '../constants/notes.constants';
+import { trashDate } from '../utils/trash-date.util';
 import { NoteReminderDto } from '../dto/note-reminder.dto';
 import { RETENTION_CHUNK_SIZE } from '../../common/retention.constants';
 
@@ -57,53 +59,80 @@ export class NotesService {
   async create(userId: string, createNoteDto: CreateNoteDto) {
     const { tagIds, isPinned, isArchived, reminder, ...noteData } =
       createNoteDto;
+    if (noteData.id) {
+      const existing = await this.findCreatedNote(userId, noteData.id);
+      if (existing) return existing;
+    }
     const validTagIds = await this.filterOwnedTagIds(userId, tagIds);
 
-    const note = await this.prisma.$transaction(async (tx) => {
-      const created = await tx.note.create({
-        data: {
-          ...noteData,
-          state: NoteState.active,
+    try {
+      const note = await this.prisma.$transaction(async (tx) => {
+        const created = await tx.note.create({
+          data: {
+            ...noteData,
+            state: NoteState.active,
+            userId,
+            tags: validTagIds.length
+              ? {
+                  connect: validTagIds.map((id) => ({ id })),
+                }
+              : undefined,
+          },
+          include: NOTE_INCLUDE_TAGS,
+        });
+
+        await this.setNotePin(tx, userId, created.id, isPinned);
+        await setNoteArchive(tx, userId, created.id, isArchived);
+        const saved = await this.setNoteReminder(
+          tx,
           userId,
-          tags: validTagIds.length
-            ? {
-                connect: validTagIds.map((id) => ({ id })),
-              }
-            : undefined,
-        },
-        include: NOTE_INCLUDE_TAGS,
+          created.id,
+          reminder,
+        );
+        await this.syncEmitter.emit(tx, [
+          ...noteEmissions([userId], created.id),
+          ...(isPinned !== undefined
+            ? [pinEmission(userId, created.id, isPinned)]
+            : []),
+          ...(saved?.changed
+            ? [reminderEmission(userId, created.id, !!saved.row)]
+            : []),
+        ]);
+
+        return { created, saved };
       });
-
-      await this.setNotePin(tx, userId, created.id, isPinned);
-      await setNoteArchive(tx, userId, created.id, isArchived);
-      const saved = await this.setNoteReminder(
-        tx,
+      return transformNote(
+        {
+          ...note.created,
+          pins: isPinned ? [{ userId }] : [],
+          archives: isArchived ? [{ userId }] : [],
+          reminders: note.saved?.row ? [note.saved.row] : [],
+        },
         userId,
-        created.id,
-        reminder,
       );
-      await this.syncEmitter.emit(tx, [
-        ...noteEmissions([userId], created.id),
-        ...(isPinned !== undefined
-          ? [pinEmission(userId, created.id, isPinned)]
-          : []),
-        ...(saved?.changed
-          ? [reminderEmission(userId, created.id, !!saved.row)]
-          : []),
-      ]);
+    } catch (error) {
+      if (
+        noteData.id &&
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        const existing = await this.findCreatedNote(userId, noteData.id);
+        if (existing) return existing;
+      }
+      throw error;
+    }
+  }
 
-      return { created, saved };
+  private async findCreatedNote(userId: string, id: string) {
+    const existing = await this.prisma.note.findUnique({
+      where: { id },
+      select: { userId: true },
     });
-
-    return transformNote(
-      {
-        ...note.created,
-        pins: isPinned ? [{ userId }] : [],
-        archives: isArchived ? [{ userId }] : [],
-        reminders: note.saved?.row ? [note.saved.row] : [],
-      },
-      userId,
-    );
+    if (!existing) return null;
+    if (existing.userId !== userId) {
+      throw new ConflictException('A note with this id already exists');
+    }
+    return this.findOne(userId, id);
   }
 
   async findAll(
@@ -196,8 +225,15 @@ export class NotesService {
   }
 
   async update(userId: string, id: string, updateNoteDto: UpdateNoteDto) {
-    const { tagIds, isPinned, isArchived, reminder, baseVersion, ...noteData } =
-      updateNoteDto;
+    const {
+      tagIds,
+      isPinned,
+      isArchived,
+      reminder,
+      baseVersion,
+      replacesOtherEdit,
+      ...noteData
+    } = updateNoteDto;
 
     // Pins, archive, reminders and tags only need read access.
     const editsNote = Object.values(noteData).some(
@@ -219,6 +255,26 @@ export class NotesService {
         return { conflict: true as const };
       }
 
+      const noteChanged = guardedNoteFieldsChanged(prior, noteData);
+      if (noteChanged) {
+        // A writer that slipped in since the read above makes count 0.
+        const updated = await tx.note.updateMany({
+          where: {
+            id,
+            ...(baseVersion !== undefined ? { version: prior.version } : {}),
+          },
+          data: { ...noteData, version: { increment: 1 } },
+        });
+        if (updated.count !== 1) {
+          return { conflict: true as const };
+        }
+        if (noteContentChanged(prior, noteData)) {
+          await this.noteRevisions.recordEdit(tx, prior, userId, {
+            collapse: !replacesOtherEdit,
+          });
+        }
+      }
+
       await this.setNotePin(tx, userId, id, isPinned);
       const archiveChanged = await setNoteArchive(tx, userId, id, isArchived);
       // Only update the caller's own tags so other users' tags aren't removed.
@@ -231,17 +287,6 @@ export class NotesService {
         id,
         reminder,
       );
-
-      const noteChanged = guardedNoteFieldsChanged(prior, noteData);
-      if (noteChanged) {
-        if (noteContentChanged(prior, noteData)) {
-          await this.noteRevisions.recordEdit(tx, prior, userId);
-        }
-        await tx.note.update({
-          where: { id },
-          data: { ...noteData, version: { increment: 1 } },
-        });
-      }
 
       const recipients = noteChanged
         ? await this.syncEmitter.noteRecipients(tx, id)
@@ -297,7 +342,10 @@ export class NotesService {
       },
     });
 
-    if (dto.title !== undefined || dto.content !== undefined) {
+    const losesText =
+      (dto.title !== undefined && dto.title !== server.title) ||
+      (dto.content !== undefined && dto.content !== server.content);
+    if (losesText) {
       await this.noteRevisions.recordConflict(
         this.prisma,
         {
@@ -317,7 +365,7 @@ export class NotesService {
   }
 
   // Soft delete - the owner moves the note to trash; a sharee leaves it
-  async remove(userId: string, id: string) {
+  async remove(userId: string, id: string, trashedAt?: string) {
     const access = await this.noteAccessService.hasNoteAccess(userId, id);
     if (!access.hasAccess || access.state === NoteState.deleted) {
       throw new NotFoundException(ERROR_MESSAGES.NOTE_NOT_FOUND);
@@ -337,7 +385,10 @@ export class NotesService {
         data: {
           state: NoteState.trashed,
           ...(prior.state !== NoteState.trashed
-            ? { version: { increment: 1 }, stateChangedAt: new Date() }
+            ? {
+                version: { increment: 1 },
+                stateChangedAt: trashDate(trashedAt),
+              }
             : {}),
         },
         include: {
@@ -464,7 +515,7 @@ export class NotesService {
 
   // Auto-delete notes that have been in trash for longer than retention period
   // Transitions trashed → deleted (tombstone) so sync clients can learn about the deletion
-  async autoDeleteExpiredTrash(retentionDays = 30) {
+  async autoDeleteExpiredTrash(retentionDays = TRASH_RETENTION_DAYS) {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
 

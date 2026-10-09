@@ -9,7 +9,7 @@ export const anchorManifestFixture = {
   tags: [
     { id: "tag-1", name: "Work", color: "#ff0000" },
     { id: "tag-2", name: "Personal", color: null },
-    // Not referenced by any note — must still survive a restore.
+    // Not referenced by any note; must still survive a restore.
     { id: "tag-3", name: "Empty tag", color: "#00ff00" },
   ],
   notes: [

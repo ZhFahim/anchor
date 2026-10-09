@@ -1,29 +1,26 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { HTTPError } from "ky";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/toast";
+import { firstName } from "@/lib/utils";
 import { exchangeOidcCode, getOidcConfig } from "../api";
 import { useAuthStore } from "../store";
 import type { OidcConfig } from "../types";
 import { getSafeRedirectUrl } from "../utils/redirect";
 
-/**
- * Hook to get OIDC configuration
- */
 export function useOidcConfig() {
   return useQuery<OidcConfig>({
     queryKey: ["oidc-config"],
     queryFn: getOidcConfig,
     retry: false,
+    retryOnMount: false,
     staleTime: 5 * 60 * 1000, // Consider fresh for 5 minutes
   });
 }
 
-/**
- * Hook to initiate OIDC login flow.
- */
 export function useOidcLogin() {
   return {
     initiate: (redirectUrl?: string) => {
@@ -36,25 +33,35 @@ export function useOidcLogin() {
   };
 }
 
-/**
- * Hook to handle OIDC callback from URL parameters.
- * Supports exchange code pattern: ?code=...&redirect=... (no JWT in URL).
- */
+/** status is 0 when the server couldn't be reached. */
+export type ProviderSignInFailure =
+  | { by: "provider"; message: string }
+  | { by: "server"; status: number; message: string };
+
+/** Handles the OIDC callback: ?code=...&redirect=... (no JWT in the URL). */
 export function useOidcCallback() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { setAuth, setInitialized } = useAuthStore();
   const processedRef = useRef(false);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(
+    () => searchParams.has("code") && !searchParams.has("error"),
+  );
+  const [failure, setFailure] = useState<ProviderSignInFailure | null>(null);
 
   useEffect(() => {
     const code = searchParams.get("code");
     const error = searchParams.get("error");
+    const status = searchParams.get("status");
 
     if (error) {
       if (!processedRef.current) {
         processedRef.current = true;
-        toast.error(decodeURIComponent(error));
+        setFailure(
+          status
+            ? { by: "server", status: Number(status), message: error }
+            : { by: "provider", message: error },
+        );
         router.replace("/login");
       }
       return;
@@ -62,16 +69,19 @@ export function useOidcCallback() {
 
     if (code && !processedRef.current) {
       processedRef.current = true;
-      setIsProcessing(true);
       exchangeOidcCode(code)
         .then((result) => {
+          // GuestGuard navigates once signed in.
           setAuth(result.user, result.access_token, result.refresh_token);
           setInitialized(true);
-          toast.success("Welcome back!");
-          router.replace(getSafeRedirectUrl(result.redirectUrl));
+          toast.success(`Welcome back, ${firstName(result.user.name)}`);
         })
-        .catch((err) => {
-          toast.error(err.message || "Failed to authenticate");
+        .catch((err: unknown) => {
+          setFailure({
+            by: "server",
+            status: err instanceof HTTPError ? err.response.status : 0,
+            message: err instanceof Error ? err.message : "",
+          });
           router.replace("/login");
         })
         .finally(() => {
@@ -80,5 +90,5 @@ export function useOidcCallback() {
     }
   }, [searchParams, router, setAuth, setInitialized]);
 
-  return { isProcessing };
+  return { isProcessing, failure, clearFailure: () => setFailure(null) };
 }

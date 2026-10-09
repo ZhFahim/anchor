@@ -1,4 +1,4 @@
-export const MAX_FILENAME_STEM_LENGTH = 100;
+const MAX_FILENAME_STEM_LENGTH = 100;
 
 // eslint-disable-next-line no-control-regex
 const ILLEGAL = /[\\/:*?"<>|\x00-\x1f\x7f]/g;

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { DM_Sans, JetBrains_Mono, Playfair_Display } from "next/font/google";
 import { Providers } from "./providers";
 import "./globals.css";
@@ -29,16 +29,22 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  interactiveWidget: "resizes-content",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${dmSans.variable} ${playfair.variable} ${jetBrainsMono.variable} font-sans`}
-      >
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${dmSans.variable} ${playfair.variable} ${jetBrainsMono.variable}`}
+    >
+      <body>
         <Providers>{children}</Providers>
       </body>
     </html>

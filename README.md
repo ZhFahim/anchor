@@ -284,6 +284,21 @@ git config core.hooksPath .githooks
 
 Before committing, fix issues with `pnpm check:fix` in the relevant project.
 
+### Design tokens
+
+The web app's colors, text sizes, spacing, corners, shadows and motion live in
+`design/tokens/` (W3C Design Tokens format). `web/app/styles/tokens.css`,
+`web/app/styles/notes.css` and `web/lib/design/tokens.ts` are built from them,
+so change the tokens rather than those files. After changing a token, run this
+from the repository root (it reads icons from `web/node_modules`, so run
+`pnpm install` in `web` first):
+
+```bash
+node design/build/build.mjs
+```
+
+CI runs it with `--check` and fails if the built files are out of date.
+
 ## Support
 
 If you find Anchor useful, consider supporting its development:

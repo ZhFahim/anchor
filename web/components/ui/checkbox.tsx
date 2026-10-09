@@ -1,30 +1,28 @@
 "use client";
 
 import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
-import { Check } from "lucide-react";
-import * as React from "react";
-
+import type * as React from "react";
 import { cn } from "@/lib/utils";
 
-const Checkbox = React.forwardRef<
-  React.ElementRef<typeof CheckboxPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root>
->(({ className, ...props }, ref) => (
-  <CheckboxPrimitive.Root
-    ref={ref}
-    className={cn(
-      "peer h-4 w-4 shrink-0 rounded-sm border border-primary/60 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:border-primary data-[state=checked]:text-primary-foreground transition-colors",
-      className,
-    )}
-    {...props}
-  >
-    <CheckboxPrimitive.Indicator
-      className={cn("flex items-center justify-center text-current")}
+function Checkbox({
+  className,
+  ...props
+}: React.ComponentProps<typeof CheckboxPrimitive.Root>) {
+  return (
+    <CheckboxPrimitive.Root
+      data-slot="checkbox"
+      className={cn(
+        "relative grid size-checkbox flex-none cursor-pointer place-items-center rounded-checkbox border-[1.5px] border-muted-foreground bg-transparent p-0 disabled:cursor-default disabled:opacity-50 data-[state=checked]:border-accent-strong data-[state=indeterminate]:border-accent-strong data-[state=checked]:bg-accent-strong data-[state=indeterminate]:bg-accent-strong",
+        className,
+      )}
+      {...props}
     >
-      <Check className="h-3 w-3" strokeWidth={2.5} />
-    </CheckboxPrimitive.Indicator>
-  </CheckboxPrimitive.Root>
-));
-Checkbox.displayName = CheckboxPrimitive.Root.displayName;
+      <CheckboxPrimitive.Indicator className="grid place-items-center data-[state=indeterminate]:[&>i]:hidden data-[state=checked]:[&>b]:hidden">
+        <i className="-mt-0.5 block h-1.25 w-2.25 -rotate-45 border-(--check-mark,var(--card)) border-b-2 border-l-2" />
+        <b className="block h-0.5 w-2 rounded-full bg-(--check-mark,var(--card))" />
+      </CheckboxPrimitive.Indicator>
+    </CheckboxPrimitive.Root>
+  );
+}
 
 export { Checkbox };

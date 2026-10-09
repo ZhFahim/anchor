@@ -1,304 +1,463 @@
 "use client";
 
-import { isSameDay, startOfDay, startOfMonth } from "date-fns";
 import {
-  ArrowLeft,
-  Bell,
   BellOff,
-  BellRing,
   CalendarDays,
+  Calendar as CalendarIcon,
+  CalendarRange,
+  Check,
+  Clock,
   Repeat,
+  Sun,
+  X,
 } from "lucide-react";
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import * as React from "react";
+import { Button, IconButton } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Input } from "@/components/ui/input";
 import {
-  Popover,
   PopoverContent,
-  PopoverTrigger,
+  PopoverDescription,
+  PopoverTitle,
 } from "@/components/ui/popover";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { RollingText } from "@/components/ui/rolling-text";
+import { SegmentedControl } from "@/components/ui/segmented-control";
+import { Switch } from "@/components/ui/switch";
+import { useRovingFocus } from "@/lib/hooks/use-roving-focus";
+import { cn } from "@/lib/utils";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
-  formatOccurrence,
-  formatTime,
-  isReminderPast,
-  nextOccurrence,
-  nextRoundTime,
+  parseTimeInput,
   parseWallClock,
   presetReminders,
-  recurrenceLabels,
-  recurrenceShortLabels,
-  reminderLabel,
+  reminderSummary,
   toWallClock,
-} from "@/features/notes/reminder";
-import type { NoteReminder, ReminderRecurrence } from "@/features/notes/types";
-import { cn } from "@/lib/utils";
-import { ReminderCalendar } from "./reminder-calendar";
-import { TimeField } from "./time-field";
+} from "../reminder";
+import type { NoteReminder, ReminderRecurrence } from "../types";
+
+type Choice = "later" | "tomorrow" | "week" | "custom";
+type Repeating = Exclude<ReminderRecurrence, "none">;
 
 interface ReminderPickerProps {
   reminder: NoteReminder | null;
-  onReminderChange: (reminder: NoteReminder | null) => void;
-  disabled?: boolean;
+  onSave: (reminder: {
+    remindAt: string;
+    recurrence: ReminderRecurrence;
+  }) => void;
+  onRemove?: () => void;
+  onClose?: () => void;
+  now?: Date;
 }
 
-const DEFAULT_TIME = "09:00";
+const ICONS = { later: Clock, tomorrow: Sun, week: CalendarRange } as const;
+const REPEAT_OPTIONS: { value: Repeating; label: string }[] = [
+  { value: "daily", label: "Daily" },
+  { value: "weekly", label: "Weekly" },
+  { value: "monthly", label: "Monthly" },
+  { value: "yearly", label: "Yearly" },
+];
+const formatTime = (d: Date) =>
+  d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+const formatDay = (d: Date) =>
+  d.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+const withTime = (d: Date, hours: number, minutes: number) => {
+  const result = new Date(d);
+  result.setHours(hours, minutes, 0, 0);
+  return result;
+};
 
-const pad = (value: number) => String(value).padStart(2, "0");
-
-const clockOf = (at: Date) => `${pad(at.getHours())}:${pad(at.getMinutes())}`;
-
-export function ReminderPicker({
+function ReminderPicker({
   reminder,
-  onReminderChange,
-  disabled = false,
+  onSave,
+  onRemove,
+  onClose,
+  now: fixedNow,
 }: ReminderPickerProps) {
-  const [open, setOpen] = useState(false);
-  const [custom, setCustom] = useState(false);
-  const [date, setDate] = useState<Date | null>(null);
-  const [time, setTime] = useState(DEFAULT_TIME);
-  const [recurrence, setRecurrence] = useState<ReminderRecurrence>("none");
-  const [month, setMonth] = useState(() => startOfMonth(new Date()));
-  const [presets, setPresets] = useState(presetReminders);
+  const [now] = React.useState(() => fixedNow ?? new Date());
+  const presets = React.useMemo(() => presetReminders(now), [now]);
+  const [when, setWhen] = React.useState<Date | null>(() =>
+    reminder ? parseWallClock(reminder.remindAt) : null,
+  );
+  const [repeat, setRepeat] = React.useState<ReminderRecurrence>(
+    reminder?.recurrence ?? "none",
+  );
+  const [lastRepeat, setLastRepeat] = React.useState<Repeating>(
+    reminder && reminder.recurrence !== "none" ? reminder.recurrence : "weekly",
+  );
+  const [choice, setChoice] = React.useState<Choice | null>(() => {
+    if (!reminder) return null;
+    return (
+      presets.find((p) => p.remindAt === reminder.remindAt)?.key ?? "custom"
+    );
+  });
+  const [openField, setOpenField] = React.useState<"date" | "time" | null>(
+    null,
+  );
+  const [typedTime, setTypedTime] = React.useState("");
+  const summary = reminderSummary(when, repeat, now);
+  const repeatId = React.useId();
+  const timePillRef = React.useRef<HTMLButtonElement>(null);
+  const whenChoices = useRovingFocus<HTMLDivElement>({
+    orientation: "both",
+    selectsOnMove: true,
+    itemSelector: ':scope > [role="radio"]',
+  });
 
-  const openWith = (next: boolean) => {
-    if (next) {
-      const at = reminder ? parseWallClock(reminder.remindAt) : null;
-      setPresets(presetReminders());
-      setDate(at ? startOfDay(at) : null);
-      setTime(at ? clockOf(at) : DEFAULT_TIME);
-      setRecurrence(reminder?.recurrence ?? "none");
-      setMonth(startOfMonth(at ?? new Date()));
-      setCustom(at !== null);
-    }
-    setOpen(next);
+  const pickPreset = (key: Exclude<Choice, "custom">) => {
+    const preset = presets.find((p) => p.key === key);
+    if (!preset) return;
+    setWhen(parseWallClock(preset.remindAt));
+    setChoice(key);
+    setOpenField(null);
   };
-
-  const applyPreset = (remindAt: string) => {
-    const at = parseWallClock(remindAt);
-    if (!at) return;
-    setDate(startOfDay(at));
-    setTime(clockOf(at));
-    setMonth(startOfMonth(at));
-  };
-
-  const draftAt = date
-    ? toWallClock(
-        new Date(
-          date.getFullYear(),
-          date.getMonth(),
-          date.getDate(),
-          ...(time.split(":").map(Number) as [number, number]),
+  const pickCustom = () => {
+    if (choice !== "custom" && !when)
+      setWhen(
+        withTime(
+          new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1),
+          9,
+          0,
         ),
-      )
-    : null;
-  const draft: NoteReminder | null = draftAt
-    ? { remindAt: draftAt, recurrence, version: 0 }
-    : null;
-  const upcoming = draft ? nextOccurrence(draft) : null;
-  const draftIsPast = draft !== null && isReminderPast(draft);
+      );
+    setChoice("custom");
+    setOpenField((prev) => prev ?? "date");
+  };
 
-  const isSet = !!reminder;
-  const overdue = isSet && isReminderPast(reminder);
+  const rowClass =
+    "flex min-h-10.5 w-full cursor-pointer items-center gap-3 border-0 bg-transparent px-3 text-left text-ui hover:bg-foreground/4 focus-visible:-outline-offset-2 aria-checked:font-semibold [&>svg:first-child]:size-4.25 [&>svg:first-child]:text-muted-foreground";
+  const groupClass =
+    "overflow-hidden rounded-xl bg-card shadow-[0_0_0_1px_color-mix(in_srgb,var(--border)_55%,transparent)] [&>*+*]:border-border/55 [&>*+*]:border-t";
 
   return (
-    <Popover open={open && !disabled} onOpenChange={openWith}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <PopoverTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              disabled={disabled}
-              aria-label={isSet ? "Edit reminder" : "Add reminder"}
-              className={cn(
-                "h-9 w-9 rounded-xl",
-                isSet && "text-accent",
-                overdue && "text-destructive",
-              )}
-            >
-              {isSet ? (
-                <BellRing className="h-4 w-4" />
-              ) : (
-                <Bell className="h-4 w-4" />
-              )}
-            </Button>
-          </PopoverTrigger>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">
-          {isSet ? reminderLabel(reminder) : "Add reminder"}
-        </TooltipContent>
-      </Tooltip>
-
-      <PopoverContent
-        className="border-border/40 w-[320px] p-0 shadow-lg"
-        align="end"
-      >
-        <div className="border-border/40 bg-muted/30 flex items-center gap-3 rounded-t-md border-b px-4 py-3">
-          <div className="bg-accent/10 flex h-8 w-8 items-center justify-center rounded-lg">
-            <Bell className="text-accent h-4 w-4" />
-          </div>
-          <div className="min-w-0">
-            <h3 className="text-foreground text-sm font-medium">Reminder</h3>
-            <p className="text-muted-foreground truncate text-xs">
-              Only rings on the Anchor mobile app
-            </p>
-          </div>
+    <div className="grid w-87 max-w-full gap-2 bg-background px-3.5 pt-3 pb-3.5 max-md:w-auto">
+      <div className="flex items-start gap-2.5 p-0.5 pl-1">
+        <div className="grid flex-1 gap-px">
+          <PopoverTitle className="font-semibold text-lead">
+            Reminder
+          </PopoverTitle>
+          <PopoverDescription className="text-muted-foreground text-small">
+            Sent to the Anchor app on your phone
+          </PopoverDescription>
         </div>
+        {onClose && (
+          <IconButton size="sm" label="Close" onClick={onClose}>
+            <X />
+          </IconButton>
+        )}
+      </div>
 
-        <div className="space-y-4 p-4">
-          {custom ? (
-            <div className="space-y-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="-ml-2 h-7 px-2 text-xs"
-                onClick={() => setCustom(false)}
+      <div
+        data-slot="picker-group"
+        className={cn(
+          groupClass,
+          "grid gap-0.5 px-3 pt-3.5 pb-3 text-center [&>*+*]:border-t-0",
+        )}
+        aria-live="polite"
+      >
+        <RollingText
+          text={summary.headline}
+          className={cn("text-heading", summary.past && "text-destructive")}
+        />
+        <RollingText
+          text={summary.caption}
+          className="text-meta text-muted-foreground"
+        />
+      </div>
+
+      <div
+        ref={whenChoices.ref}
+        data-slot="picker-group"
+        className={groupClass}
+        role="radiogroup"
+        aria-label="When"
+        onFocus={whenChoices.onFocus}
+        onKeyDown={whenChoices.onKeyDown}
+      >
+        {presets.map((preset) => {
+          const Icon = ICONS[preset.key];
+          const date = parseWallClock(preset.remindAt) as Date;
+          return (
+            // biome-ignore lint/a11y/useSemanticElements: a radio group of full-width rows
+            <button
+              key={preset.key}
+              type="button"
+              role="radio"
+              aria-checked={choice === preset.key}
+              className={rowClass}
+              onClick={() => pickPreset(preset.key)}
+            >
+              <Icon aria-hidden />
+              <span>{preset.label}</span>
+              <span
+                className={cn(
+                  "ml-auto text-control tabular-nums",
+                  choice === preset.key
+                    ? "text-foreground"
+                    : "text-muted-foreground",
+                )}
               >
-                <ArrowLeft className="mr-1 h-3.5 w-3.5" />
-                Quick options
-              </Button>
-
-              <ReminderCalendar
-                selected={date}
-                month={month}
-                onMonthChange={setMonth}
-                onSelect={(day) => {
-                  setDate(day);
-                  setMonth(startOfMonth(day));
-                  const now = new Date();
-                  if (isSameDay(day, now) && time <= clockOf(now)) {
-                    setTime(nextRoundTime(now));
-                  }
+                {preset.key === "week"
+                  ? `${formatDay(date).split(",")[0]}, ${formatTime(date)}`
+                  : formatTime(date)}
+              </span>
+              <Tick checked={choice === preset.key} />
+            </button>
+          );
+        })}
+        {/* biome-ignore lint/a11y/useSemanticElements: one of the rows above */}
+        <button
+          type="button"
+          role="radio"
+          aria-checked={choice === "custom"}
+          className={rowClass}
+          onClick={pickCustom}
+        >
+          <CalendarDays aria-hidden />
+          <span>Pick a date</span>
+          <span className="ml-auto" />
+          <Tick checked={choice === "custom"} />
+        </button>
+        {choice === "custom" && when && (
+          <div className="grid animate-open gap-2 border-t-0! px-3 pt-1 pb-2.5">
+            <div className="flex gap-2">
+              <PillButton
+                icon={<CalendarIcon aria-hidden />}
+                expanded={openField === "date"}
+                onClick={() =>
+                  setOpenField(openField === "date" ? null : "date")
+                }
+              >
+                {formatDay(when)}
+              </PillButton>
+              <PillButton
+                ref={timePillRef}
+                icon={<Clock aria-hidden />}
+                expanded={openField === "time"}
+                onClick={() =>
+                  setOpenField(openField === "time" ? null : "time")
+                }
+              >
+                {formatTime(when)}
+              </PillButton>
+            </div>
+            {openField === "date" && (
+              <Calendar
+                value={when}
+                now={now}
+                onChange={(date) => {
+                  setWhen(withTime(date, when.getHours(), when.getMinutes()));
+                  setOpenField("time");
+                  timePillRef.current?.focus();
                 }}
               />
-
-              <div className="flex items-center justify-between gap-3">
-                <Label htmlFor="reminder-time" className="text-xs">
-                  Time
-                </Label>
-                <TimeField id="reminder-time" value={time} onChange={setTime} />
-              </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-2">
-              {presets.map((preset) => {
-                const at = parseWallClock(preset.remindAt);
-                return (
-                  <button
-                    key={preset.label}
-                    type="button"
-                    aria-pressed={draftAt === preset.remindAt}
-                    onClick={() => applyPreset(preset.remindAt)}
-                    className={cn(
-                      "border-border/40 hover:border-accent/60 hover:bg-accent/5 focus-visible:ring-ring/50 rounded-xl border px-3 py-2 text-left transition-colors outline-none focus-visible:ring-2",
-                      draftAt === preset.remindAt &&
-                        "border-accent bg-accent/10",
-                    )}
-                  >
-                    <span className="block text-xs font-medium">
-                      {preset.label}
-                    </span>
-                    <span className="text-muted-foreground block text-[11px]">
-                      {at ? formatTime(at) : preset.remindAt}
-                    </span>
-                  </button>
-                );
-              })}
-
-              <button
-                type="button"
-                onClick={() => setCustom(true)}
-                className="border-border/40 text-muted-foreground hover:border-accent/60 hover:text-foreground focus-visible:ring-ring/50 col-span-2 flex items-center justify-center gap-2 rounded-xl border border-dashed px-3 py-2 text-xs transition-colors outline-none focus-visible:ring-2"
-              >
-                <CalendarDays className="h-3.5 w-3.5" />
-                Pick a date and time
-              </button>
-            </div>
-          )}
-
-          <div>
-            <h4 className="text-muted-foreground mb-2 flex items-center gap-1.5 text-xs font-semibold tracking-wider uppercase">
-              <Repeat className="h-3 w-3" />
-              Repeat
-            </h4>
-            <ToggleGroup
-              type="single"
-              variant="outline"
-              spacing={1}
-              value={recurrence}
-              onValueChange={(value) =>
-                value && setRecurrence(value as ReminderRecurrence)
-              }
-              className="w-full"
-            >
-              {Object.entries(recurrenceShortLabels).map(([value, label]) => (
-                <ToggleGroupItem
-                  key={value}
-                  value={value}
-                  aria-label={recurrenceLabels[value as ReminderRecurrence]}
-                  className="h-8 flex-1 rounded-lg px-1 text-[11px]"
-                >
-                  {label}
-                </ToggleGroupItem>
-              ))}
-            </ToggleGroup>
+            )}
+            {openField === "time" && (
+              <>
+                <Input
+                  size="sm"
+                  icon={<Clock aria-hidden />}
+                  aria-label="Time"
+                  placeholder="Type a time, like 4 PM"
+                  value={typedTime}
+                  onChange={(e) => setTypedTime(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key !== "Enter") return;
+                    e.preventDefault();
+                    const parsed = parseTimeInput(typedTime);
+                    if (!parsed) return e.currentTarget.select();
+                    const [hours, minutes] = parsed.split(":").map(Number);
+                    setWhen(withTime(when, hours, minutes));
+                    setTypedTime("");
+                    setOpenField(null);
+                    timePillRef.current?.focus();
+                  }}
+                />
+                <TimeList
+                  value={when}
+                  onChange={(hours, minutes) => {
+                    setWhen(withTime(when, hours, minutes));
+                    setOpenField(null);
+                    timePillRef.current?.focus();
+                  }}
+                />
+              </>
+            )}
           </div>
-        </div>
+        )}
+      </div>
 
-        <div className="border-border/40 space-y-2 border-t px-4 py-3">
-          <p
+      <div data-slot="picker-group" className={cn(groupClass, "px-3")}>
+        <div className="flex min-h-10.5 items-center gap-3 text-ui [&>svg]:size-4.25 [&>svg]:text-muted-foreground">
+          <Repeat aria-hidden />
+          <label htmlFor={repeatId} className="flex-1 cursor-pointer">
+            Repeat
+          </label>
+          <Switch
+            id={repeatId}
+            checked={repeat !== "none"}
+            onCheckedChange={(checked) =>
+              setRepeat(checked ? lastRepeat : "none")
+            }
+          />
+        </div>
+        {repeat !== "none" && (
+          <div className="border-t-0! pb-3">
+            <SegmentedControl
+              full
+              aria-label="How often"
+              value={repeat}
+              onValueChange={(value) => {
+                setRepeat(value);
+                setLastRepeat(value);
+              }}
+              options={REPEAT_OPTIONS}
+              className="[&_button]:px-1.5 [&_button]:text-meta [&_span]:px-1.5 [&_span]:text-meta"
+            />
+          </div>
+        )}
+      </div>
+
+      <div className="flex items-center gap-2 pt-0.5 max-md:sticky max-md:bottom-0 max-md:z-1 max-md:-mx-3.5 max-md:-mb-3.5 max-md:bg-background max-md:px-3.5 max-md:pt-2.5 max-md:pb-3.5">
+        {reminder && onRemove && (
+          <Button variant="danger" size="sm" onClick={onRemove}>
+            <BellOff aria-hidden />
+            Remove
+          </Button>
+        )}
+        <Button
+          className="ml-auto min-w-21 justify-center"
+          disabled={!summary.ok}
+          onClick={() =>
+            when && onSave({ remindAt: toWallClock(when), recurrence: repeat })
+          }
+        >
+          Save
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function Tick({ checked }: { checked: boolean }) {
+  return (
+    <Check
+      aria-hidden
+      className={cn(
+        "size-4.25 text-accent-strong transition-[opacity,transform] duration-(--duration-fade) ease-standard",
+        checked ? "scale-100 opacity-100" : "scale-60 opacity-0",
+      )}
+    />
+  );
+}
+
+function PillButton({
+  ref,
+  icon,
+  expanded,
+  onClick,
+  children,
+}: {
+  ref?: React.Ref<HTMLButtonElement>;
+  icon: React.ReactNode;
+  expanded: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      ref={ref}
+      type="button"
+      data-slot="pill-button"
+      aria-expanded={expanded}
+      onClick={onClick}
+      className="inline-flex h-8.5 cursor-pointer items-center gap-2 rounded-md border-0 bg-muted px-3 font-semibold text-control tabular-nums aria-expanded:bg-primary aria-expanded:text-card aria-expanded:shadow-xs [&>svg]:size-3.75 [&>svg]:text-muted-foreground aria-expanded:[&>svg]:text-inherit"
+    >
+      {icon}
+      {children}
+    </button>
+  );
+}
+
+function TimeList({
+  value,
+  onChange,
+}: {
+  value: Date;
+  onChange: (hours: number, minutes: number) => void;
+}) {
+  const listRef = React.useRef<HTMLDivElement>(null);
+  React.useLayoutEffect(() => {
+    const chosen = listRef.current?.querySelector<HTMLElement>(
+      '[aria-pressed="true"]',
+    );
+    if (chosen && listRef.current)
+      listRef.current.scrollTop = chosen.offsetTop - 60;
+  }, []);
+  const slots: number[] = [];
+  for (let minutes = 7 * 60; minutes <= 22 * 60 + 30; minutes += 30)
+    slots.push(minutes);
+  return (
+    // biome-ignore lint/a11y/useSemanticElements: a grid of time buttons, not a form fieldset
+    <div
+      ref={listRef}
+      role="group"
+      aria-label="Times"
+      data-slot="time-list"
+      className="relative grid max-h-46 grid-cols-3 gap-1.5 overflow-auto p-0.5"
+    >
+      {slots.map((minutes) => {
+        const selected = value.getHours() * 60 + value.getMinutes() === minutes;
+        return (
+          <button
+            key={minutes}
+            type="button"
+            aria-pressed={selected}
+            onClick={() => onChange(Math.floor(minutes / 60), minutes % 60)}
             className={cn(
-              "text-xs",
-              draftIsPast
-                ? "text-amber-600 dark:text-amber-400"
-                : "text-muted-foreground",
+              "h-8.5 cursor-pointer rounded-md border-0 bg-muted font-medium text-meta tabular-nums hover:bg-[color-mix(in_srgb,var(--foreground)_10%,var(--muted))] focus-visible:-outline-offset-2",
+              selected && "bg-primary font-bold text-card hover:bg-primary",
             )}
           >
-            {!draft
-              ? "Choose when to be reminded."
-              : draftIsPast
-                ? "That time has already passed."
-                : upcoming
-                  ? `Rings ${formatOccurrence(upcoming)}`
-                  : ""}
-          </p>
-          <div className="flex items-center justify-between gap-2">
-            {isSet ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-destructive"
-                onClick={() => {
-                  onReminderChange(null);
-                  setOpen(false);
-                }}
-              >
-                <BellOff className="mr-1.5 h-3.5 w-3.5" />
-                Remove
-              </Button>
-            ) : (
-              <span />
+            {formatTime(
+              withTime(value, Math.floor(minutes / 60), minutes % 60),
             )}
-            <Button
-              size="sm"
-              disabled={!draftAt}
-              onClick={() => {
-                if (!draftAt) return;
-                onReminderChange({ remindAt: draftAt, recurrence, version: 0 });
-                setOpen(false);
-              }}
-            >
-              Save
-            </Button>
-          </div>
-        </div>
-      </PopoverContent>
-    </Popover>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+export function ReminderPopoverContent({
+  align,
+  reminder,
+  onReminder,
+  onClose,
+}: {
+  align: "start" | "end";
+  reminder: NoteReminder | null;
+  onReminder: (
+    reminder: { remindAt: string; recurrence: ReminderRecurrence } | null,
+  ) => void;
+  onClose: () => void;
+}) {
+  return (
+    <PopoverContent align={align} className="overflow-hidden bg-background p-0">
+      <ReminderPicker
+        reminder={reminder}
+        onClose={onClose}
+        onSave={(next) => {
+          onClose();
+          onReminder(next);
+        }}
+        onRemove={() => {
+          onClose();
+          onReminder(null);
+        }}
+      />
+    </PopoverContent>
   );
 }

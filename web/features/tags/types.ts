@@ -9,6 +9,8 @@ export interface Tag {
   };
 }
 
+export type TagLabel = Pick<Tag, "id" | "name" | "color">;
+
 export interface CreateTagDto {
   name: string;
   color?: string;

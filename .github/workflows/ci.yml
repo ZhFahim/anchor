@@ -108,6 +108,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Design tokens match the generated files
+        run: node ../design/build/build.mjs --check
+
       - name: Lint & format check
         run: pnpm check
 

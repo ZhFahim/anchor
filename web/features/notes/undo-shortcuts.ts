@@ -4,7 +4,6 @@ export type UndoRedoAction = "undo" | "redo";
 const OWN_UNDO_SELECTOR =
   'input, textarea, select, [contenteditable="true"], [contenteditable=""], [contenteditable="plaintext-only"]';
 
-/** Maps a keydown to the undo/redo action it requests, if any. */
 export function undoRedoActionForKeyEvent(e: {
   key: string;
   metaKey: boolean;
@@ -19,7 +18,6 @@ export function undoRedoActionForKeyEvent(e: {
   return null;
 }
 
-/** True when the event target handles the undo shortcut itself. */
 export function targetHandlesOwnUndo(target: EventTarget | null): boolean {
   const el = target as { closest?: (selector: string) => unknown } | null;
   if (!el || typeof el.closest !== "function") return false;

@@ -3,12 +3,17 @@ import {
   IsOptional,
   IsString,
   IsArray,
+  IsUUID,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { NoteReminderDto } from './note-reminder.dto';
 
 export class CreateNoteDto {
+  @IsUUID()
+  @IsOptional()
+  id?: string;
+
   // Blank is allowed and canonical for "no title"; clients render an "Untitled" placeholder.
   @IsString()
   title: string;

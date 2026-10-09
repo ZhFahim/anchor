@@ -1,13 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
-  formatOccurrence,
   isReminderPast,
   nextOccurrence,
-  nextRoundTime,
   parseTimeInput,
   parseWallClock,
   presetReminders,
   reminderLabel,
+  reminderSummary,
   toWallClock,
 } from "./reminder";
 import type { NoteReminder } from "./types";
@@ -65,14 +64,39 @@ describe("presetReminders", () => {
   it("puts tomorrow and next week on the right days at 09:00", () => {
     const now = new Date(2026, 8, 4, 12, 0);
     const presets = presetReminders(now);
-    expect(presets[2]).toEqual({
+    expect(presets[1]).toEqual({
+      key: "tomorrow",
       label: "Tomorrow",
       remindAt: "2026-09-05T09:00",
     });
-    expect(presets[3]).toEqual({
+    expect(presets[2]).toEqual({
+      key: "week",
       label: "Next week",
       remindAt: "2026-09-11T09:00",
     });
+  });
+
+  it("rounds later today up to the next five minutes", () => {
+    const later = presetReminders(new Date(2026, 8, 4, 12, 2, 30))[0];
+    expect(later).toEqual({
+      key: "later",
+      label: "Later today",
+      remindAt: "2026-09-04T15:05",
+    });
+    expect(presetReminders(new Date(2026, 8, 4, 12, 0))[0].remindAt).toBe(
+      "2026-09-04T15:00",
+    );
+  });
+
+  it("drops later today once it would pass midnight", () => {
+    const keys = (now: Date) => presetReminders(now).map((p) => p.key);
+    expect(keys(new Date(2026, 8, 4, 20, 55))).toEqual([
+      "later",
+      "tomorrow",
+      "week",
+    ]);
+    expect(keys(new Date(2026, 8, 4, 20, 56))).toEqual(["tomorrow", "week"]);
+    expect(keys(new Date(2026, 8, 4, 22, 30))).toEqual(["tomorrow", "week"]);
   });
 });
 
@@ -87,6 +111,18 @@ describe("reminderLabel", () => {
 
   it("says nothing about repeating when it does not repeat", () => {
     expect(reminderLabel(reminder(), now)).not.toContain("·");
+  });
+
+  it("names the day of a future reminder, and the date of a late one", () => {
+    expect(reminderLabel(reminder({ remindAt: "2026-09-11T09:00" }), now)).toBe(
+      "Fri, Sep 11, 9:00 AM",
+    );
+    expect(reminderLabel(reminder({ remindAt: "2026-09-05T09:00" }), now)).toBe(
+      "Tomorrow, 9:00 AM",
+    );
+    expect(reminderLabel(reminder({ remindAt: "2026-09-01T17:00" }), now)).toBe(
+      "Sep 1, 5:00 PM",
+    );
   });
 
   it("falls back to the raw value it cannot parse", () => {
@@ -162,57 +198,6 @@ describe("nextOccurrence", () => {
   });
 });
 
-describe("formatOccurrence", () => {
-  const now = new Date(2026, 8, 4, 12, 0);
-
-  it("names today and tomorrow instead of dating them", () => {
-    expect(formatOccurrence(new Date(2026, 8, 4, 18, 0), now)).toMatch(
-      /^Today at /,
-    );
-    expect(formatOccurrence(new Date(2026, 8, 5, 9, 0), now)).toMatch(
-      /^Tomorrow at /,
-    );
-  });
-
-  it("dates anything further out", () => {
-    const label = formatOccurrence(new Date(2026, 8, 11, 9, 0), now);
-    expect(label).not.toMatch(/Today|Tomorrow/);
-    expect(label).toContain("at");
-  });
-
-  it("counts calendar days, not elapsed hours", () => {
-    const late = new Date(2026, 8, 4, 23, 30);
-    expect(formatOccurrence(new Date(2026, 8, 5, 0, 30), late)).toMatch(
-      /^Tomorrow at /,
-    );
-  });
-});
-
-describe("nextRoundTime", () => {
-  it("rounds up to the next five-minute mark", () => {
-    expect(nextRoundTime(new Date(2026, 8, 4, 12, 1))).toBe("12:10");
-    expect(nextRoundTime(new Date(2026, 8, 4, 12, 0))).toBe("12:05");
-  });
-
-  it("rolls into the next hour rather than reporting minute 60", () => {
-    expect(nextRoundTime(new Date(2026, 8, 4, 12, 51))).toBe("13:00");
-  });
-
-  it("stops at the end of the day", () => {
-    expect(nextRoundTime(new Date(2026, 8, 4, 23, 56))).toBe("23:59");
-    expect(nextRoundTime(new Date(2026, 8, 4, 23, 50))).toBe("23:55");
-  });
-
-  it("always lands ahead of the clock it was given", () => {
-    for (const minute of [0, 1, 29, 44, 55, 58]) {
-      const now = new Date(2026, 8, 4, 14, minute);
-      expect(
-        nextRoundTime(now) > `${14}:${String(minute).padStart(2, "0")}`,
-      ).toBe(true);
-    }
-  });
-});
-
 describe("parseTimeInput", () => {
   it("reads a 12-hour time with a meridiem", () => {
     expect(parseTimeInput("4:10 PM")).toBe("16:10");
@@ -236,6 +221,16 @@ describe("parseTimeInput", () => {
     expect(parseTimeInput("4:10 P.M.")).toBe("16:10");
   });
 
+  it("takes a dot between the hour and minutes", () => {
+    expect(parseTimeInput("9.30")).toBe("09:30");
+    expect(parseTimeInput("21.45")).toBe("21:45");
+    expect(parseTimeInput("9.30 a.m.")).toBe("09:30");
+    expect(parseTimeInput("9.30 p.m.")).toBe("21:30");
+    expect(parseTimeInput("9.30pm")).toBe("21:30");
+    expect(parseTimeInput("4 p.m.")).toBe("16:00");
+    expect(parseTimeInput("4 p.m")).toBe("16:00");
+  });
+
   it("pads a single-digit minute", () => {
     expect(parseTimeInput("4:5")).toBe("04:05");
   });
@@ -251,5 +246,40 @@ describe("parseTimeInput", () => {
     expect(parseTimeInput("")).toBeNull();
     expect(parseTimeInput("noon")).toBeNull();
     expect(parseTimeInput("4:10 xm")).toBeNull();
+    expect(parseTimeInput("9..30")).toBeNull();
+    expect(parseTimeInput("9.30.")).toBeNull();
+  });
+});
+
+describe("reminderSummary", () => {
+  const now = new Date(2026, 8, 28, 15, 5);
+
+  it("says when it rings and how far away that is", () => {
+    const at = new Date(2026, 8, 28, 18, 5);
+    expect(reminderSummary(at, "none", now)).toEqual({
+      headline: "Today, 6:05 PM",
+      caption: "In 3 hours",
+      ok: true,
+    });
+  });
+
+  it("names the rule for a repeating reminder", () => {
+    const at = new Date(2026, 8, 30, 20, 0);
+    expect(reminderSummary(at, "weekly", now).caption).toBe(
+      "Repeats every Wednesday",
+    );
+    expect(
+      reminderSummary(new Date(2026, 8, 23, 9, 0), "monthly", now).caption,
+    ).toBe("Repeats monthly on the 23rd");
+  });
+
+  it("turns down a time that has passed", () => {
+    expect(
+      reminderSummary(new Date(2026, 8, 27, 17, 0), "none", now),
+    ).toMatchObject({
+      headline: "That time has passed",
+      ok: false,
+      past: true,
+    });
   });
 });

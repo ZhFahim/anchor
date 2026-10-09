@@ -36,6 +36,7 @@ export interface TransformedNote {
   permission: NotePermission;
   shareIds?: string[];
   sharedBy?: SharedByUser;
+  stateChangedAt?: string;
   attachmentCount?: number;
   imagePreviewIds?: string[];
   // Absent means "not loaded"; null means "this user has no reminder".
@@ -128,6 +129,10 @@ export function transformNote(
     attachmentCount: _count?.attachments ?? 0,
     imagePreviewIds: attachments?.map((a) => a.id) ?? [],
   };
+
+  if (note.state === 'trashed' && stateChangedAt) {
+    transformed.stateChangedAt = toISOString(stateChangedAt);
+  }
 
   // Add shareIds for owners
   if (isOwner && sharedWith) {

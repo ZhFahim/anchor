@@ -1,29 +1,25 @@
 "use client";
 
 import * as SwitchPrimitives from "@radix-ui/react-switch";
-import * as React from "react";
-
+import type * as React from "react";
 import { cn } from "@/lib/utils";
 
-const Switch = React.forwardRef<
-  React.ElementRef<typeof SwitchPrimitives.Root>,
-  React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root>
->(({ className, ...props }, ref) => (
-  <SwitchPrimitives.Root
-    className={cn(
-      "peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-accent data-[state=unchecked]:bg-input",
-      className,
-    )}
-    {...props}
-    ref={ref}
-  >
-    <SwitchPrimitives.Thumb
+function Switch({
+  className,
+  ...props
+}: React.ComponentProps<typeof SwitchPrimitives.Root>) {
+  return (
+    <SwitchPrimitives.Root
+      data-slot="switch"
       className={cn(
-        "pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0",
+        "relative h-6 w-10 flex-none cursor-pointer rounded-pill bg-[color-mix(in_srgb,var(--muted-foreground)_75%,var(--card))] p-0 transition-colors duration-(--duration-fade) disabled:cursor-default disabled:opacity-45 data-[state=checked]:bg-accent-strong",
+        className,
       )}
-    />
-  </SwitchPrimitives.Root>
-));
-Switch.displayName = SwitchPrimitives.Root.displayName;
+      {...props}
+    >
+      <SwitchPrimitives.Thumb className="pointer-events-none absolute top-0.5 left-0.5 block size-5 rounded-full bg-knob shadow-knob transition-transform duration-(--duration-move) ease-standard data-[state=checked]:translate-x-4" />
+    </SwitchPrimitives.Root>
+  );
+}
 
 export { Switch };

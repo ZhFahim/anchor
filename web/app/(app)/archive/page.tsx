@@ -1,229 +1,240 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { format } from "date-fns";
-import { Archive, ArchiveRestore, Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { ArchiveRestore, Trash2 } from "lucide-react";
 import * as React from "react";
-import { useMemo, useState } from "react";
-import Masonry from "react-masonry-css";
-import { toast } from "sonner";
-import { Header } from "@/components/layout";
-import { Button } from "@/components/ui/button";
+import { AppPage, PageTitle } from "@/components/layout/app-page";
+import { IconButton } from "@/components/ui/button";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
+import { EmptyState, LoadFailedState } from "@/components/ui/empty-state";
+import { SelectionBar } from "@/components/ui/selection-bar";
+import { toast } from "@/components/ui/toast";
+import { Tip } from "@/components/ui/tooltip";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import type { Note } from "@/features/notes";
-import {
-  ArchiveDialog,
-  deltaToFullPlainText,
+  bulkArchiveNotes,
+  bulkDeleteNotes,
   getArchivedNotes,
-  NoteCard,
+  restoreNote,
   unarchiveNote,
-} from "@/features/notes";
-import { getTags } from "@/features/tags";
+} from "@/features/notes/api";
+import {
+  NoSearchResults,
+  NoteListActions,
+} from "@/features/notes/components/note-list-actions";
+import {
+  NotesBoard,
+  NotesBoardSkeleton,
+} from "@/features/notes/components/notes-board";
+import { ShareDialog } from "@/features/notes/components/share-dialog";
+import { useNoteList } from "@/features/notes/hooks/use-note-list";
+import { useRefreshNotes } from "@/features/notes/hooks/use-refresh-notes";
+import { deletedNotesText, deleteNotesWarning } from "@/features/notes/trash";
+import type { Note } from "@/features/notes/types";
+import { eachLimited } from "@/lib/each";
+import { plural } from "@/lib/utils";
 
-const masonryBreakpoints = {
-  default: 4,
-  1536: 4,
-  1280: 3,
-  1024: 3,
-  768: 2,
-  640: 1,
-};
+const NO_NOTES: Note[] = [];
 
 export default function ArchivePage() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const queryClient = useQueryClient();
-  const router = useRouter();
-
-  const { data: notes = [], isLoading } = useQuery({
-    queryKey: ["notes", "archive"],
+  const refresh = useRefreshNotes();
+  const [confirmRemove, setConfirmRemove] = React.useState<{
+    ids: string[];
+    sharedCount: number;
+  } | null>(null);
+  const [sharingNote, setSharingNote] = React.useState<Note | null>(null);
+  const { data, isLoading, isError, isFetching, refetch } = useQuery({
+    queryKey: ["notes", "archived"],
     queryFn: getArchivedNotes,
   });
+  const notes = data ?? NO_NOTES;
+  const loadFailed = isError && !data;
+  const list = useNoteList(notes);
 
-  const { data: tags = [] } = useQuery({
-    queryKey: ["tags"],
-    queryFn: getTags,
-  });
-
-  // Join tags with notes based on tagIds
-  const notesWithTags = useMemo(() => {
-    return notes.map((note) => ({
-      ...note,
-      tags: note.tagIds
-        ? note.tagIds
-            .map((tagId) => tags.find((tag) => tag.id === tagId))
-            .filter((tag): tag is NonNullable<typeof tag> => tag !== undefined)
-        : [],
-    }));
-  }, [notes, tags]);
-
-  const unarchiveMutation = useMutation({
-    mutationFn: unarchiveNote,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
-      queryClient.invalidateQueries({ queryKey: ["notes", "archive"] });
-      queryClient.invalidateQueries({ queryKey: ["tags"] });
-      toast.success("Note unarchived");
-    },
-    onError: () => {
-      toast.error("Failed to unarchive note");
-    },
-  });
-
-  const filteredNotes = notesWithTags.filter((note) => {
-    if (!searchQuery.trim()) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      note.title.toLowerCase().includes(query) ||
-      deltaToFullPlainText(note.content).toLowerCase().includes(query)
-    );
-  });
-
-  const handleNoteClick = (note: Note) => {
-    // Store note in sessionStorage for quick access
-    if (typeof window !== "undefined") {
-      sessionStorage.setItem(`note-${note.id}`, JSON.stringify(note));
+  const undo = async (run: () => Promise<unknown>) => {
+    list.prepareCardMotion();
+    try {
+      await run();
+    } catch {
+      toast.error("Couldn’t undo that");
     }
-    router.push(`/notes/${note.id}`);
+    refresh();
   };
 
-  return (
-    <div className="min-h-screen flex flex-col">
-      <Header searchQuery={searchQuery} onSearchChange={setSearchQuery} />
+  const noteAction = useMutation({
+    mutationFn: async ({
+      kind,
+      ids,
+    }: {
+      kind: "unarchive" | "trash";
+      ids: string[];
+    }) => {
+      if (kind === "unarchive") await eachLimited(ids, unarchiveNote);
+      else await bulkDeleteNotes(ids);
+    },
+    onMutate: ({ ids }) => {
+      list.prepareCardMotion();
+      return {
+        ownedIds: ids.filter(
+          (id) => notes.find((n) => n.id === id)?.permission === "owner",
+        ),
+      };
+    },
+    onSuccess: (_, { kind, ids }, context) => {
+      refresh();
+      list.stopPicking();
+      setConfirmRemove(null);
+      if (kind === "unarchive") {
+        toast.success(
+          ids.length === 1
+            ? "Note unarchived"
+            : `${plural(ids.length, "note")} unarchived`,
+          {
+            undo: () => undo(() => bulkArchiveNotes(ids)),
+          },
+        );
+        return;
+      }
+      const ownedIds = context?.ownedIds ?? [];
+      toast.success(
+        deletedNotesText(ownedIds.length, ids.length - ownedIds.length),
+        ownedIds.length
+          ? { undo: () => undo(() => eachLimited(ownedIds, restoreNote)) }
+          : undefined,
+      );
+    },
+    onError: (_, variables) =>
+      toast.error(
+        `Couldn’t ${variables.kind === "unarchive" ? "unarchive" : "delete"} ${variables.ids.length === 1 ? "note" : "notes"}`,
+        { retry: () => noteAction.mutate(variables) },
+      ),
+  });
 
-      <div className="flex-1 p-4 lg:p-6">
-        <div className="mb-6">
-          <h1 className="font-serif text-2xl font-bold">Archive</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Archived notes are hidden from your main notes list
-          </p>
-        </div>
-
-        {isLoading ? (
-          <div className="flex items-center justify-center h-64">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
-        ) : filteredNotes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 text-center">
-            <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center mb-4">
-              <Archive className="h-10 w-10 text-muted-foreground/50" />
-            </div>
-            <h3 className="text-xl font-medium text-foreground">
-              Archive is empty
-            </h3>
-            <p className="text-sm text-muted-foreground mt-1">
-              Archived notes will appear here
-            </p>
-          </div>
-        ) : (
-          <Masonry
-            breakpointCols={masonryBreakpoints}
-            className="flex w-auto -ml-4"
-            columnClassName="pl-4 bg-clip-padding"
-          >
-            {filteredNotes.map((note) => (
-              <div key={note.id} className="mb-4">
-                <ArchiveNoteCard
-                  note={note}
-                  onUnarchive={() => unarchiveMutation.mutate(note.id)}
-                  onClick={() => handleNoteClick(note)}
-                  isUnarchiving={unarchiveMutation.isPending}
-                />
-              </div>
-            ))}
-          </Masonry>
-        )}
-      </div>
-    </div>
+  const mutateNotes = noteAction.mutate;
+  const renderActions = React.useCallback(
+    (note: Note) => (
+      <Tip label="Unarchive">
+        <IconButton
+          size="sm"
+          label="Unarchive"
+          onClick={() => mutateNotes({ kind: "unarchive", ids: [note.id] })}
+        >
+          <ArchiveRestore />
+        </IconButton>
+      </Tip>
+    ),
+    [mutateNotes],
   );
-}
 
-interface ArchiveNoteCardProps {
-  note: Note;
-  onUnarchive: () => void;
-  onClick: () => void;
-  isUnarchiving: boolean;
-}
-
-function ArchiveNoteCard({
-  note,
-  onUnarchive,
-  onClick,
-  isUnarchiving,
-}: ArchiveNoteCardProps) {
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const dialogJustClosedRef = React.useRef(false);
-
-  const handleDialogClose = (open: boolean) => {
-    setDialogOpen(open);
-    if (!open) {
-      dialogJustClosedRef.current = true;
-      setTimeout(() => {
-        dialogJustClosedRef.current = false;
-      }, 100);
-    }
+  const deleteChosen = () => {
+    const ids = list.chosen.map((n) => n.id);
+    const sharedCount = list.chosen.filter(
+      (n) => n.permission !== "owner",
+    ).length;
+    if (sharedCount) setConfirmRemove({ ids, sharedCount });
+    else noteAction.mutate({ kind: "trash", ids });
   };
 
-  const handleCardClick = (e: React.MouseEvent) => {
-    if (
-      (e.target as HTMLElement).closest("button") ||
-      (e.target as HTMLElement).closest("[data-slot='dialog-content']") ||
-      (e.target as HTMLElement).closest("[data-slot='dialog-overlay']") ||
-      dialogOpen ||
-      dialogJustClosedRef.current
-    ) {
-      return;
-    }
-    onClick();
-  };
-
+  const hasNotes = notes.length > 0;
+  const removeCount = confirmRemove?.ids.length ?? 0;
+  const removeSharedCount = confirmRemove?.sharedCount ?? 0;
   return (
-    <NoteCard
-      note={note}
-      viewMode="masonry"
-      footerLeft={
-        <span className="font-medium">
-          Edited {format(new Date(note.updatedAt), "MMM d, yyyy")}
-        </span>
-      }
-      footerRight={
-        <div onClick={(e) => e.stopPropagation()} className="flex items-center">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 hover:bg-accent hover:text-accent-foreground opacity-0 group-hover:opacity-100 transition-all duration-200 bg-background/80 backdrop-blur-sm border border-border/50"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setDialogOpen(true);
-                  }}
-                >
-                  <ArchiveRestore className="h-3.5 w-3.5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="top">Unarchive</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          <ArchiveDialog
-            open={dialogOpen}
-            onOpenChange={handleDialogClose}
-            isArchived={true}
-            onConfirm={() => {
-              onUnarchive();
-              setDialogOpen(false);
-            }}
-            isPending={isUnarchiving}
+    <>
+      <AppPage
+        scrollKey="archive"
+        title={
+          <PageTitle
+            count={isLoading || loadFailed ? undefined : list.visible.length}
+          >
+            Archive
+          </PageTitle>
+        }
+        actions={
+          hasNotes && (
+            <NoteListActions list={list} placeholder="Search archive" />
+          )
+        }
+      >
+        <p className="m-0 -mt-2 mb-1 text-muted-foreground text-ui">
+          Archived notes are hidden from your notes list.
+        </p>
+        <NotesBoardSkeleton loading={isLoading} />
+        {loadFailed && (
+          <LoadFailedState
+            title="Couldn’t load your archive"
+            onRetry={() => refetch()}
+            isRetrying={isFetching}
           />
-        </div>
-      }
-      onClick={handleCardClick}
-    />
+        )}
+        {!isLoading && !loadFailed && !hasNotes && (
+          <EmptyState illustration="archive" title="No archived notes">
+            Archive notes you want to keep but don’t need to see every day.
+          </EmptyState>
+        )}
+        {hasNotes && !list.visible.length && <NoSearchResults list={list} />}
+        {list.visible.length > 0 && (
+          <NotesBoard
+            ref={list.boardRef}
+            layout={list.layout}
+            picking={list.picking}
+            picked={list.picked}
+            onPick={list.onPick}
+            onShare={setSharingNote}
+            renderActions={renderActions}
+            groups={[{ key: "all", notes: list.shown }]}
+          />
+        )}
+      </AppPage>
+
+      <SelectionBar
+        open={list.picking}
+        count={list.chosen.length}
+        total={list.shown.length}
+        onToggleAll={list.toggleAll}
+        onClose={list.stopPicking}
+        actions={[
+          {
+            key: "unarchive",
+            label: "Unarchive",
+            icon: <ArchiveRestore aria-hidden />,
+            onClick: () =>
+              noteAction.mutate({
+                kind: "unarchive",
+                ids: list.chosen.map((n) => n.id),
+              }),
+          },
+          {
+            key: "delete",
+            label: "Delete",
+            icon: <Trash2 aria-hidden />,
+            onClick: deleteChosen,
+          },
+        ]}
+      />
+
+      <ConfirmationDialog
+        open={!!confirmRemove}
+        onOpenChange={(open) => !open && setConfirmRemove(null)}
+        title={`Delete ${plural(removeCount, "note")}?`}
+        description={deleteNotesWarning(
+          removeCount - removeSharedCount,
+          removeSharedCount,
+        )}
+        confirmLabel="Delete"
+        busyLabel="Deleting…"
+        isPending={noteAction.isPending}
+        onConfirm={() =>
+          confirmRemove &&
+          noteAction.mutate({ kind: "trash", ids: confirmRemove.ids })
+        }
+      />
+      {sharingNote && (
+        <ShareDialog
+          open
+          noteId={sharingNote.id}
+          title={sharingNote.title}
+          onOpenChange={(open) => !open && setSharingNote(null)}
+        />
+      )}
+    </>
   );
 }

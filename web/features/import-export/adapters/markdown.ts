@@ -65,7 +65,7 @@ function mimeOf(path: string): string | undefined {
 }
 
 /** Resolves a link target against the folder its markdown file sits in. */
-export function resolveRelative(fromDir: string, target: string): string {
+function resolveRelative(fromDir: string, target: string): string {
   const base = target.startsWith("/") ? "" : fromDir;
   const out: string[] = [];
   for (const segment of `${base}${target.replace(/^\//, "")}`.split("/")) {
@@ -80,7 +80,7 @@ export function resolveRelative(fromDir: string, target: string): string {
 }
 
 /** Leading folders every note shares; those carry no information as tags. */
-export function commonRootSegments(paths: string[]): string[] {
+function commonRootSegments(paths: string[]): string[] {
   const dirs = paths.map((path) => dirOf(path).split("/").filter(Boolean));
   if (!dirs.length) return [];
 

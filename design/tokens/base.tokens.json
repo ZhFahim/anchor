@@ -1,0 +1,1977 @@
+{
+  "$description": "Anchor design tokens that stay the same in light and dark. Format: W3C Design Tokens Format Module 2025.10. The resolver (anchor.resolver.json) adds light.tokens.json or dark.tokens.json on top.",
+  "$extensions": {
+    "app.anchor": {
+      "updated": "2026-09-29",
+      "catalog": {
+        "about": "What the apps store and in which order. Notes save a background id, never a color; tags save their palette color.",
+        "backgrounds": {
+          "colors": [
+            {
+              "id": null,
+              "name": "Default",
+              "note": "none"
+            },
+            {
+              "id": "color_yellow",
+              "name": "Yellow",
+              "note": "yellow"
+            },
+            {
+              "id": "color_orange",
+              "name": "Orange",
+              "note": "orange"
+            },
+            {
+              "id": "color_brown",
+              "name": "Brown",
+              "note": "brown"
+            },
+            {
+              "id": "color_red",
+              "name": "Red",
+              "note": "red"
+            },
+            {
+              "id": "color_pink",
+              "name": "Pink",
+              "note": "pink"
+            },
+            {
+              "id": "color_purple",
+              "name": "Purple",
+              "note": "purple"
+            },
+            {
+              "id": "color_dark_blue",
+              "name": "Indigo",
+              "note": "dark_blue"
+            },
+            {
+              "id": "color_blue",
+              "name": "Blue",
+              "note": "blue"
+            },
+            {
+              "id": "color_teal",
+              "name": "Teal",
+              "note": "teal"
+            },
+            {
+              "id": "color_green",
+              "name": "Green",
+              "note": "green"
+            }
+          ],
+          "patterns": [
+            {
+              "id": "pattern_dots",
+              "name": "Dots",
+              "note": "paper",
+              "kind": "dots"
+            },
+            {
+              "id": "pattern_grid",
+              "name": "Grid",
+              "note": "yellow",
+              "kind": "grid"
+            },
+            {
+              "id": "pattern_lines",
+              "name": "Lines",
+              "note": "blue",
+              "kind": "lines"
+            },
+            {
+              "id": "pattern_waves",
+              "name": "Waves",
+              "note": "green",
+              "kind": "waves"
+            },
+            {
+              "id": "pattern_groceries",
+              "name": "Groceries",
+              "note": "red",
+              "kind": "icon:shopping-bag:0"
+            },
+            {
+              "id": "pattern_music",
+              "name": "Music",
+              "note": "purple",
+              "kind": "icon:music:0"
+            },
+            {
+              "id": "pattern_travel",
+              "name": "Travel",
+              "note": "teal",
+              "kind": "icon:plane:28.6"
+            },
+            {
+              "id": "pattern_code",
+              "name": "Code",
+              "note": "slate",
+              "kind": "icon:code:0"
+            }
+          ]
+        },
+        "notes": [
+          "paper",
+          "slate",
+          "red",
+          "orange",
+          "yellow",
+          "green",
+          "teal",
+          "blue",
+          "dark_blue",
+          "purple",
+          "pink",
+          "brown",
+          "none"
+        ],
+        "highlights": [
+          "yellow",
+          "green",
+          "blue",
+          "pink",
+          "purple"
+        ],
+        "tags": [
+          "red",
+          "pink",
+          "purple",
+          "deepPurple",
+          "indigo",
+          "blue",
+          "lightBlue",
+          "cyan",
+          "teal",
+          "green",
+          "lightGreen",
+          "lime",
+          "amber",
+          "orange",
+          "deepOrange",
+          "brown",
+          "blueGrey"
+        ]
+      },
+      "web": {
+        "about": "The web app's color names: shadcn's, plus Anchor's own. The build writes them as CSS variables and Tailwind colors (bg-card, text-muted-foreground, bg-inverse).",
+        "light": {
+          "background": "{color.app.page}",
+          "foreground": "{color.app.text}",
+          "card": "{color.app.surface}",
+          "popover": "{color.app.surface}",
+          "primary": "{color.app.text}",
+          "muted": "{color.app.subtle}",
+          "muted-foreground": "{color.app.muted}",
+          "accent": "{color.accent.fill}",
+          "accent-strong": "{color.accent.strong}",
+          "accent-ink": "{color.accent.ink}",
+          "destructive": "{color.status.danger}",
+          "destructive-foreground": "{color.status.onDanger}",
+          "border": "{color.app.border}",
+          "divider": "{color.app.divider}",
+          "input": "{color.app.fieldLine}",
+          "ring": "{color.accent.strong}",
+          "sidebar": "{color.app.sidebar}",
+          "sidebar-accent": "{color.app.surface}",
+          "inverse": "{color.app.inverse}",
+          "inverse-foreground": "{color.app.onInverse}",
+          "inverse-link": "{color.app.inverseLink}",
+          "inverse-danger": "{color.app.inverseDanger}",
+          "overlay": "{color.app.overlay}",
+          "late": "{color.status.late}",
+          "added": "{color.status.added}",
+          "removed": "{color.status.removed}",
+          "added-ink": "{color.status.addedInk}",
+          "removed-ink": "{color.status.removedInk}",
+          "warn": "{color.status.warnFill}",
+          "warn-foreground": "{color.status.warnText}",
+          "check-mark": "{color.check.mark}",
+          "decor-glow": "{color.decor.glow}"
+        },
+        "dark": {
+          "background": "{color.app.page}",
+          "foreground": "{color.app.text}",
+          "card": "{color.app.surface}",
+          "popover": "{color.app.surface}",
+          "primary": "{color.app.text}",
+          "muted": "{color.app.subtle}",
+          "muted-foreground": "{color.app.muted}",
+          "accent": "{color.accent.fill}",
+          "accent-strong": "{color.accent.strong}",
+          "accent-ink": "{color.accent.ink}",
+          "destructive": "{color.status.danger}",
+          "destructive-foreground": "{color.status.onDanger}",
+          "border": "{color.app.border}",
+          "divider": "{color.app.divider}",
+          "input": "{color.app.fieldLine}",
+          "ring": "{color.accent.strong}",
+          "sidebar": "{color.app.sidebar}",
+          "sidebar-accent": "{color.app.surface}",
+          "inverse": "{color.app.inverse}",
+          "inverse-foreground": "{color.app.onInverse}",
+          "inverse-link": "{color.app.inverseLink}",
+          "inverse-danger": "{color.app.inverseDanger}",
+          "overlay": "{color.app.overlay}",
+          "late": "{color.status.late}",
+          "added": "{color.status.added}",
+          "removed": "{color.status.removed}",
+          "added-ink": "{color.status.addedInk}",
+          "removed-ink": "{color.status.removedInk}",
+          "warn": "{color.status.warnFill}",
+          "warn-foreground": "{color.status.warnText}",
+          "check-mark": "{color.check.mark}",
+          "decor-glow": "{color.decor.glow}"
+        }
+      }
+    }
+  },
+  "color": {
+    "$type": "color",
+    "brand": {
+      "$description": "The brand palette. App colors point at these where they are the same.",
+      "slate": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.1765,
+            0.1922,
+            0.2588
+          ],
+          "hex": "#2d3142"
+        },
+        "$description": "Dark slate: light text, primary and inverse"
+      },
+      "slateBlue": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.3098,
+            0.3647,
+            0.4588
+          ],
+          "hex": "#4f5d75"
+        },
+        "$description": "Slate blue: light secondary text"
+      },
+      "slateGray": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.4196,
+            0.4784,
+            0.5608
+          ],
+          "hex": "#6b7a8f"
+        },
+        "$description": "Between slate blue and mist"
+      },
+      "mist": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.6118,
+            0.6588,
+            0.7216
+          ],
+          "hex": "#9ca8b8"
+        },
+        "$description": "Dark secondary text"
+      },
+      "cloud": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9412,
+            0.9569,
+            0.9725
+          ],
+          "hex": "#f0f4f8"
+        },
+        "$description": "Light page"
+      },
+      "night": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.1098,
+            0.1176,
+            0.149
+          ],
+          "hex": "#1c1e26"
+        },
+        "$description": "Dark page"
+      },
+      "dusk": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.149,
+            0.1647,
+            0.2118
+          ],
+          "hex": "#262a36"
+        },
+        "$description": "Dark surface"
+      },
+      "offWhite": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9176,
+            0.9176,
+            0.9176
+          ],
+          "hex": "#eaeaea"
+        },
+        "$description": "Dark text"
+      },
+      "white": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1,
+            1,
+            1
+          ],
+          "hex": "#ffffff"
+        },
+        "$description": "White"
+      },
+      "orange": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9373,
+            0.5137,
+            0.3294
+          ],
+          "hex": "#ef8354"
+        },
+        "$description": "Burnt orange, the accent"
+      }
+    },
+    "accent": {
+      "fill": {
+        "$value": "{color.brand.orange}",
+        "$description": "Large fills and tints only: text selection, the drop area, the logo"
+      }
+    },
+    "control": {
+      "knob": {
+        "$value": "{color.brand.white}",
+        "$description": "The round knob of a switch"
+      }
+    },
+    "avatar": {
+      "$description": "Fills behind a person's initials. White initials are at least 4.9 : 1 on each.",
+      "rust": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.6431,
+            0.3216,
+            0.1647
+          ],
+          "hex": "#a4522a"
+        }
+      },
+      "blue": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.2471,
+            0.4353,
+            0.651
+          ],
+          "hex": "#3f6fa6"
+        }
+      },
+      "purple": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.5412,
+            0.3098,
+            0.6392
+          ],
+          "hex": "#8a4fa3"
+        }
+      },
+      "teal": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.1843,
+            0.4902,
+            0.4275
+          ],
+          "hex": "#2f7d6d"
+        }
+      },
+      "olive": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.4157,
+            0.4353,
+            0.1647
+          ],
+          "hex": "#6a6f2a"
+        }
+      },
+      "brown": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.4784,
+            0.2941,
+            0.1843
+          ],
+          "hex": "#7a4b2f"
+        }
+      },
+      "rose": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.6314,
+            0.2471,
+            0.3608
+          ],
+          "hex": "#a13f5c"
+        }
+      },
+      "navy": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.2314,
+            0.3725,
+            0.5412
+          ],
+          "hex": "#3b5f8a"
+        }
+      },
+      "amber": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.6039,
+            0.3569,
+            0.0863
+          ],
+          "hex": "#9a5b16"
+        }
+      },
+      "indigo": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.302,
+            0.3608,
+            0.6196
+          ],
+          "hex": "#4d5c9e"
+        }
+      },
+      "moss": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.3333,
+            0.4196,
+            0.1843
+          ],
+          "hex": "#556b2f"
+        }
+      },
+      "text": {
+        "$value": "{color.brand.white}",
+        "$description": "Initials on an avatar"
+      }
+    },
+    "tag": {
+      "$description": "The 17 tag colors as they are stored. How a tag is drawn in each theme is in the theme files.",
+      "red": {
+        "stored": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.898,
+              0.451,
+              0.451
+            ],
+            "hex": "#e57373"
+          },
+          "$description": "Stored as #E57373"
+        }
+      },
+      "pink": {
+        "stored": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.9412,
+              0.3843,
+              0.5725
+            ],
+            "hex": "#f06292"
+          },
+          "$description": "Stored as #F06292"
+        }
+      },
+      "purple": {
+        "stored": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.7294,
+              0.4078,
+              0.7843
+            ],
+            "hex": "#ba68c8"
+          },
+          "$description": "Stored as #BA68C8"
+        }
+      },
+      "deepPurple": {
+        "stored": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.5843,
+              0.4588,
+              0.8039
+            ],
+            "hex": "#9575cd"
+          },
+          "$description": "Stored as #9575CD"
+        }
+      },
+      "indigo": {
+        "stored": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.4745,
+              0.5255,
+              0.7961
+            ],
+            "hex": "#7986cb"
+          },
+          "$description": "Stored as #7986CB"
+        }
+      },
+      "blue": {
+        "stored": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.3922,
+              0.7098,
+              0.9647
+            ],
+            "hex": "#64b5f6"
+          },
+          "$description": "Stored as #64B5F6"
+        }
+      },
+      "lightBlue": {
+        "stored": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.3098,
+              0.7647,
+              0.9686
+            ],
+            "hex": "#4fc3f7"
+          },
+          "$description": "Stored as #4FC3F7"
+        }
+      },
+      "cyan": {
+        "stored": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.302,
+              0.8157,
+              0.8824
+            ],
+            "hex": "#4dd0e1"
+          },
+          "$description": "Stored as #4DD0E1"
+        }
+      },
+      "teal": {
+        "stored": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.302,
+              0.7137,
+              0.6745
+            ],
+            "hex": "#4db6ac"
+          },
+          "$description": "Stored as #4DB6AC"
+        }
+      },
+      "green": {
+        "stored": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.5059,
+              0.7804,
+              0.5176
+            ],
+            "hex": "#81c784"
+          },
+          "$description": "Stored as #81C784"
+        }
+      },
+      "lightGreen": {
+        "stored": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.6824,
+              0.8353,
+              0.5059
+            ],
+            "hex": "#aed581"
+          },
+          "$description": "Stored as #AED581"
+        }
+      },
+      "lime": {
+        "stored": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.8627,
+              0.9059,
+              0.4588
+            ],
+            "hex": "#dce775"
+          },
+          "$description": "Stored as #DCE775"
+        }
+      },
+      "amber": {
+        "stored": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              1,
+              0.8353,
+              0.3098
+            ],
+            "hex": "#ffd54f"
+          },
+          "$description": "Stored as #FFD54F"
+        }
+      },
+      "orange": {
+        "stored": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              1,
+              0.7176,
+              0.302
+            ],
+            "hex": "#ffb74d"
+          },
+          "$description": "Stored as #FFB74D"
+        }
+      },
+      "deepOrange": {
+        "stored": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              1,
+              0.5412,
+              0.3961
+            ],
+            "hex": "#ff8a65"
+          },
+          "$description": "Stored as #FF8A65"
+        }
+      },
+      "brown": {
+        "stored": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.6314,
+              0.5333,
+              0.498
+            ],
+            "hex": "#a1887f"
+          },
+          "$description": "Stored as #A1887F"
+        }
+      },
+      "blueGrey": {
+        "stored": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.5647,
+              0.6431,
+              0.6824
+            ],
+            "hex": "#90a4ae"
+          },
+          "$description": "Stored as #90A4AE"
+        }
+      }
+    },
+    "decor": {
+      "glow": {
+        "$value": "{color.tag.blue.stored}",
+        "$description": "The cool glow behind the sign-in collage"
+      }
+    },
+    "media": {
+      "$description": "Pictures and the picture viewer look the same in both themes, like any photo viewer.",
+      "scrim": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.0471,
+            0.0549,
+            0.0706
+          ],
+          "hex": "#0c0e12",
+          "alpha": 0.95
+        },
+        "$description": "Behind the picture viewer"
+      },
+      "shade": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.0471,
+            0.0549,
+            0.0706
+          ],
+          "hex": "#0c0e12",
+          "alpha": 0.45
+        },
+        "$description": "Over a picture, behind a count like +3"
+      },
+      "shadeStrong": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.0471,
+            0.0549,
+            0.0706
+          ],
+          "hex": "#0c0e12",
+          "alpha": 0.6
+        },
+        "$description": "Behind a small count on a thumbnail"
+      },
+      "text": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9451,
+            0.949,
+            0.9569
+          ],
+          "hex": "#f1f2f4"
+        },
+        "$description": "Text over pictures and in the viewer"
+      },
+      "muted": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.6627,
+            0.6863,
+            0.7333
+          ],
+          "hex": "#a9afbb"
+        },
+        "$description": "Second lines in the viewer, 8.5 : 1 on its shade"
+      },
+      "faint": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.5529,
+            0.5804,
+            0.6314
+          ],
+          "hex": "#8d94a1"
+        },
+        "$description": "Hints in the viewer, 6 : 1 on its shade"
+      },
+      "control": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1,
+            1,
+            1
+          ],
+          "hex": "#ffffff",
+          "alpha": 0.1
+        },
+        "$description": "Buttons in the viewer"
+      },
+      "controlHover": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1,
+            1,
+            1
+          ],
+          "hex": "#ffffff",
+          "alpha": 0.18
+        },
+        "$description": "Those buttons when hovered"
+      },
+      "edge": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0,
+            0,
+            0
+          ],
+          "hex": "#000000",
+          "alpha": 0.06
+        },
+        "$description": "A hairline inside a picture tile"
+      }
+    }
+  },
+  "space": {
+    "0": {
+      "$value": {
+        "value": 0,
+        "unit": "px"
+      }
+    },
+    "2": {
+      "$value": {
+        "value": 2,
+        "unit": "px"
+      }
+    },
+    "4": {
+      "$value": {
+        "value": 4,
+        "unit": "px"
+      }
+    },
+    "6": {
+      "$value": {
+        "value": 6,
+        "unit": "px"
+      }
+    },
+    "8": {
+      "$value": {
+        "value": 8,
+        "unit": "px"
+      }
+    },
+    "10": {
+      "$value": {
+        "value": 10,
+        "unit": "px"
+      }
+    },
+    "12": {
+      "$value": {
+        "value": 12,
+        "unit": "px"
+      }
+    },
+    "14": {
+      "$value": {
+        "value": 14,
+        "unit": "px"
+      }
+    },
+    "16": {
+      "$value": {
+        "value": 16,
+        "unit": "px"
+      }
+    },
+    "20": {
+      "$value": {
+        "value": 20,
+        "unit": "px"
+      }
+    },
+    "24": {
+      "$value": {
+        "value": 24,
+        "unit": "px"
+      }
+    },
+    "28": {
+      "$value": {
+        "value": 28,
+        "unit": "px"
+      }
+    },
+    "32": {
+      "$value": {
+        "value": 32,
+        "unit": "px"
+      }
+    },
+    "40": {
+      "$value": {
+        "value": 40,
+        "unit": "px"
+      }
+    },
+    "48": {
+      "$value": {
+        "value": 48,
+        "unit": "px"
+      }
+    },
+    "56": {
+      "$value": {
+        "value": 56,
+        "unit": "px"
+      }
+    },
+    "64": {
+      "$value": {
+        "value": 64,
+        "unit": "px"
+      }
+    },
+    "80": {
+      "$value": {
+        "value": 80,
+        "unit": "px"
+      }
+    },
+    "96": {
+      "$value": {
+        "value": 96,
+        "unit": "px"
+      }
+    },
+    "$type": "dimension",
+    "$description": "Spacing: padding, margins and gaps. 2px steps up to 16, then wider steps. A name is its size in pixels.",
+    "xxs": {
+      "$value": "{space.4}",
+      "$description": "Mobile AppDimensions.xxs"
+    },
+    "xs": {
+      "$value": "{space.8}",
+      "$description": "Mobile AppDimensions.xs"
+    },
+    "sm": {
+      "$value": "{space.12}",
+      "$description": "Mobile AppDimensions.sm"
+    },
+    "md": {
+      "$value": "{space.16}",
+      "$description": "Mobile AppDimensions.md"
+    },
+    "lg": {
+      "$value": "{space.20}",
+      "$description": "Mobile AppDimensions.lg"
+    },
+    "xl": {
+      "$value": "{space.24}",
+      "$description": "Mobile AppDimensions.xl"
+    },
+    "xxl": {
+      "$value": "{space.32}",
+      "$description": "Mobile AppDimensions.xxl"
+    },
+    "gutter": {
+      "$value": "{space.28}",
+      "$description": "Side padding of a page on desktop"
+    },
+    "gutterPhone": {
+      "$value": "{space.16}",
+      "$description": "Side padding of a page on phones, the same as mobile's screenGutter"
+    }
+  },
+  "radius": {
+    "$type": "dimension",
+    "$description": "Corners get rounder as things get bigger.",
+    "xs": {
+      "$value": {
+        "value": 6,
+        "unit": "px"
+      },
+      "$description": "Checkboxes, keyboard keys, small badges"
+    },
+    "sm": {
+      "$value": {
+        "value": 8,
+        "unit": "px"
+      },
+      "$description": "Menu items, small buttons, swatches"
+    },
+    "md": {
+      "$value": {
+        "value": 10,
+        "unit": "px"
+      },
+      "$description": "Buttons, fields, rows in the sidebar"
+    },
+    "lg": {
+      "$value": {
+        "value": 12,
+        "unit": "px"
+      },
+      "$description": "Tiles and the floating bars on a note"
+    },
+    "xl": {
+      "$value": {
+        "value": 14,
+        "unit": "px"
+      },
+      "$description": "Grouped lists, picture cards, bars and menus"
+    },
+    "2xl": {
+      "$value": {
+        "value": 16,
+        "unit": "px"
+      },
+      "$description": "Cards, panels and pop-overs"
+    },
+    "3xl": {
+      "$value": {
+        "value": 20,
+        "unit": "px"
+      },
+      "$description": "Dialogs"
+    },
+    "4xl": {
+      "$value": {
+        "value": 26,
+        "unit": "px"
+      },
+      "$description": "Sheets on phones"
+    },
+    "note": {
+      "$value": {
+        "value": 18,
+        "unit": "px"
+      },
+      "$description": "Notes and note cards"
+    },
+    "fab": {
+      "$value": {
+        "value": 18,
+        "unit": "px"
+      },
+      "$description": "The floating new-note button, like mobile's AppRadius.fab"
+    },
+    "pill": {
+      "$value": {
+        "value": 999,
+        "unit": "px"
+      },
+      "$description": "Chips, badges, switches"
+    },
+    "checkbox": {
+      "$value": "{radius.xs}"
+    },
+    "menuItem": {
+      "$value": "{radius.sm}"
+    },
+    "menu": {
+      "$value": "{radius.xl}"
+    },
+    "popover": {
+      "$value": "{radius.2xl}"
+    },
+    "button": {
+      "$value": "{radius.md}"
+    },
+    "field": {
+      "$value": "{radius.md}"
+    },
+    "tile": {
+      "$value": "{radius.lg}"
+    },
+    "floating": {
+      "$value": "{radius.lg}"
+    },
+    "card": {
+      "$value": "{radius.2xl}"
+    },
+    "dialog": {
+      "$value": "{radius.3xl}"
+    },
+    "sheet": {
+      "$value": "{radius.4xl}"
+    }
+  },
+  "size": {
+    "$type": "dimension",
+    "target": {
+      "min": {
+        "$value": {
+          "value": 24,
+          "unit": "px"
+        },
+        "$description": "The smallest anything clickable may be (WCAG 2.2, 2.5.8)"
+      },
+      "desktop": {
+        "$value": {
+          "value": 34,
+          "unit": "px"
+        },
+        "$description": "Icon buttons on desktop"
+      },
+      "phone": {
+        "$value": {
+          "value": 40,
+          "unit": "px"
+        },
+        "$description": "Icon buttons on phones"
+      }
+    },
+    "field": {
+      "$root": {
+        "$value": {
+          "value": 40,
+          "unit": "px"
+        },
+        "$description": "Text fields"
+      },
+      "large": {
+        "$value": {
+          "value": 44,
+          "unit": "px"
+        },
+        "$description": "Text fields and buttons on sign in"
+      }
+    },
+    "chip": {
+      "$root": {
+        "$value": {
+          "value": 27,
+          "unit": "px"
+        },
+        "$description": "Tag and reminder chips"
+      },
+      "card": {
+        "$value": {
+          "value": 22,
+          "unit": "px"
+        },
+        "$description": "Chips on cards"
+      }
+    },
+    "checkbox": {
+      "$root": {
+        "$value": {
+          "value": 18,
+          "unit": "px"
+        },
+        "$description": "Checkboxes"
+      },
+      "card": {
+        "$value": {
+          "value": 14,
+          "unit": "px"
+        },
+        "$description": "Checkboxes on cards"
+      }
+    },
+    "toolbarButton": {
+      "width": {
+        "$value": {
+          "value": 26,
+          "unit": "px"
+        },
+        "$description": "Toolbar buttons are a little taller than wide"
+      },
+      "height": {
+        "$value": {
+          "value": 28,
+          "unit": "px"
+        },
+        "$description": "Toolbar buttons"
+      },
+      "phone": {
+        "$value": {
+          "value": 40,
+          "unit": "px"
+        },
+        "$description": "Square on phones"
+      }
+    },
+    "listIndent": {
+      "$root": {
+        "$value": {
+          "value": 26,
+          "unit": "px"
+        },
+        "$description": "Each list level"
+      },
+      "card": {
+        "$value": {
+          "value": 14,
+          "unit": "px"
+        },
+        "$description": "Each list level on cards"
+      }
+    },
+    "listDepth": {
+      "$value": 3,
+      "$description": "Lists go three levels deep",
+      "$type": "number"
+    },
+    "sidebar": {
+      "$root": {
+        "$value": {
+          "value": 248,
+          "unit": "px"
+        },
+        "$description": "The sidebar"
+      },
+      "folded": {
+        "$value": {
+          "value": 64,
+          "unit": "px"
+        },
+        "$description": "Folded to icons"
+      },
+      "drawer": {
+        "$value": {
+          "value": 292,
+          "unit": "px"
+        },
+        "$description": "The drawer on phones"
+      }
+    }
+  },
+  "layer": {
+    "$type": "number",
+    "$description": "Stacking order (z-index). Higher sits on top.",
+    "base": {
+      "$value": 0,
+      "$description": "The page"
+    },
+    "raised": {
+      "$value": 1,
+      "$description": "A part lifted inside its own component, like the actions on a card"
+    },
+    "sticky": {
+      "$value": 10,
+      "$description": "The top bar and the save bar"
+    },
+    "float": {
+      "$value": 20,
+      "$description": "The selection bar and the new-note button"
+    },
+    "scrim": {
+      "$value": 30,
+      "$description": "The shade behind the phone drawer"
+    },
+    "drawer": {
+      "$value": 40,
+      "$description": "The sidebar"
+    },
+    "overlay": {
+      "$value": 50,
+      "$description": "Dialogs and the shade behind them"
+    },
+    "popover": {
+      "$value": 60,
+      "$description": "Menus and pickers, also when opened from a dialog"
+    },
+    "toast": {
+      "$value": 70,
+      "$description": "Toasts, above everything you can act on"
+    },
+    "tooltip": {
+      "$value": 80,
+      "$description": "Tooltips"
+    }
+  },
+  "breakpoint": {
+    "$type": "dimension",
+    "$description": "Page widths where the layout changes. The same as Tailwind's defaults, so the web app needs no config.",
+    "sm": {
+      "$value": {
+        "value": 640,
+        "unit": "px"
+      },
+      "$description": "Larger phones in landscape"
+    },
+    "md": {
+      "$value": {
+        "value": 768,
+        "unit": "px"
+      },
+      "$description": "Below this: the phone layout (drawer, new-note button, sheets, toolbar at the bottom)"
+    },
+    "lg": {
+      "$value": {
+        "value": 1024,
+        "unit": "px"
+      },
+      "$description": "From here: the sidebar is open and sign in shows the collage"
+    },
+    "xl": {
+      "$value": {
+        "value": 1280,
+        "unit": "px"
+      },
+      "$description": "Wide screens"
+    }
+  },
+  "font": {
+    "family": {
+      "$type": "fontFamily",
+      "sans": {
+        "$value": [
+          "DM Sans",
+          "ui-sans-serif",
+          "system-ui",
+          "-apple-system",
+          "Segoe UI",
+          "sans-serif"
+        ],
+        "$description": "Everything"
+      },
+      "mono": {
+        "$value": [
+          "JetBrains Mono",
+          "ui-monospace",
+          "SFMono-Regular",
+          "Menlo",
+          "Consolas",
+          "monospace"
+        ],
+        "$description": "Code"
+      },
+      "serif": {
+        "$value": [
+          "Playfair Display",
+          "Georgia",
+          "serif"
+        ],
+        "$description": "The Anchor name and the sign-in caption only"
+      }
+    },
+    "weight": {
+      "$type": "fontWeight",
+      "regular": {
+        "$value": 400
+      },
+      "medium": {
+        "$value": 500
+      },
+      "semibold": {
+        "$value": 600
+      },
+      "bold": {
+        "$value": 700
+      }
+    }
+  },
+  "type": {
+    "$type": "typography",
+    "$description": "Text styles. Sizes are in pixels; letter spacing is worked out at that size.",
+    "noteTitle": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": {
+          "value": 34,
+          "unit": "px"
+        },
+        "fontWeight": "{font.weight.bold}",
+        "letterSpacing": {
+          "value": -0.952,
+          "unit": "px"
+        },
+        "lineHeight": 1.12
+      },
+      "$description": "Note title in the editor"
+    },
+    "noteTitlePhone": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": {
+          "value": 27,
+          "unit": "px"
+        },
+        "fontWeight": "{font.weight.bold}",
+        "letterSpacing": {
+          "value": -0.756,
+          "unit": "px"
+        },
+        "lineHeight": 1.12
+      },
+      "$description": "Note title on phones"
+    },
+    "body": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": {
+          "value": 16.5,
+          "unit": "px"
+        },
+        "fontWeight": "{font.weight.regular}",
+        "letterSpacing": {
+          "value": 0,
+          "unit": "px"
+        },
+        "lineHeight": 1.7
+      },
+      "$description": "Note text"
+    },
+    "code": {
+      "$value": {
+        "fontFamily": "{font.family.mono}",
+        "fontSize": {
+          "value": 13.5,
+          "unit": "px"
+        },
+        "fontWeight": "{font.weight.regular}",
+        "letterSpacing": {
+          "value": 0,
+          "unit": "px"
+        },
+        "lineHeight": 1.7
+      },
+      "$description": "Code blocks (mono)"
+    },
+    "meta": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": {
+          "value": 13,
+          "unit": "px"
+        },
+        "fontWeight": "{font.weight.regular}",
+        "letterSpacing": {
+          "value": 0,
+          "unit": "px"
+        },
+        "lineHeight": 1.4
+      },
+      "$description": "Details under the title, save status"
+    },
+    "chip": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": {
+          "value": 12.5,
+          "unit": "px"
+        },
+        "fontWeight": "{font.weight.medium}",
+        "letterSpacing": {
+          "value": 0,
+          "unit": "px"
+        },
+        "lineHeight": 1
+      },
+      "$description": "Tag and reminder chips"
+    },
+    "cardTitle": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": {
+          "value": 15.5,
+          "unit": "px"
+        },
+        "fontWeight": "{font.weight.semibold}",
+        "letterSpacing": {
+          "value": -0.186,
+          "unit": "px"
+        },
+        "lineHeight": 1.3
+      },
+      "$description": "Title on a note card"
+    },
+    "cardBody": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": {
+          "value": 13.5,
+          "unit": "px"
+        },
+        "fontWeight": "{font.weight.regular}",
+        "letterSpacing": {
+          "value": 0,
+          "unit": "px"
+        },
+        "lineHeight": 1.5
+      },
+      "$description": "Text on a note card"
+    },
+    "label": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": {
+          "value": 12,
+          "unit": "px"
+        },
+        "fontWeight": "{font.weight.semibold}",
+        "letterSpacing": {
+          "value": 0.72,
+          "unit": "px"
+        },
+        "lineHeight": 1.3
+      },
+      "$description": "Uppercase group labels"
+    },
+    "caption": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": {
+          "value": 11.5,
+          "unit": "px"
+        },
+        "fontWeight": "{font.weight.medium}",
+        "letterSpacing": {
+          "value": 0,
+          "unit": "px"
+        },
+        "lineHeight": 1.3
+      },
+      "$description": "Keyboard keys, day letters, the smallest labels"
+    },
+    "footnote": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": {
+          "value": 12,
+          "unit": "px"
+        },
+        "fontWeight": "{font.weight.regular}",
+        "letterSpacing": {
+          "value": 0,
+          "unit": "px"
+        },
+        "lineHeight": 1.4
+      },
+      "$description": "Card footers, hints at the foot of a panel, and the small buttons on code blocks and attachments"
+    },
+    "small": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": {
+          "value": 12.5,
+          "unit": "px"
+        },
+        "fontWeight": "{font.weight.regular}",
+        "letterSpacing": {
+          "value": 0,
+          "unit": "px"
+        },
+        "lineHeight": 1.45
+      },
+      "$description": "Help under a field, second lines, counts"
+    },
+    "control": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": {
+          "value": 13.5,
+          "unit": "px"
+        },
+        "fontWeight": "{font.weight.medium}",
+        "letterSpacing": {
+          "value": 0,
+          "unit": "px"
+        },
+        "lineHeight": 1.3
+      },
+      "$description": "Buttons, tabs, menu items"
+    },
+    "ui": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": {
+          "value": 14,
+          "unit": "px"
+        },
+        "fontWeight": "{font.weight.regular}",
+        "letterSpacing": {
+          "value": 0,
+          "unit": "px"
+        },
+        "lineHeight": 1.45
+      },
+      "$description": "Text in the app around the notes"
+    },
+    "lead": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": {
+          "value": 15,
+          "unit": "px"
+        },
+        "fontWeight": "{font.weight.regular}",
+        "letterSpacing": {
+          "value": 0,
+          "unit": "px"
+        },
+        "lineHeight": 1.5
+      },
+      "$description": "The line under a big title, large buttons"
+    },
+    "title": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": {
+          "value": 16,
+          "unit": "px"
+        },
+        "fontWeight": "{font.weight.semibold}",
+        "letterSpacing": {
+          "value": -0.16,
+          "unit": "px"
+        },
+        "lineHeight": 1.35
+      },
+      "$description": "Section titles in settings and admin"
+    },
+    "heading": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": {
+          "value": 18,
+          "unit": "px"
+        },
+        "fontWeight": "{font.weight.bold}",
+        "letterSpacing": {
+          "value": -0.252,
+          "unit": "px"
+        },
+        "lineHeight": 1.3
+      },
+      "$description": "Dialog titles, empty states, the reminder summary"
+    },
+    "page": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": {
+          "value": 23,
+          "unit": "px"
+        },
+        "fontWeight": "{font.weight.bold}",
+        "letterSpacing": {
+          "value": -0.506,
+          "unit": "px"
+        },
+        "lineHeight": 1.2
+      },
+      "$description": "Page titles"
+    },
+    "pagePhone": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": {
+          "value": 21,
+          "unit": "px"
+        },
+        "fontWeight": "{font.weight.bold}",
+        "letterSpacing": {
+          "value": -0.462,
+          "unit": "px"
+        },
+        "lineHeight": 1.2
+      },
+      "$description": "Page titles on phones"
+    },
+    "display": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": {
+          "value": 28,
+          "unit": "px"
+        },
+        "fontWeight": "{font.weight.bold}",
+        "letterSpacing": {
+          "value": -0.784,
+          "unit": "px"
+        },
+        "lineHeight": 1.15
+      },
+      "$description": "Sign in and big numbers"
+    }
+  },
+  "heading": {
+    "$description": "Headings inside a note. Their size is a multiple of the note text, so they shrink with it on cards and phones.",
+    "h1": {
+      "scale": {
+        "$value": 1.55,
+        "$description": "Heading 1 in a note: size as a multiple of the note text",
+        "$type": "number"
+      },
+      "lineHeight": {
+        "$value": 1.22,
+        "$type": "number"
+      },
+      "weight": {
+        "$value": "{font.weight.bold}",
+        "$type": "fontWeight"
+      },
+      "tracking": {
+        "$value": -0.022,
+        "$description": "Letter spacing in em",
+        "$type": "number"
+      }
+    },
+    "h2": {
+      "scale": {
+        "$value": 1.24,
+        "$description": "Heading 2: size as a multiple of the note text",
+        "$type": "number"
+      },
+      "lineHeight": {
+        "$value": 1.3,
+        "$type": "number"
+      },
+      "weight": {
+        "$value": "{font.weight.bold}",
+        "$type": "fontWeight"
+      },
+      "tracking": {
+        "$value": -0.012,
+        "$description": "Letter spacing in em",
+        "$type": "number"
+      }
+    },
+    "h3": {
+      "scale": {
+        "$value": 1.03,
+        "$description": "Heading 3, in secondary text color: size as a multiple of the note text",
+        "$type": "number"
+      },
+      "lineHeight": {
+        "$value": 1.45,
+        "$type": "number"
+      },
+      "weight": {
+        "$value": "{font.weight.semibold}",
+        "$type": "fontWeight"
+      },
+      "tracking": {
+        "$value": 0,
+        "$description": "Letter spacing in em",
+        "$type": "number"
+      }
+    }
+  },
+  "motion": {
+    "duration": {
+      "$type": "duration",
+      "press": {
+        "$value": {
+          "value": 100,
+          "unit": "ms"
+        },
+        "$description": "A button being pressed"
+      },
+      "hover": {
+        "$value": {
+          "value": 150,
+          "unit": "ms"
+        },
+        "$description": "Hover and press feedback"
+      },
+      "fade": {
+        "$value": {
+          "value": 200,
+          "unit": "ms"
+        },
+        "$description": "Things fading in: menus, tooltips, the background changing color"
+      },
+      "sink": {
+        "$value": {
+          "value": 280,
+          "unit": "ms"
+        },
+        "$description": "A ticked item sliding below the open ones, after a 320 ms pause"
+      },
+      "header": {
+        "$value": {
+          "value": 300,
+          "unit": "ms"
+        },
+        "$description": "The header sliding away and back while scrolling"
+      },
+      "tick": {
+        "$value": {
+          "value": 300,
+          "unit": "ms"
+        },
+        "$description": "The check mark popping in"
+      },
+      "slow": {
+        "$value": {
+          "value": 300,
+          "unit": "ms"
+        },
+        "$description": "Progress bars, pictures fading in, a sheet leaving"
+      },
+      "paint": {
+        "$value": {
+          "value": 600,
+          "unit": "ms"
+        },
+        "$description": "A new highlight drawing in, line by line"
+      },
+      "move": {
+        "$value": {
+          "value": 240,
+          "unit": "ms"
+        },
+        "$description": "Things coming in or sliding to a new place: bars, dialogs, cards, chips, the chosen option"
+      },
+      "sinkDelay": {
+        "$value": {
+          "value": 320,
+          "unit": "ms"
+        },
+        "$description": "The pause before a ticked item sinks"
+      },
+      "exit": {
+        "$value": {
+          "value": 140,
+          "unit": "ms"
+        },
+        "$description": "Things leaving: menus, pop-overs, dialogs, toasts and tooltips fade out faster than they came in"
+      },
+      "morph": {
+        "$value": {
+          "value": 380,
+          "unit": "ms"
+        },
+        "$description": "A card growing into the open note, and shrinking back"
+      },
+      "nudge": {
+        "$value": {
+          "value": 420,
+          "unit": "ms"
+        },
+        "$description": "The read-only bar shaking when you try to type"
+      },
+      "ring": {
+        "$value": {
+          "value": 900,
+          "unit": "ms"
+        },
+        "$description": "A late reminder's bell ringing once"
+      },
+      "blink": {
+        "$value": {
+          "value": 1000,
+          "unit": "ms"
+        },
+        "$description": "One blink of a text caret"
+      },
+      "spin": {
+        "$value": {
+          "value": 1000,
+          "unit": "ms"
+        },
+        "$description": "One turn of a spinner"
+      },
+      "shimmer": {
+        "$value": {
+          "value": 1400,
+          "unit": "ms"
+        },
+        "$description": "One sweep of a loading shimmer"
+      },
+      "flash": {
+        "$value": {
+          "value": 1400,
+          "unit": "ms"
+        },
+        "$description": "A flash that says “here”: a highlight you jumped to, a person just added"
+      },
+      "sway": {
+        "$value": {
+          "value": 2400,
+          "unit": "ms"
+        },
+        "$description": "One slow sway: the floating cards on sign in, the waiting picture"
+      }
+    },
+    "ease": {
+      "$type": "cubicBezier",
+      "standard": {
+        "$value": [
+          0.2,
+          0.7,
+          0.2,
+          1
+        ],
+        "$description": "Anything that comes in or moves"
+      },
+      "roll": {
+        "$value": [
+          0.2,
+          0.8,
+          0.3,
+          1
+        ],
+        "$description": "Rolling text and a highlight drawing in"
+      },
+      "exit": {
+        "$value": [
+          0.5,
+          0,
+          0.8,
+          0.4
+        ],
+        "$description": "Anything leaving: menus, dialogs, toasts, cards, rolling text going out"
+      },
+      "pop": {
+        "$value": [
+          0.2,
+          0.8,
+          0.3,
+          1.3
+        ],
+        "$description": "Small things popping in: the check mark, a dialog, a toast, a new tag"
+      },
+      "inOut": {
+        "$value": [
+          0.45,
+          0,
+          0.25,
+          1
+        ],
+        "$description": "Things that sway and settle: the floating cards, the waiting picture"
+      }
+    }
+  },
+  "blend": {
+    "$type": "number",
+    "lateChip": {
+      "$value": 10,
+      "$description": "Percent of the late red mixed into a late reminder chip"
+    }
+  }
+}
