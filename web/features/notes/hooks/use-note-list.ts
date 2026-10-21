@@ -1,5 +1,6 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import * as React from "react";
 import {
   type SortBy,
@@ -29,7 +30,14 @@ export function useNoteList(notes: Note[], { pinnedFirst = false } = {}) {
   const boardRef = React.useRef<HTMLDivElement>(null);
   const searchRef = React.useRef<HTMLInputElement>(null);
   const flip = useFlip(boardRef);
-  const [query, setQueryValue] = React.useState("");
+  const savedQuery = useSearchParams().get("q") ?? "";
+  const [query, setQueryValue] = React.useState(savedQuery);
+  // Keep typing immediate while following URL changes from Back/Forward.
+  const [lastSavedQuery, setLastSavedQuery] = React.useState(savedQuery);
+  if (savedQuery !== lastSavedQuery) {
+    setLastSavedQuery(savedQuery);
+    setQueryValue(savedQuery);
+  }
   const searchedQuery = React.useDeferredValue(query);
   const [picking, setPicking] = React.useState(false);
   const [picked, setPicked] = React.useState<Set<string>>(new Set());
@@ -124,6 +132,11 @@ export function useNoteList(notes: Note[], { pinnedFirst = false } = {}) {
     setQuery: (value: string) => {
       flip.prepare();
       setQueryValue(value);
+      const url = new URL(window.location.href);
+      if (value) url.searchParams.set("q", value);
+      else url.searchParams.delete("q");
+      // Keep the search on this visit without adding Back stops for typing.
+      window.history.replaceState(null, "", url);
     },
     layout: viewMode,
     setLayout: (layout: ViewMode) => {
