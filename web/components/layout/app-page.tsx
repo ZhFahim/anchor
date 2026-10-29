@@ -169,7 +169,7 @@ export const SearchField = React.forwardRef<
     forwardedRef,
     () => input.current as HTMLInputElement,
   );
-  const [open, setOpen] = React.useState(false);
+  const [open, setOpen] = React.useState(!!value);
 
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -203,7 +203,7 @@ export const SearchField = React.forwardRef<
     <>
       <label
         data-search-field
-        data-open={open || undefined}
+        data-open={open || !!value || undefined}
         className={cn(
           "group/search flex h-9.5 w-75 max-w-full items-center gap-2 rounded-md bg-card pr-2 pl-3 shadow-[inset_0_0_0_1px_var(--input),var(--sh-xs)] transition-[box-shadow,width] duration-(--duration-header) ease-standard focus-within:w-90 focus-within:shadow-[inset_0_0_0_2px_var(--ring)] max-md:hidden max-md:data-open:absolute max-md:data-open:inset-x-3 max-md:data-open:top-2 max-md:data-open:z-(--z-raised) max-md:data-open:flex max-md:data-open:w-auto [&>svg]:size-4 [&>svg]:text-muted-foreground",
           className,
