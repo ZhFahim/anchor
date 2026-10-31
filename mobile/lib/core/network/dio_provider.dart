@@ -10,6 +10,7 @@ import '../storage/secure_storage_provider.dart';
 import 'anchor_protocol.dart';
 import 'api_error.dart';
 import 'auth_interceptor.dart';
+import 'custom_headers.dart';
 import 'server_config_provider.dart';
 
 part 'dio_provider.g.dart';
@@ -30,7 +31,11 @@ IOHttpClientAdapter createSelfSignedCertAdapter(String serverUrl) {
   );
 }
 
-Dio createServerDio(String? serverUrl, {required bool allowSelfSigned}) {
+Dio createServerDio(
+  String? serverUrl, {
+  required bool allowSelfSigned,
+  List<CustomHeader> customHeaders = const [],
+}) {
   final hasServer = serverUrl != null && serverUrl.isNotEmpty;
   final dio = Dio(
     BaseOptions(
@@ -40,6 +45,8 @@ Dio createServerDio(String? serverUrl, {required bool allowSelfSigned}) {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        for (final header in validCustomHeadersOf(customHeaders))
+          header.name: header.value,
       },
     ),
   );
@@ -53,14 +60,21 @@ Dio createServerDio(String? serverUrl, {required bool allowSelfSigned}) {
 Dio dio(Ref ref) {
   final serverUrl = ref.watch(serverUrlProvider);
   final allowSelfSigned = ref.watch(allowSelfSignedCertProvider).value ?? false;
+  final customHeaders =
+      ref.watch(customHeadersProvider).value ?? const <CustomHeader>[];
 
-  final dio = createServerDio(serverUrl, allowSelfSigned: allowSelfSigned);
+  final dio = createServerDio(
+    serverUrl,
+    allowSelfSigned: allowSelfSigned,
+    customHeaders: customHeaders,
+  );
   dio.options.headers[anchorProtocolHeader] = '$anchorProtocol';
 
   // Refresh requests must skip the interceptors.
   final refreshDio = createServerDio(
     serverUrl,
     allowSelfSigned: allowSelfSigned,
+    customHeaders: customHeaders,
   );
 
   dio.interceptors.add(

@@ -826,6 +826,72 @@ abstract class AppLocalizations {
   /// **'Use only with a server you manage. Anchor can’t verify its identity.'**
   String get serverSelfSignedWarning;
 
+  /// Heading of the list of extra headers sent to the server, under the self-signed certificates switch.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom headers'**
+  String get serverCustomHeaders;
+
+  /// Under the custom headers heading.
+  ///
+  /// In en, this message translates to:
+  /// **'Extra headers sent with every request to your server.'**
+  String get serverCustomHeadersHint;
+
+  /// Button that adds another empty name and value pair to the custom headers.
+  ///
+  /// In en, this message translates to:
+  /// **'Add header'**
+  String get serverAddHeader;
+
+  /// Screen reader label of the button that removes a custom header row.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove header'**
+  String get serverRemoveHeader;
+
+  /// Placeholder in the field for a custom header’s name.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get serverHeaderNameHint;
+
+  /// Placeholder in the field for a custom header’s value.
+  ///
+  /// In en, this message translates to:
+  /// **'Value'**
+  String get serverHeaderValueHint;
+
+  /// How many custom headers are added, of the most that fit.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}/{max}'**
+  String serverHeaderCount(int count, int max);
+
+  /// Note when the most custom headers are added and no more fit.
+  ///
+  /// In en, this message translates to:
+  /// **'Up to {max} headers.'**
+  String serverHeaderLimit(int max);
+
+  /// Error under a custom header row whose name isn’t valid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a name with only letters, numbers, and dashes, like X-Anchor-User.'**
+  String get serverHeaderInvalidName;
+
+  /// Error under a custom header row whose name the app manages.
+  ///
+  /// In en, this message translates to:
+  /// **'The app sets {name} itself, so it can’t be changed here.'**
+  String serverHeaderReserved(String name);
+
+  /// Error under a custom header row whose name repeats an earlier one.
+  ///
+  /// In en, this message translates to:
+  /// **'A header with this name is already added.'**
+  String get serverHeaderDuplicate;
+
   /// Note at the bottom of the server page: Anchor has no shared public server.
   ///
   /// In en, this message translates to:
