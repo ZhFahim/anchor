@@ -150,6 +150,63 @@ void main() {
     expect(find.text('The list').hitTestable(), findsOneWidget);
   });
 
+  group('on iPhone', () {
+    Future<void> openOnIPhone(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(360, 792);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final router = GoRouter(
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (_, _) => const Scaffold(body: Text('The list')),
+          ),
+          GoRoute(
+            path: '/note',
+            pageBuilder: (_, _) => const NoteMorphPage(
+              child: Scaffold(body: Center(child: Text('The note'))),
+            ),
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+      await tester.pumpWidget(
+        MaterialApp.router(
+          theme: AppTheme.light().copyWith(platform: TargetPlatform.iOS),
+          routerConfig: router,
+        ),
+      );
+      unawaited(router.push('/note'));
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> dragFromEdge(WidgetTester tester, double distance) async {
+      final gesture = await tester.startGesture(const Offset(2, 300));
+      for (var moved = 0.0; moved < distance; moved += 40) {
+        await gesture.moveBy(const Offset(40, 0));
+        await tester.pump(const Duration(milliseconds: 200));
+      }
+      await gesture.up();
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('a swipe from the left edge closes the note', (tester) async {
+      await openOnIPhone(tester);
+      await dragFromEdge(tester, 240);
+      expect(find.text('The note'), findsNothing);
+      expect(find.text('The list'), findsOneWidget);
+    });
+
+    testWidgets('a short swipe from the left edge puts the note back', (
+      tester,
+    ) async {
+      await openOnIPhone(tester);
+      final atRest = tester.getCenter(find.text('The note'));
+      await dragFromEdge(tester, 80);
+      expect(tester.getCenter(find.text('The note')), atRest);
+    });
+  });
+
   testWidgets('a note closes into its card after the card moved', (
     tester,
   ) async {

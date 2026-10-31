@@ -45,6 +45,8 @@
 		<string>Anchor uses your music library to add audio files to notes.</string>
 		<key>NSCameraUsageDescription</key>
 		<string>Anchor uses the camera to take pictures for your notes and your profile photo.</string>
+		<key>NSLocalNetworkUsageDescription</key>
+		<string>Anchor connects to your server when it is on your local network.</string>
 		<key>NSMicrophoneUsageDescription</key>
 		<string>Anchor uses the microphone to record voice notes.</string>
 		<key>NSPhotoLibraryAddUsageDescription</key>

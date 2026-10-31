@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:anchor/core/network/connectivity_provider.dart';
 import 'package:anchor/core/theme/app_theme.dart';
 import 'package:anchor/core/widgets/page_bar.dart';
@@ -60,4 +62,73 @@ void main() {
     expect(find.byType(PageBackButton), findsOneWidget);
     expect(addressOf(tester), 'anchor.example.com');
   });
+
+  group('when the server can\'t be reached', () {
+    late _RefusingHttp http;
+    final overrides = HttpOverrides.current;
+
+    setUp(() => HttpOverrides.global = http = _RefusingHttp());
+    tearDown(() => HttpOverrides.global = overrides);
+
+    Future<void> settleRequest(WidgetTester tester) =>
+        tester.pump(const Duration(milliseconds: 200));
+
+    Future<void> connect(WidgetTester tester, String address) async {
+      await tester.enterText(find.byType(TextField), address);
+      await tester.tap(find.text('Continue'));
+      await settleRequest(tester);
+    }
+
+    Future<void> comeBackToTheApp(WidgetTester tester) async {
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await settleRequest(tester);
+    }
+
+    testWidgets('coming back to the app tries the same address again', (
+      tester,
+    ) async {
+      await pumpApp(tester, const ServerConfigScreen());
+      await connect(tester, 'http://192.168.1.2:3001');
+      expect(http.attempts, 1);
+      expect(find.textContaining('Couldn’t reach'), findsOneWidget);
+
+      await comeBackToTheApp(tester);
+      expect(http.attempts, 2);
+    });
+
+    testWidgets('coming back doesn\'t try an address changed since', (
+      tester,
+    ) async {
+      await pumpApp(tester, const ServerConfigScreen());
+      await connect(tester, 'http://192.168.1.2:3001');
+      await tester.enterText(find.byType(TextField), 'http://192.168.1.3');
+
+      await comeBackToTheApp(tester);
+      expect(http.attempts, 1);
+    });
+  });
+}
+
+class _RefusingHttp extends HttpOverrides {
+  int attempts = 0;
+
+  @override
+  HttpClient createHttpClient(SecurityContext? context) =>
+      _RefusingClient(this);
+}
+
+class _RefusingClient implements HttpClient {
+  _RefusingClient(this.http);
+
+  final _RefusingHttp http;
+
+  @override
+  Future<HttpClientRequest> openUrl(String method, Uri url) {
+    http.attempts++;
+    return Future.error(const SocketException('Network is down'));
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
 }
