@@ -138,3 +138,48 @@ abstract class _$AllowSelfSignedCert extends $AsyncNotifier<bool> {
     return element.handleCreate(ref, build);
   }
 }
+
+@ProviderFor(CustomHeaders)
+final customHeadersProvider = CustomHeadersProvider._();
+
+final class CustomHeadersProvider
+    extends $AsyncNotifierProvider<CustomHeaders, List<CustomHeader>> {
+  CustomHeadersProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'customHeadersProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$customHeadersHash();
+
+  @$internal
+  @override
+  CustomHeaders create() => CustomHeaders();
+}
+
+String _$customHeadersHash() => r'8393a38b86d6fb1f9e104dc2676815e6a544fbea';
+
+abstract class _$CustomHeaders extends $AsyncNotifier<List<CustomHeader>> {
+  FutureOr<List<CustomHeader>> build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref =
+        this.ref as $Ref<AsyncValue<List<CustomHeader>>, List<CustomHeader>>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<List<CustomHeader>>, List<CustomHeader>>,
+              AsyncValue<List<CustomHeader>>,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}

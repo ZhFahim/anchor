@@ -578,6 +578,72 @@
   "@serverSelfSignedWarning": {
     "description": "Warning under the self-signed certificates switch while it’s on."
   },
+  "serverCustomHeaders": "Custom headers",
+  "@serverCustomHeaders": {
+    "description": "Heading of the list of extra headers sent to the server, under the self-signed certificates switch."
+  },
+  "serverCustomHeadersHint": "Extra headers sent with every request to your server.",
+  "@serverCustomHeadersHint": {
+    "description": "Under the custom headers heading."
+  },
+  "serverAddHeader": "Add header",
+  "@serverAddHeader": {
+    "description": "Button that adds another empty name and value pair to the custom headers."
+  },
+  "serverRemoveHeader": "Remove header",
+  "@serverRemoveHeader": {
+    "description": "Screen reader label of the button that removes a custom header row."
+  },
+  "serverHeaderNameHint": "Name",
+  "@serverHeaderNameHint": {
+    "description": "Placeholder in the field for a custom header’s name."
+  },
+  "serverHeaderValueHint": "Value",
+  "@serverHeaderValueHint": {
+    "description": "Placeholder in the field for a custom header’s value."
+  },
+  "serverHeaderCount": "{count}/{max}",
+  "@serverHeaderCount": {
+    "description": "How many custom headers are added, of the most that fit.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      },
+      "max": {
+        "type": "int",
+        "example": "10"
+      }
+    }
+  },
+  "serverHeaderLimit": "Up to {max} headers.",
+  "@serverHeaderLimit": {
+    "description": "Note when the most custom headers are added and no more fit.",
+    "placeholders": {
+      "max": {
+        "type": "int",
+        "example": "10"
+      }
+    }
+  },
+  "serverHeaderInvalidName": "Enter a name with only letters, numbers, and dashes, like X-Anchor-User.",
+  "@serverHeaderInvalidName": {
+    "description": "Error under a custom header row whose name isn’t valid."
+  },
+  "serverHeaderReserved": "The app sets {name} itself, so it can’t be changed here.",
+  "@serverHeaderReserved": {
+    "description": "Error under a custom header row whose name the app manages.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Authorization"
+      }
+    }
+  },
+  "serverHeaderDuplicate": "A header with this name is already added.",
+  "@serverHeaderDuplicate": {
+    "description": "Error under a custom header row whose name repeats an earlier one."
+  },
   "serverSelfHosted": "Anchor requires a self-hosted server.",
   "@serverSelfHosted": {
     "description": "Note at the bottom of the server page: Anchor has no shared public server."

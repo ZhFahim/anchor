@@ -434,6 +434,48 @@ class AppLocalizationsEn extends AppLocalizations {
       'Use only with a server you manage. Anchor can’t verify its identity.';
 
   @override
+  String get serverCustomHeaders => 'Custom headers';
+
+  @override
+  String get serverCustomHeadersHint =>
+      'Extra headers sent with every request to your server.';
+
+  @override
+  String get serverAddHeader => 'Add header';
+
+  @override
+  String get serverRemoveHeader => 'Remove header';
+
+  @override
+  String get serverHeaderNameHint => 'Name';
+
+  @override
+  String get serverHeaderValueHint => 'Value';
+
+  @override
+  String serverHeaderCount(int count, int max) {
+    return '$count/$max';
+  }
+
+  @override
+  String serverHeaderLimit(int max) {
+    return 'Up to $max headers.';
+  }
+
+  @override
+  String get serverHeaderInvalidName =>
+      'Enter a name with only letters, numbers, and dashes, like X-Anchor-User.';
+
+  @override
+  String serverHeaderReserved(String name) {
+    return 'The app sets $name itself, so it can’t be changed here.';
+  }
+
+  @override
+  String get serverHeaderDuplicate =>
+      'A header with this name is already added.';
+
+  @override
   String get serverSelfHosted => 'Anchor requires a self-hosted server.';
 
   @override
