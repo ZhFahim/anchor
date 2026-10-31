@@ -217,6 +217,30 @@ services:
 
 Alternatively, configure OIDC via the admin panel (Settings → OIDC Authentication) when the three env vars are not all set.
 
+#### OIDC Providers with a Private CA
+
+If your OIDC provider's TLS certificate is signed by a private CA, the Anchor server may fail to connect with `unable to get local issuer certificate`. Mount the CA's public certificate (PEM format, not its private key) read-only and set `NODE_EXTRA_CA_CERTS` to its absolute path inside the container.
+
+Save the certificate as `./certs/oidc-ca.crt` relative to your Compose file, then merge these entries into the existing `anchor` service. Keep your other environment variables, volumes, and the top-level `volumes` declaration:
+
+```yaml
+services:
+  anchor:
+    environment:
+      - NODE_EXTRA_CA_CERTS=/usr/local/share/ca-certificates/oidc-ca.crt
+    volumes:
+      - anchor_data:/data
+      - ./certs/oidc-ca.crt:/usr/local/share/ca-certificates/oidc-ca.crt:ro
+```
+
+Node reads `NODE_EXTRA_CA_CERTS` only at process startup. Recreate the container after changing the configuration:
+
+```bash
+docker compose up -d --force-recreate anchor
+```
+
+This configures server-side certificate trust only. The native mobile app and your browser must trust the OIDC provider's CA separately.
+
 ## Backup and Restore
 
 Log into your Anchor deployment, go to **Settings**, scroll to **Export & Import** and export **Anchor backup (.zip)**.
