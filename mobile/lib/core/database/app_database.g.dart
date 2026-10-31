@@ -26,6 +26,18 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, NoteRow> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _noteTypeMeta = const VerificationMeta(
+    'noteType',
+  );
+  @override
+  late final GeneratedColumn<String> noteType = GeneratedColumn<String>(
+    'note_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('note'),
+  );
   static const VerificationMeta _contentMeta = const VerificationMeta(
     'content',
   );
@@ -326,6 +338,7 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, NoteRow> {
   List<GeneratedColumn> get $columns => [
     id,
     title,
+    noteType,
     content,
     isPinned,
     isArchived,
@@ -376,6 +389,12 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, NoteRow> {
       );
     } else if (isInserting) {
       context.missing(_titleMeta);
+    }
+    if (data.containsKey('note_type')) {
+      context.handle(
+        _noteTypeMeta,
+        noteType.isAcceptableOrUnknown(data['note_type']!, _noteTypeMeta),
+      );
     }
     if (data.containsKey('content')) {
       context.handle(
@@ -583,6 +602,10 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, NoteRow> {
         DriftSqlType.string,
         data['${effectivePrefix}title'],
       )!,
+      noteType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note_type'],
+      )!,
       content: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}content'],
@@ -695,6 +718,7 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, NoteRow> {
 class NoteRow extends DataClass implements Insertable<NoteRow> {
   final String id;
   final String title;
+  final String noteType;
   final String? content;
   final bool isPinned;
   final bool isArchived;
@@ -723,6 +747,7 @@ class NoteRow extends DataClass implements Insertable<NoteRow> {
   const NoteRow({
     required this.id,
     required this.title,
+    required this.noteType,
     this.content,
     required this.isPinned,
     required this.isArchived,
@@ -754,6 +779,7 @@ class NoteRow extends DataClass implements Insertable<NoteRow> {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
     map['title'] = Variable<String>(title);
+    map['note_type'] = Variable<String>(noteType);
     if (!nullToAbsent || content != null) {
       map['content'] = Variable<String>(content);
     }
@@ -820,6 +846,7 @@ class NoteRow extends DataClass implements Insertable<NoteRow> {
     return NotesCompanion(
       id: Value(id),
       title: Value(title),
+      noteType: Value(noteType),
       content: content == null && nullToAbsent
           ? const Value.absent()
           : Value(content),
@@ -890,6 +917,7 @@ class NoteRow extends DataClass implements Insertable<NoteRow> {
     return NoteRow(
       id: serializer.fromJson<String>(json['id']),
       title: serializer.fromJson<String>(json['title']),
+      noteType: serializer.fromJson<String>(json['noteType']),
       content: serializer.fromJson<String?>(json['content']),
       isPinned: serializer.fromJson<bool>(json['isPinned']),
       isArchived: serializer.fromJson<bool>(json['isArchived']),
@@ -927,6 +955,7 @@ class NoteRow extends DataClass implements Insertable<NoteRow> {
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'title': serializer.toJson<String>(title),
+      'noteType': serializer.toJson<String>(noteType),
       'content': serializer.toJson<String?>(content),
       'isPinned': serializer.toJson<bool>(isPinned),
       'isArchived': serializer.toJson<bool>(isArchived),
@@ -958,6 +987,7 @@ class NoteRow extends DataClass implements Insertable<NoteRow> {
   NoteRow copyWith({
     String? id,
     String? title,
+    String? noteType,
     Value<String?> content = const Value.absent(),
     bool? isPinned,
     bool? isArchived,
@@ -986,6 +1016,7 @@ class NoteRow extends DataClass implements Insertable<NoteRow> {
   }) => NoteRow(
     id: id ?? this.id,
     title: title ?? this.title,
+    noteType: noteType ?? this.noteType,
     content: content.present ? content.value : this.content,
     isPinned: isPinned ?? this.isPinned,
     isArchived: isArchived ?? this.isArchived,
@@ -1028,6 +1059,7 @@ class NoteRow extends DataClass implements Insertable<NoteRow> {
     return NoteRow(
       id: data.id.present ? data.id.value : this.id,
       title: data.title.present ? data.title.value : this.title,
+      noteType: data.noteType.present ? data.noteType.value : this.noteType,
       content: data.content.present ? data.content.value : this.content,
       isPinned: data.isPinned.present ? data.isPinned.value : this.isPinned,
       isArchived: data.isArchived.present
@@ -1095,6 +1127,7 @@ class NoteRow extends DataClass implements Insertable<NoteRow> {
     return (StringBuffer('NoteRow(')
           ..write('id: $id, ')
           ..write('title: $title, ')
+          ..write('noteType: $noteType, ')
           ..write('content: $content, ')
           ..write('isPinned: $isPinned, ')
           ..write('isArchived: $isArchived, ')
@@ -1128,6 +1161,7 @@ class NoteRow extends DataClass implements Insertable<NoteRow> {
   int get hashCode => Object.hashAll([
     id,
     title,
+    noteType,
     content,
     isPinned,
     isArchived,
@@ -1160,6 +1194,7 @@ class NoteRow extends DataClass implements Insertable<NoteRow> {
       (other is NoteRow &&
           other.id == this.id &&
           other.title == this.title &&
+          other.noteType == this.noteType &&
           other.content == this.content &&
           other.isPinned == this.isPinned &&
           other.isArchived == this.isArchived &&
@@ -1190,6 +1225,7 @@ class NoteRow extends DataClass implements Insertable<NoteRow> {
 class NotesCompanion extends UpdateCompanion<NoteRow> {
   final Value<String> id;
   final Value<String> title;
+  final Value<String> noteType;
   final Value<String?> content;
   final Value<bool> isPinned;
   final Value<bool> isArchived;
@@ -1219,6 +1255,7 @@ class NotesCompanion extends UpdateCompanion<NoteRow> {
   const NotesCompanion({
     this.id = const Value.absent(),
     this.title = const Value.absent(),
+    this.noteType = const Value.absent(),
     this.content = const Value.absent(),
     this.isPinned = const Value.absent(),
     this.isArchived = const Value.absent(),
@@ -1249,6 +1286,7 @@ class NotesCompanion extends UpdateCompanion<NoteRow> {
   NotesCompanion.insert({
     required String id,
     required String title,
+    this.noteType = const Value.absent(),
     this.content = const Value.absent(),
     this.isPinned = const Value.absent(),
     this.isArchived = const Value.absent(),
@@ -1280,6 +1318,7 @@ class NotesCompanion extends UpdateCompanion<NoteRow> {
   static Insertable<NoteRow> custom({
     Expression<String>? id,
     Expression<String>? title,
+    Expression<String>? noteType,
     Expression<String>? content,
     Expression<bool>? isPinned,
     Expression<bool>? isArchived,
@@ -1310,6 +1349,7 @@ class NotesCompanion extends UpdateCompanion<NoteRow> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (title != null) 'title': title,
+      if (noteType != null) 'note_type': noteType,
       if (content != null) 'content': content,
       if (isPinned != null) 'is_pinned': isPinned,
       if (isArchived != null) 'is_archived': isArchived,
@@ -1343,6 +1383,7 @@ class NotesCompanion extends UpdateCompanion<NoteRow> {
   NotesCompanion copyWith({
     Value<String>? id,
     Value<String>? title,
+    Value<String>? noteType,
     Value<String?>? content,
     Value<bool>? isPinned,
     Value<bool>? isArchived,
@@ -1373,6 +1414,7 @@ class NotesCompanion extends UpdateCompanion<NoteRow> {
     return NotesCompanion(
       id: id ?? this.id,
       title: title ?? this.title,
+      noteType: noteType ?? this.noteType,
       content: content ?? this.content,
       isPinned: isPinned ?? this.isPinned,
       isArchived: isArchived ?? this.isArchived,
@@ -1410,6 +1452,9 @@ class NotesCompanion extends UpdateCompanion<NoteRow> {
     }
     if (title.present) {
       map['title'] = Variable<String>(title.value);
+    }
+    if (noteType.present) {
+      map['note_type'] = Variable<String>(noteType.value);
     }
     if (content.present) {
       map['content'] = Variable<String>(content.value);
@@ -1499,6 +1544,7 @@ class NotesCompanion extends UpdateCompanion<NoteRow> {
     return (StringBuffer('NotesCompanion(')
           ..write('id: $id, ')
           ..write('title: $title, ')
+          ..write('noteType: $noteType, ')
           ..write('content: $content, ')
           ..write('isPinned: $isPinned, ')
           ..write('isArchived: $isArchived, ')
@@ -4417,6 +4463,7 @@ typedef $$NotesTableCreateCompanionBuilder =
     NotesCompanion Function({
       required String id,
       required String title,
+      Value<String> noteType,
       Value<String?> content,
       Value<bool> isPinned,
       Value<bool> isArchived,
@@ -4448,6 +4495,7 @@ typedef $$NotesTableUpdateCompanionBuilder =
     NotesCompanion Function({
       Value<String> id,
       Value<String> title,
+      Value<String> noteType,
       Value<String?> content,
       Value<bool> isPinned,
       Value<bool> isArchived,
@@ -4491,6 +4539,11 @@ class $$NotesTableFilterComposer extends Composer<_$AppDatabase, $NotesTable> {
 
   ColumnFilters<String> get title => $composableBuilder(
     column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get noteType => $composableBuilder(
+    column: $table.noteType,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4639,6 +4692,11 @@ class $$NotesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get noteType => $composableBuilder(
+    column: $table.noteType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get content => $composableBuilder(
     column: $table.content,
     builder: (column) => ColumnOrderings(column),
@@ -4780,6 +4838,9 @@ class $$NotesTableAnnotationComposer
   GeneratedColumn<String> get title =>
       $composableBuilder(column: $table.title, builder: (column) => column);
 
+  GeneratedColumn<String> get noteType =>
+      $composableBuilder(column: $table.noteType, builder: (column) => column);
+
   GeneratedColumn<String> get content =>
       $composableBuilder(column: $table.content, builder: (column) => column);
 
@@ -4920,6 +4981,7 @@ class $$NotesTableTableManager
               ({
                 Value<String> id = const Value.absent(),
                 Value<String> title = const Value.absent(),
+                Value<String> noteType = const Value.absent(),
                 Value<String?> content = const Value.absent(),
                 Value<bool> isPinned = const Value.absent(),
                 Value<bool> isArchived = const Value.absent(),
@@ -4949,6 +5011,7 @@ class $$NotesTableTableManager
               }) => NotesCompanion(
                 id: id,
                 title: title,
+                noteType: noteType,
                 content: content,
                 isPinned: isPinned,
                 isArchived: isArchived,
@@ -4980,6 +5043,7 @@ class $$NotesTableTableManager
               ({
                 required String id,
                 required String title,
+                Value<String> noteType = const Value.absent(),
                 Value<String?> content = const Value.absent(),
                 Value<bool> isPinned = const Value.absent(),
                 Value<bool> isArchived = const Value.absent(),
@@ -5009,6 +5073,7 @@ class $$NotesTableTableManager
               }) => NotesCompanion.insert(
                 id: id,
                 title: title,
+                noteType: noteType,
                 content: content,
                 isPinned: isPinned,
                 isArchived: isArchived,

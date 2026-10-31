@@ -31,6 +31,7 @@ import '../domain/note.dart';
 import '../domain/note_attachment.dart';
 import '../domain/note_history.dart';
 import 'checked_folds_controller.dart';
+import 'editor/checklist_note_editor.dart';
 import 'editor/editor_overlay.dart';
 import 'editor/editor_overlay_controller.dart';
 import 'editor/editor_palette.dart';
@@ -52,10 +53,16 @@ import 'widgets/share_sheet.dart';
 import 'widgets/title_input_formatter.dart';
 
 class NoteEditScreen extends ConsumerStatefulWidget {
-  const NoteEditScreen({super.key, this.noteId, this.note});
+  const NoteEditScreen({
+    super.key,
+    this.noteId,
+    this.note,
+    this.newNoteType = NoteType.note,
+  });
 
   final String? noteId;
   final Note? note;
+  final NoteType newNoteType;
 
   @override
   ConsumerState<NoteEditScreen> createState() => _NoteEditScreenState();
@@ -66,6 +73,9 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
   final _titleFocus = FocusNode();
   final _editorFocus = FocusNode();
   final _editorKey = GlobalKey<RichTextEditorState>();
+  final _checklistKey = GlobalKey<ChecklistNoteEditorState>();
+  bool _checklistFocused = false;
+  bool get _isChecklist => _draft.noteType == NoteType.checklist;
   final _scroll = ScrollController();
   final _corrections = ScrollCorrections();
   late final _scrollOffset = ScrollOffset(_scroll, corrections: _corrections);
@@ -85,7 +95,8 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
     notes: ref.read(notesRepositoryProvider),
     sharesOf: (noteId) =>
         ref.read(noteSharesRepositoryProvider).getNoteShares(noteId),
-    editor: _EditorContent(_editorKey),
+    editor: _EditorContent(_editorKey, _checklistKey),
+    newNoteType: widget.newNoteType,
     newNoteTagId: () => ref.read(selectedTagFilterProvider),
     onNoteDeleted: _handleNoteDeleted,
     note: widget.note,
@@ -107,7 +118,8 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
 
   bool get _isReadOnly => _draft.isReadOnly;
 
-  bool get _writing => _titleFocus.hasFocus || _editorFocus.hasFocus;
+  bool get _writing =>
+      _titleFocus.hasFocus || _editorFocus.hasFocus || _checklistFocused;
 
   @override
   void initState() {
@@ -146,7 +158,10 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
   }
 
   void _updateEmptyNoteActions() => _showsEmptyNoteActions.value =
-      _openedAsNew && _isBodyBlank && _draft.title.text.trim().isEmpty;
+      !_isChecklist &&
+      _openedAsNew &&
+      _isBodyBlank &&
+      _draft.title.text.trim().isEmpty;
 
   void _bodyBlankChanged(bool isBlank) {
     _isBodyBlank = isBlank;
@@ -460,12 +475,16 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
 
   void _focusEditorEnd() {
     if (_isReadOnly) return _shakeReadOnly();
+    if (_isChecklist) {
+      _checklistKey.currentState?.focusEnd();
+      return;
+    }
     _editor?.focusEnd();
   }
 
   void _splitTitle() {
     final editor = _editor;
-    if (editor == null) return;
+    if (editor == null && !_isChecklist) return;
     final value = _draft.title.value;
     final text = value.text;
     final selection = value.selection.isValid
@@ -476,7 +495,11 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
       text: head,
       selection: TextSelection.collapsed(offset: head.length),
     );
-    editor.addFirstLine(text.substring(selection.end));
+    if (_isChecklist) {
+      _checklistKey.currentState?.addFirstLine(text.substring(selection.end));
+    } else {
+      editor?.addFirstLine(text.substring(selection.end));
+    }
   }
 
   void _joinTitle(String words) {
@@ -655,7 +678,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
                   child: editor,
                 ),
               ),
-              if (showsEmptyNoteActions)
+              if (showsEmptyNoteActions && !_isChecklist)
                 Padding(
                   padding: EdgeInsets.fromLTRB(
                     AnchorTokens.spaceGutterPhone,
@@ -692,41 +715,55 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
               child: child,
             ),
             child: _draft.isLoaded
-                ? RichTextEditor(
-                    key: _editorKey,
-                    initialContent: _draft.initialContent,
-                    contentVersion: _draft.contentVersion,
-                    focusNode: _editorFocus,
-                    canEdit: !_isReadOnly,
-                    scrollController: _scroll,
-                    palette: palette,
-                    bottomInset: _editorOverlay.caretSpace,
-                    sortChecklistItems: ref.watch(
-                      editorPreferencesControllerProvider.select(
-                        (preferences) => preferences.sortChecklistItems,
-                      ),
-                    ),
-                    isCheckedFolded:
-                        note != null &&
-                        ref.watch(
-                          checkedFoldsProvider.select(
-                            (folds) => folds.contains(note.id),
+                ? _isChecklist
+                      ? ChecklistNoteEditor(
+                          key: _checklistKey,
+                          initialContent: _draft.initialContent,
+                          contentVersion: _draft.contentVersion,
+                          canEdit: !_isReadOnly,
+                          palette: palette,
+                          onChanged: _draft.contentChanged,
+                          onFocusChanged: (focused) {
+                            if (mounted && focused != _checklistFocused) {
+                              setState(() => _checklistFocused = focused);
+                            }
+                          },
+                        )
+                      : RichTextEditor(
+                          key: _editorKey,
+                          initialContent: _draft.initialContent,
+                          contentVersion: _draft.contentVersion,
+                          focusNode: _editorFocus,
+                          canEdit: !_isReadOnly,
+                          scrollController: _scroll,
+                          palette: palette,
+                          bottomInset: _editorOverlay.caretSpace,
+                          sortChecklistItems: ref.watch(
+                            editorPreferencesControllerProvider.select(
+                              (preferences) => preferences.sortChecklistItems,
+                            ),
                           ),
-                        ),
-                    onCheckedFoldChanged: note == null
-                        ? null
-                        : (isFolded) => ref
-                              .read(checkedFoldsProvider.notifier)
-                              .setFolded(note.id, isFolded: isFolded),
-                    visibleArea: _visibleArea,
-                    hasSlashHint: _openedAsNew,
-                    onChanged: _draft.contentChanged,
-                    onSelectionChanged: _editorOverlay.selectionMoved,
-                    onBlankChanged: _bodyBlankChanged,
-                    onBackspaceAtStart: _isReadOnly ? null : _joinTitle,
-                    onLinkTap: _editorOverlay.showLink,
-                    onReadOnlyTap: _shakeReadOnly,
-                  )
+                          isCheckedFolded:
+                              note != null &&
+                              ref.watch(
+                                checkedFoldsProvider.select(
+                                  (folds) => folds.contains(note.id),
+                                ),
+                              ),
+                          onCheckedFoldChanged: note == null
+                              ? null
+                              : (isFolded) => ref
+                                    .read(checkedFoldsProvider.notifier)
+                                    .setFolded(note.id, isFolded: isFolded),
+                          visibleArea: _visibleArea,
+                          hasSlashHint: _openedAsNew,
+                          onChanged: _draft.contentChanged,
+                          onSelectionChanged: _editorOverlay.selectionMoved,
+                          onBlankChanged: _bodyBlankChanged,
+                          onBackspaceAtStart: _isReadOnly ? null : _joinTitle,
+                          onLinkTap: _editorOverlay.showLink,
+                          onReadOnlyTap: _shakeReadOnly,
+                        )
                 : const SizedBox(height: 140), // off-scale: as above
           ),
         ),
@@ -791,18 +828,19 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
               ),
             ),
             Positioned(left: 0, right: 0, top: 0, child: bar),
-            Positioned.fill(
-              child: EditorOverlay(
-                controller: _editorOverlay,
-                palette: palette,
-                hasToolbar: !_isReadOnly && _draft.isLoaded,
-                canEdit: !_isReadOnly,
-                isWriting: writing,
-                isTitleFocused: _titleFocus.hasFocus,
-                titleHistory: _titleHistory,
-                onAddAttachment: _showAdd,
+            if (!_isChecklist)
+              Positioned.fill(
+                child: EditorOverlay(
+                  controller: _editorOverlay,
+                  palette: palette,
+                  hasToolbar: !_isReadOnly && _draft.isLoaded,
+                  canEdit: !_isReadOnly,
+                  isWriting: writing,
+                  isTitleFocused: _titleFocus.hasFocus,
+                  titleHistory: _titleHistory,
+                  onAddAttachment: _showAdd,
+                ),
               ),
-            ),
             if (_isReadOnly && note != null && !note.isDeleted)
               Positioned(
                 left: AnchorTokens.spaceGutterPhone,
@@ -840,18 +878,25 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
 }
 
 class _EditorContent implements NoteEditorContent {
-  const _EditorContent(this._key);
+  const _EditorContent(this._key, this._checklistKey);
 
   final GlobalKey<RichTextEditorState> _key;
+  final GlobalKey<ChecklistNoteEditorState> _checklistKey;
 
   @override
-  String? get content => _key.currentState?.getContent();
+  String? get content =>
+      _checklistKey.currentState?.getContent() ??
+      _key.currentState?.getContent();
 
   @override
-  String? get plainText => _key.currentState?.getPlainText();
+  String? get plainText =>
+      _checklistKey.currentState?.getPlainText() ??
+      _key.currentState?.getPlainText();
 
   @override
-  bool? matches(String? content) => _key.currentState?.matchesContent(content);
+  bool? matches(String? content) =>
+      _checklistKey.currentState?.matchesContent(content) ??
+      _key.currentState?.matchesContent(content);
 }
 
 class _AboveKeyboard extends StatelessWidget {

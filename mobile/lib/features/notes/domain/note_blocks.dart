@@ -231,6 +231,9 @@ int countWords(String text) => _word.allMatches(text).length;
 
 int wordCount(String? content) => countWords(plainTextOf(content));
 
-String snippetTextOf(String? content) => parseNoteBlocks(
-  content,
-).map((b) => b.text.trim()).where((l) => l.isNotEmpty).join('\n');
+String snippetTextOf(String? content, {bool hideCompleted = false}) =>
+    parseNoteBlocks(content)
+        .where((block) => !hideCompleted || !block.done)
+        .map((b) => b.text.trim())
+        .where((l) => l.isNotEmpty)
+        .join('\n');

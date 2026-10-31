@@ -87,9 +87,15 @@ GoRouter goRouter(Ref ref) {
         routes: [
           GoRoute(
             path: _newNotePath,
-            pageBuilder: (context, state) => const NoteMorphPage(
-              key: ValueKey('note/new'),
-              child: NoteEditScreen(),
+            pageBuilder: (context, state) => NoteMorphPage(
+              key: ValueKey(
+                'note/new/${state.uri.queryParameters['type'] ?? 'note'}',
+              ),
+              child: NoteEditScreen(
+                newNoteType: NoteType.fromString(
+                  state.uri.queryParameters['type'],
+                ),
+              ),
             ),
           ),
           GoRoute(

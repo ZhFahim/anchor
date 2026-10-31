@@ -209,6 +209,7 @@ class SyncService {
 
     return SyncNoteChange(
       id: note.id,
+      noteType: NoteType.fromString(note.noteType),
       localRev: note.localRev,
       baseVersion: note.version,
       title: note.title,
@@ -652,6 +653,7 @@ class SyncService {
   }
 
   NotesCompanion _sharingOf(SyncServerNote note) => NotesCompanion(
+    noteType: Value(note.noteType),
     permission: Value(note.permission),
     shareIds: Value(encodeShareIds(note.shareIds)),
     sharedById: Value(note.sharedBy?.id),

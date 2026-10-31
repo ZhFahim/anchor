@@ -105,6 +105,7 @@ void main() {
 
   Map<String, dynamic> serverNoteJson(
     String id, {
+    String noteType = 'note',
     String title = 'Server title',
     String? content,
     String? background,
@@ -120,6 +121,7 @@ void main() {
     return {
       'id': id,
       'title': title,
+      'noteType': noteType,
       'content': content,
       'version': version,
       'isPinned': isPinned,
@@ -172,6 +174,7 @@ void main() {
 
   Future<void> insertNote({
     required String id,
+    String noteType = 'note',
     String title = 'Local title',
     String? content,
     bool isSynced = false,
@@ -195,6 +198,7 @@ void main() {
           NotesCompanion.insert(
             id: id,
             title: title,
+            noteType: Value(noteType),
             content: Value(content),
             background: Value(background),
             isArchived: Value(isArchived),
@@ -249,6 +253,54 @@ void main() {
 
   Future<TagRow?> tag(String id) =>
       (db.select(db.tags)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
+
+  test('new checklist notes send their type with the create', () async {
+    await insertNote(id: 'tasks', noteType: 'checklist');
+    stub([
+      response(
+        results: [
+          {'type': 'note', 'id': 'tasks', 'status': 'applied', 'version': 1},
+        ],
+      ),
+    ]);
+    await service.run();
+    expect(changesOf(0).single['noteType'], 'checklist');
+    expect((await note('tasks'))!.noteType, 'checklist');
+  });
+
+  test('downloaded checklist notes keep their type locally', () async {
+    stub([
+      response(
+        entries: [noteEntry(serverNoteJson('web', noteType: 'checklist'))],
+      ),
+    ]);
+    await service.run();
+    expect((await note('web'))!.noteType, 'checklist');
+  });
+
+  test(
+    'a refreshed type lands without overwriting unsent offline edits',
+    () async {
+      await insertNote(id: 'dirty', title: 'Offline edit', version: 2);
+      stub([
+        response(
+          results: [
+            {'type': 'note', 'id': 'dirty', 'status': 'failed'},
+          ],
+          entries: [
+            noteEntry(
+              serverNoteJson('dirty', title: 'Web copy', noteType: 'checklist'),
+            ),
+          ],
+        ),
+      ]);
+      await service.run();
+      final row = (await note('dirty'))!;
+      expect(row.title, 'Offline edit');
+      expect(row.noteType, 'checklist');
+      expect(row.isSynced, isFalse);
+    },
+  );
 
   test(
     'pushes a locally edited note with the version it was based on',

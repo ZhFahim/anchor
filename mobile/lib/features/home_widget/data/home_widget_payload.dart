@@ -35,7 +35,12 @@ String buildHomeWidgetPayload(List<Note> notes, {required bool loggedIn}) {
     return {
       'id': note.id,
       'title': storedTitleOf(note.title),
-      'snippet': _truncate(snippetTextOf(note.content)),
+      'snippet': _truncate(
+        snippetTextOf(
+          note.content,
+          hideCompleted: note.noteType == NoteType.checklist,
+        ),
+      ),
       'pinned': note.isPinned,
       'fill': light.bg.toARGB32(),
       'edge': light.border.toARGB32(),

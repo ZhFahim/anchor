@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:anchor/core/theme/tokens/anchor_tokens.dart';
 import 'package:anchor/features/home_widget/data/home_widget_payload.dart';
+import 'package:anchor/features/notes/domain/checklist_task.dart';
 import 'package:anchor/features/notes/domain/note.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -43,6 +44,27 @@ Map<String, dynamic> _decode(String payload) =>
 
 void main() {
   group('buildHomeWidgetPayload', () {
+    test(
+      'checklist snippets hide completed tasks without changing regular notes',
+      () {
+        final content = writeChecklist([
+          const ChecklistTask(text: 'Milk'),
+          const ChecklistTask(text: 'Bread', done: true),
+        ]);
+        final payload = buildHomeWidgetPayload([
+          Note(
+            id: 'tasks',
+            title: '',
+            content: content,
+            noteType: NoteType.checklist,
+          ),
+          Note(id: 'regular', title: '', content: content),
+        ], loggedIn: true);
+        final notes = _decode(payload)['notes'] as List;
+        expect(notes[0]['snippet'], 'Milk');
+        expect(notes[1]['snippet'], 'Milk\nBread');
+      },
+    );
     test(
       'serializes notes with id, title, snippet, pinned flag and colors',
       () {

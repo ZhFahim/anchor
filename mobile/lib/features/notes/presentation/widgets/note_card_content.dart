@@ -75,6 +75,7 @@ class NoteCardContent extends StatelessWidget {
             ),
           CardBody(
             content: note.content,
+            hideCompleted: note.noteType == NoteType.checklist,
             appearance: appearance,
             layout: layout,
             firstLineEndInset: note.hasTitle ? 0 : checkInset,

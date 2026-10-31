@@ -31,6 +31,7 @@ class NoteEditorController extends ChangeNotifier {
     required this.onNoteDeleted,
     Note? note,
     String? noteId,
+    this.newNoteType = NoteType.note,
   }) : _notes = notes,
        _openedId = noteId {
     title.addListener(_titleChanged);
@@ -48,6 +49,8 @@ class NoteEditorController extends ChangeNotifier {
   }
 
   final NotesRepository _notes;
+  final NoteType newNoteType;
+  NoteType get noteType => _note?.noteType ?? newNoteType;
 
   final Future<List<NoteShare>> Function(String noteId) sharesOf;
 
@@ -318,6 +321,7 @@ class NoteEditorController extends ChangeNotifier {
     final note = Note(
       id: newId(),
       title: storedTitleOf(title.text),
+      noteType: noteType,
       content: editor.content ?? '',
       tagIds: [?newNoteTagId()],
       background: _background,

@@ -9,6 +9,36 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get noteTypeChoose => 'Choose note type';
+
+  @override
+  String get noteTypeChecklist => 'Checklist note';
+
+  @override
+  String get checklistAddTask => 'Add a task';
+
+  @override
+  String get checklistDeleteTask => 'Delete task';
+
+  @override
+  String get checklistAllCompleted => 'All tasks completed';
+
+  @override
+  String checklistCompleted(int count) {
+    return 'Completed ($count)';
+  }
+
+  @override
+  String checklistCompleteTask(String task) {
+    return 'Complete $task';
+  }
+
+  @override
+  String checklistRestoreTask(String task) {
+    return 'Restore $task';
+  }
+
+  @override
   String get appName => 'Anchor Notes';
 
   @override

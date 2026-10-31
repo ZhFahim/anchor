@@ -19,9 +19,11 @@ class CardBody extends StatelessWidget {
     required this.appearance,
     required this.layout,
     this.firstLineEndInset = 0,
+    this.hideCompleted = false,
   });
 
   final String? content;
+  final bool hideCompleted;
   final NoteAppearance appearance;
   final CardLayout layout;
 
@@ -30,7 +32,9 @@ class CardBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final blocks = parseNoteBlocks(content).where((b) => !b.isEmpty).toList();
+    final blocks = parseNoteBlocks(
+      content,
+    ).where((b) => !b.isEmpty && (!hideCompleted || !b.done)).toList();
     if (blocks.isEmpty) return const SizedBox.shrink();
     final lines = foldCheckedItems(blocks);
     final density = context.density;

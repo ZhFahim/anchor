@@ -177,6 +177,7 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
   }
 
   void _newNote() => context.go(AppRoutes.newNote);
+  void _newChecklist() => context.go('${AppRoutes.newNote}?type=checklist');
 
   void _openSettings() {
     _drawerKey.currentState?.close();
@@ -363,6 +364,7 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
             onQuery: (q) => ref.read(searchQueryProvider.notifier).set(q),
             onCancel: _endSearch,
             onNewNote: folder == NoteFolder.notes ? _newNote : null,
+            onNewChecklist: folder == NoteFolder.notes ? _newChecklist : null,
             newNoteKey: CardRegistry.newNoteButton,
           ),
         ),

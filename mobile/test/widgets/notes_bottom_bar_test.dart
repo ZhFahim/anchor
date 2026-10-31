@@ -5,7 +5,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 void main() {
-  Widget bar({required bool isCompact}) => MaterialApp(
+  Widget bar({
+    required bool isCompact,
+    VoidCallback? onNewNote,
+    VoidCallback? onNewChecklist,
+  }) => MaterialApp(
     theme: AppTheme.light(),
     home: Scaffold(
       body: Align(
@@ -20,12 +24,38 @@ void main() {
             onStartSearch: () {},
             onQuery: (_) {},
             onCancel: () {},
-            onNewNote: () {},
+            onNewNote: onNewNote ?? () {},
+            onNewChecklist: onNewChecklist,
           ),
         ),
       ),
     ),
   );
+
+  testWidgets('the dropdown creates a checklist without changing the default', (
+    tester,
+  ) async {
+    var notes = 0;
+    var checklists = 0;
+    await tester.pumpWidget(
+      bar(
+        isCompact: false,
+        onNewNote: () => notes++,
+        onNewChecklist: () => checklists++,
+      ),
+    );
+    await tester.tap(find.byTooltip('Choose note type'));
+    await tester.pumpAndSettle();
+    expect(notes, 0);
+    await tester.tap(find.text('Checklist note'));
+    await tester.pumpAndSettle();
+    expect(checklists, 1);
+    expect(notes, 0);
+    await tester.tap(find.byType(NewNoteIcon));
+    await tester.pumpAndSettle();
+    expect(notes, 1);
+    expect(checklists, 1);
+  });
 
   testWidgets('the search icon holds still while the pill grows and the '
       'words fade in', (tester) async {

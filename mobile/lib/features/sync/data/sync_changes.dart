@@ -71,6 +71,7 @@ class SyncNoteRevision {
 /// Leaving [baseVersion] out asks the server to create the note.
 class SyncNoteChange extends SyncChange {
   const SyncNoteChange({
+    this.noteType = NoteType.note,
     required super.id,
     required this.localRev,
     required this.baseVersion,
@@ -85,6 +86,7 @@ class SyncNoteChange extends SyncChange {
   });
 
   final int localRev;
+  final NoteType noteType;
   final int? baseVersion;
   final String title;
   final String? content;
@@ -117,6 +119,9 @@ class SyncNoteChange extends SyncChange {
     'type': type,
     'id': id,
     if (baseVersion != null) 'baseVersion': baseVersion,
+    // Normal notes keep working with servers from before note types.
+    if (baseVersion == null && noteType == NoteType.checklist)
+      'noteType': noteType.name,
     'title': title,
     'content': content,
     'isArchived': isArchived,

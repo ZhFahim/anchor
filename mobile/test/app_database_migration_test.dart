@@ -18,7 +18,7 @@ void main() {
   tearDown(() => dir.delete(recursive: true));
 
   Future<void> dropColumns(AppDatabase db, List<String> columns) async {
-    for (final column in columns) {
+    for (final column in {...columns, 'note_type'}) {
       await db.customStatement('ALTER TABLE notes DROP COLUMN $column');
     }
   }
@@ -31,6 +31,36 @@ void main() {
       await db.close();
     }
   }
+
+  test(
+    'version 11 keeps notes and refreshes their newly stored type',
+    () async {
+      await withDatabase((db) async {
+        await db
+            .into(db.notes)
+            .insert(
+              NotesCompanion.insert(
+                id: 'draft',
+                title: 'Offline draft',
+                localRev: const Value(7),
+              ),
+            );
+        await db
+            .into(db.syncState)
+            .insert(const SyncStateCompanion(cursor: Value('cursor-42')));
+        await dropColumns(db, []);
+        await db.customStatement('PRAGMA user_version = 11');
+      });
+      await withDatabase((db) async {
+        final note = await db.select(db.notes).getSingle();
+        expect(note.noteType, 'note');
+        expect(note.title, 'Offline draft');
+        expect(note.localRev, 7);
+        expect(note.isSynced, isFalse);
+        expect((await db.select(db.syncState).getSingle()).cursor, isNull);
+      });
+    },
+  );
 
   test(
     'a database from before note history gains the versions tables',

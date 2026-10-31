@@ -212,6 +212,7 @@ class NotesRepository {
             NotesCompanion.insert(
               id: note.id,
               title: note.title,
+              noteType: drift.Value(note.noteType.name),
               content: drift.Value(note.content),
               isPinned: drift.Value(note.isPinned),
               isArchived: drift.Value(note.isArchived),
@@ -513,6 +514,7 @@ class NotesRepository {
     return Note(
       id: row.id,
       title: row.title,
+      noteType: NoteType.fromString(row.noteType),
       content: row.content,
       isPinned: row.isPinned,
       isArchived: row.isArchived,

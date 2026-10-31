@@ -9,7 +9,9 @@ import 'package:anchor/core/widgets/app_snackbar.dart';
 import 'package:anchor/core/widgets/grouped_list.dart';
 import 'package:anchor/features/notes/data/repository/note_attachments_repository.dart';
 import 'package:anchor/features/notes/data/repository/notes_repository.dart';
+import 'package:anchor/features/notes/domain/checklist_task.dart';
 import 'package:anchor/features/notes/domain/note.dart';
+import 'package:anchor/features/notes/presentation/editor/checklist_note_editor.dart';
 import 'package:anchor/features/notes/presentation/editor/document_lines.dart';
 import 'package:anchor/features/notes/presentation/editor/editor_format.dart';
 import 'package:anchor/features/notes/presentation/editor/editor_tool_button.dart';
@@ -96,6 +98,7 @@ void main() {
     Note? note,
     bool isOnlyPage = false,
     bool opensFromList = false,
+    NoteType newNoteType = NoteType.note,
   }) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -127,7 +130,11 @@ void main() {
             routes: [
               GoRoute(
                 path: '/only',
-                builder: (_, _) => NoteEditScreen(note: note, noteId: note?.id),
+                builder: (_, _) => NoteEditScreen(
+                  note: note,
+                  noteId: note?.id,
+                  newNoteType: newNoteType,
+                ),
               ),
               GoRoute(
                 path: '/',
@@ -135,8 +142,11 @@ void main() {
                 routes: [
                   GoRoute(
                     path: 'note',
-                    builder: (_, _) =>
-                        NoteEditScreen(note: note, noteId: note?.id),
+                    builder: (_, _) => NoteEditScreen(
+                      note: note,
+                      noteId: note?.id,
+                      newNoteType: newNoteType,
+                    ),
                   ),
                 ],
               ),
@@ -151,6 +161,55 @@ void main() {
   final titleField = find.byWidgetPredicate(
     (w) => w is TextField && w.decoration?.hintText == 'Title',
   );
+
+  testWidgets('new checklist notes use a task editor and save their type', (
+    tester,
+  ) async {
+    await pumpScreen(tester, newNoteType: NoteType.checklist);
+    expect(find.byType(ChecklistNoteEditor), findsOneWidget);
+    expect(find.byType(RichTextEditor), findsNothing);
+    expect(find.byType(EditorToolbar), findsNothing);
+    await tester.enterText(titleField, 'Shopping');
+    final task = find
+        .descendant(
+          of: find.byType(ChecklistNoteEditor),
+          matching: find.byType(TextField),
+        )
+        .first;
+    await tester.enterText(task, 'Milk');
+    await tester.pump(const Duration(seconds: 3));
+    final saved =
+        verify(() => notesRepo.createNote(captureAny())).captured.single
+            as Note;
+    expect(saved.noteType, NoteType.checklist);
+    expect(readChecklist(saved.content).first.text, 'Milk');
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('downloaded checklist tasks hide on completion and auto-save', (
+    tester,
+  ) async {
+    await pumpScreen(
+      tester,
+      note: Note(
+        id: 'tasks',
+        title: 'Shopping',
+        noteType: NoteType.checklist,
+        content: writeChecklist([const ChecklistTask(text: 'Milk')]),
+      ),
+    );
+    await tester.tap(find.byType(Checkbox));
+    await tester.pump();
+    expect(find.text('Milk'), findsNothing);
+    expect(find.text('Completed (1)'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 3));
+    final saved =
+        verify(() => notesRepo.updateNote(captureAny())).captured.single
+            as Note;
+    expect(saved.noteType, NoteType.checklist);
+    expect(readChecklist(saved.content).first.done, isTrue);
+    await tester.pumpWidget(const SizedBox());
+  });
 
   QuillController editorController(WidgetTester tester) =>
       tester.state<RichTextEditorState>(find.byType(RichTextEditor)).controller;

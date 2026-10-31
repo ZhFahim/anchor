@@ -94,6 +94,54 @@ abstract class AppLocalizations {
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[Locale('en')];
 
+  /// Tooltip and screen reader label of the dropdown beside the New note button.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose note type'**
+  String get noteTypeChoose;
+
+  /// New note dropdown option that opens a dedicated checklist note.
+  ///
+  /// In en, this message translates to:
+  /// **'Checklist note'**
+  String get noteTypeChecklist;
+
+  /// Task input placeholder and add-task button in a checklist note.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a task'**
+  String get checklistAddTask;
+
+  /// Tooltip and spoken label of a checklist task's delete button.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete task'**
+  String get checklistDeleteTask;
+
+  /// Shown in a checklist note when no unfinished tasks remain.
+  ///
+  /// In en, this message translates to:
+  /// **'All tasks completed'**
+  String get checklistAllCompleted;
+
+  /// Collapsible completed-tasks section in a checklist note.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed ({count})'**
+  String checklistCompleted(int count);
+
+  /// Spoken label of an unfinished task's checkbox.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete {task}'**
+  String checklistCompleteTask(String task);
+
+  /// Spoken label of a completed task's checkbox, which restores it to the active list.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore {task}'**
+  String checklistRestoreTask(String task);
+
   /// The app's name in Android's recent apps, the same as its launcher name.
   ///
   /// In en, this message translates to:

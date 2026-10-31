@@ -30,6 +30,16 @@ class NoteImagePreview {
   int get hashCode => Object.hash(attachmentId, noteId, filename, localPath);
 }
 
+enum NoteType {
+  note,
+  checklist;
+
+  static NoteType fromString(String? value) => NoteType.values.firstWhere(
+    (type) => type.name == value,
+    orElse: () => NoteType.note,
+  );
+}
+
 enum NoteState {
   active,
   trashed,
@@ -107,6 +117,7 @@ abstract class Note with _$Note {
   const factory Note({
     required String id,
     required String title,
+    @Default(NoteType.note) NoteType noteType,
     String? content,
     @Default(false) bool isPinned,
     @Default(false) bool isArchived,

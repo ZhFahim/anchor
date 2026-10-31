@@ -20,7 +20,7 @@ Anchor focuses on speed, privacy, simplicity, and reliability across mobile and 
 ## Features
 
 - **Rich Text Editor** - Create and edit notes with powerful formatting (bold, italic, underline, headings, lists, checkboxes)
-- **Checklist Notes (Web)** - Create focused task lists; completed tasks hide from the active list and can be restored from the Completed section
+- **Checklist Notes** - Create focused task lists on web and mobile; completed tasks hide from the active list and can be restored from the Completed section
 - **Offline First** - All edits work offline with local database
 - **Note Sharing** - Share notes with other users (viewer or editor)
 - **Note History** - Read earlier versions of a note and put one back

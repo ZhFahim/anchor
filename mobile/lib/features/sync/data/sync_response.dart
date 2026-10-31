@@ -102,6 +102,7 @@ class SyncServerReminder {
 
 class SyncServerNote {
   const SyncServerNote({
+    this.noteType = 'note',
     required this.id,
     required this.title,
     required this.content,
@@ -122,6 +123,7 @@ class SyncServerNote {
   factory SyncServerNote.fromJson(Map<String, dynamic> json) {
     final sharedBy = json['sharedBy'] as Map<String, dynamic>?;
     return SyncServerNote(
+      noteType: NoteType.fromString(json['noteType'] as String?).name,
       id: json['id'] as String,
       title: json['title'] as String? ?? '',
       content: json['content'] as String?,
@@ -145,6 +147,7 @@ class SyncServerNote {
 
   final String id;
   final String title;
+  final String noteType;
   final String? content;
   final int version;
   final bool isPinned;

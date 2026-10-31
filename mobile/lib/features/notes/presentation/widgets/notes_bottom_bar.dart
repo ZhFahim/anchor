@@ -23,6 +23,7 @@ class NotesBottomBar extends StatefulWidget {
     required this.onQuery,
     required this.onCancel,
     this.onNewNote,
+    this.onNewChecklist,
     this.newNoteKey,
   });
 
@@ -36,6 +37,7 @@ class NotesBottomBar extends StatefulWidget {
 
   /// Null hides New note.
   final VoidCallback? onNewNote;
+  final VoidCallback? onNewChecklist;
 
   final GlobalKey? newNoteKey;
 
@@ -203,20 +205,56 @@ class _NotesBottomBarState extends State<NotesBottomBar> {
             ),
           )
         else if (widget.onNewNote != null)
-          Pressable(
-            style: PressStyle.bottomBar,
-            onTap: widget.onNewNote,
-            semanticLabel: context.l10n.noteNew,
-            child: Container(
-              key: widget.newNoteKey,
-              width: control,
-              height: control,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: colors.appInverse,
-                boxShadow: colors.shadowFab,
-              ),
-              child: const NewNoteIcon(),
+          Container(
+            key: widget.newNoteKey,
+            height: control,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(control / 2),
+              color: colors.appInverse,
+              boxShadow: colors.shadowFab,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Pressable(
+                  style: PressStyle.bottomBar,
+                  onTap: widget.onNewNote,
+                  semanticLabel: context.l10n.noteNew,
+                  child: SizedBox(
+                    width: control,
+                    height: control,
+                    child: const NewNoteIcon(),
+                  ),
+                ),
+                if (widget.onNewChecklist != null)
+                  PopupMenuButton<String>(
+                    tooltip: context.l10n.noteTypeChoose,
+                    icon: Icon(
+                      LucideIcons.chevronDown,
+                      size: AnchorTokens.sizeIconSmall,
+                      color: colors.appOnInverse,
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: AnchorTokens.space48 * 4,
+                    ),
+                    onSelected: (_) => widget.onNewChecklist?.call(),
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: 'checklist',
+                        child: Row(
+                          children: [
+                            const Icon(
+                              LucideIcons.listChecks,
+                              size: AnchorTokens.sizeIconSmall,
+                            ),
+                            const SizedBox(width: AnchorTokens.space12),
+                            Text(context.l10n.noteTypeChecklist),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+              ],
             ),
           ),
       ],
@@ -242,7 +280,11 @@ class _NotesBottomBarState extends State<NotesBottomBar> {
     final width = MediaQuery.sizeOf(context).width - 28;
     if (widget.searching) return width - 10 - _cancelWidth(context);
     if (widget.onNewNote == null) return width;
-    return width - 10 - (context.density.control + 6);
+    return width -
+        10 -
+        (context.density.control +
+            6 +
+            (widget.onNewChecklist != null ? 48 : 0));
   }
 }
 

@@ -1,5 +1,52 @@
 {
   "@@locale": "en",
+  "noteTypeChoose": "Choose note type",
+  "@noteTypeChoose": {
+    "description": "Tooltip and screen reader label of the dropdown beside the New note button."
+  },
+  "noteTypeChecklist": "Checklist note",
+  "@noteTypeChecklist": {
+    "description": "New note dropdown option that opens a dedicated checklist note."
+  },
+  "checklistAddTask": "Add a task",
+  "@checklistAddTask": {
+    "description": "Task input placeholder and add-task button in a checklist note."
+  },
+  "checklistDeleteTask": "Delete task",
+  "@checklistDeleteTask": {
+    "description": "Tooltip and spoken label of a checklist task's delete button."
+  },
+  "checklistAllCompleted": "All tasks completed",
+  "@checklistAllCompleted": {
+    "description": "Shown in a checklist note when no unfinished tasks remain."
+  },
+  "checklistCompleted": "Completed ({count})",
+  "@checklistCompleted": {
+    "description": "Collapsible completed-tasks section in a checklist note.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "checklistCompleteTask": "Complete {task}",
+  "@checklistCompleteTask": {
+    "description": "Spoken label of an unfinished task's checkbox.",
+    "placeholders": {
+      "task": {
+        "type": "String"
+      }
+    }
+  },
+  "checklistRestoreTask": "Restore {task}",
+  "@checklistRestoreTask": {
+    "description": "Spoken label of a completed task's checkbox, which restores it to the active list.",
+    "placeholders": {
+      "task": {
+        "type": "String"
+      }
+    }
+  },
   "appName": "Anchor Notes",
   "@appName": {
     "description": "The app's name in Android's recent apps, the same as its launcher name."

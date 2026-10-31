@@ -38,6 +38,20 @@ void main() {
 
   tearDown(() => db.close());
 
+  test('checklist types survive creation, edits and local reloads', () async {
+    const note = Note(
+      id: 'checklist',
+      title: 'Shopping',
+      noteType: NoteType.checklist,
+      isSynced: false,
+    );
+    await repo.createNote(note);
+    expect((await repo.getNote(note.id))!.noteType, NoteType.checklist);
+    await repo.updateNote(note.copyWith(title: 'Groceries'));
+    expect((await repo.watchNote(note.id).first)!.noteType, NoteType.checklist);
+    expect((await repo.watchNotes().first).single.noteType, NoteType.checklist);
+  });
+
   Future<void> insertNote({
     required String id,
     String title = 'Note',
