@@ -66,7 +66,7 @@ export function NewNoteMenu({
           }}
         >
           <ListChecks aria-hidden />
-          Checklist note
+          New checklist
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
