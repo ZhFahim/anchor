@@ -47,7 +47,7 @@ void main() {
     await tester.tap(find.byTooltip('Choose note type'));
     await tester.pumpAndSettle();
     expect(notes, 0);
-    await tester.tap(find.text('Checklist note'));
+    await tester.tap(find.text('New checklist'));
     await tester.pumpAndSettle();
     expect(checklists, 1);
     expect(notes, 0);

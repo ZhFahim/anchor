@@ -41,6 +41,10 @@
     "description": "Tooltip and screen reader label of the dropdown beside the New note button."
   },
   "noteTypeChecklist": "Checklist note",
+  "checklistCreate": "New checklist",
+  "@checklistCreate": {
+    "description": "New note dropdown action that creates a dedicated checklist note."
+  },
   "@noteTypeChecklist": {
     "description": "New note dropdown option that opens a dedicated checklist note."
   },

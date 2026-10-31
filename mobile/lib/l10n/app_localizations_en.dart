@@ -34,6 +34,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noteTypeChecklist => 'Checklist note';
 
   @override
+  String get checklistCreate => 'New checklist';
+
+  @override
   String get checklistAddTask => 'Add a task';
 
   @override

@@ -248,7 +248,7 @@ class _NotesBottomBarState extends State<NotesBottomBar> {
                               size: AnchorTokens.sizeIconSmall,
                             ),
                             const SizedBox(width: AnchorTokens.space12),
-                            Text(context.l10n.noteTypeChecklist),
+                            Text(context.l10n.checklistCreate),
                           ],
                         ),
                       ),

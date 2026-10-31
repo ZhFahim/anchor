@@ -136,6 +136,12 @@ abstract class AppLocalizations {
   /// **'Checklist note'**
   String get noteTypeChecklist;
 
+  /// New note dropdown action that creates a dedicated checklist note.
+  ///
+  /// In en, this message translates to:
+  /// **'New checklist'**
+  String get checklistCreate;
+
   /// Task input placeholder and add-task button in a checklist note.
   ///
   /// In en, this message translates to:
