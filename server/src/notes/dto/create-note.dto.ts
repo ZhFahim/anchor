@@ -1,5 +1,6 @@
 import {
   IsBoolean,
+  IsIn,
   IsOptional,
   IsString,
   IsArray,
@@ -10,6 +11,10 @@ import { Type } from 'class-transformer';
 import { NoteReminderDto } from './note-reminder.dto';
 
 export class CreateNoteDto {
+  @IsIn(['note', 'checklist'])
+  @IsOptional()
+  noteType?: 'note' | 'checklist';
+
   @IsUUID()
   @IsOptional()
   id?: string;

@@ -73,6 +73,11 @@ export class SyncNoteRevisionDto {
 export class SyncNoteChangeDto extends SyncChangeBaseDto {
   declare type: 'note';
 
+  // Immutable once created; older clients may omit it.
+  @IsIn(['note', 'checklist'])
+  @IsOptional()
+  noteType?: 'note' | 'checklist';
+
   // Absent on an existing note means the client never reconciled a server
   // version, so it loses: conflict, nothing clobbered.
   @IsInt()

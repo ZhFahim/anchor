@@ -23,6 +23,7 @@ type ManifestAttachment = {
 };
 
 type ManifestNote = {
+  noteType?: "note" | "checklist";
   id: string;
   origin: "owned" | "shared";
   title: string;
@@ -103,6 +104,7 @@ export const anchorAdapter: ImportAdapter = {
         // Shared-with-me notes become owned copies with a new identity.
         id: note.origin === "shared" ? undefined : note.id,
         title: note.title,
+        noteType: note.noteType === "checklist" ? "checklist" : "note",
         contentDelta: parseStoredContent(note.content),
         isPinned: note.isPinned,
         isArchived: note.isArchived,

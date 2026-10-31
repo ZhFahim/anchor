@@ -64,6 +64,8 @@ function cardBlocks(note: Note) {
   let blocks = blocksByNote.get(note);
   if (!blocks) {
     blocks = deltaToBlocks(note.content);
+    if (note.noteType === "checklist")
+      blocks = blocks.filter((block) => !block.done);
     blocksByNote.set(note, blocks);
   }
   return blocks;

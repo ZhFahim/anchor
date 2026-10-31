@@ -20,6 +20,7 @@ interface ExportManifestAttachment {
 }
 
 export interface ExportManifestNote {
+  noteType?: string;
   id: string;
   origin: 'owned' | 'shared';
   title: string;
@@ -50,6 +51,7 @@ export interface ExportManifestV1 {
 
 /** Minimal structural shape of a note row queried for export. */
 export interface ExportNoteRow {
+  noteType?: string;
   id: string;
   title: string;
   content: string | null;
@@ -91,6 +93,7 @@ export function buildManifestNote(
   userId: string,
 ): ExportManifestNote {
   const entry: ExportManifestNote = {
+    noteType: note.noteType ?? 'note',
     id: note.id,
     origin,
     title: note.title,

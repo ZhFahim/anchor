@@ -57,8 +57,13 @@ function readStoredNote(noteId: string): Note | null {
   }
 }
 
-const createFields = (id: string, draft: NoteDraft): CreateNoteDto => ({
+const createFields = (
+  id: string,
+  draft: NoteDraft,
+  noteType: "note" | "checklist",
+): CreateNoteDto => ({
   id,
+  noteType,
   title: draft.title,
   content: draft.content || undefined,
   isPinned: draft.isPinned,
@@ -87,6 +92,9 @@ export function useNoteEditor({
   const [createdId, setCreatedId] = useState<string | null>(null);
   const noteId = createdId ?? routeId;
   const isNew = noteId === "new";
+  const [newNoteType] = useState<"note" | "checklist">(() =>
+    searchParams.get("type") === "checklist" ? "checklist" : "note",
+  );
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -435,7 +443,7 @@ export function useNoteEditor({
     }
 
     const createPromise = createAsync(
-      createFields(newNoteId, latestDraft.current),
+      createFields(newNoteId, latestDraft.current, newNoteType),
     );
 
     pendingCreateNoteRef.current = createPromise.finally(() => {
@@ -443,7 +451,7 @@ export function useNoteEditor({
     });
 
     return pendingCreateNoteRef.current;
-  }, [createAsync, isNew, newNoteId, note]);
+  }, [createAsync, isNew, newNoteId, newNoteType, note]);
 
   const wasViewer = useRef(isViewer);
   useEffect(() => {
@@ -549,7 +557,7 @@ export function useNoteEditor({
   const flush = useCallback(() => {
     if (isNew) {
       if (canSaveDraft && hasUnsavedChanges && !createdNote.current)
-        createNote(createFields(newNoteId, draft)).catch(() => {});
+        createNote(createFields(newNoteId, draft, newNoteType)).catch(() => {});
       return;
     }
     if (!canSaveDraft || !hasUnsavedChanges || !lastSaved) return;
@@ -566,6 +574,7 @@ export function useNoteEditor({
     isViewer,
     lastSaved,
     newNoteId,
+    newNoteType,
     noteId,
   ]);
 
@@ -694,6 +703,7 @@ export function useNoteEditor({
   };
 
   return {
+    noteType: note?.noteType ?? newNoteType,
     noteId,
     isNew,
     note,

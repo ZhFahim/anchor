@@ -303,6 +303,7 @@ export class SyncApplyService {
       const created = await tx.note.create({
         data: {
           id: change.id,
+          noteType: change.noteType,
           title: change.title,
           content: change.content,
           background: change.background,

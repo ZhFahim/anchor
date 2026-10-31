@@ -30,6 +30,7 @@ export type CanonicalAttachment = {
 };
 
 export type CanonicalNote = {
+  noteType?: "note" | "checklist";
   /** Adapter-generated stable key, echoed back by the server per result */
   ref: string;
   /** Only set for anchor-native owned notes (preserved across restore) */
@@ -72,6 +73,7 @@ export type ParsedImport = {
 };
 
 export type ImportNoteItem = {
+  noteType?: "note" | "checklist";
   ref: string;
   id?: string;
   title: string;

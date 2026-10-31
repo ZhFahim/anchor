@@ -15,6 +15,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import * as React from "react";
 import { AppPage, Fab, PageTitle } from "@/components/layout/app-page";
+import { NewNoteMenu } from "@/components/layout/new-note-menu";
 import { newNoteHref } from "@/components/layout/sidebar";
 import { Button, IconButton } from "@/components/ui/button";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
@@ -161,16 +162,22 @@ function NotesView({ tagId }: { tagId: string | null }) {
   const noResults = notes.length > 0 && visible.length === 0;
   const count = isLoading || loadFailed ? undefined : visible.length;
   const newNoteButton = (
-    <Button asChild>
-      <Link
-        href={newNote}
-        data-new-note="empty"
-        onClick={(e) => rememberNewNoteButton(e.currentTarget)}
-      >
-        <Plus aria-hidden />
-        New note
-      </Link>
-    </Button>
+    <div className="inline-flex rounded-button">
+      <Button asChild className="rounded-r-none">
+        <Link
+          href={newNote}
+          data-new-note="empty"
+          onClick={(e) => rememberNewNoteButton(e.currentTarget)}
+        >
+          <Plus aria-hidden />
+          New note
+        </Link>
+      </Button>
+      <NewNoteMenu
+        checklistHref={newNoteHref("/notes", tagId, "checklist")}
+        className="rounded-r-button bg-primary bg-[linear-gradient(180deg,rgb(255_255_255/.1),transparent)] text-note shadow-[inset_0_1px_0_rgb(255_255_255/.14),var(--sh-xs)] hover:bg-none hover:bg-[color-mix(in_srgb,var(--primary)_86%,var(--note))]"
+      />
+    </div>
   );
 
   const title = tag ? (
@@ -283,15 +290,25 @@ function NotesView({ tagId }: { tagId: string | null }) {
       </AppPage>
 
       {!list.picking && (
-        <Fab label="New note" asChild>
-          <Link
-            href={newNote}
-            data-new-note="fab"
-            onClick={(e) => rememberNewNoteButton(e.currentTarget)}
+        <div className="absolute right-5 bottom-6 z-(--z-float) hidden h-14 rounded-fab bg-foreground shadow-fab max-md:flex">
+          <Fab
+            label="New note"
+            asChild
+            className="static rounded-r-none shadow-none"
           >
-            <Plus aria-hidden />
-          </Link>
-        </Fab>
+            <Link
+              href={newNote}
+              data-new-note="fab"
+              onClick={(e) => rememberNewNoteButton(e.currentTarget)}
+            >
+              <Plus aria-hidden />
+            </Link>
+          </Fab>
+          <NewNoteMenu
+            checklistHref={newNoteHref("/notes", tagId, "checklist")}
+            className="rounded-r-fab"
+          />
+        </div>
       )}
 
       <SelectionBar

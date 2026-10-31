@@ -4,6 +4,7 @@ import {
   IsArray,
   IsBoolean,
   IsDateString,
+  IsIn,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -23,6 +24,10 @@ import {
 import { NoteReminderDto } from '../../notes/dto/note-reminder.dto';
 
 export class ImportNoteItemDto {
+  @IsIn(['note', 'checklist'])
+  @IsOptional()
+  noteType?: 'note' | 'checklist';
+
   @IsString()
   @IsNotEmpty()
   @MaxLength(256)

@@ -174,6 +174,7 @@ export class ImportService {
           data: {
             ...(noteId ? { id: noteId } : {}),
             title: item.title,
+            noteType: item.noteType,
             content: prepared.content,
             background: prepared.background,
             state: isTrashed ? NoteState.trashed : NoteState.active,

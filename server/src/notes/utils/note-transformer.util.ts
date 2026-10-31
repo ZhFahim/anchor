@@ -21,6 +21,7 @@ interface SharedByUser {
 }
 
 export interface TransformedNote {
+  noteType?: string;
   id: string;
   title: string;
   content: string | null;
@@ -45,6 +46,7 @@ export interface TransformedNote {
 
 // Input type for notes from Prisma with includes
 interface NoteWithIncludes {
+  noteType?: string;
   id: string;
   title: string;
   content: string | null;

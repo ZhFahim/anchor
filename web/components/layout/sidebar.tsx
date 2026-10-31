@@ -57,6 +57,7 @@ import { isMac } from "@/lib/platform";
 import { switchTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 import { Brand } from "./brand";
+import { NewNoteMenu } from "./new-note-menu";
 import { useSidebarPeek } from "./use-sidebar-peek";
 
 interface SidebarProps {
@@ -72,10 +73,15 @@ const PAGES = [
   { href: "/trash", label: "Trash", icon: Trash2 },
 ] as const;
 
-export function newNoteHref(pathname: string, tagId?: string | null) {
-  return pathname === "/notes" && tagId
-    ? `/notes/new?tagId=${encodeURIComponent(tagId)}`
-    : "/notes/new";
+export function newNoteHref(
+  pathname: string,
+  tagId?: string | null,
+  noteType?: "checklist",
+) {
+  const params = new URLSearchParams();
+  if (pathname === "/notes" && tagId) params.set("tagId", tagId);
+  if (noteType) params.set("type", noteType);
+  return `/notes/new${params.size ? `?${params}` : ""}`;
 }
 
 // 11.5px puts each icon at the center of the folded rail.
@@ -315,31 +321,47 @@ export function Sidebar({
         />
       </div>
 
-      <Tip label="New note (N)" side="right" isDisabled={!isNarrow} isFocusOnly>
-        <Link
-          href={newNoteHref(pathname, tagId)}
-          onClick={(e) => {
-            rememberNewNoteButton(e.currentTarget);
+      <div className="mb-3 flex rounded-md bg-foreground shadow-control">
+        <Tip
+          label="New note (N)"
+          side="right"
+          isDisabled={!isNarrow}
+          isFocusOnly
+        >
+          <Link
+            href={newNoteHref(pathname, tagId)}
+            onClick={(e) => {
+              rememberNewNoteButton(e.currentTarget);
+              stopPeeking();
+              onNavigate?.();
+            }}
+            aria-keyshortcuts="N"
+            data-slot="new-note"
+            data-new-note="sidebar"
+            className="flex h-9.5 min-w-0 flex-1 items-center gap-2 overflow-hidden whitespace-nowrap rounded-l-md bg-foreground pr-2.5 pl-[11.5px] font-semibold text-card text-ui no-underline transition-[background-color,transform] duration-(--duration-hover) hover:bg-[color-mix(in_srgb,var(--foreground)_88%,var(--card))] active:scale-[.98] group-data-narrow/sb:pr-0 group-data-narrow/sb:pl-1.5 [&>svg]:size-4.25 [&>svg]:shrink-0"
+          >
+            <Plus aria-hidden />
+            <span className={labelClass}>New note</span>
+            {!drawer && (
+              <kbd
+                aria-hidden
+                className={cn("ml-auto bg-card/16 text-inherit", hideClass)}
+              >
+                N
+              </kbd>
+            )}
+          </Link>
+        </Tip>
+        <NewNoteMenu
+          checklistHref={newNoteHref(pathname, tagId, "checklist")}
+          className="rounded-r-md group-data-narrow/sb:w-4 group-data-narrow/sb:[&>svg]:size-3"
+          onNavigate={() => {
             stopPeeking();
             onNavigate?.();
           }}
-          aria-keyshortcuts="N"
-          data-slot="new-note"
-          data-new-note="sidebar"
-          className="mb-3 flex h-9.5 items-center gap-2 overflow-hidden whitespace-nowrap rounded-md bg-foreground pr-2.5 pl-[11.5px] font-semibold text-card text-ui no-underline shadow-control transition-[background-color,transform] duration-(--duration-hover) hover:bg-[color-mix(in_srgb,var(--foreground)_88%,var(--card))] active:scale-[.98] [&>svg]:size-4.25 [&>svg]:shrink-0"
-        >
-          <Plus aria-hidden />
-          <span className={labelClass}>New note</span>
-          {!drawer && (
-            <kbd
-              aria-hidden
-              className={cn("ml-auto bg-card/16 text-inherit", hideClass)}
-            >
-              N
-            </kbd>
-          )}
-        </Link>
-      </Tip>
+          onClose={onMenuClose}
+        />
+      </div>
 
       <nav aria-label="Pages" className="grid gap-px">
         {PAGES.map(({ href, label: name, icon: Icon }) => (

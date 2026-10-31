@@ -92,6 +92,7 @@ model Settings {
 
 model Note {
   id          String      @id @default(uuid())
+  noteType    String      @default("note")
   title       String
   content     String?
   background  String?

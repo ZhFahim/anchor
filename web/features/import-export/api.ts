@@ -49,6 +49,7 @@ export function toImportNoteItem(
     ref: note.ref,
     id: note.id,
     title: note.title,
+    noteType: note.noteType,
     content: stringifyDelta(note.contentDelta),
     isPinned: note.isPinned,
     isArchived: note.isArchived,

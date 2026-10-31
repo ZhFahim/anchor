@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { HTTPError } from "ky";
-import { useParams, usePathname } from "next/navigation";
+import { useParams, usePathname, useSearchParams } from "next/navigation";
 import { useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
@@ -34,15 +34,18 @@ import { cn } from "@/lib/utils";
 export default function NoteEditorPage() {
   const params = useParams();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const location =
+    pathname === "/notes/new" ? `${pathname}?${searchParams}` : pathname;
   // After a create in place, params.id stays "new"; the address has the id.
   const routeId = pathname.startsWith("/notes/")
     ? decodeURIComponent(pathname.slice("/notes/".length))
     : (params.id as string);
   const [newVisit, setNewVisit] = useState(0);
   const [createdHere, setCreatedHere] = useState<string | null>(null);
-  const [seenPath, setSeenPath] = useState(pathname);
-  if (pathname !== seenPath) {
-    setSeenPath(pathname);
+  const [seenPath, setSeenPath] = useState(location);
+  if (location !== seenPath) {
+    setSeenPath(location);
     if (pathname === "/notes/new") setNewVisit((visit) => visit + 1);
     if (createdHere && pathname !== `/notes/${createdHere}`)
       setCreatedHere(null);
@@ -279,6 +282,7 @@ function NoteEditor({
             title={editor.title}
             content={editor.content}
             updatedAt={note?.updatedAt}
+            noteType={editor.noteType}
             sharedBy={note?.sharedBy ?? null}
             sharedWith={shares.map((sh) => sh.sharedWithUser)}
             tagIds={editor.selectedTagIds}

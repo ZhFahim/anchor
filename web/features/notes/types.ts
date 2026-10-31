@@ -43,6 +43,7 @@ export interface NoteReminder {
 }
 
 export interface Note {
+  noteType?: "note" | "checklist";
   id: string;
   title: string;
   content?: string | null;
@@ -106,6 +107,7 @@ export interface UserSearchResult {
 }
 
 export interface CreateNoteDto {
+  noteType?: "note" | "checklist";
   id?: string;
   title: string;
   content?: string;

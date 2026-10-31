@@ -40,6 +40,16 @@ describe('attachmentArchivePath', () => {
 });
 
 describe('buildManifestNote', () => {
+  it('preserves checklist note types in native backups', () => {
+    expect(
+      buildManifestNote(makeNote({ noteType: 'checklist' }), 'owned', USER_ID)
+        .noteType,
+    ).toBe('checklist');
+    expect(buildManifestNote(makeNote(), 'owned', USER_ID).noteType).toBe(
+      'note',
+    );
+  });
+
   it('maps owned note fields and preserves content verbatim', () => {
     const note = makeNote({
       background: 'color_teal',

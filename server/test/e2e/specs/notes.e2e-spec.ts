@@ -22,6 +22,33 @@ describe('notes', () => {
     user = await ctx.registerUser();
   });
 
+  it('persists checklist types across REST edits and sync reads', async () => {
+    const created = await user.http
+      .post('/api/notes')
+      .send({
+        title: 'Shopping',
+        noteType: 'checklist',
+        content: JSON.stringify({
+          ops: [
+            { insert: 'Milk' },
+            { insert: '\n', attributes: { list: 'unchecked' } },
+          ],
+        }),
+      })
+      .expect(201);
+    const body = created.body as { id: string; noteType: string };
+    const id = body.id;
+    expect(body.noteType).toBe('checklist');
+    await user.notes.update(id, { title: 'Groceries' });
+    const read = await user.http.get(`/api/notes/${id}`).expect(200);
+    expect((read.body as { noteType: string }).noteType).toBe('checklist');
+    const { entries } = await user.sync.drain();
+    expect(entryFor(entries, 'note', id).note).toMatchObject({
+      noteType: 'checklist',
+      title: 'Groceries',
+    });
+  });
+
   it('trash and restore round-trip through listings', async () => {
     const note = await user.notes.create({ title: 'trash me' });
     await user.notes.trash(note.id);

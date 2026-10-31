@@ -30,6 +30,7 @@ import { isReminderPast, reminderLabel } from "../../reminder";
 import type { NoteReminder, ReminderRecurrence } from "../../types";
 import { AttachmentStrip, type AttachmentStripHandle } from "../attachments";
 import { RichTextEditor, type RichTextEditorHandle } from "../editor";
+import { ChecklistEditor } from "../editor/checklist-editor";
 import { formatCardDate } from "../note-card";
 import { useRingOnce } from "../reminder-chip";
 import { ReminderPopoverContent } from "../reminder-picker";
@@ -42,6 +43,7 @@ export interface Person {
 }
 
 interface NoteEditorContentProps {
+  noteType?: "note" | "checklist";
   noteId?: string;
   isNew: boolean;
   readOnly: boolean;
@@ -262,19 +264,28 @@ export function NoteEditorContent(props: NoteEditorContentProps) {
             props.onReadOnlyAttempt?.();
         }}
       >
-        <RichTextEditor
-          ref={props.contentEditorRef}
-          value={props.content}
-          onChange={props.onContentChange}
-          placeholder={props.isNew ? "Start writing" : "Write something"}
-          readOnly={props.readOnly}
-          onAddAttachment={
-            props.canUpload ? () => strip.current?.pick() : undefined
-          }
-          below={starters}
-        />
+        {props.noteType === "checklist" ? (
+          <ChecklistEditor
+            ref={props.contentEditorRef}
+            value={props.content}
+            onChange={props.onContentChange}
+            readOnly={props.readOnly}
+          />
+        ) : (
+          <RichTextEditor
+            ref={props.contentEditorRef}
+            value={props.content}
+            onChange={props.onContentChange}
+            placeholder={props.isNew ? "Start writing" : "Write something"}
+            readOnly={props.readOnly}
+            onAddAttachment={
+              props.canUpload ? () => strip.current?.pick() : undefined
+            }
+            below={starters}
+          />
+        )}
       </div>
-      <NoteOutline root={root} />
+      {props.noteType !== "checklist" && <NoteOutline root={root} />}
       {dropping &&
         createPortal(
           <div className="drop-ov" aria-hidden>

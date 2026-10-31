@@ -3,7 +3,7 @@ import { IsBoolean, IsInt, IsOptional, Min } from 'class-validator';
 import { CreateNoteDto } from './create-note.dto';
 
 export class UpdateNoteDto extends PartialType(
-  OmitType(CreateNoteDto, ['id'] as const),
+  OmitType(CreateNoteDto, ['id', 'noteType'] as const),
 ) {
   // Version the client based its edit on. Stale → 409 with the full
   // serverNote; absent → unconditional write.
