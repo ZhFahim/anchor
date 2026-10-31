@@ -5,8 +5,32 @@ set -eu
 # Anchor Docker Entrypoint
 # =============================================================================
 # Initializes environment, starts embedded Postgres (if enabled), runs
-# database migrations, then hands off to supervisord for process management.
+# database migrations, then runs supervisord for process management. On stop,
+# shuts down supervisord first and Postgres last.
 # =============================================================================
+
+# -----------------------------------------------------------------------------
+# Shutdown
+# -----------------------------------------------------------------------------
+POSTGRES_PID=""
+SUPERVISOR_PID=""
+
+stop_services() {
+  trap '' TERM INT
+  echo "[anchor] Stopping services..."
+  if [ -n "$SUPERVISOR_PID" ]; then
+    kill -TERM "$SUPERVISOR_PID" 2>/dev/null || true
+    wait "$SUPERVISOR_PID" || true
+  fi
+  if [ -n "$POSTGRES_PID" ]; then
+    # SIGINT is Postgres' fast shutdown
+    kill -INT "$POSTGRES_PID" 2>/dev/null || true
+    wait "$POSTGRES_PID" || true
+  fi
+}
+
+trap stop_services EXIT
+trap 'exit 0' TERM INT
 
 # -----------------------------------------------------------------------------
 # Environment defaults
@@ -75,6 +99,7 @@ if [ "$USE_EMBEDDED_POSTGRES" = "1" ]; then
   /usr/local/bin/docker-entrypoint.sh postgres \
     -c listen_addresses=127.0.0.1 \
     -p "${PG_PORT}" &
+  POSTGRES_PID=$!
 
   echo "[anchor] Waiting for Postgres..."
   for i in $(seq 1 60); do
@@ -100,4 +125,6 @@ cd /app/server
 # Start supervisord (manages API + Web processes)
 # -----------------------------------------------------------------------------
 echo "[anchor] Starting services..."
-exec /usr/bin/supervisord -c /etc/supervisord.conf
+/usr/bin/supervisord -c /etc/supervisord.conf &
+SUPERVISOR_PID=$!
+wait "$SUPERVISOR_PID"
