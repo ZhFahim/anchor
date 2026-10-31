@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons_600.dart';
 
 import '../motion/springs.dart';
 import '../theme/context_extensions.dart';
@@ -48,7 +48,7 @@ class CheckCircle extends StatelessWidget {
           opacity: isOn ? 1 : 0,
           duration: context.motion(AnchorTokens.motionDurationHover),
           child: Icon(
-            value == null ? LucideIcons.minus600 : LucideIcons.check600,
+            value == null ? LucideIcons600.minus : LucideIcons600.check,
             size: AnchorTokens.sizeIconSmall,
             color: background ?? colors.checkMark,
           ),

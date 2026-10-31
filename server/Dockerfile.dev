@@ -1,7 +1,8 @@
-FROM node:24-alpine
+FROM node:26-alpine
 
 # Install pnpm and curl
-RUN corepack enable && corepack prepare pnpm@latest --activate && \
+COPY --from=ghcr.io/pnpm/pnpm:12.16.1-alpine /opt/pnpm /opt/pnpm
+RUN for bin in pnpm pn pnpx pnx; do ln -s "/opt/pnpm/$bin" "/usr/local/bin/$bin"; done && \
   apk add --no-cache curl
 
 WORKDIR /app

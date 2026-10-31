@@ -58,6 +58,10 @@ export function noteSaveQueue(noteId: string) {
   return entry;
 }
 
+export function savesSettled(noteId: string): Promise<void> {
+  return saveQueues.get(noteId)?.queue.settled() ?? Promise.resolve();
+}
+
 export function releaseSaveQueue(noteId: string) {
   const entry = saveQueues.get(noteId);
   if (!entry) return;

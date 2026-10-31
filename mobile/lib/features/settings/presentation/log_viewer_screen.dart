@@ -141,8 +141,6 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
         dialogTitle: title,
         fileName: name,
         bytes: Uint8List.fromList(utf8.encode(dump)),
-        type: FileType.custom,
-        allowedExtensions: const ['log'],
       );
     } on PlatformException catch (error) {
       if (error.code != 'explorer_not_found') rethrow;

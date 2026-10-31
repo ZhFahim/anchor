@@ -10,7 +10,12 @@ import { SkeletonRows } from "@/components/ui/skeleton";
 import { useDelayedFlag } from "@/lib/hooks/use-delayed-flag";
 import { cn } from "@/lib/utils";
 import type { Tag } from "../types";
-import { nextTagColor, tagColorStyle } from "../utils";
+import {
+  compareTagNames,
+  nextTagColor,
+  sortTagsByName,
+  tagColorStyle,
+} from "../utils";
 
 export type TagCheckState = boolean | "mixed";
 
@@ -45,10 +50,7 @@ export function TagPicker({
   const listId = React.useId();
   const term = query.trim();
   const lowerTerm = term.toLowerCase();
-  const sorted = React.useMemo(
-    () => [...tags].sort((a, b) => a.name.localeCompare(b.name)),
-    [tags],
-  );
+  const sorted = React.useMemo(() => sortTagsByName(tags), [tags]);
   const matches = sorted.filter((t) =>
     t.name.toLowerCase().includes(lowerTerm),
   );
@@ -67,13 +69,12 @@ export function TagPicker({
     const created = await onCreate(term);
     setCreating(false);
     setQuery("");
-    if (created)
-      setActive(
-        Math.max(
-          0,
-          sorted.findIndex((t) => t.name.localeCompare(created.name) >= 0),
-        ),
+    if (created) {
+      const at = sorted.findIndex(
+        (t) => compareTagNames(t.name, created.name) >= 0,
       );
+      setActive(at < 0 ? sorted.length : at);
+    }
   };
 
   const highlightMatch = (name: string) => {

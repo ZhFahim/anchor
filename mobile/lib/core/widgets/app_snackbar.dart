@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons_500.dart';
 
 import '../motion/haptics.dart';
 import '../motion/springs.dart';
@@ -285,7 +286,7 @@ class _SnackbarBody extends StatelessWidget {
       SnackbarKind.info => colors.appOnInverse,
     };
     final icon = switch (data.kind) {
-      SnackbarKind.done || SnackbarKind.success => LucideIcons.check500,
+      SnackbarKind.done || SnackbarKind.success => LucideIcons500.check,
       SnackbarKind.error => LucideIcons.circleAlert,
       SnackbarKind.info => LucideIcons.info,
     };

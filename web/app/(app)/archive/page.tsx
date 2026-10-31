@@ -13,7 +13,6 @@ import { Tip } from "@/components/ui/tooltip";
 import {
   bulkArchiveNotes,
   bulkDeleteNotes,
-  getArchivedNotes,
   restoreNote,
   unarchiveNote,
 } from "@/features/notes/api";
@@ -28,6 +27,7 @@ import {
 import { ShareDialog } from "@/features/notes/components/share-dialog";
 import { useNoteList } from "@/features/notes/hooks/use-note-list";
 import { useRefreshNotes } from "@/features/notes/hooks/use-refresh-notes";
+import { archivedNotesQuery } from "@/features/notes/queries";
 import { deletedNotesText, deleteNotesWarning } from "@/features/notes/trash";
 import type { Note } from "@/features/notes/types";
 import { eachLimited } from "@/lib/each";
@@ -42,10 +42,8 @@ export default function ArchivePage() {
     sharedCount: number;
   } | null>(null);
   const [sharingNote, setSharingNote] = React.useState<Note | null>(null);
-  const { data, isLoading, isError, isFetching, refetch } = useQuery({
-    queryKey: ["notes", "archived"],
-    queryFn: getArchivedNotes,
-  });
+  const { data, isLoading, isError, isFetching, refetch } =
+    useQuery(archivedNotesQuery);
   const notes = data ?? NO_NOTES;
   const loadFailed = isError && !data;
   const list = useNoteList(notes);

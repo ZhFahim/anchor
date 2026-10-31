@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons_500.dart';
+import 'package:lucide_icons_flutter/lucide_icons_600.dart';
 
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/context_extensions.dart';
@@ -42,7 +44,7 @@ class TagChip extends StatelessWidget {
           : const EdgeInsets.fromLTRB(9, 0, 4, 0), // off-scale: chip
       children: [
         Icon(
-          isSmall ? LucideIcons.hash600 : LucideIcons.hash500,
+          isSmall ? LucideIcons600.hash : LucideIcons500.hash,
           size: isSmall ? 11 : 12, // off-scale: chip
           color: hash,
         ),

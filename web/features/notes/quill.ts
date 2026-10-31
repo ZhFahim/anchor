@@ -98,6 +98,7 @@ export type QuillInstance = {
   history: {
     undo: () => void;
     redo: () => void;
+    undoKeepingSelection: () => void;
     cutoff: () => void;
     stack: { undo: unknown[]; redo: unknown[] };
     ignoreChange?: boolean;

@@ -1,6 +1,6 @@
 "use client";
 
-import { GripVertical } from "lucide-react";
+import { ChevronDown, GripVertical } from "lucide-react";
 import dynamic from "next/dynamic";
 import Delta from "quill-delta";
 import {
@@ -42,17 +42,23 @@ import {
 import { registerNoteFormats } from "../../quill-formats";
 import {
   targetHandlesOwnUndo,
+  type UndoRedoAction,
   undoRedoActionForKeyEvent,
 } from "../../undo-shortcuts";
+import { checkedItemsLabel } from "./checked-folds";
 import { CodeCopyButtons } from "./code-copy-buttons";
 import { SelectionToolbar } from "./highlight-tools";
 import { LinkBubble } from "./link-bubble";
 import { LinkPopover } from "./link-popover";
 import { QuillToolbar } from "./quill-toolbar";
 import { SlashMenu } from "./slash-menu";
+import type { UndoableEdit } from "./undoable-edit";
+import { useCheckedFolds } from "./use-checked-folds";
 import { useChecklistBoxes } from "./use-checklist-boxes";
 import { scrollerOf, useChecklistDrag } from "./use-checklist-drag";
+import { useChecklistEdits } from "./use-checklist-edits";
 import { useChecklistSort } from "./use-checklist-sort";
+import { type FirstLineHandlers, useFirstLine } from "./use-first-line";
 
 // Our formats must be registered before any note opens.
 // biome-ignore lint/suspicious/noExplicitAny: react-quill-new's dynamic() wrapper drops the ref types
@@ -142,6 +148,8 @@ interface RichTextEditorProps {
   readOnly?: boolean;
   onAddAttachment?: () => void;
   below?: React.ReactNode;
+  noteId?: string;
+  firstLine?: FirstLineHandlers;
 }
 
 export interface RichTextEditorHandle {
@@ -149,6 +157,15 @@ export interface RichTextEditorHandle {
   /** False when read-only. */
   focusEnd: (extend: boolean) => boolean;
   startList: (kind: "unchecked" | "bullet") => void;
+  /** Null until the text is there. */
+  checklistCount: () => { items: number; checked: number } | null;
+  /** Null when nothing is checked. */
+  uncheckAll: () => UndoableEdit | null;
+  deleteChecked: () => UndoableEdit | null;
+  /** False when the text didn't change. */
+  addFirstLine: (text: string) => boolean;
+  historyDepth: () => { undo: number; redo: number };
+  undoOrRedoText: (action: UndoRedoAction) => void;
 }
 
 export const RichTextEditor = forwardRef<
@@ -163,6 +180,8 @@ export const RichTextEditor = forwardRef<
       readOnly = false,
       onAddAttachment,
       below,
+      noteId,
+      firstLine,
     },
     ref,
   ) => {
@@ -213,12 +232,19 @@ export const RichTextEditor = forwardRef<
       enabled: !readOnly,
     });
     useChecklistBoxes({ containerEl: editorContainerEl, getQuill, readOnly });
+    const checkedFolds = useCheckedFolds({
+      containerEl: editorContainerEl,
+      getQuill,
+      isEnabled: sortChecklistItems,
+      noteId,
+    });
     const checklistSort = useChecklistSort({
       containerEl: editorContainerEl,
       getQuill,
       isEnabled: sortChecklistItems,
       onSlideStart: checklistDrag.pauseHandle,
       onSlideEnd: checklistDrag.resumeHandle,
+      isFoldActive: checkedFolds.isActive,
     });
 
     useEffect(() => {
@@ -253,6 +279,12 @@ export const RichTextEditor = forwardRef<
       parseStoredContent(longContent ? "" : value),
     );
     const previousContents = useRef(editorValue);
+    const checklistEdits = useChecklistEdits({
+      getQuill,
+      readOnly,
+      contentsRef: previousContents,
+      onBeforeEdit: checklistSort.cancel,
+    });
     const [appliedValue, setAppliedValue] = useState(value);
     const [incomingValue, setIncomingValue] = useState<string | null>(null);
     if (value !== appliedValue) {
@@ -317,10 +349,12 @@ export const RichTextEditor = forwardRef<
         source: "user" | "api" | "silent" | string,
         editor: QuillInstance,
       ) => {
+        checkedFolds.refresh();
         const currentDelta = editor.getContents() as QuillDelta;
         const before = previousContents.current;
         previousContents.current = currentDelta;
         setEditorValue(currentDelta);
+        checklistEdits.follow(changeDelta as QuillDelta);
 
         // Ignore non-user changes (hydration, API updates)
         if (source !== "user" || readOnly) return;
@@ -330,7 +364,11 @@ export const RichTextEditor = forwardRef<
         const quill = getQuill();
         // Quill sets ignoreChange while it applies Undo or Redo.
         if (quill?.history.ignoreChange) checklistSort.cancel();
-        else if (quill && !checklistSort.isSorting()) {
+        else if (
+          quill &&
+          !checklistSort.isSorting() &&
+          !checklistEdits.isApplying()
+        ) {
           checklistSort.noteChange(changeDelta as QuillDelta, before);
           queueMicrotask(() => {
             startTypedBlock(quill, changeDelta as QuillDelta);
@@ -340,7 +378,14 @@ export const RichTextEditor = forwardRef<
         onChange(currentStr);
         setToolbarUpdateKey((k) => k + 1);
       },
-      [checklistSort, getQuill, onChange, readOnly],
+      [
+        checkedFolds.refresh,
+        checklistEdits,
+        checklistSort,
+        getQuill,
+        onChange,
+        readOnly,
+      ],
     );
     // A format set at a bare caret changes neither the text nor the selection.
     useEffect(() => {
@@ -351,11 +396,17 @@ export const RichTextEditor = forwardRef<
       return () => el.removeEventListener("formatchange", bump);
     }, [editorContainerEl]);
 
-    const handleSelectionChange = useCallback(() => {
-      if (isFocused) {
-        setToolbarUpdateKey((k) => k + 1);
-      }
-    }, [isFocused]);
+    const { revealSelection } = checkedFolds;
+    const handleSelectionChange = useCallback(
+      (range: { index: number; length: number } | null, source?: string) => {
+        if (range && !range.length && source !== "silent")
+          revealSelection(range.index);
+        if (isFocused) {
+          setToolbarUpdateKey((k) => k + 1);
+        }
+      },
+      [isFocused, revealSelection],
+    );
 
     // A selection must not grow out of a pending format's placeholder.
     useEffect(() => {
@@ -402,6 +453,13 @@ export const RichTextEditor = forwardRef<
       el.addEventListener("keydown", onKey, true);
       return () => el.removeEventListener("keydown", onKey, true);
     }, [editorContainerEl, getQuill, readOnly]);
+
+    const undoOrRedo = useFirstLine({
+      containerEl: editorContainerEl,
+      getQuill,
+      readOnly,
+      handlers: firstLine,
+    });
 
     useEffect(() => {
       const el = editorContainerEl;
@@ -664,8 +722,41 @@ export const RichTextEditor = forwardRef<
           quill.format("list", kind, "user");
           setIsFocused(true);
         },
+        checklistCount: checklistEdits.count,
+        uncheckAll: checklistEdits.uncheckAll,
+        deleteChecked: checklistEdits.deleteChecked,
+        addFirstLine: (text: string) => {
+          const quill = readOnly ? null : getQuill();
+          if (!quill) return false;
+          const [first] = quill.getLine(0);
+          const isBlank =
+            !!first &&
+            first.length() === 1 &&
+            !Object.keys(first.formats()).length;
+          const isChanging = !!text || !isBlank;
+          if (isChanging) {
+            quill.history.cutoff();
+            quill.updateContents(
+              { ops: [{ insert: isBlank ? text : `${text}\n` }] },
+              "user",
+            );
+            quill.history.cutoff();
+          }
+          quill.setSelection(0, 0, "user");
+          setIsFocused(true);
+          return isChanging;
+        },
+        historyDepth: () => {
+          const stack = getQuill()?.history.stack;
+          return {
+            undo: stack?.undo.length ?? 0,
+            redo: stack?.redo.length ?? 0,
+          };
+        },
+        undoOrRedoText: (action: UndoRedoAction) =>
+          getQuill()?.history[action](),
       }),
-      [readOnly],
+      [checklistEdits, getQuill, readOnly],
     );
 
     useEffect(() => {
@@ -762,12 +853,11 @@ export const RichTextEditor = forwardRef<
           (target !== document.body && !root.contains(target))
         )
           return;
-        const quill = quillRef.current?.getEditor?.() as QuillInstance | null;
-        quill?.history[action]();
+        undoOrRedo(action);
       };
       document.addEventListener("keydown", handler);
       return () => document.removeEventListener("keydown", handler);
-    }, [readOnly, linkDialogState.open]);
+    }, [readOnly, linkDialogState.open, undoOrRedo]);
 
     return (
       <div ref={rootRef} className="rte">
@@ -778,13 +868,16 @@ export const RichTextEditor = forwardRef<
             updateKey={toolbarUpdateKey}
             onOpenLinkDialog={openLinkDialog}
             onAddAttachment={onAddAttachment}
+            onUndoRedo={undoOrRedo}
           />
         )}
         <div
           ref={setEditorContainerEl}
           className={cn("anchor-quill", readOnly && "read-only")}
           data-building={longContent ? "" : undefined}
+          data-folds={checkedFolds.scopeId}
         >
+          <style ref={checkedFolds.styleRef} />
           {longContent && (
             <p
               role="status"
@@ -859,6 +952,20 @@ export const RichTextEditor = forwardRef<
               )}
             </div>
           )}
+          {checkedFolds.rows.map((row, index) => (
+            <button
+              key={index}
+              type="button"
+              className="ck-fold"
+              aria-expanded={!checkedFolds.isFolded}
+              style={{ top: row.top, left: row.left }}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={checkedFolds.toggle}
+            >
+              <ChevronDown aria-hidden />
+              {checkedItemsLabel(row.count)}
+            </button>
+          ))}
           <CodeCopyButtons container={editorContainerEl} />
           {!readOnly && (
             <SelectionToolbar

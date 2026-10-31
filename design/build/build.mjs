@@ -236,13 +236,20 @@ ${block(".light", themed("light"), "\n  color-scheme: light;")}`;
 
 const svgUri = (w, h, body) =>
   `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}'>${body}</svg>`)}")`;
-const lucide = async (name) => {
+// A renamed Lucide icon's old module only re-exports the new one.
+const lucideNode = async (name) => {
   const file = path.join(
     ROOT,
     `web/node_modules/lucide-react/dist/esm/icons/${name}.mjs`,
   );
   const icon = await import(pathToFileURL(file).href);
-  return icon.__iconData.node
+  if (icon.__iconData) return icon.__iconData.node;
+  const renamed = /from '\.\/([\w-]+)\.mjs'/.exec(fs.readFileSync(file, "utf8"));
+  if (!renamed) throw new Error(`No icon data in lucide-react for "${name}"`);
+  return lucideNode(renamed[1]);
+};
+const lucide = async (name) =>
+  (await lucideNode(name))
     .map(
       ([tag, attrs]) =>
         `<${tag} ${Object.entries(attrs)
@@ -251,7 +258,6 @@ const lucide = async (name) => {
           .join(" ")}/>`,
     )
     .join("");
-};
 const pattern = async (kind, color) => {
   if (!kind) return "none";
   if (kind === "dots")
@@ -376,11 +382,7 @@ for (const bg of CATALOG.backgrounds.patterns.filter((b) =>
   b.kind.startsWith("icon:"),
 )) {
   const name = bg.kind.split(":")[1];
-  const file = path.join(
-    ROOT,
-    `web/node_modules/lucide-react/dist/esm/icons/${name}.mjs`,
-  );
-  iconNodes[name] = (await import(pathToFileURL(file).href)).__iconData.node;
+  iconNodes[name] = await lucideNode(name);
 }
 const DART_HEAD = HEAD.replace("design/build/build.mjs", "design/build");
 out["mobile/lib/core/theme/tokens/anchor_tokens.dart"] = dartTokens({
@@ -407,11 +409,7 @@ const SHARE_ICONS = {
 };
 const shareIcons = {};
 for (const [name, lucideName] of Object.entries(SHARE_ICONS)) {
-  const file = path.join(
-    ROOT,
-    `web/node_modules/lucide-react/dist/esm/icons/${lucideName}.mjs`,
-  );
-  shareIcons[name] = (await import(pathToFileURL(file).href)).__iconData.node;
+  shareIcons[name] = await lucideNode(lucideName);
 }
 out["mobile/ios/ShareExtension/AnchorIcon.swift"] = swiftIcons({
   icons: shareIcons,

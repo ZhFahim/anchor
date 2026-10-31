@@ -23,7 +23,36 @@ function searchTextOf(note: Note) {
   return text;
 }
 
-export function useNoteList(notes: Note[], { pinnedFirst = false } = {}) {
+const NO_NOTES: Note[] = [];
+
+function findAndSort(
+  notes: Note[],
+  term: string,
+  sortBy: SortBy,
+  sortOrder: SortOrder,
+) {
+  const found = term
+    ? notes.filter((note) => searchTextOf(note).includes(term))
+    : notes;
+  return [...found].sort(compareNotes(sortBy, sortOrder));
+}
+
+export function useNoteList(
+  notes: Note[],
+  {
+    pinnedFirst = false,
+    archived,
+  }: {
+    pinnedFirst?: boolean;
+    archived?: {
+      notes: Note[];
+      isSearchOnly: boolean;
+      canFold: boolean;
+      /** Ignored while searching. */
+      isFolded: boolean;
+    };
+  } = {},
+) {
   const { viewMode, sortBy, sortOrder } = usePreferencesStore((s) => s.notes);
   const setNotesPreference = usePreferencesStore((s) => s.setNotesPreference);
   const boardRef = React.useRef<HTMLDivElement>(null);
@@ -35,13 +64,21 @@ export function useNoteList(notes: Note[], { pinnedFirst = false } = {}) {
   const [picked, setPicked] = React.useState<Set<string>>(new Set());
   const lastPick = React.useRef<string | null>(null);
 
-  const visible = React.useMemo(() => {
-    const term = searchedQuery.trim().toLowerCase();
-    const found = term
-      ? notes.filter((note) => searchTextOf(note).includes(term))
-      : notes;
-    return [...found].sort(compareNotes(sortBy, sortOrder));
-  }, [notes, searchedQuery, sortBy, sortOrder]);
+  const term = searchedQuery.trim().toLowerCase();
+  const visible = React.useMemo(
+    () => findAndSort(notes, term, sortBy, sortOrder),
+    [notes, term, sortBy, sortOrder],
+  );
+  const isSearching = term !== "";
+  const hasArchived = !!archived && (isSearching || !archived.isSearchOnly);
+  const archivedNotes = (hasArchived && archived?.notes) || NO_NOTES;
+  const archivedVisible = React.useMemo(
+    () => findAndSort(archivedNotes, term, sortBy, sortOrder),
+    [archivedNotes, term, sortBy, sortOrder],
+  );
+  const isArchivedFoldable = hasArchived && !!archived?.canFold && !isSearching;
+  const isArchivedOpen =
+    hasArchived && !(isArchivedFoldable && archived?.isFolded);
   const pinned = React.useMemo(
     () => (pinnedFirst ? visible.filter((n) => n.isPinned) : []),
     [pinnedFirst, visible],
@@ -51,8 +88,11 @@ export function useNoteList(notes: Note[], { pinnedFirst = false } = {}) {
     [pinnedFirst, visible],
   );
   const shown = React.useMemo(
-    () => (pinned.length ? [...pinned, ...others] : others),
-    [pinned, others],
+    () =>
+      pinned.length || isArchivedOpen
+        ? [...pinned, ...others, ...(isArchivedOpen ? archivedVisible : [])]
+        : others,
+    [pinned, others, isArchivedOpen, archivedVisible],
   );
   const shownRef = React.useRef(shown);
   React.useLayoutEffect(() => {
@@ -76,14 +116,14 @@ export function useNoteList(notes: Note[], { pinnedFirst = false } = {}) {
   }, [picking, stopPicking]);
 
   React.useEffect(() => {
-    const visibleIds = new Set(visible.map((note) => note.id));
+    const shownIds = new Set(shown.map((note) => note.id));
     setPicked((prev) => {
-      const kept = [...prev].filter((id) => visibleIds.has(id));
+      const kept = [...prev].filter((id) => shownIds.has(id));
       return kept.length === prev.size ? prev : new Set(kept);
     });
-  }, [visible]);
+  }, [shown]);
 
-  const isEmpty = notes.length === 0;
+  const isEmpty = notes.length === 0 && archivedNotes.length === 0;
   React.useEffect(() => {
     if (picking && isEmpty) stopPicking();
   }, [picking, isEmpty, stopPicking]);
@@ -140,6 +180,11 @@ export function useNoteList(notes: Note[], { pinnedFirst = false } = {}) {
     visible,
     pinned,
     others,
+    isSearching,
+    hasArchived,
+    archived: archivedVisible,
+    isArchivedFoldable,
+    isArchivedOpen,
     shown,
     picking,
     togglePicking: () => (picking ? stopPicking() : setPicking(true)),

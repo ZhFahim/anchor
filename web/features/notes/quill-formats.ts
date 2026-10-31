@@ -257,15 +257,32 @@ export function registerNoteFormats(Quill: QuillStatic) {
     ): {
       stack: { undo: unknown[] };
       cutoff(): void;
+      undo(): void;
       record(change: unknown, old: unknown): void;
+      restoreSelection(item: unknown): void;
     };
   };
   class NoteHistory extends History {
+    private isKeepingSelection = false;
+
     record(change: unknown, old: unknown) {
       const count = this.stack.undo.length;
       super.record(change, old);
       // Quill drops a step that cancels out but keeps its start time.
       if (this.stack.undo.length < count) this.cutoff();
+    }
+
+    restoreSelection(item: unknown) {
+      if (!this.isKeepingSelection) super.restoreSelection(item);
+    }
+
+    undoKeepingSelection() {
+      this.isKeepingSelection = true;
+      try {
+        this.undo();
+      } finally {
+        this.isKeepingSelection = false;
+      }
     }
   }
   Quill.register("modules/history", NoteHistory, true);

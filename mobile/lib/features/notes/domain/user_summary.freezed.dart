@@ -29,16 +29,21 @@ $UserSummaryCopyWith<UserSummary> get copyWith => _$UserSummaryCopyWithImpl<User
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is UserSummary&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.email, email) || other.email == email)&&(identical(other.profileImage, profileImage) || other.profileImage == profileImage));
+  final _this = this as UserSummary;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is UserSummary&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.email, _this.email) || other.email == _this.email)&&(identical(other.profileImage, _this.profileImage) || other.profileImage == _this.profileImage));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,email,profileImage);
+int get hashCode {
+  final _this = this as UserSummary;
+  return Object.hash(runtimeType,_this.id,_this.name,_this.email,_this.profileImage);
+}
 
 @override
 String toString() {
-  return 'UserSummary(id: $id, name: $name, email: $email, profileImage: $profileImage)';
+  final _this = this as UserSummary;
+  return 'UserSummary(id: ${_this.id}, name: ${_this.name}, email: ${_this.email}, profileImage: ${_this.profileImage})';
 }
 
 
@@ -234,16 +239,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _UserSummary&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.email, email) || other.email == email)&&(identical(other.profileImage, profileImage) || other.profileImage == profileImage));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _UserSummary&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.email, email) || other.email == email)&&(identical(other.profileImage, profileImage) || other.profileImage == profileImage));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,email,profileImage);
+int get hashCode {
+    return Object.hash(runtimeType,id,name,email,profileImage);
+}
 
 @override
 String toString() {
-  return 'UserSummary(id: $id, name: $name, email: $email, profileImage: $profileImage)';
+    return 'UserSummary(id: $id, name: $name, email: $email, profileImage: $profileImage)';
 }
 
 

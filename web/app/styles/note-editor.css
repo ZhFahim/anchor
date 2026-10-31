@@ -225,6 +225,12 @@ mark.hl {
   line-height: 1.12;
   outline: none;
 }
+textarea.n-title {
+  display: block;
+  overflow: hidden;
+  resize: none;
+  field-sizing: content;
+}
 .n-title::placeholder {
   color: var(--note-muted);
   opacity: 1;

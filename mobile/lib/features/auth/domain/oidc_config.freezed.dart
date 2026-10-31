@@ -29,16 +29,21 @@ $OidcConfigCopyWith<OidcConfig> get copyWith => _$OidcConfigCopyWithImpl<OidcCon
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OidcConfig&&(identical(other.enabled, enabled) || other.enabled == enabled)&&(identical(other.providerName, providerName) || other.providerName == providerName)&&(identical(other.issuerUrl, issuerUrl) || other.issuerUrl == issuerUrl)&&(identical(other.clientId, clientId) || other.clientId == clientId)&&(identical(other.disableInternalAuth, disableInternalAuth) || other.disableInternalAuth == disableInternalAuth));
+  final _this = this as OidcConfig;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is OidcConfig&&(identical(other.enabled, _this.enabled) || other.enabled == _this.enabled)&&(identical(other.providerName, _this.providerName) || other.providerName == _this.providerName)&&(identical(other.issuerUrl, _this.issuerUrl) || other.issuerUrl == _this.issuerUrl)&&(identical(other.clientId, _this.clientId) || other.clientId == _this.clientId)&&(identical(other.disableInternalAuth, _this.disableInternalAuth) || other.disableInternalAuth == _this.disableInternalAuth));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,enabled,providerName,issuerUrl,clientId,disableInternalAuth);
+int get hashCode {
+  final _this = this as OidcConfig;
+  return Object.hash(runtimeType,_this.enabled,_this.providerName,_this.issuerUrl,_this.clientId,_this.disableInternalAuth);
+}
 
 @override
 String toString() {
-  return 'OidcConfig(enabled: $enabled, providerName: $providerName, issuerUrl: $issuerUrl, clientId: $clientId, disableInternalAuth: $disableInternalAuth)';
+  final _this = this as OidcConfig;
+  return 'OidcConfig(enabled: ${_this.enabled}, providerName: ${_this.providerName}, issuerUrl: ${_this.issuerUrl}, clientId: ${_this.clientId}, disableInternalAuth: ${_this.disableInternalAuth})';
 }
 
 
@@ -236,16 +241,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OidcConfig&&(identical(other.enabled, enabled) || other.enabled == enabled)&&(identical(other.providerName, providerName) || other.providerName == providerName)&&(identical(other.issuerUrl, issuerUrl) || other.issuerUrl == issuerUrl)&&(identical(other.clientId, clientId) || other.clientId == clientId)&&(identical(other.disableInternalAuth, disableInternalAuth) || other.disableInternalAuth == disableInternalAuth));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _OidcConfig&&(identical(other.enabled, enabled) || other.enabled == enabled)&&(identical(other.providerName, providerName) || other.providerName == providerName)&&(identical(other.issuerUrl, issuerUrl) || other.issuerUrl == issuerUrl)&&(identical(other.clientId, clientId) || other.clientId == clientId)&&(identical(other.disableInternalAuth, disableInternalAuth) || other.disableInternalAuth == disableInternalAuth));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,enabled,providerName,issuerUrl,clientId,disableInternalAuth);
+int get hashCode {
+    return Object.hash(runtimeType,enabled,providerName,issuerUrl,clientId,disableInternalAuth);
+}
 
 @override
 String toString() {
-  return 'OidcConfig(enabled: $enabled, providerName: $providerName, issuerUrl: $issuerUrl, clientId: $clientId, disableInternalAuth: $disableInternalAuth)';
+    return 'OidcConfig(enabled: $enabled, providerName: $providerName, issuerUrl: $issuerUrl, clientId: $clientId, disableInternalAuth: $disableInternalAuth)';
 }
 
 

@@ -12,11 +12,13 @@ export function NoteListActions({
   list,
   placeholder,
   autoFocus,
+  onSearchFocus,
   children,
 }: {
   list: NoteList;
   placeholder: string;
   autoFocus?: boolean;
+  onSearchFocus?: () => void;
   children?: React.ReactNode;
 }) {
   return (
@@ -27,6 +29,7 @@ export function NoteListActions({
         onChange={list.setQuery}
         placeholder={placeholder}
         autoFocus={autoFocus}
+        onFocus={onSearchFocus}
       />
       <ViewOptions
         layout={list.layout}

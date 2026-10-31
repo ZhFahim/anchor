@@ -21,6 +21,7 @@ import {
   ReadOnlyBar,
   type SaveState,
   ShareDialog,
+  useChecklistActions,
   useEditorChrome,
   useNoteActions,
   useNoteEditor,
@@ -95,6 +96,7 @@ function NoteEditor({
     setIsArchived: editor.setIsArchived,
   });
   const contentEditorRef = useRef<RichTextEditorHandle | null>(null);
+  const checklist = useChecklistActions(noteId, contentEditorRef);
   const { articleRef, scrollRef } = useEditorChrome({
     noteId,
     isLoading,
@@ -271,6 +273,7 @@ function NoteEditor({
             onArchive={actions.archive}
             onUnarchive={actions.unarchive}
             onTrash={actions.trash}
+            checklist={readOnly ? undefined : checklist}
           />
           <NoteEditorContent
             noteId={!isNew ? noteId : undefined}

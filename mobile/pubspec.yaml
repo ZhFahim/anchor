@@ -16,7 +16,7 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 0.17.2+22
+version: 0.18.0+23
 
 environment:
   sdk: ^3.10.1
@@ -35,60 +35,60 @@ dependencies:
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.9
+  cupertino_icons: ^2.0.0
 
   # State Management
-  flutter_riverpod: ^3.0.3
+  flutter_riverpod: ^3.4.3
 
   # Local DB
-  drift: ^2.24.0
-  flutter_secure_storage: ^10.3.1
+  drift: ^2.35.3
+  flutter_secure_storage: ^11.2.0
 
   # Networking
-  dio: ^5.4.3+1
-  connectivity_plus: ^7.1.1
+  dio: ^5.11.1
+  connectivity_plus: ^7.3.2
 
   # Routing
   go_router: ^17.5.0
 
   # Authentication
-  flutter_appauth: ^12.0.2
+  flutter_appauth: ^13.0.0
 
   # UI
-  lucide_icons_flutter: ^3.1.14+2
+  lucide_icons_flutter: ^4.0.1
 
   # Code Generation Annotations
-  riverpod_annotation: ^4.0.6
+  riverpod_annotation: ^4.0.7
   freezed_annotation: ^3.1.0
   json_annotation: ^4.12.0
 
   # Media
-  image_picker: ^1.2.2
-  cached_network_image: ^3.4.1
-  just_audio: ^0.10.0
-  record: ^7.1.1
-  file_picker: ^12.0.0
+  image_picker: ^1.2.4
+  cached_network_image: ^4.0.6
+  just_audio: ^0.10.6
+  record: ^7.1.2
+  file_picker: ^13.3.0
   share_plus: ^13.3.1
   gal: ^2.3.3
 
   # Reminders (device-local notifications)
-  flutter_local_notifications: ^22.3.0
-  timezone: ^0.11.0
-  flutter_timezone: ^5.1.0
+  flutter_local_notifications: ^22.3.3
+  timezone: ^0.11.2
+  flutter_timezone: ^5.1.1
 
   # Rich Text Editor
-  flutter_quill: ^11.5.1
+  flutter_quill: ^11.6.0
   dart_quill_delta: ^10.8.3
 
   # Utilities
-  path_provider: ^2.1.3
-  path: ^1.9.0
-  uuid: ^4.4.0
-  intl: ^0.20.2
-  equatable: ^2.0.5
-  package_info_plus: ^10.2.1
-  url_launcher: ^6.3.1
-  home_widget: ^0.9.3
+  path_provider: ^2.1.6
+  path: ^1.9.1
+  uuid: ^4.6.0
+  intl: ^0.20.3
+  equatable: ^3.0.0
+  package_info_plus: ^10.2.2
+  url_launcher: ^6.3.3
+  home_widget: ^0.10.0
 
 dev_dependencies:
   flutter_test:
@@ -104,17 +104,17 @@ dev_dependencies:
   flutter_lints: ^6.0.0
 
   # Testing
-  mocktail: ^1.0.4
+  mocktail: ^1.0.5
 
   # Code Generation
-  build_runner: ^2.15.0
-  riverpod_generator: ^4.0.8
-  drift_dev: ^2.24.0
-  freezed: ^4.0.0
-  json_serializable: ^6.8.0
+  build_runner: ^2.16.2
+  riverpod_generator: ^4.0.9
+  drift_dev: ^2.35.2
+  freezed: ^4.0.3
+  json_serializable: ^6.15.2
 
   # Native splash screens
-  flutter_native_splash: ^2.4.6
+  flutter_native_splash: ^2.4.8
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

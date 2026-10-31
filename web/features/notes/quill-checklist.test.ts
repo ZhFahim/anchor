@@ -3,7 +3,10 @@ import { describe, expect, it } from "vitest";
 import type { QuillDelta, QuillOp } from "./quill";
 import {
   buildChecklistDropDelta,
+  buildDeleteCheckedDelta,
+  buildUncheckAllDelta,
   checklistLineIndexFromOrdinal,
+  countChecklistItems,
   createChecklistSortDelta,
   getChecklistDragPlan,
 } from "./quill-checklist";
@@ -537,5 +540,162 @@ describe("createChecklistSortDelta", () => {
     // First op must retain past the intro untouched.
     const first = (sortDelta as QuillDelta).ops[0];
     expect(first.retain).toBeGreaterThanOrEqual("intro paragraph\n".length);
+  });
+});
+
+describe("uncheck all and delete checked items", () => {
+  function expectEdited(
+    base: QuillDelta,
+    change: QuillDelta | null,
+    expected: [string, string | null, number?][],
+  ) {
+    expectApplied(base, change, expected);
+    const before = new Delta(base.ops as never);
+    const delta = new Delta((change as QuillDelta).ops as never);
+    const undone = before.compose(delta).compose(delta.invert(before));
+    expect(normalized({ ops: undone.ops as QuillOp[] })).toEqual(
+      normalized(base),
+    );
+  }
+
+  it("counts checklist items and the checked ones", () => {
+    expect(
+      countChecklistItems(
+        doc([
+          ["a", "checked"],
+          ["b", "unchecked"],
+          ["c", "bullet"],
+          ["d", null],
+        ]),
+      ),
+    ).toEqual({ items: 2, checked: 1 });
+  });
+
+  it("does nothing when nothing is checked", () => {
+    const base = doc([
+      ["a", "unchecked"],
+      ["b", null],
+    ]);
+    expect(buildUncheckAllDelta(base)).toBeNull();
+    expect(buildDeleteCheckedDelta(base)).toBeNull();
+  });
+
+  it("unchecks every checklist and keeps the nesting", () => {
+    const base = doc([
+      ["Shop", null],
+      ["milk", "checked"],
+      ["oat", "checked", 1],
+      ["eggs", "unchecked"],
+      ["Pack", null],
+      ["socks", "checked"],
+    ]);
+    expectEdited(base, buildUncheckAllDelta(base), [
+      ["Shop", null, 0],
+      ["milk", "unchecked", 0],
+      ["oat", "unchecked", 1],
+      ["eggs", "unchecked", 0],
+      ["Pack", null, 0],
+      ["socks", "unchecked", 0],
+    ]);
+  });
+
+  it("deletes checked items and keeps the open ones and the text around", () => {
+    const base = doc([
+      ["Shop", null],
+      ["milk", "checked"],
+      ["eggs", "unchecked"],
+      ["bread", "checked"],
+      ["tea", "unchecked"],
+      ["Thanks", null],
+    ]);
+    expectEdited(base, buildDeleteCheckedDelta(base), [
+      ["Shop", null, 0],
+      ["eggs", "unchecked", 0],
+      ["tea", "unchecked", 0],
+      ["Thanks", null, 0],
+    ]);
+  });
+
+  it("deletes checked items that end the note and keeps the last line", () => {
+    const base = doc([
+      ["eggs", "unchecked"],
+      ["large", "unchecked", 1],
+      ["milk", "checked"],
+      ["bread", "checked"],
+    ]);
+    expectEdited(base, buildDeleteCheckedDelta(base), [
+      ["eggs", "unchecked", 0],
+      ["large", "unchecked", 1],
+    ]);
+  });
+
+  it("keeps one empty item in a note of only checked items", () => {
+    const base = doc([
+      ["milk", "checked"],
+      ["oat", "checked", 1],
+    ]);
+    expectEdited(base, buildDeleteCheckedDelta(base), [["", "unchecked", 0]]);
+  });
+
+  it("moves open sub-items up a level for each deleted item above", () => {
+    const base = doc([
+      ["trip", "checked"],
+      ["bags", "checked", 1],
+      ["passport", "unchecked", 2],
+      ["tickets", "unchecked", 1],
+      ["home", "unchecked"],
+      ["plants", "checked", 1],
+      ["water", "unchecked", 2],
+      ["keys", "unchecked", 1],
+    ]);
+    expectEdited(base, buildDeleteCheckedDelta(base), [
+      ["passport", "unchecked", 0],
+      ["tickets", "unchecked", 0],
+      ["home", "unchecked", 0],
+      ["water", "unchecked", 1],
+      ["keys", "unchecked", 1],
+    ]);
+  });
+
+  it("moves a bullet under a deleted item up with the open ones", () => {
+    const base = doc([
+      ["cake", "checked"],
+      ["flour", "bullet", 1],
+      ["jam", "unchecked"],
+    ]);
+    expectEdited(base, buildDeleteCheckedDelta(base), [
+      ["flour", "bullet", 0],
+      ["jam", "unchecked", 0],
+    ]);
+  });
+
+  it("moves the last kept line up when the items under it end the note", () => {
+    const base = doc([
+      ["trip", "checked"],
+      ["passport", "unchecked", 1],
+      ["bags", "checked", 1],
+    ]);
+    expectEdited(base, buildDeleteCheckedDelta(base), [
+      ["passport", "unchecked", 0],
+    ]);
+  });
+
+  it("keeps formatted text and pictures in the open items", () => {
+    const base: QuillDelta = {
+      ops: [
+        { insert: "milk", attributes: { bold: true } },
+        { insert: "\n", attributes: { list: "checked" } },
+        { insert: { attachment: "a1" } as never },
+        { insert: "\n", attributes: { list: "unchecked" } },
+      ],
+    };
+    const change = buildDeleteCheckedDelta(base);
+    const after = new Delta(base.ops as never).compose(
+      new Delta((change as QuillDelta).ops as never),
+    );
+    expect(after.ops).toEqual([
+      { insert: { attachment: "a1" } },
+      { insert: "\n", attributes: { list: "unchecked" } },
+    ]);
   });
 });

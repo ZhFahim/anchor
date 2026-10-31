@@ -26,16 +26,21 @@ $NoteReminderCopyWith<NoteReminder> get copyWith => _$NoteReminderCopyWithImpl<N
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NoteReminder&&(identical(other.remindAt, remindAt) || other.remindAt == remindAt)&&(identical(other.recurrence, recurrence) || other.recurrence == recurrence)&&(identical(other.version, version) || other.version == version));
+  final _this = this as NoteReminder;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NoteReminder&&(identical(other.remindAt, _this.remindAt) || other.remindAt == _this.remindAt)&&(identical(other.recurrence, _this.recurrence) || other.recurrence == _this.recurrence)&&(identical(other.version, _this.version) || other.version == _this.version));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,remindAt,recurrence,version);
+int get hashCode {
+  final _this = this as NoteReminder;
+  return Object.hash(runtimeType,_this.remindAt,_this.recurrence,_this.version);
+}
 
 @override
 String toString() {
-  return 'NoteReminder(remindAt: $remindAt, recurrence: $recurrence, version: $version)';
+  final _this = this as NoteReminder;
+  return 'NoteReminder(remindAt: ${_this.remindAt}, recurrence: ${_this.recurrence}, version: ${_this.version})';
 }
 
 
@@ -226,16 +231,18 @@ _$NoteReminderCopyWith<_NoteReminder> get copyWith => __$NoteReminderCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NoteReminder&&(identical(other.remindAt, remindAt) || other.remindAt == remindAt)&&(identical(other.recurrence, recurrence) || other.recurrence == recurrence)&&(identical(other.version, version) || other.version == version));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _NoteReminder&&(identical(other.remindAt, remindAt) || other.remindAt == remindAt)&&(identical(other.recurrence, recurrence) || other.recurrence == recurrence)&&(identical(other.version, version) || other.version == version));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,remindAt,recurrence,version);
+int get hashCode {
+    return Object.hash(runtimeType,remindAt,recurrence,version);
+}
 
 @override
 String toString() {
-  return 'NoteReminder(remindAt: $remindAt, recurrence: $recurrence, version: $version)';
+    return 'NoteReminder(remindAt: $remindAt, recurrence: $recurrence, version: $version)';
 }
 
 
@@ -289,16 +296,21 @@ $NoteCopyWith<Note> get copyWith => _$NoteCopyWithImpl<Note>(this as Note, _$ide
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Note&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.noteType, noteType) || other.noteType == noteType)&&(identical(other.content, content) || other.content == content)&&(identical(other.isPinned, isPinned) || other.isPinned == isPinned)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived)&&(identical(other.background, background) || other.background == background)&&(identical(other.state, state) || other.state == state)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&const DeepCollectionEquality().equals(other.tagIds, tagIds)&&(identical(other.permission, permission) || other.permission == permission)&&const DeepCollectionEquality().equals(other.shareIds, shareIds)&&(identical(other.sharedBy, sharedBy) || other.sharedBy == sharedBy)&&(identical(other.reminder, reminder) || other.reminder == reminder)&&(identical(other.isSynced, isSynced) || other.isSynced == isSynced)&&(identical(other.reminderSlot, reminderSlot) || other.reminderSlot == reminderSlot)&&const DeepCollectionEquality().equals(other.imagePreviewData, imagePreviewData)&&(identical(other.attachmentCount, attachmentCount) || other.attachmentCount == attachmentCount));
+  final _this = this as Note;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Note&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.title, _this.title) || other.title == _this.title)&&(identical(other.noteType, _this.noteType) || other.noteType == _this.noteType)&&(identical(other.content, _this.content) || other.content == _this.content)&&(identical(other.isPinned, _this.isPinned) || other.isPinned == _this.isPinned)&&(identical(other.isArchived, _this.isArchived) || other.isArchived == _this.isArchived)&&(identical(other.background, _this.background) || other.background == _this.background)&&(identical(other.state, _this.state) || other.state == _this.state)&&(identical(other.updatedAt, _this.updatedAt) || other.updatedAt == _this.updatedAt)&&const DeepCollectionEquality().equals(other.tagIds, _this.tagIds)&&(identical(other.permission, _this.permission) || other.permission == _this.permission)&&const DeepCollectionEquality().equals(other.shareIds, _this.shareIds)&&(identical(other.sharedBy, _this.sharedBy) || other.sharedBy == _this.sharedBy)&&(identical(other.reminder, _this.reminder) || other.reminder == _this.reminder)&&(identical(other.isSynced, _this.isSynced) || other.isSynced == _this.isSynced)&&(identical(other.reminderSlot, _this.reminderSlot) || other.reminderSlot == _this.reminderSlot)&&const DeepCollectionEquality().equals(other.imagePreviewData, _this.imagePreviewData)&&(identical(other.attachmentCount, _this.attachmentCount) || other.attachmentCount == _this.attachmentCount));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,title,noteType,content,isPinned,isArchived,background,state,updatedAt,const DeepCollectionEquality().hash(tagIds),permission,const DeepCollectionEquality().hash(shareIds),sharedBy,reminder,isSynced,reminderSlot,const DeepCollectionEquality().hash(imagePreviewData),attachmentCount);
+int get hashCode {
+  final _this = this as Note;
+  return Object.hash(runtimeType,_this.id,_this.title,_this.noteType,_this.content,_this.isPinned,_this.isArchived,_this.background,_this.state,_this.updatedAt,const DeepCollectionEquality().hash(_this.tagIds),_this.permission,const DeepCollectionEquality().hash(_this.shareIds),_this.sharedBy,_this.reminder,_this.isSynced,_this.reminderSlot,const DeepCollectionEquality().hash(_this.imagePreviewData),_this.attachmentCount);
+}
 
 @override
 String toString() {
-  return 'Note(id: $id, title: $title, noteType: $noteType, content: $content, isPinned: $isPinned, isArchived: $isArchived, background: $background, state: $state, updatedAt: $updatedAt, tagIds: $tagIds, permission: $permission, shareIds: $shareIds, sharedBy: $sharedBy, reminder: $reminder, isSynced: $isSynced, reminderSlot: $reminderSlot, imagePreviewData: $imagePreviewData, attachmentCount: $attachmentCount)';
+  final _this = this as Note;
+  return 'Note(id: ${_this.id}, title: ${_this.title}, noteType: ${_this.noteType}, content: ${_this.content}, isPinned: ${_this.isPinned}, isArchived: ${_this.isArchived}, background: ${_this.background}, state: ${_this.state}, updatedAt: ${_this.updatedAt}, tagIds: ${_this.tagIds}, permission: ${_this.permission}, shareIds: ${_this.shareIds}, sharedBy: ${_this.sharedBy}, reminder: ${_this.reminder}, isSynced: ${_this.isSynced}, reminderSlot: ${_this.reminderSlot}, imagePreviewData: ${_this.imagePreviewData}, attachmentCount: ${_this.attachmentCount})';
 }
 
 
@@ -563,16 +575,18 @@ _$NoteCopyWith<_Note> get copyWith => __$NoteCopyWithImpl<_Note>(this, _$identit
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Note&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.noteType, noteType) || other.noteType == noteType)&&(identical(other.content, content) || other.content == content)&&(identical(other.isPinned, isPinned) || other.isPinned == isPinned)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived)&&(identical(other.background, background) || other.background == background)&&(identical(other.state, state) || other.state == state)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&const DeepCollectionEquality().equals(other._tagIds, _tagIds)&&(identical(other.permission, permission) || other.permission == permission)&&const DeepCollectionEquality().equals(other._shareIds, _shareIds)&&(identical(other.sharedBy, sharedBy) || other.sharedBy == sharedBy)&&(identical(other.reminder, reminder) || other.reminder == reminder)&&(identical(other.isSynced, isSynced) || other.isSynced == isSynced)&&(identical(other.reminderSlot, reminderSlot) || other.reminderSlot == reminderSlot)&&const DeepCollectionEquality().equals(other._imagePreviewData, _imagePreviewData)&&(identical(other.attachmentCount, attachmentCount) || other.attachmentCount == attachmentCount));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Note&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.noteType, noteType) || other.noteType == noteType)&&(identical(other.content, content) || other.content == content)&&(identical(other.isPinned, isPinned) || other.isPinned == isPinned)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived)&&(identical(other.background, background) || other.background == background)&&(identical(other.state, state) || other.state == state)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&const DeepCollectionEquality().equals(other.tagIds, _tagIds)&&(identical(other.permission, permission) || other.permission == permission)&&const DeepCollectionEquality().equals(other.shareIds, _shareIds)&&(identical(other.sharedBy, sharedBy) || other.sharedBy == sharedBy)&&(identical(other.reminder, reminder) || other.reminder == reminder)&&(identical(other.isSynced, isSynced) || other.isSynced == isSynced)&&(identical(other.reminderSlot, reminderSlot) || other.reminderSlot == reminderSlot)&&const DeepCollectionEquality().equals(other.imagePreviewData, _imagePreviewData)&&(identical(other.attachmentCount, attachmentCount) || other.attachmentCount == attachmentCount));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,title,noteType,content,isPinned,isArchived,background,state,updatedAt,const DeepCollectionEquality().hash(_tagIds),permission,const DeepCollectionEquality().hash(_shareIds),sharedBy,reminder,isSynced,reminderSlot,const DeepCollectionEquality().hash(_imagePreviewData),attachmentCount);
+int get hashCode {
+    return Object.hash(runtimeType,id,title,noteType,content,isPinned,isArchived,background,state,updatedAt,const DeepCollectionEquality().hash(_tagIds),permission,const DeepCollectionEquality().hash(_shareIds),sharedBy,reminder,isSynced,reminderSlot,const DeepCollectionEquality().hash(_imagePreviewData),attachmentCount);
+}
 
 @override
 String toString() {
-  return 'Note(id: $id, title: $title, noteType: $noteType, content: $content, isPinned: $isPinned, isArchived: $isArchived, background: $background, state: $state, updatedAt: $updatedAt, tagIds: $tagIds, permission: $permission, shareIds: $shareIds, sharedBy: $sharedBy, reminder: $reminder, isSynced: $isSynced, reminderSlot: $reminderSlot, imagePreviewData: $imagePreviewData, attachmentCount: $attachmentCount)';
+    return 'Note(id: $id, title: $title, noteType: $noteType, content: $content, isPinned: $isPinned, isArchived: $isArchived, background: $background, state: $state, updatedAt: $updatedAt, tagIds: $tagIds, permission: $permission, shareIds: $shareIds, sharedBy: $sharedBy, reminder: $reminder, isSynced: $isSynced, reminderSlot: $reminderSlot, imagePreviewData: $imagePreviewData, attachmentCount: $attachmentCount)';
 }
 
 

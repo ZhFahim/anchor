@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons_500.dart';
+import 'package:lucide_icons_flutter/lucide_icons_600.dart';
 
 import '../../../../core/network/connectivity_provider.dart';
 import '../../../../core/session/session_expired_provider.dart';
@@ -79,7 +81,7 @@ class ListLargeTitle extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  LucideIcons.hash600,
+                  LucideIcons600.hash,
                   size: AnchorTokens.sizeIconLarge,
                   color: tagColorsOf(context, tag.color).hash,
                 ),
@@ -129,7 +131,7 @@ class ListBarTitle extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  LucideIcons.hash600,
+                  LucideIcons600.hash,
                   size: AnchorTokens.sizeIconSmall,
                   color: tagColorsOf(context, tag.color).hash,
                 ),
@@ -139,7 +141,7 @@ class ListBarTitle extends StatelessWidget {
       trailing: Padding(
         padding: const EdgeInsetsDirectional.only(start: 4),
         child: Icon(
-          LucideIcons.chevronDown500,
+          LucideIcons500.chevronDown,
           size: AnchorTokens.sizeIconSmall,
           color: context.anchor.appMuted,
         ),

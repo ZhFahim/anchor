@@ -132,6 +132,30 @@ export function findLineIndexAtPosition(
   return lines.length - 1;
 }
 
+/** [formatOf] returns null to leave a line as it is. */
+export function lineFormatOps(
+  lines: DeltaLine[],
+  formatOf: (
+    line: DeltaLine,
+    index: number,
+    start: number,
+  ) => QuillOp["attributes"] | null,
+): QuillOp[] {
+  const ops: QuillOp[] = [];
+  let cursor = 0;
+  let position = 0;
+  lines.forEach((line, index) => {
+    const newline = position + getLineLength(line) - 1;
+    const attributes = formatOf(line, index, position);
+    position = newline + 1;
+    if (!attributes) return;
+    if (newline > cursor) ops.push({ retain: newline - cursor });
+    ops.push({ retain: 1, attributes });
+    cursor = newline + 1;
+  });
+  return ops;
+}
+
 export const MAX_LIST_INDENT = 3;
 
 /**
@@ -149,15 +173,10 @@ export function buildListIndentDelta(
   const lines = deltaToLines(currentDelta.ops);
   const selEnd = length > 0 ? index + length : index + 1;
   const effective: number[] = [];
-  const ops: QuillOp[] = [];
-  let cursor = 0;
-  let position = 0;
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    const lineLength = getLineLength(line);
-    const newlineOffset = position + lineLength - 1;
-    const inRange = position < selEnd && index <= newlineOffset;
+  const ops = lineFormatOps(lines, (line, i, start) => {
+    const newlineOffset = start + getLineLength(line) - 1;
+    const inRange = start < selEnd && index <= newlineOffset;
     const isList = line.newlineOp.attributes?.list !== undefined;
     let newIndent = indentOf(line);
 
@@ -175,18 +194,10 @@ export function buildListIndentDelta(
     }
     effective.push(newIndent);
 
-    if (newIndent !== indentOf(line)) {
-      if (newlineOffset > cursor) {
-        ops.push({ retain: newlineOffset - cursor });
-      }
-      ops.push({
-        retain: 1,
-        attributes: { indent: newIndent === 0 ? null : newIndent },
-      });
-      cursor = newlineOffset + 1;
-    }
-    position += lineLength;
-  }
+    return newIndent === indentOf(line)
+      ? null
+      : { indent: newIndent === 0 ? null : newIndent };
+  });
 
-  return cursor > 0 ? { ops } : null;
+  return ops.length ? { ops } : null;
 }

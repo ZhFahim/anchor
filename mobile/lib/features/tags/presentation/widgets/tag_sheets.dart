@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons_600.dart';
 
 import '../../../../core/motion/haptics.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -151,7 +152,7 @@ class _TagPickerState extends ConsumerState<_TagPicker> {
           leading: SizedBox(
             width: AnchorTokens.sizeIconMedium,
             child: Icon(
-              LucideIcons.hash600,
+              LucideIcons600.hash,
               size: AnchorTokens.sizeIconSmall,
               color: tagColorsOf(context, t.color).hash,
             ),
@@ -281,7 +282,7 @@ class TagColorRow extends StatelessWidget {
                     color: colors.tags[entry.key]!.tintFill,
                   ),
                   child: Icon(
-                    LucideIcons.hash600,
+                    LucideIcons600.hash,
                     size: AnchorTokens.sizeIconSmall,
                     color: colors.tags[entry.key]!.hash,
                   ),
@@ -504,7 +505,7 @@ class _TagEditorState extends ConsumerState<_TagEditor> {
                       spacing: 4,
                       children: [
                         Icon(
-                          LucideIcons.hash600,
+                          LucideIcons600.hash,
                           size: AnchorTokens.sizeIconSmall,
                           color: hash,
                         ),

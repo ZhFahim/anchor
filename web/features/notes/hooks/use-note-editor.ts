@@ -13,6 +13,7 @@ import {
   isRetryableError,
   saveNote,
 } from "../api";
+import { cacheSavedNote } from "../queries";
 import { isStoredContentEmpty } from "../quill";
 import {
   draftUpdate,
@@ -112,7 +113,7 @@ export function useNoteEditor({
   const [saveFailure, setSaveFailure] = useState<SaveFailure | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
 
-  const titleInputRef = useRef<HTMLInputElement | null>(null);
+  const titleInputRef = useRef<HTMLTextAreaElement | null>(null);
   const hydratedNoteIdRef = useRef<string | null>(null);
   const pendingCreateNoteRef = useRef<Promise<Note> | null>(null);
   const noteVersionRef = useRef<number | undefined>(undefined);
@@ -477,15 +478,7 @@ export function useNoteEditor({
       serverReminderRef.current = savedNote.reminder ?? null;
       setIsSaveStuck(false);
       setSaveFailure(null);
-      queryClient.setQueryData(["notes", noteId], savedNote);
-      // Back on the list, the card shows the saved text before the refetch lands.
-      queryClient.setQueriesData<Note[]>({ queryKey: ["notes"] }, (list) =>
-        Array.isArray(list)
-          ? list.map((listed) =>
-              listed.id === savedNote.id ? savedNote : listed,
-            )
-          : list,
-      );
+      cacheSavedNote(queryClient, savedNote);
       queryClient.invalidateQueries({
         queryKey: ["notes"],
         predicate: (query) => query.queryKey[1] !== noteId,

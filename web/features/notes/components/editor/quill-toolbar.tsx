@@ -33,6 +33,7 @@ import {
   toggleTextFormat,
 } from "../../quill";
 import { buildListIndentDelta } from "../../quill-lines";
+import type { UndoRedoAction } from "../../undo-shortcuts";
 import {
   HighlightSplitButton,
   hasHighlight,
@@ -94,6 +95,7 @@ interface QuillToolbarProps {
   updateKey: number;
   onOpenLinkDialog: () => void;
   onAddAttachment?: () => void;
+  onUndoRedo: (action: UndoRedoAction) => void;
 }
 
 export function QuillToolbar({
@@ -102,6 +104,7 @@ export function QuillToolbar({
   updateKey,
   onOpenLinkDialog,
   onAddAttachment,
+  onUndoRedo,
 }: QuillToolbarProps) {
   const [format, setFormat] = useState<Record<string, unknown>>({});
   const [canUndo, setCanUndo] = useState(false);
@@ -232,18 +235,13 @@ export function QuillToolbar({
       onFocus={formatting.onFocus}
       onKeyDown={formatting.onKeyDown}
     >
-      {toolButton(
-        `Undo (${modKey}Z)`,
-        <Undo2 />,
-        () => quill?.history?.undo?.(),
-        {
-          disabled: !canUndo,
-        },
-      )}
+      {toolButton(`Undo (${modKey}Z)`, <Undo2 />, () => onUndoRedo("undo"), {
+        disabled: !canUndo,
+      })}
       {toolButton(
         `Redo (${isMac() ? "⇧⌘Z" : "Ctrl+Y"})`,
         <Redo2 />,
-        () => quill?.history?.redo?.(),
+        () => onUndoRedo("redo"),
         { disabled: !canRedo },
       )}
       {divider}

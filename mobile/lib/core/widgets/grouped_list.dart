@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons_500.dart';
 
 import '../motion/haptics.dart';
 import '../motion/springs.dart';
@@ -333,7 +334,7 @@ class _CheckIcon extends StatelessWidget {
         opacity: isOn ? 1 : 0,
         duration: context.motion(AnchorTokens.motionDurationHover),
         child: Icon(
-          LucideIcons.check500,
+          LucideIcons500.check,
           size: AnchorTokens.sizeIconMedium,
           color: context.anchor.accentStrong,
         ),

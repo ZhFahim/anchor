@@ -7,8 +7,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateTagDto } from './dto/create-tag.dto';
 import { UpdateTagDto } from './dto/update-tag.dto';
 import { SyncEmitterService, tagEmission } from '../sync/sync-emitter.service';
-import { SyncOp } from 'src/generated/prisma/enums';
+import { NoteState, SyncOp } from 'src/generated/prisma/enums';
 import { RETENTION_CHUNK_SIZE } from '../common/retention.constants';
+import {
+  ERROR_MESSAGES,
+  TAG_INCLUDE_NOTE_COUNT,
+} from './constants/tags.constants';
 
 @Injectable()
 export class TagsService {
@@ -18,18 +22,7 @@ export class TagsService {
   ) {}
 
   async create(userId: string, createTagDto: CreateTagDto) {
-    // Check if tag with same name already exists for this user (not deleted)
-    const existing = await this.prisma.tag.findFirst({
-      where: {
-        userId,
-        name: createTagDto.name,
-        isDeleted: false,
-      },
-    });
-
-    if (existing) {
-      throw new ConflictException('A tag with this name already exists');
-    }
+    await this.assertNameFree(userId, createTagDto.name);
 
     return this.prisma.$transaction(async (tx) => {
       const tag = await tx.tag.create({
@@ -37,18 +30,7 @@ export class TagsService {
           ...createTagDto,
           userId,
         },
-        include: {
-          _count: {
-            select: {
-              notes: {
-                where: {
-                  state: 'active',
-                  archives: { none: { userId } },
-                },
-              },
-            },
-          },
-        },
+        include: TAG_INCLUDE_NOTE_COUNT,
       });
       await this.syncEmitter.emit(tx, [tagEmission(userId, tag.id)]);
       return tag;
@@ -62,40 +44,18 @@ export class TagsService {
         isDeleted: false,
       },
       orderBy: { name: 'asc' },
-      include: {
-        _count: {
-          select: {
-            notes: {
-              where: {
-                state: 'active',
-                archives: { none: { userId } },
-              },
-            },
-          },
-        },
-      },
+      include: TAG_INCLUDE_NOTE_COUNT,
     });
   }
 
   async findOne(userId: string, id: string) {
     const tag = await this.prisma.tag.findUnique({
       where: { id },
-      include: {
-        _count: {
-          select: {
-            notes: {
-              where: {
-                state: 'active',
-                archives: { none: { userId } },
-              },
-            },
-          },
-        },
-      },
+      include: TAG_INCLUDE_NOTE_COUNT,
     });
 
     if (!tag || tag.userId !== userId || tag.isDeleted) {
-      throw new NotFoundException('Tag not found');
+      throw new NotFoundException(ERROR_MESSAGES.TAG_NOT_FOUND);
     }
 
     return tag;
@@ -105,20 +65,8 @@ export class TagsService {
     const prior = await this.findOne(userId, id);
     const { baseVersion, ...tagData } = updateTagDto;
 
-    // Check for name conflict if name is being updated
     if (tagData.name) {
-      const existing = await this.prisma.tag.findFirst({
-        where: {
-          userId,
-          name: tagData.name,
-          isDeleted: false,
-          id: { not: id },
-        },
-      });
-
-      if (existing) {
-        throw new ConflictException('A tag with this name already exists');
-      }
+      await this.assertNameFree(userId, tagData.name, id);
     }
 
     const changed =
@@ -137,18 +85,7 @@ export class TagsService {
           ...tagData,
           ...(changed ? { version: { increment: 1 } } : {}),
         },
-        include: {
-          _count: {
-            select: {
-              notes: {
-                where: {
-                  state: 'active',
-                  archives: { none: { userId } },
-                },
-              },
-            },
-          },
-        },
+        include: TAG_INCLUDE_NOTE_COUNT,
       });
       await this.syncEmitter.emit(tx, [tagEmission(userId, id)]);
       return { conflict: false as const, tag };
@@ -156,7 +93,7 @@ export class TagsService {
 
     if (result.conflict) {
       throw new ConflictException({
-        message: 'Tag was changed by someone else',
+        message: ERROR_MESSAGES.TAG_CHANGED,
         serverTag: await this.findOne(userId, id),
       });
     }
@@ -180,14 +117,13 @@ export class TagsService {
     });
   }
 
-  // Get notes by tag
   async getNotesByTag(userId: string, tagId: string) {
     await this.findOne(userId, tagId);
 
     const notes = await this.prisma.note.findMany({
       where: {
         userId,
-        state: 'active',
+        state: NoteState.active,
         tags: {
           some: {
             id: tagId,
@@ -200,14 +136,12 @@ export class TagsService {
       },
     });
 
-    // Transform to include tagIds array
     return notes.map((note) => ({
       ...note,
       tagIds: note.tags.map((t) => t.id),
     }));
   }
 
-  // Purge tombstones older than retention period (30 days)
   async purgeTombstones(retentionDays = 30) {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
@@ -247,5 +181,24 @@ export class TagsService {
     }
 
     return { purgedTagsCount };
+  }
+
+  private async assertNameFree(
+    userId: string,
+    name: string,
+    exceptId?: string,
+  ) {
+    const existing = await this.prisma.tag.findFirst({
+      where: {
+        userId,
+        name,
+        isDeleted: false,
+        ...(exceptId ? { id: { not: exceptId } } : {}),
+      },
+    });
+
+    if (existing) {
+      throw new ConflictException(ERROR_MESSAGES.TAG_NAME_EXISTS);
+    }
   }
 }

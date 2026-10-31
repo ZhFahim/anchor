@@ -36,6 +36,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons_500.dart';
+import 'package:lucide_icons_flutter/lucide_icons_600.dart';
 
 final _english = lookupAppLocalizations(const Locale('en'));
 
@@ -458,7 +460,7 @@ class _Probe {
       final lineText = _in(BarTitleLine, find.byType(Text));
       final line = lineText.evaluate().isEmpty ? null : caps(lineText);
       near('$where: chevron', mid(find.byType(BarTitleChevron)), name.mid);
-      final hash = _in(ListLargeTitle, find.byIcon(LucideIcons.hash600));
+      final hash = _in(ListLargeTitle, find.byIcon(LucideIcons600.hash));
       if (hash.evaluate().isNotEmpty) {
         near('$where: #', mid(hash), name.mid);
       }
@@ -483,7 +485,7 @@ class _Probe {
       final title = caps(
         find.descendant(of: small, matching: find.byType(Text)).first,
       );
-      for (final icon in [LucideIcons.hash600, LucideIcons.chevronDown500]) {
+      for (final icon in [LucideIcons600.hash, LucideIcons500.chevronDown]) {
         final found = find.descendant(of: small, matching: find.byIcon(icon));
         if (found.evaluate().isEmpty) continue;
         near('$where: bar title $icon', mid(found), title.mid);

@@ -162,105 +162,112 @@ export const SearchField = React.forwardRef<
     placeholder: string;
     className?: string;
     autoFocus?: boolean;
+    onFocus?: () => void;
   }
->(({ value, onChange, placeholder, className, autoFocus }, forwardedRef) => {
-  const input = React.useRef<HTMLInputElement>(null);
-  React.useImperativeHandle(
+>(
+  (
+    { value, onChange, placeholder, className, autoFocus, onFocus },
     forwardedRef,
-    () => input.current as HTMLInputElement,
-  );
-  const [open, setOpen] = React.useState(false);
+  ) => {
+    const input = React.useRef<HTMLInputElement>(null);
+    React.useImperativeHandle(
+      forwardedRef,
+      () => input.current as HTMLInputElement,
+    );
+    const [open, setOpen] = React.useState(false);
 
-  React.useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.defaultPrevented) return;
-      if (hasShortcutKey(e) && e.key.toLowerCase() === "k") {
-        if (
-          document.querySelector(
-            "[role=dialog], [role=alertdialog], [role=menu]",
+    React.useEffect(() => {
+      const onKey = (e: KeyboardEvent) => {
+        if (e.defaultPrevented) return;
+        if (hasShortcutKey(e) && e.key.toLowerCase() === "k") {
+          if (
+            document.querySelector(
+              "[role=dialog], [role=alertdialog], [role=menu]",
+            )
           )
-        )
-          return;
-        e.preventDefault();
-        setOpen(true);
-        requestAnimationFrame(() => {
-          input.current?.focus();
-          input.current?.select();
-        });
-      }
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, []);
-
-  React.useEffect(() => {
-    if (!autoFocus) return;
-    setOpen(true);
-    requestAnimationFrame(() => input.current?.focus());
-  }, [autoFocus]);
-
-  return (
-    <>
-      <label
-        data-search-field
-        data-open={open || undefined}
-        className={cn(
-          "group/search flex h-9.5 w-75 max-w-full items-center gap-2 rounded-md bg-card pr-2 pl-3 shadow-[inset_0_0_0_1px_var(--input),var(--sh-xs)] transition-[box-shadow,width] duration-(--duration-header) ease-standard focus-within:w-90 focus-within:shadow-[inset_0_0_0_2px_var(--ring)] max-md:hidden max-md:data-open:absolute max-md:data-open:inset-x-3 max-md:data-open:top-2 max-md:data-open:z-(--z-raised) max-md:data-open:flex max-md:data-open:w-auto [&>svg]:size-4 [&>svg]:text-muted-foreground",
-          className,
-        )}
-      >
-        <Search aria-hidden />
-        <input
-          ref={input}
-          type="search"
-          value={value}
-          placeholder={placeholder}
-          aria-label={placeholder}
-          onChange={(e) => onChange(e.target.value)}
-          onBlur={() => !value && setOpen(false)}
-          onKeyDown={(e) => {
-            if (e.key !== "Escape") return;
-            if (value) {
-              e.preventDefault();
-              e.stopPropagation();
-              onChange("");
-            } else e.currentTarget.blur();
-          }}
-          className="h-full min-w-0 flex-1 border-0 bg-transparent p-0 text-foreground text-ui outline-none placeholder:text-muted-foreground focus-visible:outline-none [&::-webkit-search-cancel-button]:hidden"
-        />
-        {value ? (
-          <Tip label="Clear search">
-            <button
-              type="button"
-              aria-label="Clear search"
-              onClick={() => {
-                onChange("");
-                input.current?.focus();
-              }}
-              className="grid size-6 flex-none cursor-pointer place-items-center rounded-sm bg-transparent p-0 text-muted-foreground hover:bg-muted hover:text-foreground [&>svg]:size-3.5"
-            >
-              <X />
-            </button>
-          </Tip>
-        ) : (
-          <kbd aria-hidden className="group-focus-within/search:hidden">
-            {isMac() ? "⌘K" : "Ctrl K"}
-          </kbd>
-        )}
-      </label>
-      <IconButton
-        label="Search"
-        className="hidden max-md:inline-grid"
-        onClick={() => {
+            return;
+          e.preventDefault();
           setOpen(true);
-          requestAnimationFrame(() => input.current?.focus());
-        }}
-      >
-        <Search />
-      </IconButton>
-    </>
-  );
-});
+          requestAnimationFrame(() => {
+            input.current?.focus();
+            input.current?.select();
+          });
+        }
+      };
+      document.addEventListener("keydown", onKey);
+      return () => document.removeEventListener("keydown", onKey);
+    }, []);
+
+    React.useEffect(() => {
+      if (!autoFocus) return;
+      setOpen(true);
+      requestAnimationFrame(() => input.current?.focus());
+    }, [autoFocus]);
+
+    return (
+      <>
+        <label
+          data-search-field
+          data-open={open || undefined}
+          className={cn(
+            "group/search flex h-9.5 w-75 max-w-full items-center gap-2 rounded-md bg-card pr-2 pl-3 shadow-[inset_0_0_0_1px_var(--input),var(--sh-xs)] transition-[box-shadow,width] duration-(--duration-header) ease-standard focus-within:w-90 focus-within:shadow-[inset_0_0_0_2px_var(--ring)] max-md:hidden max-md:data-open:absolute max-md:data-open:inset-x-3 max-md:data-open:top-2 max-md:data-open:z-(--z-raised) max-md:data-open:flex max-md:data-open:w-auto [&>svg]:size-4 [&>svg]:text-muted-foreground",
+            className,
+          )}
+        >
+          <Search aria-hidden />
+          <input
+            ref={input}
+            type="search"
+            value={value}
+            placeholder={placeholder}
+            aria-label={placeholder}
+            onChange={(e) => onChange(e.target.value)}
+            onFocus={onFocus}
+            onBlur={() => !value && setOpen(false)}
+            onKeyDown={(e) => {
+              if (e.key !== "Escape") return;
+              if (value) {
+                e.preventDefault();
+                e.stopPropagation();
+                onChange("");
+              } else e.currentTarget.blur();
+            }}
+            className="h-full min-w-0 flex-1 border-0 bg-transparent p-0 text-foreground text-ui outline-none placeholder:text-muted-foreground focus-visible:outline-none [&::-webkit-search-cancel-button]:hidden"
+          />
+          {value ? (
+            <Tip label="Clear search">
+              <button
+                type="button"
+                aria-label="Clear search"
+                onClick={() => {
+                  onChange("");
+                  input.current?.focus();
+                }}
+                className="grid size-6 flex-none cursor-pointer place-items-center rounded-sm bg-transparent p-0 text-muted-foreground hover:bg-muted hover:text-foreground [&>svg]:size-3.5"
+              >
+                <X />
+              </button>
+            </Tip>
+          ) : (
+            <kbd aria-hidden className="group-focus-within/search:hidden">
+              {isMac() ? "⌘K" : "Ctrl K"}
+            </kbd>
+          )}
+        </label>
+        <IconButton
+          label="Search"
+          className="hidden max-md:inline-grid"
+          onClick={() => {
+            setOpen(true);
+            requestAnimationFrame(() => input.current?.focus());
+          }}
+        >
+          <Search />
+        </IconButton>
+      </>
+    );
+  },
+);
 SearchField.displayName = "SearchField";
 
 export function Fab({

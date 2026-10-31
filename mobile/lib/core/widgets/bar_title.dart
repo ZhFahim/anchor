@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show OverflowBoxFit;
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons_500.dart';
 
 import '../motion/springs.dart';
 import '../theme/app_typography.dart';
@@ -248,7 +248,7 @@ class BarTitleChevron extends StatelessWidget {
         color: colors.appText.withValues(alpha: 0.07),
       ),
       child: Icon(
-        LucideIcons.chevronDown500,
+        LucideIcons500.chevronDown,
         size: AnchorTokens.sizeIconSmall,
         color: colors.appText,
       ),

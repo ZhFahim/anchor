@@ -42,6 +42,7 @@ import { useAuth } from "@/features/auth";
 import { useSyncStatus, useUnsavedCount } from "@/features/sync";
 import {
   deleteTag,
+  sortTagsByName,
   type Tag,
   TagDialog,
   tagColorName,
@@ -168,10 +169,7 @@ export function Sidebar({
   const tagsLoaded = tagsQuery.data !== undefined;
   // isError clears while Try again runs.
   const tagsFailed = !tagsLoaded && tagsQuery.errorUpdatedAt > 0;
-  const sortedTags = React.useMemo(
-    () => [...tags].sort((a, b) => a.name.localeCompare(b.name)),
-    [tags],
-  );
+  const sortedTags = React.useMemo(() => sortTagsByName(tags), [tags]);
 
   const [tagDialog, setTagDialog] = React.useState<{ tag: Tag | null } | null>(
     null,

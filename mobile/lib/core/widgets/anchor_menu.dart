@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons_600.dart';
 
 import '../../l10n/l10n.dart';
 import '../motion/haptics.dart';
@@ -308,7 +308,7 @@ class MenuRow extends StatelessWidget {
             ),
             if (isChecked)
               Icon(
-                LucideIcons.check600,
+                LucideIcons600.check,
                 size: AnchorTokens.sizeIconMedium,
                 color: colors.accentStrong,
               ),

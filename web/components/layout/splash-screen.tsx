@@ -2,7 +2,7 @@
 
 import { StatusRing } from "@/components/ui/status-ring";
 import { useDelayedFlag } from "@/lib/hooks/use-delayed-flag";
-import { AnchorLogo } from "./brand";
+import { AnchorLogo } from "./anchor-logo";
 
 export function SplashScreen({ checking }: { checking: boolean }) {
   const isSlow = useDelayedFlag(checking, 3000);

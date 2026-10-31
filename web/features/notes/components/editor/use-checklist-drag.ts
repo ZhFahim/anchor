@@ -65,6 +65,7 @@ function hitTestRow(
     CHECKLIST_ITEM_SELECTOR,
   )) {
     const rect = el.getBoundingClientRect();
+    if (!rect.height) continue;
     if (
       y >= rect.top - BAND_SLACK &&
       y <= rect.bottom + BAND_SLACK &&
@@ -209,12 +210,16 @@ export function useChecklistDrag({
           return last.top + last.height;
         }
         const prev = bands[rel - 1];
+        if (!bands[rel].height) return prev.top + prev.height;
         return (prev.top + prev.height + bands[rel].top) / 2;
       };
+      const shownGaps = plan.gaps.filter(
+        (g) => bands[g.gap - plan.groupStart - 1]?.height !== 0,
+      );
       // Snap to the nearest structurally valid gap.
-      let entry = plan.gaps[0];
+      let entry = shownGaps[0] ?? plan.gaps[0];
       let bestDistance = Number.POSITIVE_INFINITY;
-      for (const g of plan.gaps) {
+      for (const g of shownGaps) {
         const distance = Math.abs(contentY - gapEdge(g.gap));
         if (distance < bestDistance) {
           bestDistance = distance;

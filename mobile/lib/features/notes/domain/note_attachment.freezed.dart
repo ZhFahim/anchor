@@ -29,16 +29,21 @@ $NoteAttachmentCopyWith<NoteAttachment> get copyWith => _$NoteAttachmentCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NoteAttachment&&(identical(other.id, id) || other.id == id)&&(identical(other.noteId, noteId) || other.noteId == noteId)&&(identical(other.type, type) || other.type == type)&&(identical(other.originalFilename, originalFilename) || other.originalFilename == originalFilename)&&(identical(other.mimeType, mimeType) || other.mimeType == mimeType)&&(identical(other.fileSize, fileSize) || other.fileSize == fileSize)&&(identical(other.position, position) || other.position == position)&&(identical(other.uploadedByUserId, uploadedByUserId) || other.uploadedByUserId == uploadedByUserId)&&(identical(other.localPath, localPath) || other.localPath == localPath)&&(identical(other.isPendingUpload, isPendingUpload) || other.isPendingUpload == isPendingUpload)&&(identical(other.isUploadFailed, isUploadFailed) || other.isUploadFailed == isUploadFailed)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  final _this = this as NoteAttachment;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NoteAttachment&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.noteId, _this.noteId) || other.noteId == _this.noteId)&&(identical(other.type, _this.type) || other.type == _this.type)&&(identical(other.originalFilename, _this.originalFilename) || other.originalFilename == _this.originalFilename)&&(identical(other.mimeType, _this.mimeType) || other.mimeType == _this.mimeType)&&(identical(other.fileSize, _this.fileSize) || other.fileSize == _this.fileSize)&&(identical(other.position, _this.position) || other.position == _this.position)&&(identical(other.uploadedByUserId, _this.uploadedByUserId) || other.uploadedByUserId == _this.uploadedByUserId)&&(identical(other.localPath, _this.localPath) || other.localPath == _this.localPath)&&(identical(other.isPendingUpload, _this.isPendingUpload) || other.isPendingUpload == _this.isPendingUpload)&&(identical(other.isUploadFailed, _this.isUploadFailed) || other.isUploadFailed == _this.isUploadFailed)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,noteId,type,originalFilename,mimeType,fileSize,position,uploadedByUserId,localPath,isPendingUpload,isUploadFailed,createdAt);
+int get hashCode {
+  final _this = this as NoteAttachment;
+  return Object.hash(runtimeType,_this.id,_this.noteId,_this.type,_this.originalFilename,_this.mimeType,_this.fileSize,_this.position,_this.uploadedByUserId,_this.localPath,_this.isPendingUpload,_this.isUploadFailed,_this.createdAt);
+}
 
 @override
 String toString() {
-  return 'NoteAttachment(id: $id, noteId: $noteId, type: $type, originalFilename: $originalFilename, mimeType: $mimeType, fileSize: $fileSize, position: $position, uploadedByUserId: $uploadedByUserId, localPath: $localPath, isPendingUpload: $isPendingUpload, isUploadFailed: $isUploadFailed, createdAt: $createdAt)';
+  final _this = this as NoteAttachment;
+  return 'NoteAttachment(id: ${_this.id}, noteId: ${_this.noteId}, type: ${_this.type}, originalFilename: ${_this.originalFilename}, mimeType: ${_this.mimeType}, fileSize: ${_this.fileSize}, position: ${_this.position}, uploadedByUserId: ${_this.uploadedByUserId}, localPath: ${_this.localPath}, isPendingUpload: ${_this.isPendingUpload}, isUploadFailed: ${_this.isUploadFailed}, createdAt: ${_this.createdAt})';
 }
 
 
@@ -250,16 +255,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NoteAttachment&&(identical(other.id, id) || other.id == id)&&(identical(other.noteId, noteId) || other.noteId == noteId)&&(identical(other.type, type) || other.type == type)&&(identical(other.originalFilename, originalFilename) || other.originalFilename == originalFilename)&&(identical(other.mimeType, mimeType) || other.mimeType == mimeType)&&(identical(other.fileSize, fileSize) || other.fileSize == fileSize)&&(identical(other.position, position) || other.position == position)&&(identical(other.uploadedByUserId, uploadedByUserId) || other.uploadedByUserId == uploadedByUserId)&&(identical(other.localPath, localPath) || other.localPath == localPath)&&(identical(other.isPendingUpload, isPendingUpload) || other.isPendingUpload == isPendingUpload)&&(identical(other.isUploadFailed, isUploadFailed) || other.isUploadFailed == isUploadFailed)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _NoteAttachment&&(identical(other.id, id) || other.id == id)&&(identical(other.noteId, noteId) || other.noteId == noteId)&&(identical(other.type, type) || other.type == type)&&(identical(other.originalFilename, originalFilename) || other.originalFilename == originalFilename)&&(identical(other.mimeType, mimeType) || other.mimeType == mimeType)&&(identical(other.fileSize, fileSize) || other.fileSize == fileSize)&&(identical(other.position, position) || other.position == position)&&(identical(other.uploadedByUserId, uploadedByUserId) || other.uploadedByUserId == uploadedByUserId)&&(identical(other.localPath, localPath) || other.localPath == localPath)&&(identical(other.isPendingUpload, isPendingUpload) || other.isPendingUpload == isPendingUpload)&&(identical(other.isUploadFailed, isUploadFailed) || other.isUploadFailed == isUploadFailed)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,noteId,type,originalFilename,mimeType,fileSize,position,uploadedByUserId,localPath,isPendingUpload,isUploadFailed,createdAt);
+int get hashCode {
+    return Object.hash(runtimeType,id,noteId,type,originalFilename,mimeType,fileSize,position,uploadedByUserId,localPath,isPendingUpload,isUploadFailed,createdAt);
+}
 
 @override
 String toString() {
-  return 'NoteAttachment(id: $id, noteId: $noteId, type: $type, originalFilename: $originalFilename, mimeType: $mimeType, fileSize: $fileSize, position: $position, uploadedByUserId: $uploadedByUserId, localPath: $localPath, isPendingUpload: $isPendingUpload, isUploadFailed: $isUploadFailed, createdAt: $createdAt)';
+    return 'NoteAttachment(id: $id, noteId: $noteId, type: $type, originalFilename: $originalFilename, mimeType: $mimeType, fileSize: $fileSize, position: $position, uploadedByUserId: $uploadedByUserId, localPath: $localPath, isPendingUpload: $isPendingUpload, isUploadFailed: $isUploadFailed, createdAt: $createdAt)';
 }
 
 

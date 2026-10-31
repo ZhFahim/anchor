@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons_600.dart';
 
 import '../../../../core/motion/haptics.dart';
 import '../../../../core/motion/springs.dart';
@@ -192,7 +193,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                             leading: SizedBox(
                               width: AnchorTokens.sizeIconMedium,
                               child: Icon(
-                                LucideIcons.hash600,
+                                LucideIcons600.hash,
                                 size: AnchorTokens.sizeIconSmall,
                                 color: tagColorsOf(context, t.color).hash,
                               ),

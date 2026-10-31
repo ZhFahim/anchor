@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons_600.dart';
 
 import '../../../../core/motion/springs.dart';
 import '../../../../core/theme/context_extensions.dart';
@@ -352,7 +352,7 @@ class NoteCheckBox extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.anchor;
     Widget mark = Icon(
-      LucideIcons.check600,
+      LucideIcons600.check,
       size: 15, // off-scale: the note's check mark
       color: tick,
     );

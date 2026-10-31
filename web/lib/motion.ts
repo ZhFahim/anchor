@@ -1,5 +1,10 @@
 import { DURATION, EASE } from "@/lib/design/tokens";
 
+const NEAR_SCREEN = 200;
+
+export const isNearScreen = (rect: DOMRect) =>
+  rect.bottom > -NEAR_SCREEN && rect.top < window.innerHeight + NEAR_SCREEN;
+
 export function prefersReducedMotion(): boolean {
   return (
     typeof window !== "undefined" &&

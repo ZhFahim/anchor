@@ -1,7 +1,7 @@
 "use client";
 
+import { AnchorLogo } from "@/components/layout/anchor-logo";
 import { AppPage, PageTitle } from "@/components/layout/app-page";
-import { AnchorLogo } from "@/components/layout/brand";
 import {
   ApiTokenSection,
   AppearanceSection,

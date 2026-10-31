@@ -20,6 +20,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons_600.dart';
 
 Widget app(Widget child) => MaterialApp(
   theme: AppTheme.light(),
@@ -59,9 +60,9 @@ void main() {
     Icon icon() => tester.widget<Icon>(find.byType(Icon));
 
     await pump(true);
-    expect(icon().icon, LucideIcons.check600);
+    expect(icon().icon, LucideIcons600.check);
     await pump(null);
-    expect(icon().icon, LucideIcons.minus600);
+    expect(icon().icon, LucideIcons600.minus);
     await pump(false);
     await tester.pumpAndSettle();
     expect(

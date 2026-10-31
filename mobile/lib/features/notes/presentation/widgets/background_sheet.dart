@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons_600.dart';
 
 import '../../../../core/motion/haptics.dart';
 import '../../../../core/motion/springs.dart';
@@ -192,7 +193,7 @@ class _Swatch extends StatelessWidget {
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    LucideIcons.check600,
+                    LucideIcons600.check,
                     size: 12, // off-scale: as above
                     color: colors.checkMark,
                   ),

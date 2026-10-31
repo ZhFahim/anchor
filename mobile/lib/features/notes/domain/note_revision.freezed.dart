@@ -29,16 +29,21 @@ $NoteRevisionCopyWith<NoteRevision> get copyWith => _$NoteRevisionCopyWithImpl<N
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NoteRevision&&(identical(other.id, id) || other.id == id)&&(identical(other.noteId, noteId) || other.noteId == noteId)&&(identical(other.version, version) || other.version == version)&&(identical(other.title, title) || other.title == title)&&(identical(other.cause, cause) || other.cause == cause)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.author, author) || other.author == author)&&(identical(other.content, content) || other.content == content));
+  final _this = this as NoteRevision;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NoteRevision&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.noteId, _this.noteId) || other.noteId == _this.noteId)&&(identical(other.version, _this.version) || other.version == _this.version)&&(identical(other.title, _this.title) || other.title == _this.title)&&(identical(other.cause, _this.cause) || other.cause == _this.cause)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.author, _this.author) || other.author == _this.author)&&(identical(other.content, _this.content) || other.content == _this.content));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,noteId,version,title,cause,createdAt,author,content);
+int get hashCode {
+  final _this = this as NoteRevision;
+  return Object.hash(runtimeType,_this.id,_this.noteId,_this.version,_this.title,_this.cause,_this.createdAt,_this.author,_this.content);
+}
 
 @override
 String toString() {
-  return 'NoteRevision(id: $id, noteId: $noteId, version: $version, title: $title, cause: $cause, createdAt: $createdAt, author: $author, content: $content)';
+  final _this = this as NoteRevision;
+  return 'NoteRevision(id: ${_this.id}, noteId: ${_this.noteId}, version: ${_this.version}, title: ${_this.title}, cause: ${_this.cause}, createdAt: ${_this.createdAt}, author: ${_this.author}, content: ${_this.content})';
 }
 
 
@@ -254,16 +259,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NoteRevision&&(identical(other.id, id) || other.id == id)&&(identical(other.noteId, noteId) || other.noteId == noteId)&&(identical(other.version, version) || other.version == version)&&(identical(other.title, title) || other.title == title)&&(identical(other.cause, cause) || other.cause == cause)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.author, author) || other.author == author)&&(identical(other.content, content) || other.content == content));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _NoteRevision&&(identical(other.id, id) || other.id == id)&&(identical(other.noteId, noteId) || other.noteId == noteId)&&(identical(other.version, version) || other.version == version)&&(identical(other.title, title) || other.title == title)&&(identical(other.cause, cause) || other.cause == cause)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.author, author) || other.author == author)&&(identical(other.content, content) || other.content == content));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,noteId,version,title,cause,createdAt,author,content);
+int get hashCode {
+    return Object.hash(runtimeType,id,noteId,version,title,cause,createdAt,author,content);
+}
 
 @override
 String toString() {
-  return 'NoteRevision(id: $id, noteId: $noteId, version: $version, title: $title, cause: $cause, createdAt: $createdAt, author: $author, content: $content)';
+    return 'NoteRevision(id: $id, noteId: $noteId, version: $version, title: $title, cause: $cause, createdAt: $createdAt, author: $author, content: $content)';
 }
 
 
@@ -337,16 +344,21 @@ $NoteRevisionPageCopyWith<NoteRevisionPage> get copyWith => _$NoteRevisionPageCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NoteRevisionPage&&const DeepCollectionEquality().equals(other.revisions, revisions)&&(identical(other.nextCursor, nextCursor) || other.nextCursor == nextCursor));
+  final _this = this as NoteRevisionPage;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NoteRevisionPage&&const DeepCollectionEquality().equals(other.revisions, _this.revisions)&&(identical(other.nextCursor, _this.nextCursor) || other.nextCursor == _this.nextCursor));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(revisions),nextCursor);
+int get hashCode {
+  final _this = this as NoteRevisionPage;
+  return Object.hash(runtimeType,const DeepCollectionEquality().hash(_this.revisions),_this.nextCursor);
+}
 
 @override
 String toString() {
-  return 'NoteRevisionPage(revisions: $revisions, nextCursor: $nextCursor)';
+  final _this = this as NoteRevisionPage;
+  return 'NoteRevisionPage(revisions: ${_this.revisions}, nextCursor: ${_this.nextCursor})';
 }
 
 
@@ -544,16 +556,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NoteRevisionPage&&const DeepCollectionEquality().equals(other._revisions, _revisions)&&(identical(other.nextCursor, nextCursor) || other.nextCursor == nextCursor));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _NoteRevisionPage&&const DeepCollectionEquality().equals(other.revisions, _revisions)&&(identical(other.nextCursor, nextCursor) || other.nextCursor == nextCursor));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_revisions),nextCursor);
+int get hashCode {
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_revisions),nextCursor);
+}
 
 @override
 String toString() {
-  return 'NoteRevisionPage(revisions: $revisions, nextCursor: $nextCursor)';
+    return 'NoteRevisionPage(revisions: $revisions, nextCursor: $nextCursor)';
 }
 
 

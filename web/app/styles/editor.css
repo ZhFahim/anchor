@@ -3,7 +3,14 @@
 .anchor-quill {
   --indent: var(--size-list-indent);
   --box: var(--size-checkbox);
+  --box-left: 2px;
+  --fold-row: var(--size-control-small);
   position: relative;
+}
+@media (pointer: coarse) {
+  .anchor-quill {
+    --fold-row: var(--size-control-medium);
+  }
 }
 .anchor-quill .quill {
   display: flex;
@@ -257,7 +264,7 @@
 .anchor-quill .ql-editor li[data-list="checked"] > .ql-ui,
 .anchor-quill .ql-editor li[data-list="unchecked"] > .ql-ui {
   top: calc(0.1em + 0.85em - var(--box) / 2);
-  left: 2px;
+  left: var(--box-left);
   width: var(--box);
   height: var(--box);
   box-sizing: border-box;
@@ -305,6 +312,46 @@
   text-decoration: line-through;
   text-decoration-thickness: 1.5px;
   text-decoration-color: color-mix(in srgb, var(--note-muted) 55%, transparent);
+}
+
+/* Checked items fold */
+.anchor-quill .ck-fold {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  height: var(--fold-row);
+  padding: 0 --spacing(2) 0 --spacing(8);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--note-muted);
+  font: inherit;
+  font-size: var(--text-ui);
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--duration-hover);
+}
+.anchor-quill .ck-fold:hover {
+  color: var(--foreground);
+}
+.anchor-quill .ck-fold svg {
+  position: absolute;
+  left: calc(var(--box-left) + var(--box) / 2 - var(--size-icon-small) / 2);
+  width: var(--size-icon-small);
+  height: var(--size-icon-small);
+  transition: transform var(--duration-move) var(--ease-standard);
+}
+.anchor-quill .ck-fold[aria-expanded="false"] svg {
+  transform: rotate(-90deg);
+}
+.anchor-quill .fold-copies {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  padding: 0;
+  pointer-events: none;
 }
 
 /* Read-only */

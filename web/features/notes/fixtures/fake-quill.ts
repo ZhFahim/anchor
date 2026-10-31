@@ -56,6 +56,9 @@ export function fakeQuill(ops: QuillOp[], caret: number) {
       undo: () => {
         undoCount++;
       },
+      undoKeepingSelection: () => {
+        undoCount++;
+      },
     },
   };
   return {

@@ -11,6 +11,7 @@ import {
   readChecklist,
   writeChecklist,
 } from "../../checklist";
+import { ChecklistEdit } from "./checklist-edit";
 import type { RichTextEditorHandle } from "./rich-text-editor";
 
 type Task = ChecklistTask & { id: string };
@@ -31,6 +32,15 @@ export const ChecklistEditor = React.forwardRef<
   const [tasks, setTasks] = React.useState(() => loadTasks(value));
   const [completedOpen, setCompletedOpen] = React.useState(false);
   const lastValue = React.useRef(value);
+  const currentTasks = React.useRef(tasks);
+  currentTasks.current = tasks;
+  const edits = React.useRef(new Set<ChecklistEdit>());
+  React.useEffect(
+    () => () => {
+      for (const edit of edits.current) edit.closeChecklist(lastValue.current);
+    },
+    [],
+  );
   const inputs = React.useRef(new Map<string, HTMLInputElement>());
   const pendingFocus = React.useRef<string | null>(null);
   const addButton = React.useRef<HTMLButtonElement>(null);
@@ -53,6 +63,7 @@ export const ChecklistEditor = React.forwardRef<
   const commit = (next: Task[], focus?: string) => {
     if (readOnly) return;
     pendingFocus.current = focus ?? null;
+    currentTasks.current = next;
     setTasks(next);
     const stored = writeChecklist(next);
     lastValue.current = stored;
@@ -73,6 +84,29 @@ export const ChecklistEditor = React.forwardRef<
     if (first) inputs.current.get(first.id)?.focus();
     else if (!readOnly) add();
   };
+  const bulkEdit = (remove: boolean) => {
+    const before = currentTasks.current;
+    const checked = before.filter((task) => task.done);
+    if (readOnly || !checked.length) return null;
+    const next = remove
+      ? before.filter((task) => !task.done)
+      : before.map((task) => ({ ...task, done: false }));
+    commit(next);
+    const edit = new ChecklistEdit(
+      checked.length,
+      () => {
+        // Do not overwrite subsequent typing or another collaborator's update.
+        if (readOnly || lastValue.current !== writeChecklist(next))
+          return false;
+        commit(before);
+        return true;
+      },
+      writeChecklist(before),
+      writeChecklist(next),
+    );
+    edits.current.add(edit);
+    return edit;
+  };
   React.useImperativeHandle(ref, () => ({
     setSelection: focusFirst,
     focusEnd: () => {
@@ -86,6 +120,19 @@ export const ChecklistEditor = React.forwardRef<
       return true;
     },
     startList: focusFirst,
+    checklistCount: () => {
+      const entries = currentTasks.current.filter((task) => task.text.trim());
+      return {
+        items: entries.length,
+        checked: entries.filter((task) => task.done).length,
+      };
+    },
+    uncheckAll: () => bulkEdit(false),
+    deleteChecked: () => bulkEdit(true),
+    // Title-to-body rich-text history is not used by the task-input editor.
+    addFirstLine: () => false,
+    historyDepth: () => ({ undo: 0, redo: 0 }),
+    undoOrRedoText: () => {},
   }));
 
   const active = tasks.filter((task) => !task.done);

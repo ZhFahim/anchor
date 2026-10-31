@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { DURATION, EASE } from "@/lib/design/tokens";
 import { paintHighlights } from "@/lib/highlight-paint";
-import { prefersReducedMotion } from "@/lib/motion";
+import { isNearScreen, prefersReducedMotion } from "@/lib/motion";
 import type { QuillDelta, QuillInstance, QuillLine } from "../../quill";
 import { findTickedLines, LIST_FORMATS } from "../../quill";
 import {
@@ -18,6 +18,11 @@ import {
   getLineLength,
 } from "../../quill-lines";
 import { planChecklistSort } from "./checklist-sort";
+import {
+  isFoldedAway,
+  nearestShownIndex,
+  rollLines,
+} from "./use-checked-folds";
 
 const TICKED = "ticked";
 const SORTING = "sorting";
@@ -44,6 +49,7 @@ export function useChecklistSort({
   isEnabled,
   onSlideStart,
   onSlideEnd,
+  isFoldActive,
 }: {
   containerEl: HTMLElement | null;
   getQuill: () => QuillInstance | null;
@@ -51,9 +57,22 @@ export function useChecklistSort({
   isEnabled: boolean;
   onSlideStart: () => void;
   onSlideEnd: () => void;
+  isFoldActive: () => boolean;
 }) {
-  const live = useRef({ containerEl, isEnabled, onSlideStart, onSlideEnd });
-  live.current = { containerEl, isEnabled, onSlideStart, onSlideEnd };
+  const live = useRef({
+    containerEl,
+    isEnabled,
+    onSlideStart,
+    onSlideEnd,
+    isFoldActive,
+  });
+  live.current = {
+    containerEl,
+    isEnabled,
+    onSlideStart,
+    onSlideEnd,
+    isFoldActive,
+  };
   /** Each toggled line, with its state before the first toggle. */
   const pendingRef = useRef(new Map<QuillLine, unknown>());
   const timerRef = useRef(0);
@@ -148,10 +167,17 @@ export function useChecklistSort({
       origin === index ? [] : [index],
     );
     const tops = new Map<number, number>();
-    for (const index of moved) {
-      const element = lineElement(quill, starts[index]);
-      if (element) tops.set(index, element.getBoundingClientRect().top);
-    }
+    const copies = new Map<number, [HTMLElement, DOMRect]>();
+    const hasFoldedItems = live.current.isFoldActive();
+    starts.forEach((start, index) => {
+      const element = lineElement(quill, start);
+      if (!element) return;
+      const rect = element.getBoundingClientRect();
+      if (rect.height === 0 || !isNearScreen(rect)) return;
+      tops.set(index, rect.top);
+      if (hasFoldedItems && moved.includes(index))
+        copies.set(index, [element.cloneNode(true) as HTMLElement, rect]);
+    });
     stopSlide();
     live.current.onSlideStart();
     // Quill can reuse a row's element for another line.
@@ -191,16 +217,34 @@ export function useChecklistSort({
       if (now?.index !== index || now.length !== selection.length)
         quill.setSelection(index, selection.length, "silent");
     }
-    const isSliding =
-      !prefersReducedMotion() &&
-      startSlide(
-        quill,
-        moved.flatMap((index) => {
-          const element = lineElement(quill, sortedStarts[index]);
-          const from = tops.get(plan.origins[index]);
-          return element && from !== undefined ? [{ element, from }] : [];
-        }),
-      );
+    const caret = selection && quill.getSelection();
+    if (caret && !caret.length) {
+      const at = nearestShownIndex(quill, caret.index);
+      if (at !== caret.index) quill.setSelection(at, 0, "silent");
+    }
+    const isMoving = !prefersReducedMotion();
+    const sunk: [HTMLElement, DOMRect][] = [];
+    const slides = sortedStarts.flatMap((start, index) => {
+      const element = lineElement(quill, start);
+      const from = tops.get(plan.origins[index]);
+      if (!element || from === undefined) return [];
+      if (isFoldedAway(element)) {
+        const copy = copies.get(plan.origins[index]);
+        if (copy) sunk.push(copy);
+        return [];
+      }
+      return [{ element, from }];
+    });
+    if (isMoving && host)
+      for (const [copy, rect] of sunk)
+        rollLines(
+          host,
+          [[copy, rect]],
+          [0, 0],
+          [rect.bottom, rect.top],
+          DURATION.sink,
+        );
+    const isSliding = isMoving && startSlide(quill, slides);
     if (!isSliding) live.current.onSlideEnd();
   }, [getQuill, startSlide, stopSlide]);
 

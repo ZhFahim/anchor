@@ -11,6 +11,8 @@ import {
   CloudOff,
   Ellipsis,
   History,
+  ListRestart,
+  ListX,
   LoaderCircle,
   LogOut,
   Palette,
@@ -37,6 +39,7 @@ import { Tip } from "@/components/ui/tooltip";
 import { useSyncStatus } from "@/features/sync";
 import { useRovingFocus } from "@/lib/hooks/use-roving-focus";
 import { cn } from "@/lib/utils";
+import type { ChecklistActions } from "../../hooks/use-checklist-actions";
 import { isReminderPast, reminderLabel } from "../../reminder";
 import type { NoteReminder, ReminderRecurrence } from "../../types";
 import { BackgroundPicker } from "../background-picker";
@@ -70,6 +73,8 @@ interface NoteEditorHeaderProps {
   onArchive: () => void;
   onUnarchive: () => void;
   onTrash: () => void;
+  /** Only for a note you can edit. */
+  checklist?: ChecklistActions;
 }
 
 export function NoteEditorHeader(props: NoteEditorHeaderProps) {
@@ -236,6 +241,7 @@ export function NoteEditorHeader(props: NoteEditorHeaderProps) {
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
+                {props.checklist && <ChecklistMenuItems {...props.checklist} />}
                 <DropdownMenuItem tone="danger" onSelect={props.onTrash}>
                   {props.isOwner ? <Trash2 /> : <LogOut />}
                   {props.isOwner ? "Move to trash" : "Remove from my notes"}
@@ -246,6 +252,33 @@ export function NoteEditorHeader(props: NoteEditorHeaderProps) {
         </div>
       )}
     </div>
+  );
+}
+
+function ChecklistMenuItems({
+  getCounts,
+  uncheckAll,
+  deleteChecked,
+}: ChecklistActions) {
+  const [counts] = React.useState(getCounts);
+  if (!counts?.items) return null;
+  const isNoneChecked = counts.checked === 0;
+  return (
+    <>
+      <DropdownMenuItem disabled={isNoneChecked} onSelect={uncheckAll}>
+        <ListRestart />
+        Uncheck all
+      </DropdownMenuItem>
+      <DropdownMenuItem
+        tone="danger"
+        disabled={isNoneChecked}
+        onSelect={deleteChecked}
+      >
+        <ListX />
+        Delete checked items
+      </DropdownMenuItem>
+      <DropdownMenuSeparator />
+    </>
   );
 }
 

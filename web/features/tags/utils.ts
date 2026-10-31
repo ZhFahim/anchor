@@ -30,6 +30,17 @@ export function tagColorName(stored: string | null | undefined): string {
   return words[0].toUpperCase() + words.slice(1);
 }
 
+const tagNameOrder = new Intl.Collator("en");
+
+export const compareTagNames = (a: string, b: string): number =>
+  tagNameOrder.compare(a, b);
+
+export function sortTagsByName<T extends { name: string }>(
+  tags: readonly T[],
+): T[] {
+  return [...tags].sort((a, b) => compareTagNames(a.name, b.name));
+}
+
 export function nextTagColor(tagCount: number): string {
   return TAG_COLORS[tagCount % TAG_COLORS.length].stored;
 }

@@ -87,12 +87,14 @@ abstract final class AnchorPatterns {
     ..close();
 
   static final Path _music = Path()
-    ..moveTo(9.0, 18.0)
-    ..lineTo(9.0, 5.0)
+    ..moveTo(21.0, 16.0)
     ..lineTo(21.0, 3.0)
-    ..lineTo(21.0, 16.0)
-    ..addOval(Rect.fromCircle(center: Offset(6.0, 18.0), radius: 3.0))
-    ..addOval(Rect.fromCircle(center: Offset(18.0, 16.0), radius: 3.0));
+    ..arcToPoint(Offset(19.72, 2.04), radius: Radius.elliptical(1.0, 1.0), rotation: 0.0, largeArc: false, clockwise: false)
+    ..lineTo(9.72, 4.957)
+    ..arcToPoint(Offset(9, 5.917), radius: Radius.elliptical(1.0, 1.0), rotation: 0.0, largeArc: false, clockwise: false)
+    ..lineTo(9, 19.0)
+    ..addOval(Rect.fromCircle(center: Offset(18.0, 16.0), radius: 3.0))
+    ..addOval(Rect.fromCircle(center: Offset(6.0, 19.0), radius: 3.0));
 
   static final Path _plane = Path()
     ..moveTo(17.8, 19.2)
