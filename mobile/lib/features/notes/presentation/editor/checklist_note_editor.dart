@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/theme/context_extensions.dart';
@@ -32,6 +33,9 @@ class ChecklistNoteEditor extends StatefulWidget {
 class ChecklistNoteEditorState extends State<ChecklistNoteEditor> {
   late List<_TaskEntry> _tasks;
   bool _completedOpen = false;
+  final _undo = <_ChecklistSnapshot>[];
+  final _redo = <_ChecklistSnapshot>[];
+  final _addFocus = FocusNode();
 
   @override
   void initState() {
@@ -43,8 +47,8 @@ class ChecklistNoteEditorState extends State<ChecklistNoteEditor> {
     for (final task in readChecklist(content)) _entry(task),
   ];
 
-  _TaskEntry _entry(ChecklistTask task) {
-    final entry = _TaskEntry(task);
+  _TaskEntry _entry(ChecklistTask task, {Key? key}) {
+    final entry = _TaskEntry(task, key: key);
     entry.focus.addListener(_focusChanged);
     return entry;
   }
@@ -58,6 +62,8 @@ class ChecklistNoteEditorState extends State<ChecklistNoteEditor> {
     if (widget.contentVersion != oldWidget.contentVersion &&
         !matchesContent(widget.initialContent)) {
       final old = _tasks;
+      _undo.clear();
+      _redo.clear();
       _tasks = _load(widget.initialContent);
       _retire(old);
     }
@@ -77,6 +83,7 @@ class ChecklistNoteEditorState extends State<ChecklistNoteEditor> {
 
   @override
   void dispose() {
+    _addFocus.dispose();
     for (final entry in _tasks) {
       entry.focus.removeListener(_focusChanged);
       entry.dispose();
@@ -92,8 +99,102 @@ class ChecklistNoteEditorState extends State<ChecklistNoteEditor> {
 
   void _changed(VoidCallback change) {
     if (!widget.canEdit) return;
+    _undo.add(_snapshot());
+    if (_undo.length > 100) _undo.removeAt(0);
+    _redo.clear();
     setState(change);
+    for (final entry in _tasks) {
+      entry.rememberSelection();
+    }
     widget.onChanged();
+  }
+
+  _ChecklistSnapshot _snapshot() => _ChecklistSnapshot(
+    [
+      for (final entry in _tasks)
+        _SavedTask(entry.task, entry.key, entry.selection),
+    ],
+    _tasks.where((entry) => entry.focus.hasFocus).firstOrNull?.key,
+    _completedOpen,
+  );
+
+  bool get canUndo => _undo.isNotEmpty;
+  bool get canRedo => _redo.isNotEmpty;
+
+  bool undo() => _restoreHistory(_undo, _redo);
+  bool redo() => _restoreHistory(_redo, _undo);
+
+  bool _restoreHistory(
+    List<_ChecklistSnapshot> from,
+    List<_ChecklistSnapshot> to,
+  ) {
+    if (!widget.canEdit || from.isEmpty) return false;
+    to.add(_snapshot());
+    final snapshot = from.removeLast();
+    final old = {for (final entry in _tasks) entry.key: entry};
+    setState(() {
+      _completedOpen = snapshot.completedOpen;
+      _tasks = [
+        for (final saved in snapshot.tasks)
+          old.remove(saved.key) ?? _entry(saved.task, key: saved.key),
+      ];
+      for (var i = 0; i < _tasks.length; i++) {
+        final entry = _tasks[i];
+        final saved = snapshot.tasks[i];
+        entry.task = saved.task;
+        entry.text.value = TextEditingValue(
+          text: saved.task.text,
+          selection: TextSelection(
+            baseOffset: saved.selection.baseOffset.clamp(
+              0,
+              saved.task.text.length,
+            ),
+            extentOffset: saved.selection.extentOffset.clamp(
+              0,
+              saved.task.text.length,
+            ),
+          ),
+        );
+      }
+    });
+    _retire(old.values);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final focused = _tasks
+          .where((entry) => entry.key == snapshot.focused)
+          .firstOrNull;
+      if (focused != null && (!focused.task.done || _completedOpen)) {
+        focused.focus.requestFocus();
+      }
+    });
+    widget.onChanged();
+    return true;
+  }
+
+  KeyEventResult _historyKey(KeyEvent event) {
+    if (event is! KeyDownEvent ||
+        !widget.canEdit ||
+        _tasks.any(
+          (entry) =>
+              entry.focus.hasFocus && !entry.text.value.composing.isCollapsed,
+        )) {
+      return KeyEventResult.ignored;
+    }
+    final keyboard = HardwareKeyboard.instance;
+    if (keyboard.isAltPressed ||
+        (!keyboard.isControlPressed && !keyboard.isMetaPressed)) {
+      return KeyEventResult.ignored;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.keyZ) {
+      keyboard.isShiftPressed ? redo() : undo();
+    } else if (event.logicalKey == LogicalKeyboardKey.keyY &&
+        !keyboard.isShiftPressed) {
+      redo();
+    } else {
+      return KeyEventResult.ignored;
+    }
+    // Do not fall back to a TextField's separate native history at the boundary.
+    return KeyEventResult.handled;
   }
 
   void _focus(_TaskEntry entry) =>
@@ -156,6 +257,107 @@ class ChecklistNoteEditorState extends State<ChecklistNoteEditor> {
     _focus(added.last);
   }
 
+  KeyEventResult _navigate(_TaskEntry entry, KeyEvent event) {
+    final keyboard = HardwareKeyboard.instance;
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.enter &&
+        (keyboard.isControlPressed || keyboard.isMetaPressed) &&
+        !keyboard.isAltPressed &&
+        !keyboard.isShiftPressed &&
+        entry.text.value.composing.isCollapsed) {
+      if (!widget.canEdit) return KeyEventResult.ignored;
+      final active = _tasks.where((task) => !task.task.done).toList();
+      final index = active.indexOf(entry);
+      final next = entry.task.done
+          ? entry
+          : index + 1 < active.length
+          ? active[index + 1]
+          : index > 0
+          ? active[index - 1]
+          : null;
+      _changed(() => entry.task = entry.task.copyWith(done: !entry.task.done));
+      if (next != null) {
+        _focus(next);
+      } else {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _addFocus.requestFocus();
+        });
+      }
+      return KeyEventResult.handled;
+    }
+    final up = event.logicalKey == LogicalKeyboardKey.arrowUp;
+    final down = event.logicalKey == LogicalKeyboardKey.arrowDown;
+    if ((event is KeyDownEvent || event is KeyRepeatEvent) &&
+        keyboard.isAltPressed &&
+        !keyboard.isControlPressed &&
+        !keyboard.isMetaPressed &&
+        !keyboard.isShiftPressed &&
+        entry.text.value.composing.isCollapsed &&
+        (up || down)) {
+      if (!widget.canEdit) return KeyEventResult.ignored;
+      if (entry.task.done) return KeyEventResult.handled;
+      final active = _tasks.where((task) => !task.task.done).toList();
+      final from = active.indexOf(entry);
+      final to = from + (up ? -1 : 1);
+      if (to >= 0 && to < active.length) {
+        active.insert(to, active.removeAt(from));
+        var index = 0;
+        _changed(() {
+          _tasks = [
+            for (final task in _tasks) task.task.done ? task : active[index++],
+          ];
+        });
+      }
+      return KeyEventResult.handled;
+    }
+    if ((event is! KeyDownEvent && event is! KeyRepeatEvent) ||
+        keyboard.isAltPressed ||
+        keyboard.isControlPressed ||
+        keyboard.isMetaPressed ||
+        keyboard.isShiftPressed ||
+        !entry.text.value.composing.isCollapsed) {
+      return KeyEventResult.ignored;
+    }
+    if (!up && event.logicalKey != LogicalKeyboardKey.arrowDown) {
+      return KeyEventResult.ignored;
+    }
+    final selection = entry.text.selection;
+    if (!selection.isValid || !selection.isCollapsed) {
+      return KeyEventResult.ignored;
+    }
+    final editable = entry.focus.context
+        ?.findAncestorStateOfType<EditableTextState>();
+    if (editable == null) return KeyEventResult.ignored;
+    final line = editable.renderEditable.getLineAtOffset(selection.extent);
+    // Let the standard text-field shortcuts handle movement inside wrapped text.
+    if (up ? line.start > 0 : line.end < entry.text.text.length) {
+      return KeyEventResult.ignored;
+    }
+    final visible = [
+      ..._tasks.where((task) => !task.task.done),
+      if (_completedOpen) ..._tasks.where((task) => task.task.done),
+    ];
+    final index = visible.indexOf(entry) + (up ? -1 : 1);
+    if (index < 0 || index >= visible.length) return KeyEventResult.handled;
+    final target = visible[index];
+    final targetEditable = target.focus.context
+        ?.findAncestorStateOfType<EditableTextState>();
+    if (targetEditable == null) return KeyEventResult.ignored;
+    final targetLine = targetEditable.renderEditable.getLineAtOffset(
+      TextPosition(offset: up ? target.text.text.length : 0),
+    );
+    final column = selection.extentOffset - line.start;
+    target.focus.requestFocus();
+    target.text.selection = TextSelection.collapsed(
+      offset: (targetLine.start + column).clamp(
+        targetLine.start,
+        targetLine.end,
+      ),
+    );
+    Scrollable.ensureVisible(target.focus.context!);
+    return KeyEventResult.handled;
+  }
+
   Widget _row(_TaskEntry entry, {int? dragIndex}) {
     final task = entry.task;
     final l10n = context.l10n;
@@ -186,31 +388,37 @@ class ChecklistNoteEditorState extends State<ChecklistNoteEditor> {
             onChanged: !widget.canEdit
                 ? null
                 : (checked) {
-                    entry.focus.unfocus();
-                    _changed(() => entry.task = task.copyWith(done: checked));
+                    _changed(() {
+                      entry.focus.unfocus();
+                      entry.task = task.copyWith(done: checked);
+                    });
                   },
           ),
           Expanded(
-            child: TextField(
-              controller: entry.text,
-              focusNode: entry.focus,
-              readOnly: !widget.canEdit,
-              minLines: 1,
-              maxLines: null,
-              textCapitalization: TextCapitalization.sentences,
-              textInputAction: TextInputAction.next,
-              onEditingComplete: () => _add(after: entry),
-              onChanged: (text) => _edit(entry, text),
-              style: context.noteTypography.body.copyWith(
-                color: task.done
-                    ? widget.palette.muted
-                    : context.anchor.appText,
-                decoration: task.done ? TextDecoration.lineThrough : null,
-              ),
-              decoration: InputDecoration(
-                hintText: widget.canEdit ? l10n.checklistAddTask : null,
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(vertical: 12),
+            child: Focus(
+              canRequestFocus: false,
+              onKeyEvent: (_, event) => _navigate(entry, event),
+              child: TextField(
+                controller: entry.text,
+                focusNode: entry.focus,
+                readOnly: !widget.canEdit,
+                minLines: 1,
+                maxLines: null,
+                textCapitalization: TextCapitalization.sentences,
+                textInputAction: TextInputAction.next,
+                onEditingComplete: () => _add(after: entry),
+                onChanged: (text) => _edit(entry, text),
+                style: context.noteTypography.body.copyWith(
+                  color: task.done
+                      ? widget.palette.muted
+                      : context.anchor.appText,
+                  decoration: task.done ? TextDecoration.lineThrough : null,
+                ),
+                decoration: InputDecoration(
+                  hintText: widget.canEdit ? l10n.checklistAddTask : null,
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                ),
               ),
             ),
           ),
@@ -240,81 +448,111 @@ class ChecklistNoteEditorState extends State<ChecklistNoteEditor> {
     final active = _tasks.where((entry) => !entry.task.done).toList();
     final completed = _tasks.where((entry) => entry.task.done).toList();
     final l10n = context.l10n;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        ReorderableListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          padding: EdgeInsets.zero,
-          buildDefaultDragHandles: false,
-          itemCount: active.length,
-          itemBuilder: (context, index) =>
-              _row(active[index], dragIndex: index),
-          onReorderItem: (from, to) {
-            if (!widget.canEdit) return;
-            final moved = active.removeAt(from);
-            active.insert(to, moved);
-            var index = 0;
-            _changed(() {
-              _tasks = [
-                for (final task in _tasks)
-                  task.task.done ? task : active[index++],
-              ];
-            });
-          },
-        ),
-        if (active.isEmpty)
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Text(
-              l10n.checklistAllCompleted,
-              style: TextStyle(color: widget.palette.muted),
-            ),
+    return Focus(
+      canRequestFocus: false,
+      onKeyEvent: (_, event) => _historyKey(event),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ReorderableListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: EdgeInsets.zero,
+            buildDefaultDragHandles: false,
+            itemCount: active.length,
+            itemBuilder: (context, index) =>
+                _row(active[index], dragIndex: index),
+            onReorderItem: (from, to) {
+              if (!widget.canEdit) return;
+              final moved = active.removeAt(from);
+              active.insert(to, moved);
+              var index = 0;
+              _changed(() {
+                _tasks = [
+                  for (final task in _tasks)
+                    task.task.done ? task : active[index++],
+                ];
+              });
+            },
           ),
-        if (widget.canEdit)
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: TextButton.icon(
-              onPressed: () => _add(),
-              icon: const Icon(
-                LucideIcons.plus,
-                size: AnchorTokens.sizeIconSmall,
+          if (active.isEmpty)
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Text(
+                l10n.checklistAllCompleted,
+                style: TextStyle(color: widget.palette.muted),
               ),
-              label: Text(l10n.checklistAddTask),
             ),
-          ),
-        if (completed.isNotEmpty) ...[
-          const SizedBox(height: 16),
-          Divider(color: widget.palette.border),
-          Semantics(
-            expanded: _completedOpen,
-            child: TextButton.icon(
-              onPressed: () => setState(() => _completedOpen = !_completedOpen),
-              icon: Icon(
-                _completedOpen
-                    ? LucideIcons.chevronDown
-                    : LucideIcons.chevronRight,
-                size: AnchorTokens.sizeIconSmall,
+          if (widget.canEdit)
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: TextButton.icon(
+                focusNode: _addFocus,
+                onPressed: () => _add(),
+                icon: const Icon(
+                  LucideIcons.plus,
+                  size: AnchorTokens.sizeIconSmall,
+                ),
+                label: Text(l10n.checklistAddTask),
               ),
-              label: Text(l10n.checklistCompleted(completed.length)),
             ),
-          ),
-          if (_completedOpen) ...completed.map((entry) => _row(entry)),
+          if (completed.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Divider(color: widget.palette.border),
+            Semantics(
+              expanded: _completedOpen,
+              child: TextButton.icon(
+                onPressed: () =>
+                    setState(() => _completedOpen = !_completedOpen),
+                icon: Icon(
+                  _completedOpen
+                      ? LucideIcons.chevronDown
+                      : LucideIcons.chevronRight,
+                  size: AnchorTokens.sizeIconSmall,
+                ),
+                label: Text(l10n.checklistCompleted(completed.length)),
+              ),
+            ),
+            if (_completedOpen) ...completed.map((entry) => _row(entry)),
+          ],
         ],
-      ],
+      ),
     );
   }
 }
 
 class _TaskEntry {
-  _TaskEntry(this.task) : text = TextEditingController(text: task.text);
+  _TaskEntry(this.task, {Key? key})
+    : key = key ?? UniqueKey(),
+      text = TextEditingController(text: task.text) {
+    text.addListener(rememberSelection);
+  }
   ChecklistTask task;
+  TextSelection selection = const TextSelection.collapsed(offset: -1);
+  // onChanged runs after the controller updates. Keep the pre-edit caret for undo.
+  void rememberSelection() {
+    if (text.text == task.text) selection = text.selection;
+  }
+
   final TextEditingController text;
   final FocusNode focus = FocusNode();
-  final Key key = UniqueKey();
+  final Key key;
   void dispose() {
     text.dispose();
     focus.dispose();
   }
+}
+
+class _SavedTask {
+  const _SavedTask(this.task, this.key, this.selection);
+  final ChecklistTask task;
+  final Key key;
+  final TextSelection selection;
+}
+
+class _ChecklistSnapshot {
+  const _ChecklistSnapshot(this.tasks, this.focused, this.completedOpen);
+  final List<_SavedTask> tasks;
+  final Key? focused;
+  final bool completedOpen;
 }

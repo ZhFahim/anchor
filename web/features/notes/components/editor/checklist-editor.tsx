@@ -7,14 +7,27 @@ import { newId } from "@/lib/id";
 import { cn } from "@/lib/utils";
 import {
   type ChecklistTask,
+  moveActiveTask,
   moveTask,
   readChecklist,
   writeChecklist,
 } from "../../checklist";
+import {
+  type UndoRedoAction,
+  undoRedoActionForKeyEvent,
+} from "../../undo-shortcuts";
 import { ChecklistEdit } from "./checklist-edit";
+import { ChecklistHistory } from "./checklist-history";
+import { navigateChecklist } from "./checklist-navigation";
 import type { RichTextEditorHandle } from "./rich-text-editor";
 
 type Task = ChecklistTask & { id: string };
+type TaskSelection = { id: string; start: number; end: number };
+type Snapshot = {
+  tasks: Task[];
+  focus: TaskSelection | "add-task" | null;
+  completedOpen: boolean;
+};
 const emptyTask = (): Task => ({ id: newId(), text: "", done: false });
 function loadTasks(value: string): Task[] {
   const tasks = readChecklist(value).map((task) => ({ ...task, id: newId() }));
@@ -42,32 +55,103 @@ export const ChecklistEditor = React.forwardRef<
     [],
   );
   const inputs = React.useRef(new Map<string, HTMLInputElement>());
-  const pendingFocus = React.useRef<string | null>(null);
+  const pendingFocus = React.useRef<Snapshot["focus"]>(null);
+  const lastSelection = React.useRef<TaskSelection | null>(null);
+  const history = React.useRef(new ChecklistHistory<Snapshot>());
   const addButton = React.useRef<HTMLButtonElement>(null);
   const dragging = React.useRef<string | null>(null);
   const [announcement, setAnnouncement] = React.useState("");
 
   React.useEffect(() => {
     if (lastValue.current === value) return;
+    history.current.clear();
+    for (const edit of edits.current) edit.dispose();
+    edits.current.clear();
+    pendingFocus.current = null;
+    lastSelection.current = null;
     lastValue.current = value;
-    setTasks(loadTasks(value));
+    const next = loadTasks(value);
+    currentTasks.current = next;
+    setTasks(next);
   }, [value]);
 
   React.useLayoutEffect(() => {
     if (!pendingFocus.current) return;
     if (pendingFocus.current === "add-task") addButton.current?.focus();
-    else inputs.current.get(pendingFocus.current)?.focus();
+    else {
+      const { id, start, end } = pendingFocus.current;
+      const input = inputs.current.get(id);
+      input?.focus();
+      input?.setSelectionRange(
+        Math.min(start, input.value.length),
+        Math.min(end, input.value.length),
+      );
+    }
     pendingFocus.current = null;
   });
 
-  const commit = (next: Task[], focus?: string) => {
+  const commit = (next: Task[], focus?: string, selection?: TaskSelection) => {
     if (readOnly) return;
-    pendingFocus.current = focus ?? null;
+    if (next === currentTasks.current) return;
+    const before: Snapshot = {
+      tasks: currentTasks.current,
+      focus: lastSelection.current,
+      completedOpen,
+    };
+    const input = focus ? inputs.current.get(focus) : null;
+    const nextFocus: Snapshot["focus"] =
+      selection ??
+      (focus === "add-task"
+        ? focus
+        : focus
+          ? {
+              id: focus,
+              start:
+                input?.selectionStart ??
+                next.find((task) => task.id === focus)?.text.length ??
+                0,
+              end:
+                input?.selectionEnd ??
+                next.find((task) => task.id === focus)?.text.length ??
+                0,
+            }
+          : lastSelection.current);
+    history.current.record(before, {
+      tasks: next,
+      focus: nextFocus,
+      completedOpen,
+    });
+    lastSelection.current = nextFocus === "add-task" ? null : nextFocus;
+    pendingFocus.current = focus ? nextFocus : null;
     currentTasks.current = next;
     setTasks(next);
     const stored = writeChecklist(next);
     lastValue.current = stored;
     onChange(stored);
+  };
+  const undoOrRedo = (action: UndoRedoAction) => {
+    if (readOnly) return;
+    const snapshot = history.current[action]();
+    if (!snapshot) return;
+    // A toast must not undo the same bulk operation a second time.
+    for (const edit of edits.current) edit.dispose();
+    edits.current.clear();
+    currentTasks.current = snapshot.tasks;
+    setTasks(snapshot.tasks);
+    setCompletedOpen(snapshot.completedOpen);
+    pendingFocus.current = snapshot.focus;
+    lastSelection.current =
+      snapshot.focus === "add-task" ? null : snapshot.focus;
+    const stored = writeChecklist(snapshot.tasks);
+    lastValue.current = stored;
+    onChange(stored);
+  };
+  const reorder = (task: Task, direction: -1 | 1, focusText: boolean) => {
+    if (readOnly || task.done) return;
+    commit(
+      moveActiveTask(currentTasks.current, task, direction),
+      focusText ? task.id : undefined,
+    );
   };
   const add = (after?: string) => {
     const task = emptyTask();
@@ -131,12 +215,13 @@ export const ChecklistEditor = React.forwardRef<
     deleteChecked: () => bulkEdit(true),
     // Title-to-body rich-text history is not used by the task-input editor.
     addFirstLine: () => false,
-    historyDepth: () => ({ undo: 0, redo: 0 }),
-    undoOrRedoText: () => {},
+    historyDepth: () => history.current.depth,
+    undoOrRedoText: undoOrRedo,
   }));
 
   const active = tasks.filter((task) => !task.done);
   const completed = tasks.filter((task) => task.done);
+  const visible = [...active, ...(completedOpen ? completed : [])];
   const row = (task: Task) => (
     <li
       key={task.id}
@@ -167,14 +252,17 @@ export const ChecklistEditor = React.forwardRef<
             dragging.current = null;
           }}
           onKeyDown={(e) => {
-            if (!e.altKey || !["ArrowUp", "ArrowDown"].includes(e.key)) return;
+            if (
+              !e.altKey ||
+              e.ctrlKey ||
+              e.metaKey ||
+              e.shiftKey ||
+              e.nativeEvent.isComposing ||
+              !["ArrowUp", "ArrowDown"].includes(e.key)
+            )
+              return;
             e.preventDefault();
-            const target =
-              active[active.indexOf(task) + (e.key === "ArrowUp" ? -1 : 1)];
-            if (target)
-              commit(
-                moveTask(tasks, tasks.indexOf(task), tasks.indexOf(target)),
-              );
+            reorder(task, e.key === "ArrowUp" ? -1 : 1, false);
           }}
         >
           <GripVertical className="size-4" aria-hidden />
@@ -207,6 +295,20 @@ export const ChecklistEditor = React.forwardRef<
           else inputs.current.delete(task.id);
         }}
         value={task.text}
+        onSelect={(e) => {
+          lastSelection.current = {
+            id: task.id,
+            start: e.currentTarget.selectionStart ?? 0,
+            end: e.currentTarget.selectionEnd ?? 0,
+          };
+        }}
+        onFocus={(e) => {
+          lastSelection.current = {
+            id: task.id,
+            start: e.currentTarget.selectionStart ?? 0,
+            end: e.currentTarget.selectionEnd ?? 0,
+          };
+        }}
         readOnly={readOnly}
         aria-label={task.done ? "Completed task" : "Task"}
         placeholder="Add a task"
@@ -219,10 +321,68 @@ export const ChecklistEditor = React.forwardRef<
             tasks.map((t) =>
               t.id === task.id ? { ...t, text: e.target.value } : t,
             ),
+            undefined,
+            {
+              id: task.id,
+              start: e.currentTarget.selectionStart ?? 0,
+              end: e.currentTarget.selectionEnd ?? 0,
+            },
           )
         }
         onKeyDown={(e) => {
+          if (
+            !readOnly &&
+            !e.nativeEvent.isComposing &&
+            e.altKey &&
+            !e.ctrlKey &&
+            !e.metaKey &&
+            !e.shiftKey &&
+            ["ArrowUp", "ArrowDown"].includes(e.key)
+          ) {
+            e.preventDefault();
+            reorder(task, e.key === "ArrowUp" ? -1 : 1, true);
+            return;
+          }
+          navigateChecklist(
+            {
+              key: e.key,
+              altKey: e.altKey,
+              ctrlKey: e.ctrlKey,
+              metaKey: e.metaKey,
+              shiftKey: e.shiftKey,
+              isComposing: e.nativeEvent.isComposing,
+              preventDefault: () => e.preventDefault(),
+            },
+            visible.flatMap((task) => {
+              const input = inputs.current.get(task.id);
+              return input ? [input] : [];
+            }),
+            e.currentTarget,
+          );
           if (readOnly || e.nativeEvent.isComposing) return;
+          if (
+            e.key === "Enter" &&
+            (e.ctrlKey || e.metaKey) &&
+            !e.altKey &&
+            !e.shiftKey
+          ) {
+            e.preventDefault();
+            const neighbor =
+              active[active.indexOf(task) + 1] ??
+              active[active.indexOf(task) - 1];
+            commit(
+              tasks.map((entry) =>
+                entry.id === task.id ? { ...entry, done: !entry.done } : entry,
+              ),
+              task.done ? task.id : (neighbor?.id ?? "add-task"),
+            );
+            setAnnouncement(
+              task.done
+                ? "Task restored"
+                : "Task completed. Available in Completed.",
+            );
+            return;
+          }
           if (e.key === "Enter") {
             e.preventDefault();
             add(task.id);
@@ -277,7 +437,18 @@ export const ChecklistEditor = React.forwardRef<
   );
 
   return (
-    <section className="mt-4" aria-label="Checklist">
+    <section
+      className="mt-4"
+      aria-label="Checklist"
+      onKeyDownCapture={(e) => {
+        if (readOnly || e.nativeEvent.isComposing) return;
+        const action = undoRedoActionForKeyEvent(e);
+        if (!action) return;
+        e.preventDefault();
+        e.stopPropagation();
+        undoOrRedo(action);
+      }}
+    >
       <span role="status" className="sr-only">
         {announcement}
       </span>

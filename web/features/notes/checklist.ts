@@ -61,3 +61,19 @@ export function moveTask<T>(tasks: T[], from: number, to: number): T[] {
   next.splice(to, 0, task);
   return next;
 }
+
+/** Keyboard reordering moves active tasks while leaving completed slots intact. */
+export function moveActiveTask<T extends ChecklistTask>(
+  tasks: T[],
+  task: T,
+  direction: -1 | 1,
+): T[] {
+  if (task.done) return tasks;
+  const active = tasks.filter((task) => !task.done);
+  const from = active.indexOf(task);
+  const to = from + direction;
+  if (from < 0 || to < 0 || to >= active.length) return tasks;
+  const reordered = moveTask(active, from, to);
+  let index = 0;
+  return tasks.map((task) => (task.done ? task : reordered[index++]));
+}

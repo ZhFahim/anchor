@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   checklistProgress,
+  moveActiveTask,
   moveTask,
   readChecklist,
   writeChecklist,
@@ -102,5 +103,32 @@ describe("checklist content", () => {
   it("handles empty content", () => {
     expect(readChecklist("")[0].text).toBe("");
     expect(readChecklist(writeChecklist([]))[0].text).toBe("");
+  });
+
+  it("keyboard reorder skips completed tasks and preserves their storage slots", () => {
+    const tasks = [
+      { id: "first", text: "First", done: false },
+      { id: "done", text: "Done", done: true },
+      { id: "last", text: "Last", done: false },
+    ];
+    const moved = moveActiveTask(tasks, tasks[0], 1);
+    expect(moved.map((task) => task.id)).toEqual(["last", "done", "first"]);
+    expect(moved[1]).toBe(tasks[1]);
+    expect(moveActiveTask(moved, tasks[0], -1)).toEqual(tasks);
+    expect(tasks[0].id).toBe("first");
+  });
+
+  it("keyboard reorder is a no-op at boundaries and for completed or missing tasks", () => {
+    const tasks = [
+      { text: "First", done: false },
+      { text: "Done", done: true },
+      { text: "Last", done: false },
+    ];
+    expect(moveActiveTask(tasks, tasks[0], -1)).toBe(tasks);
+    expect(moveActiveTask(tasks, tasks[2], 1)).toBe(tasks);
+    expect(moveActiveTask(tasks, tasks[1], 1)).toBe(tasks);
+    expect(moveActiveTask(tasks, { text: "Missing", done: false }, 1)).toBe(
+      tasks,
+    );
   });
 });
