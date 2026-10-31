@@ -7,6 +7,7 @@ import 'package:anchor/core/theme/app_theme.dart';
 import 'package:anchor/core/widgets/check_circle.dart';
 import 'package:anchor/core/widgets/shimmer.dart';
 import 'package:anchor/features/notes/data/repository/attachment_file_provider.dart';
+import 'package:anchor/features/notes/domain/checklist_task.dart';
 import 'package:anchor/features/notes/domain/note.dart';
 import 'package:anchor/features/notes/presentation/widgets/card_body.dart';
 import 'package:anchor/features/notes/presentation/widgets/note_card.dart';
@@ -34,6 +35,8 @@ void main() {
     bool isSelecting = false,
     List<Tag> tags = const [],
     FutureOr<String?> Function()? picture,
+    CardLayout layout = CardLayout.masonry,
+    TextScaler textScaler = TextScaler.noScaling,
   }) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -45,12 +48,17 @@ void main() {
         ],
         child: MaterialApp(
           theme: AppTheme.light(),
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+            child: child!,
+          ),
           home: Scaffold(
             body: Center(
               child: SizedBox(
                 width: width,
                 child: NoteCard(
                   note: note,
+                  layout: layout,
                   tags: tags,
                   isSelecting: isSelecting,
                 ),
@@ -62,6 +70,102 @@ void main() {
     );
     await tester.pump();
   }
+
+  final checklist = Note(
+    id: 'tasks',
+    title: 'Shopping',
+    noteType: NoteType.checklist,
+    content: writeChecklist([
+      const ChecklistTask(text: 'Milk'),
+      const ChecklistTask(text: 'Bread', done: true),
+      const ChecklistTask(),
+    ]),
+  );
+
+  for (final layout in CardLayout.values) {
+    testWidgets('checklist icon and progress appear in ${layout.name} cards', (
+      tester,
+    ) async {
+      await pumpCard(tester, checklist, 160, layout: layout);
+      expect(find.byIcon(LucideIcons.listChecks), findsOneWidget);
+      expect(find.text('1 of 2 done', findRichText: true), findsOneWidget);
+      expect(find.text('Bread', findRichText: true), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('completed checklists show a checkmark and All done', (
+    tester,
+  ) async {
+    await pumpCard(
+      tester,
+      checklist.copyWith(
+        content: writeChecklist([
+          const ChecklistTask(text: 'Milk', done: true),
+          const ChecklistTask(),
+        ]),
+      ),
+      160,
+    );
+    expect(find.byIcon(LucideIcons.circleCheck), findsOneWidget);
+    expect(find.textContaining('All done', findRichText: true), findsOneWidget);
+    expect(find.text('1 of 2 done', findRichText: true), findsNothing);
+  });
+
+  testWidgets(
+    'an empty untitled checklist stays recognizable without All done',
+    (tester) async {
+      await pumpCard(tester, checklist.copyWith(title: '', content: ''), 160);
+      expect(find.text('Checklist'), findsOneWidget);
+      expect(find.byIcon(LucideIcons.listChecks), findsOneWidget);
+      expect(find.text('No tasks', findRichText: true), findsOneWidget);
+      expect(find.textContaining('All done', findRichText: true), findsNothing);
+    },
+  );
+
+  testWidgets('ordinary checkbox notes have no type indicator or progress', (
+    tester,
+  ) async {
+    await pumpCard(tester, checklist.copyWith(noteType: NoteType.note), 160);
+    expect(find.byIcon(LucideIcons.listChecks), findsNothing);
+    expect(find.text('1 of 2 done', findRichText: true), findsNothing);
+  });
+
+  testWidgets(
+    'checklist cards announce type and progress but not hidden task text',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
+      try {
+        await pumpCard(tester, checklist, 160);
+        final label = tester.getSemantics(find.byType(NoteCard)).label;
+        expect(label, contains('Checklist note'));
+        expect(label, contains('1 of 2 tasks completed'));
+        expect(label, isNot(contains('Bread')));
+      } finally {
+        semantics.dispose();
+      }
+    },
+  );
+
+  testWidgets(
+    'progress fits narrow cards with tags, reminders and large text',
+    (tester) async {
+      await pumpCard(
+        tester,
+        checklist.copyWith(
+          reminder: const NoteReminder(
+            remindAt: '2026-12-23T19:22',
+            recurrence: ReminderRecurrence.yearly,
+          ),
+        ),
+        160,
+        layout: CardLayout.list,
+        tags: const [Tag(id: 'work', name: 'work')],
+        textScaler: TextScaler.linear(2),
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('a long reminder label does not overflow the footer', (
     tester,

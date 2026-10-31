@@ -83,3 +83,22 @@ String writeChecklist(Iterable<ChecklistTask> tasks) => jsonEncode({
 
 bool checklistContentsMatch(String? left, String? right) =>
     writeChecklist(readChecklist(left)) == writeChecklist(readChecklist(right));
+
+/// Entry rows without text do not count toward a checklist's progress.
+class ChecklistProgress {
+  const ChecklistProgress({required this.total, required this.done});
+
+  factory ChecklistProgress.fromContent(String? content) {
+    final tasks = readChecklist(
+      content,
+    ).where((task) => task.text.trim().isNotEmpty).toList();
+    return ChecklistProgress(
+      total: tasks.length,
+      done: tasks.where((task) => task.done).length,
+    );
+  }
+
+  final int total;
+  final int done;
+  bool get allDone => total > 0 && done == total;
+}

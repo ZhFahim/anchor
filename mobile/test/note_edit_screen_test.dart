@@ -167,6 +167,7 @@ void main() {
   ) async {
     await pumpScreen(tester, newNoteType: NoteType.checklist);
     expect(find.byType(ChecklistNoteEditor), findsOneWidget);
+    expect(find.text('CHECKLIST'), findsOneWidget);
     expect(find.byType(RichTextEditor), findsNothing);
     expect(find.byType(EditorToolbar), findsNothing);
     await tester.enterText(titleField, 'Shopping');
@@ -198,6 +199,7 @@ void main() {
         content: writeChecklist([const ChecklistTask(text: 'Milk')]),
       ),
     );
+    expect(find.text('CHECKLIST'), findsOneWidget);
     await tester.tap(find.byType(Checkbox));
     await tester.pump();
     expect(find.text('Milk'), findsNothing);
@@ -208,6 +210,17 @@ void main() {
             as Note;
     expect(saved.noteType, NoteType.checklist);
     expect(readChecklist(saved.content).first.done, isTrue);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('regular notes do not show the checklist type label', (
+    tester,
+  ) async {
+    await pumpScreen(
+      tester,
+      note: const Note(id: 'regular', title: 'Normal'),
+    );
+    expect(find.text('CHECKLIST'), findsNothing);
     await tester.pumpWidget(const SizedBox());
   });
 

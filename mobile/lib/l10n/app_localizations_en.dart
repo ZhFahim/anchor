@@ -9,6 +9,25 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get checklistLabel => 'Checklist';
+
+  @override
+  String get checklistAllDone => 'All done';
+
+  @override
+  String get checklistNoTasks => 'No tasks';
+
+  @override
+  String checklistProgress(int done, int total) {
+    return '$done of $total done';
+  }
+
+  @override
+  String checklistProgressSpoken(int done, int total) {
+    return '$done of $total tasks completed';
+  }
+
+  @override
   String get noteTypeChoose => 'Choose note type';
 
   @override

@@ -6,12 +6,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../app/router/app_routes.dart';
 import '../../../core/motion/haptics.dart';
 import '../../../core/motion/springs.dart';
 import '../../../core/network/connectivity_provider.dart';
 import '../../../core/session/active_user_id_provider.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/context_extensions.dart';
 import '../../../core/theme/tokens/anchor_tokens.dart';
 import '../../../core/widgets/app_snackbar.dart';
@@ -580,6 +582,32 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
               PageBar.heightOf(context) +
               4,
         ),
+        if (_isChecklist)
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              AnchorTokens.spaceGutterPhone,
+              AnchorTokens.space4,
+              AnchorTokens.spaceGutterPhone,
+              density.space8,
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  LucideIcons.listChecks,
+                  size: AnchorTokens.sizeIconSmall,
+                  color: appearance.colors.muted,
+                ),
+                const SizedBox(width: AnchorTokens.space4),
+                Text(
+                  context.l10n.checklistLabel.toUpperCase(),
+                  semanticsLabel: context.l10n.checklistLabel,
+                  style: AppTypography.label.copyWith(
+                    color: appearance.colors.muted,
+                  ),
+                ),
+              ],
+            ),
+          ),
         Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: AnchorTokens.spaceGutterPhone,

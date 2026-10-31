@@ -5,6 +5,33 @@ import 'package:anchor/features/notes/domain/note.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test(
+    'progress ignores blank task rows and does not complete an empty list',
+    () {
+      final progress = ChecklistProgress.fromContent(
+        writeChecklist([
+          const ChecklistTask(text: 'Milk'),
+          const ChecklistTask(text: 'Bread', done: true),
+          const ChecklistTask(),
+          const ChecklistTask(text: '  ', done: true),
+        ]),
+      );
+      expect(progress.total, 2);
+      expect(progress.done, 1);
+      expect(progress.allDone, isFalse);
+      expect(ChecklistProgress.fromContent(null).total, 0);
+      expect(ChecklistProgress.fromContent(null).allDone, isFalse);
+      final complete = ChecklistProgress.fromContent(
+        writeChecklist([
+          const ChecklistTask(text: 'Milk', done: true),
+          const ChecklistTask(),
+        ]),
+      );
+      expect(complete.total, 1);
+      expect(complete.allDone, isTrue);
+    },
+  );
+
   test('note types default safely for older and unknown servers', () {
     expect(NoteType.fromString(null), NoteType.note);
     expect(NoteType.fromString('other'), NoteType.note);

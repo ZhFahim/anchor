@@ -94,6 +94,36 @@ abstract class AppLocalizations {
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[Locale('en')];
 
+  /// Small checklist-type label above an editor title, and the title fallback on an untitled checklist card.
+  ///
+  /// In en, this message translates to:
+  /// **'Checklist'**
+  String get checklistLabel;
+
+  /// Card progress label when every nonblank task in a checklist is completed.
+  ///
+  /// In en, this message translates to:
+  /// **'All done'**
+  String get checklistAllDone;
+
+  /// Card progress label for a checklist with no nonblank tasks.
+  ///
+  /// In en, this message translates to:
+  /// **'No tasks'**
+  String get checklistNoTasks;
+
+  /// Muted progress count on a checklist note card; blank task rows do not count.
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of {total} done'**
+  String checklistProgress(int done, int total);
+
+  /// Screen reader progress announcement on a checklist note card.
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of {total} tasks completed'**
+  String checklistProgressSpoken(int done, int total);
+
   /// Tooltip and screen reader label of the dropdown beside the New note button.
   ///
   /// In en, this message translates to:

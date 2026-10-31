@@ -9,6 +9,7 @@ import '../../../../core/widgets/check_circle.dart';
 import '../../../../l10n/l10n.dart';
 import '../../../reminders/presentation/reminder_labels.dart';
 import '../../../tags/domain/tag.dart';
+import '../../domain/checklist_task.dart';
 import '../../domain/note.dart';
 import '../../domain/note_blocks.dart';
 import '../note_labels.dart';
@@ -76,7 +77,11 @@ class _NoteCardState extends State<NoteCard>
   Widget build(BuildContext context) {
     final note = widget.note;
     final appearance = NoteAppearance.of(context, note.background);
-    final snippet = snippetTextOf(note.content);
+    final isChecklist = note.noteType == NoteType.checklist;
+    final snippet = snippetTextOf(note.content, hideCompleted: isChecklist);
+    final progress = isChecklist
+        ? ChecklistProgress.fromContent(note.content)
+        : null;
     final l10n = context.l10n;
     final reminder = note.reminder;
     final date =
@@ -85,7 +90,10 @@ class _NoteCardState extends State<NoteCard>
             ? shortDayLabel(note.updatedAt!.toLocal(), l10n)
             : null);
     final label = [
+      if (isChecklist) l10n.noteTypeChecklist,
       displayTitleOf(note.title, l10n),
+      if (progress != null)
+        l10n.checklistProgressSpoken(progress.done, progress.total),
       if (snippet.isNotEmpty)
         snippet.length > 120 ? '${snippet.substring(0, 120)}…' : snippet,
       if (note.imagePreviewData.isNotEmpty)

@@ -15,6 +15,7 @@ import '../../../../core/widgets/trailing_wrap.dart';
 import '../../../../l10n/l10n.dart';
 import '../../../tags/domain/tag.dart';
 import '../../data/repository/attachment_file_provider.dart';
+import '../../domain/checklist_task.dart';
 import '../../domain/note.dart';
 import '../note_labels.dart';
 import 'card_body.dart';
@@ -49,6 +50,11 @@ class NoteCardContent extends StatelessWidget {
     final previews = note.imagePreviewData;
     final radius = BorderRadius.circular(AnchorTokens.radiusCard);
     final density = context.density;
+    final isChecklist = note.noteType == NoteType.checklist;
+    final title = note.hasTitle ? note.title : context.l10n.checklistLabel;
+    final titleStyle = context.noteTypography.cardTitle
+        .withSize(AnchorTokens.typeUi.fontSize!)
+        .copyWith(color: colors.appText, height: 1.3);
     // The first line keeps clear of the selection check over it.
     final checkInset = check != null && (list || previews.isEmpty)
         ? AnchorTokens.space24
@@ -61,24 +67,42 @@ class NoteCardContent extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         spacing: density.space8,
         children: [
-          if (note.hasTitle)
+          if (note.hasTitle || isChecklist)
             Padding(
               padding: EdgeInsets.only(right: checkInset),
-              child: Text(
-                note.title,
-                maxLines: list ? 1 : 2,
-                overflow: TextOverflow.ellipsis,
-                style: context.noteTypography.cardTitle
-                    .withSize(AnchorTokens.typeUi.fontSize!)
-                    .copyWith(color: colors.appText, height: 1.3),
-              ),
+              child: isChecklist
+                  ? Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          LucideIcons.listChecks,
+                          size: AnchorTokens.sizeIconSmall,
+                          color: appearance.colors.muted,
+                        ),
+                        const SizedBox(width: AnchorTokens.space4),
+                        Expanded(
+                          child: Text(
+                            title,
+                            maxLines: list ? 1 : 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: titleStyle,
+                          ),
+                        ),
+                      ],
+                    )
+                  : Text(
+                      title,
+                      maxLines: list ? 1 : 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: titleStyle,
+                    ),
             ),
           CardBody(
             content: note.content,
             hideCompleted: note.noteType == NoteType.checklist,
             appearance: appearance,
             layout: layout,
-            firstLineEndInset: note.hasTitle ? 0 : checkInset,
+            firstLineEndInset: note.hasTitle || isChecklist ? 0 : checkInset,
           ),
           if (list)
             _Footer(
@@ -252,7 +276,40 @@ class _Footer extends StatelessWidget {
   Widget build(BuildContext context) {
     final muted = appearance.colors.muted;
     final style = AppTypography.footnote.copyWith(color: muted);
+    final progress = note.noteType == NoteType.checklist
+        ? ChecklistProgress.fromContent(note.content)
+        : null;
+    final progressLabel = progress == null
+        ? null
+        : progress.allDone
+        ? context.l10n.checklistAllDone
+        : progress.total == 0
+        ? context.l10n.checklistNoTasks
+        : context.l10n.checklistProgress(progress.done, progress.total);
     final items = <Widget>[
+      if (progress != null)
+        Text.rich(
+          TextSpan(
+            children: [
+              if (progress.allDone)
+                WidgetSpan(
+                  alignment: PlaceholderAlignment.middle,
+                  child: Padding(
+                    padding: const EdgeInsetsDirectional.only(
+                      end: AnchorTokens.space4,
+                    ),
+                    child: Icon(
+                      LucideIcons.circleCheck,
+                      size: AnchorTokens.sizeIconSmall,
+                      color: muted,
+                    ),
+                  ),
+                ),
+              TextSpan(text: progressLabel),
+            ],
+          ),
+          style: style.tabular,
+        ),
       if (tags.isNotEmpty)
         Padding(
           padding: const EdgeInsetsDirectional.only(end: AnchorTokens.space4),

@@ -1,5 +1,41 @@
 {
   "@@locale": "en",
+  "checklistLabel": "Checklist",
+  "@checklistLabel": {
+    "description": "Small checklist-type label above an editor title, and the title fallback on an untitled checklist card."
+  },
+  "checklistAllDone": "All done",
+  "@checklistAllDone": {
+    "description": "Card progress label when every nonblank task in a checklist is completed."
+  },
+  "checklistNoTasks": "No tasks",
+  "@checklistNoTasks": {
+    "description": "Card progress label for a checklist with no nonblank tasks."
+  },
+  "checklistProgress": "{done} of {total} done",
+  "@checklistProgress": {
+    "description": "Muted progress count on a checklist note card; blank task rows do not count.",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "checklistProgressSpoken": "{done} of {total} tasks completed",
+  "@checklistProgressSpoken": {
+    "description": "Screen reader progress announcement on a checklist note card.",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "noteTypeChoose": "Choose note type",
   "@noteTypeChoose": {
     "description": "Tooltip and screen reader label of the dropdown beside the New note button."
