@@ -1,6 +1,13 @@
 "use client";
 
-import { Check, ImageOff, Paperclip, Users } from "lucide-react";
+import {
+  Check,
+  CircleCheck,
+  ImageOff,
+  ListChecks,
+  Paperclip,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
 import * as React from "react";
 import { Avatar } from "@/components/ui/avatar";
@@ -12,6 +19,7 @@ import { useHighlightPaint } from "@/lib/highlight-paint";
 import { useNearScreen } from "@/lib/hooks/use-near-screen";
 import { rememberCard } from "@/lib/morph";
 import { cn } from "@/lib/utils";
+import { checklistProgress } from "../checklist";
 import { useAttachmentBlob } from "../hooks/use-attachment-blob";
 import { deltaToBlocks, type NoteBlock } from "../note-blocks";
 import { hasTitle } from "../title";
@@ -83,6 +91,11 @@ export const NoteCard = React.memo(function NoteCard({
   dateLabel,
 }: NoteCardProps) {
   const blocks = cardBlocks(note);
+  const progress = React.useMemo(
+    () =>
+      note.noteType === "checklist" ? checklistProgress(note.content) : null,
+    [note.noteType, note.content],
+  );
   const hasHighlights = blocks.some((block) =>
     block.runs.some((run) => run.highlight),
   );
@@ -96,6 +109,9 @@ export const NoteCard = React.memo(function NoteCard({
   );
   const title = hasTitle(note.title) ? note.title : "";
   const label = title || "Untitled";
+  const accessibleLabel = progress
+    ? `Checklist: ${label}. ${progress.done} of ${progress.total} tasks completed.`
+    : label;
   const isList = layout === "list";
   const pictureIds = note.imagePreviewIds ?? [];
   const attachmentCount = note.attachmentCount ?? 0;
@@ -117,6 +133,15 @@ export const NoteCard = React.memo(function NoteCard({
   const sharedWithLabel = `Shared with ${shareCount} ${shareCount === 1 ? "person" : "people"}`;
   const footer = (
     <div className="nc-foot">
+      {progress && (
+        <span
+          className="nc-checklist-progress"
+          title={`${progress.done} of ${progress.total} tasks completed`}
+        >
+          {progress.allDone && <CircleCheck aria-hidden />}
+          {progress.label}
+        </span>
+      )}
       {note.reminder && (
         <ReminderChip noteId={note.id} reminder={note.reminder} size="sm" />
       )}
@@ -182,12 +207,12 @@ export const NoteCard = React.memo(function NoteCard({
       ref={cardRef}
       data-note={note.background ?? ""}
       data-flip={note.id}
-      aria-label={label}
+      aria-label={accessibleLabel}
       className={cn("nc", picked && "picked")}
     >
       <Link
         href={`/notes/${note.id}`}
-        aria-label={label}
+        aria-label={accessibleLabel}
         className="nc-link absolute inset-0 z-1 rounded-[inherit] outline-none"
         onClick={(e) => {
           if (picking || e.metaKey || e.ctrlKey || e.shiftKey) {
@@ -237,7 +262,12 @@ export const NoteCard = React.memo(function NoteCard({
         </div>
       )}
       <div className="nc-in">
-        {title && <div className="nc-title">{title}</div>}
+        {(title || progress) && (
+          <div className="nc-title">
+            {progress && <ListChecks className="nc-type-icon" aria-hidden />}
+            {title || "Checklist"}
+          </div>
+        )}
         <NoteBody
           ref={bodyRef}
           blocks={blocks}

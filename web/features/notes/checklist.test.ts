@@ -1,7 +1,43 @@
 import { describe, expect, it } from "vitest";
-import { moveTask, readChecklist, writeChecklist } from "./checklist";
+import {
+  checklistProgress,
+  moveTask,
+  readChecklist,
+  writeChecklist,
+} from "./checklist";
 
 describe("checklist content", () => {
+  it("counts real tasks, ignoring blank and whitespace-only entry rows", () => {
+    expect(
+      checklistProgress(
+        writeChecklist([
+          { text: "Milk", done: false },
+          { text: "Bread", done: true },
+          { text: "", done: false },
+          { text: "  ", done: true },
+        ]),
+      ),
+    ).toEqual({ total: 2, done: 1, allDone: false, label: "1 of 2 done" });
+  });
+
+  it("shows All done only when at least one real task exists", () => {
+    expect(
+      checklistProgress(
+        writeChecklist([
+          { text: "Milk", done: true },
+          { text: "", done: false },
+        ]),
+      ),
+    ).toMatchObject({ total: 1, done: 1, allDone: true, label: "All done" });
+    expect(checklistProgress(null)).toMatchObject({
+      total: 0,
+      allDone: false,
+      label: "No tasks",
+    });
+    expect(
+      checklistProgress(writeChecklist([{ text: "", done: true }])),
+    ).toMatchObject({ total: 0, allDone: false, label: "No tasks" });
+  });
   it("keeps completed tasks stored and restores them without changing order", () => {
     const tasks = [
       { text: "Milk", done: false },

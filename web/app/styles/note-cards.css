@@ -141,6 +141,24 @@
   gap: 5px;
   min-width: 0;
 }
+.nc-title .nc-type-icon {
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  margin-right: 6px;
+  vertical-align: -2px;
+  color: var(--note-muted);
+}
+.nc-checklist-progress {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.nc-foot:has(.nc-checklist-progress) {
+  flex-wrap: wrap;
+}
 .nc-foot {
   display: flex;
   align-items: center;

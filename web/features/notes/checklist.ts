@@ -17,6 +17,24 @@ export function readChecklist(content: string): ChecklistTask[] {
   }));
 }
 
+/** Blank entry rows are not tasks, including the trailing row added by Enter. */
+export function checklistProgress(content: string | null | undefined) {
+  const tasks = readChecklist(content ?? "").filter((task) => task.text.trim());
+  const total = tasks.length;
+  const done = tasks.filter((task) => task.done).length;
+  const allDone = total > 0 && done === total;
+  return {
+    total,
+    done,
+    allDone,
+    label: allDone
+      ? "All done"
+      : total
+        ? `${done} of ${total} done`
+        : "No tasks",
+  };
+}
+
 export function writeChecklist(tasks: ChecklistTask[]): string {
   const ops: QuillOp[] = tasks.flatMap((task) => [
     ...(task.line && getLineText(task.line) === task.text

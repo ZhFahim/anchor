@@ -146,6 +146,12 @@ export function NoteEditorContent(props: NoteEditorContentProps) {
   return (
     <div ref={root} className="note-in">
       {props.readOnlyBar}
+      {props.noteType === "checklist" && (
+        <div className="mt-1 mb-2 flex items-center gap-1.5 font-medium text-(--note-muted) text-label uppercase">
+          <ListChecks className="size-3.5" aria-hidden />
+          Checklist
+        </div>
+      )}
       {props.readOnly ? (
         <h1 className="n-title">{props.title || "Untitled"}</h1>
       ) : (
