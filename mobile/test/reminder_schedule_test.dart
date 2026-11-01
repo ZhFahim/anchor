@@ -152,6 +152,216 @@ void main() {
     });
   });
 
+  group('nextOccurrences', () {
+    test('lists the dates from the first one on', () {
+      expect(
+        nextOccurrences(
+          at('2027-03-01T09:00', ReminderRecurrence.monthly),
+          from: DateTime(2026, 11, 1),
+          count: 3,
+        ),
+        [
+          DateTime(2027, 3, 1, 9),
+          DateTime(2027, 4, 1, 9),
+          DateTime(2027, 5, 1, 9),
+        ],
+      );
+    });
+
+    test('starts at the next date once the first has gone', () {
+      expect(
+        nextOccurrences(
+          at('2026-09-04T09:00', ReminderRecurrence.weekly),
+          from: DateTime(2026, 9, 5),
+          count: 2,
+        ),
+        [DateTime(2026, 9, 11, 9), DateTime(2026, 9, 18, 9)],
+      );
+    });
+
+    test('follows a month-end day through short months', () {
+      expect(
+        nextOccurrences(
+          at('2027-01-31T09:00', ReminderRecurrence.monthly),
+          from: DateTime(2026, 11, 1),
+          count: 4,
+        ),
+        [
+          DateTime(2027, 1, 31, 9),
+          DateTime(2027, 2, 28, 9),
+          DateTime(2027, 3, 31, 9),
+          DateTime(2027, 4, 30, 9),
+        ],
+      );
+    });
+
+    test('a one-off has one date at most', () {
+      final once = at('2027-03-01T09:00');
+
+      expect(nextOccurrences(once, from: DateTime(2026, 11, 1), count: 12), [
+        DateTime(2027, 3, 1, 9),
+      ]);
+      expect(
+        nextOccurrences(once, from: DateTime(2027, 3, 2), count: 12),
+        isEmpty,
+      );
+    });
+  });
+
+  group('canUseOsRepeat', () {
+    bool canRepeat(String remindAt, ReminderRecurrence every, DateTime now) =>
+        canUseOsRepeat(at(remindAt, every), now: now);
+
+    test('not while a monthly repeat would match before its first date', () {
+      expect(
+        canRepeat(
+          '2027-03-01T09:00',
+          ReminderRecurrence.monthly,
+          DateTime(2026, 10, 1),
+        ),
+        isFalse,
+      );
+    });
+
+    test('not on the minute of the last match before the first date', () {
+      expect(
+        canRepeat(
+          '2027-03-01T09:00',
+          ReminderRecurrence.monthly,
+          DateTime(2027, 2, 1, 9),
+        ),
+        isFalse,
+      );
+    });
+
+    test('once the first date is the next match', () {
+      expect(
+        canRepeat(
+          '2027-03-01T09:00',
+          ReminderRecurrence.monthly,
+          DateTime(2027, 2, 1, 9, 1),
+        ),
+        isTrue,
+      );
+    });
+
+    test('after the first date has passed', () {
+      expect(
+        canRepeat(
+          '2027-03-01T09:00',
+          ReminderRecurrence.monthly,
+          DateTime(2027, 3, 2),
+        ),
+        isTrue,
+      );
+    });
+
+    test('a daily repeat from tomorrow waits for today\'s time to pass', () {
+      const tomorrow = '2026-11-03T09:00';
+
+      expect(
+        canRepeat(tomorrow, ReminderRecurrence.daily, DateTime(2026, 11, 2, 8)),
+        isFalse,
+      );
+      expect(
+        canRepeat(
+          tomorrow,
+          ReminderRecurrence.daily,
+          DateTime(2026, 11, 2, 10),
+        ),
+        isTrue,
+      );
+    });
+
+    test('a weekly repeat waits for the last match before its first date', () {
+      const start = '2026-11-15T09:00';
+
+      expect(
+        canRepeat(start, ReminderRecurrence.weekly, DateTime(2026, 11, 2)),
+        isFalse,
+      );
+      expect(
+        canRepeat(start, ReminderRecurrence.weekly, DateTime(2026, 11, 9)),
+        isTrue,
+      );
+    });
+
+    test('a yearly repeat waits for the last match before its first date', () {
+      const start = '2028-03-01T09:00';
+
+      expect(
+        canRepeat(start, ReminderRecurrence.yearly, DateTime(2026, 11, 1)),
+        isFalse,
+      );
+      expect(
+        canRepeat(start, ReminderRecurrence.yearly, DateTime(2027, 3, 2)),
+        isTrue,
+      );
+    });
+
+    test('never for a day some months lack', () {
+      for (final day in ['29', '30', '31']) {
+        expect(
+          canRepeat(
+            '2026-01-${day}T09:00',
+            ReminderRecurrence.monthly,
+            DateTime(2026, 3, 5),
+          ),
+          isFalse,
+          reason: 'day $day',
+        );
+      }
+    });
+
+    test('never for a date moved into a shorter month', () {
+      expect(
+        canRepeat(
+          '2026-01-31T09:00',
+          ReminderRecurrence.monthly,
+          DateTime(2026, 2, 10),
+        ),
+        isFalse,
+      );
+    });
+
+    test('for the 28th, which every month has', () {
+      expect(
+        canRepeat(
+          '2026-01-28T09:00',
+          ReminderRecurrence.monthly,
+          DateTime(2026, 3, 5),
+        ),
+        isTrue,
+      );
+    });
+
+    test('never for a leap day', () {
+      expect(
+        canRepeat(
+          '2028-02-29T09:00',
+          ReminderRecurrence.yearly,
+          DateTime(2029, 1, 1),
+        ),
+        isFalse,
+      );
+    });
+
+    test('never for a one-off or a malformed date', () {
+      expect(
+        canRepeat(
+          '2026-11-03T09:00',
+          ReminderRecurrence.none,
+          DateTime(2026, 11, 2),
+        ),
+        isFalse,
+      );
+      expect(
+        canRepeat('nope', ReminderRecurrence.daily, DateTime(2026, 11, 2)),
+        isFalse,
+      );
+    });
+  });
+
   group('ReminderRecurrence', () {
     test('falls back to a one-off on an unknown value', () {
       expect(
