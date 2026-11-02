@@ -130,6 +130,7 @@ Anchor+ does too; these are the differences. "Web" and "Android" say where each 
 | **Releases** | | |
 | Running the "Release (fork)" workflow on `main` makes a release with the APK and a multi-arch Docker image (see [This Fork's Image](#this-forks-image)); the APK installs as "Anchor+" next to the official app | ✓ | ✓ |
 | A desktop app for Windows and macOS: your server's web client in its own window, in every release, that updates itself (see [Desktop App](#desktop-app)) | ✓ | |
+| When upstream makes a release or release candidate, Claude merges upstream's `main` into the fork and opens a PR with the conflicts resolved and the checks run (the "Upstream release" workflow) | ✓ | ✓ |
 
 ### Custom themes
 

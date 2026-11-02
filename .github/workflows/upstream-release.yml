@@ -1,0 +1,273 @@
+name: Upstream release
+
+# When ZhFahim/anchor publishes a release or a release candidate, Claude
+# merges upstream's main into the branch upstream-sync off this fork's main,
+# resolves the conflicts, runs the checks and opens a PR. Candidates count
+# because upstream's big changes land with them: the 0.18 redesign was on
+# upstream's main two days before 0.18.0-rc.1, and the fork kept moving away
+# from it for days while 0.18.0 itself wasn't out.
+#
+# GitHub can't send another repository's release events here, so this looks
+# every few hours. It skips a release whose commit main already has, and one
+# whose PR was closed. There is one PR at a time: a newer release goes into
+# the open one (retitled for it) unless that PR is a draft, which waits for
+# the owner.
+#
+# Start it by hand (Actions › Upstream release › Run workflow) to carry on
+# with a draft PR, or to try a release again after closing its PR.
+#
+# Upstream's 0.18 mobile redesign came in one upstream PR that conflicted with
+# 147 of the fork's files, and rebasing the fork's 156 commits onto it took
+# days. So this merges and never rebases: each conflict is resolved once.
+# When much conflicts, Claude merges upstream in steps (that PR's own commits
+# one by one), pushes after each, and opens the PR as a draft from the first
+# step on. A run that stops before the end (the job's six hours run out, or
+# a conflict needs the owner) leaves its steps there, and running this by
+# hand carries on from the last one.
+#
+# Needs the Claude GitHub app installed on this repository, and a
+# CLAUDE_CODE_OAUTH_TOKEN (from `claude setup-token`) or ANTHROPIC_API_KEY
+# secret. The app pushes the branch and opens the PR, so CI runs on it, which
+# it wouldn't for a PR opened with the workflow's own token.
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  UPSTREAM: ZhFahim/anchor
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.check.outputs.tag }}
+      branch: ${{ steps.check.outputs.branch }}
+      resume: ${{ steps.check.outputs.resume }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Look for a new upstream release
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          MANUAL: ${{ github.event_name == 'workflow_dispatch' }}
+          BRANCH: upstream-sync
+        run: |
+          # The newest release, candidates included. Upstream tags them
+          # v<version>, e.g. v0.18.0 and v0.18.0-rc.2.
+          TAG=$(gh api "repos/$UPSTREAM/releases?per_page=20" -q '[.[] | select(.draft | not)][0].tag_name')
+          VERSION=${TAG#v}
+          git fetch --no-tags "https://github.com/$UPSTREAM.git" "refs/tags/$TAG:refs/upstream-release"
+          if git merge-base --is-ancestor refs/upstream-release origin/main; then
+            echo "main already has upstream $TAG."
+            exit 0
+          fi
+          # Its PRs are titled "Merge upstream ZhFahim/anchor <version>".
+          CLOSED=$(gh pr list --head "$BRANCH" --state closed --json url,title |
+            jq -r --arg v " $VERSION" '[.[] | select(.title | endswith($v))][0].url // ""')
+          if [ -n "$CLOSED" ] && [ "$MANUAL" != true ]; then
+            echo "$TAG had a PR that was closed: $CLOSED. Run this workflow by hand to try again."
+            exit 0
+          fi
+          OPEN=$(gh pr list --head "$BRANCH" --state open --json url,isDraft -q '.[0] | select(.)')
+          RESUME=false
+          if [ -n "$OPEN" ]; then
+            URL=$(jq -r .url <<< "$OPEN")
+            git fetch --no-tags origin "$BRANCH"
+            if [ "$MANUAL" != true ]; then
+              if git merge-base --is-ancestor refs/upstream-release FETCH_HEAD; then
+                echo "$URL already has upstream $TAG."
+                exit 0
+              fi
+              if [ "$(jq -r .isDraft <<< "$OPEN")" = true ]; then
+                echo "$URL is a draft, which waits for you. Run this workflow by hand to carry on with it."
+                exit 0
+              fi
+            fi
+            echo "Carrying on with $URL."
+            RESUME=true
+          fi
+          echo "Upstream released $TAG; merging it."
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "resume=$RESUME" >> "$GITHUB_OUTPUT"
+
+  merge:
+    needs: check
+    if: needs.check.outputs.tag != ''
+    runs-on: ubuntu-latest
+    # GitHub stops a job after six hours; leave a few minutes for the
+    # action to report.
+    timeout-minutes: 350
+    permissions:
+      contents: write
+      pull-requests: write
+      # The Claude GitHub app's token is fetched with the workflow's OIDC token.
+      id-token: write
+    env:
+      TAG: ${{ needs.check.outputs.tag }}
+      BRANCH: ${{ needs.check.outputs.branch }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Fetch upstream
+        run: |
+          git remote add upstream "https://github.com/$UPSTREAM.git"
+          git fetch --no-tags upstream main
+
+      # The toolchains of ci.yml, so Claude can regenerate lockfiles and
+      # generated code and run the checks. Upstream may move them on; Claude
+      # says so in the PR when its checks needed a newer one.
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          package_json_file: server/package.json
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 26
+
+      - name: Set up Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.9
+          cache: true
+
+      - name: Merge with Claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # The job's time limit bounds the run; the turns only stop a loop.
+          claude_args: >-
+            --model claude-opus-5-5
+            --max-turns 2000
+            --allowedTools Bash,Read,Edit,Write,Glob,Grep,TodoWrite
+          prompt: |
+            You are in a checkout of AlxndrJhn/anchor, "Anchor+": a fork of
+            ZhFahim/anchor (remote `upstream`) with its own features. Upstream
+            just released ${{ needs.check.outputs.tag }} (a release
+            candidate if its name ends in -rc.<n>). Bring upstream's `main`
+            into the fork and open a PR for the owner to review.
+
+            Merge, never rebase. For upstream 0.18 the fork's 156 commits were
+            rebased onto upstream's mobile redesign, which conflicted with 147
+            files and took days. A merge resolves each conflict once, and its
+            merge commit keeps the next upstream merge small. Earlier upstream
+            merges, like 957069c2 (`git show 957069c2`, `git log --merges`),
+            show how conflicts were resolved before.
+
+            This job stops after about six hours. Push your work often, so
+            that a run that stops leaves it there for the next one.
+
+            1. Start the branch `${{ needs.check.outputs.branch }}`. Carry
+               on from an earlier run: ${{ needs.check.outputs.resume }}.
+               - true: the branch has an open PR from an earlier run, maybe
+                 for an earlier upstream release. Check the branch out from
+                 origin, read the PR (`gh pr view ${{ needs.check.outputs.branch }}`)
+                 and the branch's log, and carry on where it stopped. Then
+                 merge upstream/main into it as below; when it is already in,
+                 there's nothing to merge. Retitle the PR for
+                 ${{ needs.check.outputs.tag }} and rewrite its body to cover
+                 everything the branch brings in. If the branch is behind
+                 `main`, merge `main` into it first.
+               - false: create it from `main`. If it already exists on
+                 origin (from an earlier PR), start over from `main` anyway
+                 and overwrite it with `git push --force`.
+            2. See how much conflicts before merging:
+               `git merge-tree --write-tree --name-only HEAD upstream/main`
+               lists the conflicting files after its first line.
+               - Up to about 40 conflicting files: one merge,
+                 `git merge --no-ff upstream/main`, named "Merge upstream
+                 ZhFahim/anchor <version>" (the version without its "v").
+               - More: merge in steps. Walk upstream's first-parent history
+                 (`git rev-list --first-parent --reverse HEAD..upstream/main`)
+                 and merge it a piece at a time. Where one upstream PR's merge
+                 commit alone conflicts with many files, like the redesign
+                 did, merge the commits of that PR's branch (its second
+                 parent) one or a few at a time first. Name each step "Merge
+                 upstream ZhFahim/anchor <version>, step <n>: <what it brings>",
+                 and the last one, which reaches upstream/main, like a single
+                 merge. After each step, regenerate what step 3 says, make the
+                 type checks pass (`pnpm check` in server and web,
+                 `flutter analyze` in mobile), commit and push. After the
+                 first step, open the PR as a draft (step 5) and keep its
+                 body's progress up to date.
+            3. Resolve every conflict, reading both sides' history
+               (`git log upstream/main`, `git log main -- <file>`) to
+               understand what each side meant:
+               - Where the fork and upstream both built the same thing, take
+                 upstream's version and keep only what the fork adds on top,
+                 so later merges stay small. Remove fork code (and its tests)
+                 that upstream's version makes unnecessary.
+               - Keep the Anchor+ branding (name, icon, Android package
+                 `com.alxndrjhn.anchorplus`), the fork's README, and the
+                 fork's own workflows (release-fork.yml, pages.yml, this one,
+                 the `build-args` input of docker-build.yml). Bring toolchain
+                 version bumps from upstream's workflows into the fork's.
+               - Lockfiles and generated code (pnpm-lock.yaml, pubspec.lock,
+                 Prisma client, freezed/drift/riverpod `.g.dart` and
+                 `.freezed.dart`) are regenerated, not merged by hand:
+                 `pnpm install` in server, web and desktop;
+                 `flutter pub get` and
+                 `dart run build_runner build --delete-conflicting-outputs`
+                 in mobile.
+               - Database migrations: keep both sides' and make sure the
+                 fork's still apply after upstream's (check timestamps).
+            4. Once upstream/main is merged, run the checks of
+               .github/workflows/ci.yml: in server `pnpm exec prisma generate`,
+               `pnpm check`, `pnpm test`; in web `pnpm check`, `pnpm test`,
+               `pnpm build`; in desktop `pnpm run check`; in mobile
+               `flutter analyze`, `flutter test`. Fix what the merge broke,
+               in commits of their own after the merge. Don't fix failures
+               that main has too; list them in the PR.
+            5. Push the branch and open a PR against `main` with `gh pr create`
+               (or update the draft and mark it ready with `gh pr ready`),
+               titled "Merge upstream ZhFahim/anchor <version>", e.g.
+               "Merge upstream ZhFahim/anchor 0.19.0-rc.1". The workflow finds
+               the PR by that title, so keep the version last. Write the
+               body for the fork's owner, in plain sentences, like the body of
+               the PR for 957069c2 (`gh pr list --state merged --search "Merge
+               upstream" --json number,body`): how many upstream commits and
+               conflicting files, and the steps if there were several; "What
+               comes in from upstream", grouped by web, Android, desktop,
+               server and stack; "How overlaps were resolved", for each place
+               where upstream's version replaced the fork's, what changes for
+               the fork's users; "Kept from the fork"; "Checks", with what
+               passed and what failed and why. End it with:
+
+               🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+            If you can't finish (a conflict needs the owner's decision, checks
+            fail in a way you can't fix, or time runs short), push what you
+            have and leave the PR a draft whose body starts with where it
+            stopped and what needs deciding; running the workflow by hand
+            carries on from there. Never push to `main`, and don't merge the
+            PR.
