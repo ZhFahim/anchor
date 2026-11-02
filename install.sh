@@ -243,9 +243,9 @@ write_compose() {
   # HTTPS for HOST, with a certificate from Let's Encrypt
   caddy:
     image: caddy:2-alpine
-    container_name: anchor-caddy
+    container_name: anchor-plus-caddy
     restart: unless-stopped
-    command: caddy reverse-proxy --from ${HOST} --to anchor:3000
+    command: caddy reverse-proxy --from ${HOST} --to anchor-plus:3000
     ports:
       - "80:80"
       - "443:443"
@@ -256,7 +256,7 @@ write_compose() {
     logging:
       driver: local
     depends_on:
-      - anchor
+      - anchor-plus
 EOF
     )
   else
@@ -272,24 +272,24 @@ EOF
 # Written by install.sh, which rewrites it on every run: settings go in
 # anchor.env (Anchor's own) and .env (DOMAIN, PORT, ANCHOR_TAG; HOST follows
 # from DOMAIN).
-name: anchor
+name: anchor-plus
 
 services:
-  anchor:
+  anchor-plus:
     image: ghcr.io/alxndrjhn/anchor:\${ANCHOR_TAG}
-    container_name: anchor
+    container_name: anchor-plus
     restart: unless-stopped
     # Time to shut Postgres down cleanly
     stop_grace_period: 1m
     env_file: anchor.env${ports}
     volumes:
-      - anchor_data:/data
+      - anchor_plus_data:/data
     # Rotated logs, so they can't fill a small disk
     logging:
       driver: local${caddy}
 
 volumes:
-  anchor_data:
+  anchor_plus_data:
 EOF
   if [ -n "$DOMAIN" ]; then
     printf '  caddy_data:\n  caddy_config:\n' >>"$ANCHOR_DIR/docker-compose.yml"
@@ -347,6 +347,30 @@ is_public_ipv4() {
   esac
 }
 
+# Earlier installs ran as the Compose project "anchor", with the original
+# Anchor's container and volume names. Stop them and copy the notes into
+# anchor-plus's own volume, before the compose file that names them is
+# rewritten: if this fails, running the script again starts over. The old
+# volume is kept.
+OLD_VOLUME=
+move_to_own_name() {
+  local compose="$ANCHOR_DIR/docker-compose.yml" new=anchor-plus_anchor_plus_data
+  [ -f "$compose" ] && grep -qx 'name: anchor' "$compose" || return 0
+  log "Moving Anchor+ to its own names (anchor-plus), so it can run next to the original Anchor..."
+  (cd "$ANCHOR_DIR" && docker compose down)
+  OLD_VOLUME=$(docker volume ls -q \
+    --filter label=com.docker.compose.project=anchor \
+    --filter label=com.docker.compose.volume=anchor_data)
+  [ -n "$OLD_VOLUME" ] || return 0
+  # With Compose's labels, so it takes the volume as its own
+  docker volume create \
+    --label com.docker.compose.project=anchor-plus \
+    --label com.docker.compose.volume=anchor_plus_data \
+    "$new" >/dev/null
+  docker run --rm -v "$OLD_VOLUME:/from:ro" -v "$new:/to" --entrypoint cp \
+    "ghcr.io/alxndrjhn/anchor:$ANCHOR_TAG" -a /from/. /to/
+}
+
 start_anchor() {
   cd "$ANCHOR_DIR"
   log "Downloading Anchor (ghcr.io/alxndrjhn/anchor:$ANCHOR_TAG)..."
@@ -360,12 +384,12 @@ start_anchor() {
   local tries=90
   while [ "$tries" -gt 0 ]; do
     tries=$((tries - 1))
-    if docker exec anchor curl -fsS http://127.0.0.1:3000/api/health >/dev/null 2>&1; then
+    if docker exec anchor-plus curl -fsS http://127.0.0.1:3000/api/health >/dev/null 2>&1; then
       return
     fi
     sleep 2
   done
-  die "Anchor didn't answer in 3 minutes. Its log: cd $ANCHOR_DIR && docker compose logs anchor"
+  die "Anchor didn't answer in 3 minutes. Its log: cd $ANCHOR_DIR && docker compose logs anchor-plus"
 }
 
 report() {
@@ -397,8 +421,14 @@ report() {
   echo
   echo "  Update later:  run the same command again"
   echo "  Settings:      $ENV_FILE, then: cd $ANCHOR_DIR && docker compose up -d"
-  echo "  Backup:        cd $ANCHOR_DIR && docker compose exec -T anchor backup > anchor-backup-\$(date +%F).tar"
+  echo "  Backup:        cd $ANCHOR_DIR && docker compose exec -T anchor-plus backup > anchor-backup-\$(date +%F).tar"
+  echo "  Daily backups: with borgmatic, see https://github.com/AlxndrJhn/anchor#backing-up-with-borgmatic"
   echo
+  if [ -n "$OLD_VOLUME" ]; then
+    echo "  The notes were copied to a new volume. Once you've checked that"
+    echo "  they're all there, delete the old one: docker volume rm $OLD_VOLUME"
+    echo
+  fi
 }
 
 main() {
@@ -407,6 +437,7 @@ main() {
   add_swap
   load_settings
   write_anchor_env
+  move_to_own_name
   write_compose
   open_ports
   start_anchor

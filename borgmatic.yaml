@@ -1,0 +1,43 @@
+# borgmatic configuration that backs up an Anchor+ server with Borg: every
+# account, note, picture, recording and file, and the sign-in secret, as
+# `backup` makes them. For borgmatic 2.0 or later. Put it on the server, as
+# root (see "Backing Up with borgmatic" in the README):
+#
+#   curl -fsSL https://raw.githubusercontent.com/AlxndrJhn/anchor/main/borgmatic.yaml -o /etc/borgmatic.d/anchor.yaml
+#
+# then set the repository and the passphrase below.
+
+# Where the backups go: a folder on another disk, or a Borg server over SSH
+# (a BorgBase or Hetzner Storage Box repository, ...).
+repositories:
+    - path: ssh://user@backup.example.com/./anchor
+      label: anchor
+
+# Borg encrypts the backups with this; without it, they can't be read. Keep
+# a copy somewhere other than this server. Or, instead of writing it here:
+#   encryption_passcommand: cat /root/.anchor-borg-passphrase
+encryption_passphrase: "change me"
+
+# The backup is written here, archived, then deleted again. It needs as much
+# free disk as the backup is big, for the minute it's there.
+source_directories:
+    - /var/backups/anchor
+
+compression: zstd
+
+keep_daily: 7
+keep_weekly: 4
+keep_monthly: 6
+
+commands:
+    - before: action
+      when: [create]
+      run:
+          - mkdir -p -m 700 /var/backups/anchor
+          # `anchor-plus` is the container_name
+          - docker exec anchor-plus backup > /var/backups/anchor/anchor-backup.tar.partial
+          - mv /var/backups/anchor/anchor-backup.tar.partial /var/backups/anchor/anchor-backup.tar
+    - after: action
+      when: [create]
+      run:
+          - rm -f /var/backups/anchor/anchor-backup.tar /var/backups/anchor/anchor-backup.tar.partial

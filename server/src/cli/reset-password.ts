@@ -1,6 +1,6 @@
 /**
  * Sets a new password for any account, for whoever can run commands on the
- * server (in Docker: `docker exec -it anchor reset-password <email>`). It
+ * server (in Docker: `docker exec -it anchor-plus reset-password <email>`). It
  * talks to the database directly, so it also works when no admin can sign in.
  *
  *   reset-password                     lists the accounts

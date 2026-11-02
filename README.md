@@ -120,7 +120,7 @@ Anchor+ does too; these are the differences. "Web" and "Android" say where each 
 | Starts faster: settings are read in one go while the splash shows | | ✓ |
 | Debug mode: hold two fingers still for 3 s to film the app and its state, mark problems on a timeline and file them as a GitHub issue (see [mobile/README.md](mobile/README.md#debug-reports)) | | ✓ |
 | The server's version in Settings › About | ✓ | |
-| Back up the whole server with one command and restore it with another, onto a fresh or newer server (see [Backing Up the Server](#backing-up-the-server)) | ✓ | |
+| Back up the whole server with one command and restore it with another, onto a fresh or newer server (see [Backing Up the Server](#backing-up-the-server)), and every day with borgmatic ([how](#backing-up-with-borgmatic)) | ✓ | |
 | Install the server with one command on a small Linux server, such as a free tier one, with HTTPS for your domain or a free hostname (see [One-Line Install on a Small Server](#one-line-install-on-a-small-server)) | ✓ | |
 | Claude, and other apps that speak MCP, can search, read and write your notes through your server (see [Claude (MCP)](#claude-mcp)) | ✓ | |
 | **Fixes** | | |
@@ -292,17 +292,17 @@ followed by `docker compose up -d` in `/opt/anchor`.
 
    ```yaml
    services:
-     anchor:
+     anchor-plus:
        image: ghcr.io/alxndrjhn/anchor:fork-latest
-       container_name: anchor
+       container_name: anchor-plus
        restart: unless-stopped
        ports:
          - "3000:3000"
        volumes:
-         - anchor_data:/data
+         - anchor_plus_data:/data
 
    volumes:
-     anchor_data:
+     anchor_plus_data:
    ```
 
 2. **(Optional) Configure environment:**
@@ -348,11 +348,29 @@ followed by `docker compose up -d` in `/opt/anchor`.
    docker compose pull && docker compose up -d
    ```
 
-   Your data lives in the `anchor_data` volume, which updates (and
+   Your data lives in the `anchor_plus_data` volume, which updates (and
    `--force-recreate`) keep. Run them from the same folder each time: the
    volume is named after it. Before a release changes the database, Anchor
    saves it to `/data/backups` (the last 3 are kept). Only
    `docker compose down -v` deletes the volume.
+
+   The container and the volume are named `anchor-plus` and
+   `anchor_plus_data`, not `anchor` and `anchor_data` like the original
+   Anchor's, so both can run on one server (on different ports). A
+   `docker-compose.yml` from before that still names them `anchor`; to move
+   to the new names, back up with the old file, change it, and restore:
+
+   ```bash
+   docker compose exec -T anchor backup > anchor-backup.tar
+   docker compose down
+   # in docker-compose.yml: anchor -> anchor-plus, anchor_data -> anchor_plus_data
+   docker compose up -d
+   docker compose exec -T anchor-plus restore < anchor-backup.tar
+   ```
+
+   The old volume is kept until you delete it (`docker volume ls`, then
+   `docker volume rm <folder>_anchor_data`). The one-line install moves
+   itself.
 
 ### Image Tags
 
@@ -397,23 +415,23 @@ Whoever can run `docker` on the host can set a new password for any
 account, admins included, without signing in. List the accounts:
 
 ```bash
-docker exec -it anchor reset-password
+docker exec -it anchor-plus reset-password
 ```
 
 Give one a new, generated password, which the command prints:
 
 ```bash
-docker exec -it anchor reset-password user@example.com
+docker exec -it anchor-plus reset-password user@example.com
 ```
 
 Or type the new password yourself (at least 8 characters, not echoed):
 
 ```bash
-docker exec -it anchor reset-password user@example.com --password
+docker exec -it anchor-plus reset-password user@example.com --password
 ```
 
-`anchor` is the `container_name`; with Docker Compose you can also run
-`docker compose exec anchor reset-password …` from the folder with the
+`anchor-plus` is the `container_name`; with Docker Compose you can also run
+`docker compose exec anchor-plus reset-password …` from the folder with the
 `docker-compose.yml`. The user signs in with the new password right away;
 devices that are already signed in stay signed in.
 
@@ -425,7 +443,7 @@ picture, recording and file, and the secret sign-ins are signed with.
 Anchor keeps running while it's made, and it takes seconds:
 
 ```bash
-docker compose exec -T anchor backup > anchor-backup-$(date +%F).tar
+docker compose exec -T anchor-plus backup > anchor-backup-$(date +%F).tar
 ```
 
 One command restores it, on this server or on a fresh one, even one on a
@@ -433,7 +451,7 @@ later release, whose database it brings up to date. It replaces everything
 on that server, then Anchor restarts, and the apps stay signed in:
 
 ```bash
-docker compose exec -T anchor restore < anchor-backup-2026-10-31.tar
+docker compose exec -T anchor-plus restore < anchor-backup-2026-10-31.tar
 ```
 
 On a new server, start Anchor first (`docker compose up -d`), then restore.
@@ -443,6 +461,50 @@ commands stop and say so. The database is saved as a
 model is left out; it's downloaded again when it's needed. Keep backups
 somewhere safe: whoever has one can read every note and sign in as anyone.
 In PowerShell, `>` and `<` need PowerShell 7.4 or later.
+
+### Backing Up with borgmatic
+
+[borgmatic](https://torsion.org/borgmatic/) runs that backup every day and
+keeps it with [Borg](https://www.borgbackup.org/): encrypted, on another disk
+or a Borg server over SSH, with pictures and files that didn't change stored
+only once. The [`borgmatic.yaml`](borgmatic.yaml) in this repository is all
+it needs (borgmatic 2.0 or later). As root on the server:
+
+1. **Get the configuration** and set the repository and a passphrase in it:
+
+   ```bash
+   mkdir -p /etc/borgmatic.d
+   curl -fsSL https://raw.githubusercontent.com/AlxndrJhn/anchor/main/borgmatic.yaml -o /etc/borgmatic.d/anchor.yaml
+   chmod 600 /etc/borgmatic.d/anchor.yaml
+   nano /etc/borgmatic.d/anchor.yaml
+   ```
+
+2. **Create the repository**, then make the first backup:
+
+   ```bash
+   borgmatic repo-create --encryption repokey-blake2
+   borgmatic create --verbosity 1 --list --stats
+   ```
+
+3. **Back up every day**: borgmatic's packages come with a systemd timer
+   (`systemctl enable --now borgmatic.timer`); otherwise a cron line does
+   it, e.g. `0 3 * * * root borgmatic` in `/etc/cron.d/borgmatic`.
+
+Each run writes the backup to `/var/backups/anchor`, archives it and deletes
+it again, then drops the archives the `keep_` settings don't keep (7 daily,
+4 weekly, 6 monthly). Keep the passphrase and, with `repokey`, an export of
+the key (`borgmatic key export`) off the server: without them, the backups
+can't be read.
+
+To restore, take the backup out of the newest archive (or another, from
+`borgmatic repo-list`) and give it to `restore` as above:
+
+```bash
+mkdir -p /tmp/anchor-restore
+borgmatic extract --archive latest --path var/backups/anchor/anchor-backup.tar --destination /tmp/anchor-restore
+docker exec -i anchor-plus restore < /tmp/anchor-restore/var/backups/anchor/anchor-backup.tar
+rm -rf /tmp/anchor-restore
+```
 
 ### Monitoring the Server
 
@@ -460,7 +522,7 @@ database doesn't answer, so the monitor goes down both when the server is
 unreachable and when it can't serve notes. In Uptime Kuma: *Add New Monitor ›
 HTTP(s)*, paste the URL, done. It needs no account or token and says nothing
 about your notes. If Uptime Kuma runs on the same Docker host, a *Docker
-Container* monitor on `anchor` works too: the image's health check uses the
+Container* monitor on `anchor-plus` works too: the image's health check uses the
 same endpoint.
 
 **Anchor checks in with the monitor.** When the monitor can't reach Anchor,
@@ -666,7 +728,7 @@ Configure OIDC via environment variables in your `docker-compose.yml`. Pocket ID
 
 ```yaml
 services:
-  anchor:
+  anchor-plus:
     image: ghcr.io/alxndrjhn/anchor:fork-latest
     environment:
       - OIDC_ENABLED=true

@@ -1,6 +1,6 @@
 #!/bin/sh
 # Replaces everything on this server with a backup made by `backup`:
-#   docker compose exec -T anchor restore < anchor-backup.tar
+#   docker compose exec -T anchor-plus restore < anchor-backup.tar
 # The backup can come from an earlier release; its database is brought up
 # to this one's. Anchor restarts at the end, with the backup's sign-in
 # secret, so the apps stay signed in.
@@ -12,7 +12,7 @@ STAGE="$DATA/.anchor-restore"
 
 if [ -t 0 ]; then
   echo "restore reads a backup .tar from stdin, with -T:" >&2
-  echo "  docker compose exec -T anchor restore < anchor-backup.tar" >&2
+  echo "  docker compose exec -T anchor-plus restore < anchor-backup.tar" >&2
   exit 1
 fi
 

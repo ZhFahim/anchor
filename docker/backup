@@ -1,7 +1,7 @@
 #!/bin/sh
 # Writes a backup of the whole instance (database, pictures, recordings,
 # files, the sign-in secret) to stdout, as a .tar:
-#   docker compose exec -T anchor backup > anchor-backup.tar
+#   docker compose exec -T anchor-plus backup > anchor-backup.tar
 # `restore` reads it back, on this server or a fresh one of the same or a
 # later release. Anchor keeps running while it's made.
 set -eu
@@ -12,7 +12,7 @@ STAGE="$DATA/.anchor-backup"
 
 if [ -t 1 ]; then
   echo "backup writes a .tar to stdout; send it to a file, with -T:" >&2
-  echo "  docker compose exec -T anchor backup > anchor-backup.tar" >&2
+  echo "  docker compose exec -T anchor-plus backup > anchor-backup.tar" >&2
   exit 1
 fi
 

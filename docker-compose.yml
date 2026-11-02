@@ -1,5 +1,5 @@
 services:
-  anchor:
+  anchor-plus:
     # This fork's image (amd64 and arm64), updated on every release. Pin a
     # release instead with e.g. ghcr.io/alxndrjhn/anchor:fork-0.17.2.36.
     image: ghcr.io/alxndrjhn/anchor:fork-latest
@@ -7,7 +7,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: anchor
+    container_name: anchor-plus
     restart: unless-stopped
     # Time to shut Postgres down cleanly on `docker compose down` and on every
     # `up --force-recreate`, before Docker kills what's left.
@@ -19,7 +19,7 @@ services:
       - PG_PASSWORD=password
       - PG_DATABASE=anchor
     volumes:
-      - anchor_data:/data
+      - anchor_plus_data:/data
 
 volumes:
-  anchor_data:
+  anchor_plus_data:

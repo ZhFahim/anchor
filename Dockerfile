@@ -89,9 +89,9 @@ COPY --from=web_builder /app/web/public ./web/public
 COPY docker/docker-entrypoint.sh /app/docker-entrypoint.sh
 COPY docker/anchor-env.sh /app/anchor-env.sh
 COPY docker/supervisord.conf /etc/supervisord.conf
-# `docker exec -it anchor reset-password <email>` for a locked-out account
+# `docker exec -it anchor-plus reset-password <email>` for a locked-out account
 COPY docker/reset-password /usr/local/bin/reset-password
-# `docker compose exec -T anchor backup > anchor-backup.tar`, and `restore <`
+# `docker compose exec -T anchor-plus backup > anchor-backup.tar`, and `restore <`
 COPY docker/backup /usr/local/bin/backup
 COPY docker/restore /usr/local/bin/restore
 RUN chmod +x /app/docker-entrypoint.sh /usr/local/bin/reset-password \
