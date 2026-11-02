@@ -172,7 +172,7 @@ class NotesRepository {
 
     return [
       for (final row in rows)
-        _toNote(
+        noteFromRow(
           row,
           tagIds: tagIdsOf[row.id] ?? const [],
           imagePreviews: previewsOf[row.id] ?? const [],
@@ -185,7 +185,7 @@ class NotesRepository {
   Future<Note?> getNote(String id) async {
     final row = await _db.noteRow(id);
     if (row == null) return null;
-    return _toNote(row, tagIds: await _db.tagIdsOfNote(id));
+    return noteFromRow(row, tagIds: await _db.tagIdsOfNote(id));
   }
 
   Stream<Note?> watchNote(String id) {
@@ -207,7 +207,7 @@ class NotesRepository {
         }
       }
 
-      return _toNote(rows.first.readTable(_db.notes), tagIds: tagIds);
+      return noteFromRow(rows.first.readTable(_db.notes), tagIds: tagIds);
     });
   }
 
@@ -662,54 +662,55 @@ class NotesRepository {
       ),
     );
   }
+}
 
-  Note _toNote(
-    NoteRow row, {
-    List<String> tagIds = const [],
-    List<NoteImagePreview> imagePreviews = const [],
-    int attachmentCount = 0,
-    String pictureText = '',
-  }) {
-    return Note(
-      id: row.id,
-      title: row.title,
-      content: row.content,
-      isPinned: row.isPinned,
-      isArchived: row.isArchived,
-      background: row.background,
-      state: NoteState.fromString(row.state),
-      updatedAt: row.updatedAt,
-      createdAt: row.createdAt,
-      position: row.position,
-      positionedAt: row.positionedAt,
-      tagIds: tagIds,
-      permission: NotePermission.fromString(row.permission),
-      shareIds: decodeShareIds(row.shareIds),
-      sharedBy: row.sharedById != null
-          ? UserSummary(
-              id: row.sharedById!,
-              name: row.sharedByName ?? '',
-              email: row.sharedByEmail ?? '',
-              profileImage: row.sharedByProfileImage,
-            )
-          : null,
-      lock: NoteLock.fromString(row.lock),
-      isFrozen: row.isFrozen,
-      isInvisible: row.isInvisible ?? false,
-      isSynced: row.isSynced,
-      reminderSlot: row.reminderSlot,
-      imagePreviewData: imagePreviews,
-      attachmentCount: attachmentCount,
-      pictureText: pictureText,
-      reminder: row.reminderAt == null
-          ? null
-          : NoteReminder(
-              remindAt: row.reminderAt!,
-              recurrence: ReminderRecurrence.fromString(row.reminderRecurrence),
-              version: row.reminderVersion ?? 0,
-            ),
-    );
-  }
+/// The note a stored row holds.
+Note noteFromRow(
+  NoteRow row, {
+  List<String> tagIds = const [],
+  List<NoteImagePreview> imagePreviews = const [],
+  int attachmentCount = 0,
+  String pictureText = '',
+}) {
+  return Note(
+    id: row.id,
+    title: row.title,
+    content: row.content,
+    isPinned: row.isPinned,
+    isArchived: row.isArchived,
+    background: row.background,
+    state: NoteState.fromString(row.state),
+    updatedAt: row.updatedAt,
+    createdAt: row.createdAt,
+    position: row.position,
+    positionedAt: row.positionedAt,
+    tagIds: tagIds,
+    permission: NotePermission.fromString(row.permission),
+    shareIds: decodeShareIds(row.shareIds),
+    sharedBy: row.sharedById != null
+        ? UserSummary(
+            id: row.sharedById!,
+            name: row.sharedByName ?? '',
+            email: row.sharedByEmail ?? '',
+            profileImage: row.sharedByProfileImage,
+          )
+        : null,
+    lock: NoteLock.fromString(row.lock),
+    isFrozen: row.isFrozen,
+    isInvisible: row.isInvisible ?? false,
+    isSynced: row.isSynced,
+    reminderSlot: row.reminderSlot,
+    imagePreviewData: imagePreviews,
+    attachmentCount: attachmentCount,
+    pictureText: pictureText,
+    reminder: row.reminderAt == null
+        ? null
+        : NoteReminder(
+            remindAt: row.reminderAt!,
+            recurrence: ReminderRecurrence.fromString(row.reminderRecurrence),
+            version: row.reminderVersion ?? 0,
+          ),
+  );
 }
 
 /// Emits [read] now and after every [changes] event. Reads never overlap,

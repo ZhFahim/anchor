@@ -50,6 +50,9 @@ class FakeGateway implements NotificationGateway {
   Future<void> cancel(int id) async {}
 
   @override
+  Future<void> show(ScheduledNotification notification) async {}
+
+  @override
   Future<void> cancelAll() async {}
 }
 

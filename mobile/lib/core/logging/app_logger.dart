@@ -166,6 +166,10 @@ class AppLogger {
     _enqueueWrite(entry);
   }
 
+  /// Completes once everything logged so far is in the file; a background
+  /// task awaits it before its engine goes away.
+  Future<void> flush() => _writeChain;
+
   void _enqueueWrite(LogEntry entry) {
     final file = _file;
     if (file == null) return;

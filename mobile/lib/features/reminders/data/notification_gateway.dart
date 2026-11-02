@@ -43,6 +43,9 @@ abstract class NotificationGateway {
   Future<void> initialize();
   Future<List<int>> pendingIds();
   Future<void> schedule(ScheduledNotification notification);
+
+  /// Rings [notification] now, whatever its time.
+  Future<void> show(ScheduledNotification notification);
   Future<void> cancel(int id);
   Future<void> cancelAll();
   Future<bool> hasPermission();
@@ -88,7 +91,6 @@ class LocalNotificationGateway implements NotificationGateway {
   @override
   Future<void> schedule(ScheduledNotification notification) async {
     final at = tz.TZDateTime.from(notification.at, tz.local);
-    final l10n = deviceL10n();
     final mode = await canScheduleExact()
         ? AndroidScheduleMode.exactAllowWhileIdle
         : AndroidScheduleMode.inexactAllowWhileIdle;
@@ -98,23 +100,37 @@ class LocalNotificationGateway implements NotificationGateway {
       title: notification.title,
       body: notification.body,
       scheduledDate: at,
-      notificationDetails: NotificationDetails(
-        android: AndroidNotificationDetails(
-          _channelId,
-          l10n.reminderChannelName,
-          channelDescription: l10n.reminderChannelDescription,
-          importance: Importance.high,
-          priority: Priority.high,
-          // Must be a flat vector: Android masks the icon to alpha.
-          icon: 'ic_stat_reminder',
-          color: AnchorTokens.colorBrandOrange,
-          actions: [reminderDoneAction(l10n)],
-        ),
-        iOS: DarwinNotificationDetails(),
-      ),
+      notificationDetails: _details(),
       androidScheduleMode: mode,
       matchDateTimeComponents: notification.repeat,
       payload: notification.payload,
+    );
+  }
+
+  @override
+  Future<void> show(ScheduledNotification notification) => _plugin.show(
+    id: notification.id,
+    title: notification.title,
+    body: notification.body,
+    notificationDetails: _details(),
+    payload: notification.payload,
+  );
+
+  NotificationDetails _details() {
+    final l10n = deviceL10n();
+    return NotificationDetails(
+      android: AndroidNotificationDetails(
+        _channelId,
+        l10n.reminderChannelName,
+        channelDescription: l10n.reminderChannelDescription,
+        importance: Importance.high,
+        priority: Priority.high,
+        // Must be a flat vector: Android masks the icon to alpha.
+        icon: 'ic_stat_reminder',
+        color: AnchorTokens.colorBrandOrange,
+        actions: [reminderDoneAction(l10n)],
+      ),
+      iOS: const DarwinNotificationDetails(),
     );
   }
 

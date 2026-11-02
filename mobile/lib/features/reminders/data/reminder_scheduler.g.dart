@@ -41,7 +41,7 @@ final class ReminderSchedulerProvider
   }
 }
 
-String _$reminderSchedulerHash() => r'5bb5d9d49a71a94650209aa4f0bf167649b689be';
+String _$reminderSchedulerHash() => r'b0ddb9eb1786e4403833c15615561bcbbfc642a1';
 
 abstract class _$ReminderScheduler extends $Notifier<void> {
   void build();

@@ -14,6 +14,7 @@ import 'features/debug_recorder/presentation/debug_recorder_host.dart';
 import 'features/home_widget/data/home_widget_service.dart';
 import 'features/note_locks/data/note_lock_secrets.dart';
 import 'features/note_locks/presentation/note_lock_session.dart';
+import 'features/reminders/data/reminder_background_check.dart';
 import 'features/reminders/data/reminder_scheduler.dart';
 import 'features/reminders/presentation/reminder_tap_handler.dart';
 import 'features/settings/presentation/editor_preferences_controller.dart';
@@ -82,6 +83,8 @@ class _AnchorAppState extends ConsumerState<AnchorApp>
     // Look for a newer release of the fork when the app starts.
     ref.watch(updateControllerProvider);
     ref.watch(reminderSchedulerProvider);
+    // Picks up reminders set elsewhere while the app is closed.
+    ref.watch(reminderBackgroundCheckProvider);
     ref.watch(reminderTapHandlerProvider);
     ref.watch(shareImportProvider);
     ref.watch(shareContextSyncProvider);

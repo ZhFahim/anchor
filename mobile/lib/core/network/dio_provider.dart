@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../logging/logging_interceptor.dart';
@@ -50,10 +51,20 @@ Dio createServerDio(String? serverUrl, {required bool allowSelfSigned}) {
 }
 
 @Riverpod(keepAlive: true)
-Dio dio(Ref ref) {
-  final serverUrl = ref.watch(serverUrlProvider);
-  final allowSelfSigned = ref.watch(allowSelfSignedCertProvider).value ?? false;
+Dio dio(Ref ref) => createApiDio(
+  ref.watch(serverUrlProvider),
+  allowSelfSigned: ref.watch(allowSelfSignedCertProvider).value ?? false,
+  storage: ref.watch(secureStorageProvider),
+  session: ref.read(sessionExpiredProvider.notifier),
+);
 
+/// Signs its requests in, refreshing the sign-in when the server refuses it.
+Dio createApiDio(
+  String? serverUrl, {
+  required bool allowSelfSigned,
+  required FlutterSecureStorage storage,
+  required SessionExpired session,
+}) {
   final dio = createServerDio(serverUrl, allowSelfSigned: allowSelfSigned);
   dio.options.headers[anchorProtocolHeader] = '$anchorProtocol';
 
@@ -67,8 +78,8 @@ Dio dio(Ref ref) {
     AuthInterceptor(
       dio: dio,
       refreshDio: refreshDio,
-      storage: ref.watch(secureStorageProvider),
-      session: ref.read(sessionExpiredProvider.notifier),
+      storage: storage,
+      session: session,
     ),
   );
 

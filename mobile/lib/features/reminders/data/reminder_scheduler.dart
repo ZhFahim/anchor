@@ -14,6 +14,7 @@ import '../../notes/domain/note.dart';
 import '../../notes/domain/note_blocks.dart';
 import '../../notes/presentation/notes_controller.dart';
 import '../domain/reminder_schedule.dart';
+import 'missed_reminders.dart';
 import 'notification_gateway.dart';
 
 part 'reminder_scheduler.g.dart';
@@ -41,6 +42,9 @@ class ReminderScheduler extends _$ReminderScheduler {
   Timer? _retry;
   List<DesiredReminder>? _lastApplied;
   List<Note> _latest = const [];
+
+  /// Whether [_latest] holds the notes yet, rather than nothing loaded.
+  bool _hasNotes = false;
   Future<void>? _cleared;
   AppLifecycleListener? _lifecycle;
 
@@ -60,6 +64,7 @@ class ReminderScheduler extends _$ReminderScheduler {
 
     _lastApplied = null;
     _latest = const [];
+    _hasNotes = false;
     if (userId == null) {
       _cleared = _cancelAll(gateway);
       return;
@@ -104,6 +109,7 @@ class ReminderScheduler extends _$ReminderScheduler {
 
   void _onNotes(List<Note> notes) {
     _latest = notes;
+    _hasNotes = true;
     _settle?.cancel();
     _settle = Timer(_settleWindow, () {
       _settle = null;
@@ -145,11 +151,21 @@ class ReminderScheduler extends _$ReminderScheduler {
     try {
       await _cleared;
       await gateway.initialize();
-      final desired = desiredReminders(
-        _latest,
-        now: DateTime.now(),
-        l10n: deviceL10n(),
-      );
+      final now = DateTime.now();
+      final l10n = deviceL10n();
+      final desired = desiredReminders(_latest, now: now, l10n: l10n);
+
+      // A reminder that came in after its time changes no alarm.
+      if (_hasNotes) {
+        await ringMissedReminders(
+          gateway,
+          ref.read(rungRemindersProvider),
+          _latest,
+          scheduled: desired,
+          now: now,
+          l10n: l10n,
+        );
+      }
 
       if (_sameAs(desired)) return;
 

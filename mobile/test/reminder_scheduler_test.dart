@@ -6,6 +6,7 @@ import 'package:anchor/features/auth/domain/user.dart';
 import 'package:anchor/features/auth/presentation/auth_controller.dart';
 import 'package:anchor/features/notes/data/repository/notes_repository.dart';
 import 'package:anchor/features/notes/domain/note.dart';
+import 'package:anchor/features/reminders/data/missed_reminders.dart';
 import 'package:anchor/features/reminders/data/notification_gateway.dart';
 import 'package:anchor/features/reminders/data/reminder_scheduler.dart';
 import 'package:anchor/features/reminders/domain/reminder_schedule.dart';
@@ -36,6 +37,7 @@ class RecordingGateway implements NotificationGateway {
 
   final scheduled = <int>[];
   final cancelled = <int>[];
+  final shown = <int>[];
   int cancelAllCalls = 0;
 
   int passes = 0;
@@ -52,6 +54,10 @@ class RecordingGateway implements NotificationGateway {
 
   @override
   Future<void> cancel(int id) async => cancelled.add(id);
+
+  @override
+  Future<void> show(ScheduledNotification notification) async =>
+      shown.add(notification.id);
 
   @override
   Future<void> cancelAll() async {
@@ -84,6 +90,18 @@ class RecordingGateway implements NotificationGateway {
 
   @override
   Future<void> requestExactPermission() async {}
+}
+
+class MemoryRungReminders implements RungReminders {
+  MemoryRungReminders([this.keys]);
+
+  Set<String>? keys;
+
+  @override
+  Future<Set<String>?> read() async => keys == null ? null : {...keys!};
+
+  @override
+  Future<void> write(Set<String> keys) async => this.keys = {...keys};
 }
 
 class StubAuthController extends AuthController {
@@ -443,11 +461,15 @@ void main() {
       RecordingGateway gateway,
       Stream<List<Note>> notes, {
       String? userId = 'user-1',
+      RungReminders? rung,
     }) async {
       final container = ProviderContainer(
         overrides: [
           appBootstrapProvider.overrideWithValue(AppBootstrap(userId: userId)),
           notificationGatewayProvider.overrideWithValue(gateway),
+          rungRemindersProvider.overrideWithValue(
+            rung ?? MemoryRungReminders(),
+          ),
           notesRepositoryProvider.overrideWithValue(StubNotesRepository(notes)),
           authControllerProvider.overrideWith(StubAuthController.new),
         ],
@@ -471,6 +493,47 @@ void main() {
 
       expect(gateway.cancelAllCalls, 0);
       expect(gateway.scheduled, [1]);
+    });
+
+    test('rings a reminder that came in after its time, once', () async {
+      final gateway = RecordingGateway();
+      final rung = MemoryRungReminders({});
+      final late = note(
+        id: 'n1',
+        slot: 3,
+        remindAt: toWallClock(
+          DateTime.now().subtract(const Duration(minutes: 5)),
+        ),
+      );
+      final notes = StreamController<List<Note>>();
+      addTearDown(notes.close);
+
+      await start(gateway, notes.stream, rung: rung);
+      notes.add([late]);
+      await settle();
+      notes.add([late, pending('n2', 4)]);
+      await settle();
+
+      expect(gateway.shown, [3]);
+      expect(rung.keys, contains(rungKey('n1', late.reminder!.remindAt)));
+    });
+
+    test('the first pass on a phone rings nothing it finds late', () async {
+      final gateway = RecordingGateway();
+      final rung = MemoryRungReminders();
+      final late = note(
+        id: 'n1',
+        slot: 3,
+        remindAt: toWallClock(
+          DateTime.now().subtract(const Duration(minutes: 5)),
+        ),
+      );
+
+      await start(gateway, Stream.value([late]), rung: rung);
+      await settle();
+
+      expect(gateway.shown, isEmpty);
+      expect(rung.keys, {rungKey('n1', late.reminder!.remindAt)});
     });
 
     test('signing out clears everything the OS holds', () async {
