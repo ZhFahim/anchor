@@ -266,12 +266,14 @@ running it again moves Anchor to the new hostname (the apps then need the new
 address). `DOMAIN=nip.io` does the same with nip.io, should Let's Encrypt's
 limit for sslip.io be reached.
 
-It works on Ubuntu, Debian, Oracle Linux, Rocky, Alma, RHEL, Fedora and Amazon
-Linux, on amd64 and arm64. It installs Docker if it's missing, adds 2 GB of
-swap when the server has less than 2 GB of memory (and turns off search by
-what pictures show, whose model needs more), opens the port in the server's
-own firewall, and runs Anchor from `/opt/anchor` with a random database
-password. Sign up right away: the first account is the admin.
+It works on Ubuntu, Debian, Oracle Linux, Rocky, Alma, RHEL, Fedora, Amazon
+Linux and Arch (also Manjaro and EndeavourOS), on amd64 and arm64. It
+installs Docker if it's missing (on Arch, after updating the system; reboot
+and run it again if that brings a new kernel), adds 2 GB of swap when the
+server has less than 2 GB of memory (and turns off search by what pictures
+show, whose model needs more), opens the port in the server's own firewall,
+and runs Anchor from `/opt/anchor` with a random database password. Sign up
+right away: the first account is the admin.
 
 Your cloud's firewall has to let the port in too (3000, or 80 and 443 with a
 domain or sslip.io): on Oracle Cloud an ingress rule in the subnet's security

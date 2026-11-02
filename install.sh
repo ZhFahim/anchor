@@ -5,8 +5,8 @@
 # Made for the smallest (free tier) virtual servers: Oracle Cloud's
 # VM.Standard.E2.1.Micro and Ampere A1, AWS t2/t3/t4g.micro, Google Cloud's
 # e2-micro, a 1 GB VPS. Run as root on a fresh Ubuntu, Debian, Oracle Linux,
-# Rocky/Alma/RHEL, Fedora or Amazon Linux server (amd64 or arm64), with the
-# port Anchor listens on:
+# Rocky/Alma/RHEL, Fedora, Amazon Linux or Arch server (amd64 or arm64), with
+# the port Anchor listens on:
 #
 #   curl -fsSL https://raw.githubusercontent.com/AlxndrJhn/anchor/main/install.sh | sudo PORT=3000 bash
 #
@@ -96,10 +96,16 @@ install_docker() {
         dnf -y install docker </dev/null
         install_compose_plugin
         ;;
+      arch)
+        pacman_docker
+        ;;
       *)
         case " $OS_LIKE " in
           *" debian "* | *" ubuntu "* | *" fedora "* | *" rhel "*)
             docker_script
+            ;;
+          *" arch "*)
+            pacman_docker
             ;;
           *) die "Install Docker with its Compose plugin, then run this again (no installer for '$OS_ID')" ;;
         esac
@@ -121,6 +127,20 @@ docker_script() {
   curl -fsSL https://get.docker.com -o "$script"
   sh "$script" </dev/null
   rm -f "$script"
+}
+
+# Arch (and Manjaro, EndeavourOS) package both. Arch doesn't do partial
+# upgrades, so this updates the whole system; when that brings a new kernel,
+# the running one's modules are gone and Docker can't start until a reboot.
+pacman_docker() {
+  # (A container-based VPS has no modules of its own to lose)
+  local modules
+  modules="/usr/lib/modules/$(uname -r)"
+  [ -d "$modules" ] || modules=
+  pacman -Syu --noconfirm --needed docker docker-compose </dev/null
+  if [ -n "$modules" ] && [ ! -d "$modules" ]; then
+    die "The system update brought a new kernel: reboot, then run this again"
+  fi
 }
 
 # Amazon Linux packages Docker without Compose: take it from its releases
@@ -157,12 +177,22 @@ add_swap() {
     return
   fi
   log "Adding ${size} MB of swap (the server has ${mem_mb} MB of memory)..."
+  : >/swapfile
+  chmod 600 /swapfile
+  # On btrfs (Arch's usual root) a swap file must not be copy-on-write, which
+  # can only be turned off while the file is still empty
+  if [ "$(stat -f -c %T /)" = btrfs ]; then
+    chattr +C /swapfile 2>/dev/null || true
+  fi
   if ! fallocate -l "${size}M" /swapfile 2>/dev/null; then
     dd if=/dev/zero of=/swapfile bs=1M count="$size" status=none
   fi
-  chmod 600 /swapfile
   mkswap /swapfile >/dev/null
-  swapon /swapfile
+  if ! swapon /swapfile 2>/dev/null; then
+    rm -f /swapfile
+    warn "This file system can't hold a swap file; Anchor may run short of memory"
+    return
+  fi
   grep -q '^/swapfile ' /etc/fstab || echo '/swapfile none swap sw 0 0' >>/etc/fstab
   # Use it for what's idle, not as memory
   echo 'vm.swappiness=10' >/etc/sysctl.d/90-anchor-swap.conf
