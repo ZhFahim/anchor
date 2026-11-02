@@ -725,6 +725,8 @@ export function useNoteEditor({
   return {
     noteId,
     isNew,
+    /** The id a new note is made with. */
+    newNoteId,
     note,
     isLoading,
     noteError,

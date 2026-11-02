@@ -34,6 +34,7 @@ import { useNearScreen } from "@/lib/hooks/use-near-screen";
 import { rememberCard } from "@/lib/morph";
 import { cn } from "@/lib/utils";
 import { getNoteAttachments } from "../api";
+import { noteOpenedByKey } from "../card-focus";
 import { useAttachmentBlob } from "../hooks/use-attachment-blob";
 import {
   canTickFromCard,
@@ -294,10 +295,12 @@ export const NoteCard = React.memo(function NoteCard({
           if (cardRef.current) rememberCard(note.id, cardRef.current);
         }}
         onKeyDown={(e) => {
-          if (e.key === " " && onPick) {
+          if (e.ctrlKey || e.metaKey || e.altKey) return;
+          if ((e.key === " " || e.key.toLowerCase() === "x") && onPick) {
             e.preventDefault();
             onPick(note.id, e.shiftKey);
-          }
+          } else if ((e.key === "Enter" || e.key === "o") && !picking)
+            noteOpenedByKey(note.id);
         }}
       />
       {/* Picking (after Select) shows the check; otherwise the pin. */}

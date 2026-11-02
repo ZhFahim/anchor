@@ -10,6 +10,7 @@ import {
   Ellipsis,
   GripVertical,
   Hash,
+  Keyboard,
   LogOut,
   Monitor,
   Moon,
@@ -64,6 +65,7 @@ import { isMac } from "@/lib/platform";
 import { switchTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 import { Brand } from "./brand";
+import { useShellStore } from "./shell-store";
 import { useSidebarPeek } from "./use-sidebar-peek";
 
 interface SidebarProps {
@@ -806,6 +808,18 @@ function AccountMenu({
         <DropdownMenuItem onSelect={() => goTo("/settings")}>
           <Settings />
           Settings
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onSelect={() => {
+            onNavigate?.();
+            useShellStore.getState().setShortcuts(true);
+          }}
+        >
+          <Keyboard />
+          Keyboard shortcuts
+          <kbd aria-hidden className="ml-auto">
+            ?
+          </kbd>
         </DropdownMenuItem>
         {user.isAdmin && (
           <DropdownMenuItem onSelect={() => goTo("/admin")}>

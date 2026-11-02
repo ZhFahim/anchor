@@ -6,6 +6,7 @@ const {
   app,
   BrowserWindow,
   dialog,
+  globalShortcut,
   Menu,
   ipcMain,
   net,
@@ -263,6 +264,12 @@ function createWindow() {
     mainWindow = null;
   });
 
+  // The mouse's back and forward buttons (Windows).
+  mainWindow.on("app-command", (_event, command) => {
+    if (command === "browser-backward") goInHistory(-1);
+    else if (command === "browser-forward") goInHistory(1);
+  });
+
   const contents = mainWindow.webContents;
 
   // A link to another site opens in the system browser. Navigating within
@@ -408,6 +415,47 @@ ipcMain.handle("anchor:install-update", (event) => {
 
 // --- Menu ------------------------------------------------------------------
 
+// The window has no address bar, so the menu gives the browser's back and
+// forward, never back onto the setup page.
+function goInHistory(step) {
+  const history = mainWindow?.webContents.navigationHistory;
+  if (!history?.canGoToOffset(step)) return;
+  if (history.getEntryAtIndex(history.getActiveIndex() + step)?.url.startsWith(SETUP_URL)) return;
+  history.goToOffset(step);
+}
+
+// A new note from anywhere on the computer. Ctrl+Alt is AltGr on many
+// keyboards, so it can be turned off where it types a letter.
+const QUICK_NOTE_KEYS = "CommandOrControl+Alt+Shift+N";
+
+function newNoteFromAnywhere() {
+  if (!mainWindow) {
+    createWindow();
+    start();
+    return;
+  }
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.show();
+  mainWindow.focus();
+  const contents = mainWindow.webContents;
+  if (contents.getURL().startsWith("file:")) return;
+  contents.executeJavaScript('window.dispatchEvent(new Event("anchor:new-note"))').catch(() => {});
+}
+
+function applyQuickNote() {
+  globalShortcut.unregister(QUICK_NOTE_KEYS);
+  if (settings.quickNote === false) return;
+  if (!globalShortcut.register(QUICK_NOTE_KEYS, newNoteFromAnywhere))
+    console.error(`${QUICK_NOTE_KEYS} is taken by another app.`);
+}
+
+function setQuickNote(on) {
+  settings.quickNote = on;
+  saveSettings();
+  applyQuickNote();
+  buildMenu();
+}
+
 function changeServer() {
   if (!mainWindow) createWindow();
   mainWindow.show();
@@ -442,6 +490,14 @@ function buildMenu() {
         },
       ]
     : [];
+  const quickNoteItem = {
+    label: "New Note from Anywhere",
+    type: "checkbox",
+    checked: settings.quickNote !== false,
+    accelerator: QUICK_NOTE_KEYS,
+    registerAccelerator: false,
+    click: (item) => setQuickNote(item.checked),
+  };
   const update = updater?.current();
   const updateItems = update
     ? [{ label: `Restart to Update (${update.version})`, click: () => updater.install() }, { type: "separator" }]
@@ -457,6 +513,7 @@ function buildMenu() {
               ...updateItems,
               changeServerItem,
               ...previewItems,
+              quickNoteItem,
               { type: "separator" },
               { role: "services" },
               { type: "separator" },
@@ -471,13 +528,23 @@ function buildMenu() {
       : [
           {
             label: "&File",
-            submenu: [...updateItems, changeServerItem, ...previewItems, { type: "separator" }, { role: "quit" }],
+            submenu: [
+              ...updateItems,
+              changeServerItem,
+              ...previewItems,
+              quickNoteItem,
+              { type: "separator" },
+              { role: "quit" },
+            ],
           },
         ]),
     { role: "editMenu" },
     {
       label: "View",
       submenu: [
+        { label: "Back", accelerator: isMac ? "Cmd+[" : "Alt+Left", click: () => goInHistory(-1) },
+        { label: "Forward", accelerator: isMac ? "Cmd+]" : "Alt+Right", click: () => goInHistory(1) },
+        { type: "separator" },
         { role: "reload" },
         { role: "forceReload" },
         { role: "toggleDevTools" },
@@ -511,6 +578,7 @@ if (!app.requestSingleInstanceLock()) {
     buildMenu();
     createWindow();
     start();
+    applyQuickNote();
     updater = startUpdater({ onReady: updateReady, openExternal, wantsCandidates });
     buildMenu();
 
@@ -532,6 +600,8 @@ if (!app.requestSingleInstanceLock()) {
       }
     });
   });
+
+  app.on("will-quit", () => globalShortcut.unregisterAll());
 
   app.on("window-all-closed", () => {
     if (process.platform !== "darwin") app.quit();

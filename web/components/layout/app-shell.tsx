@@ -4,6 +4,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 import { Toaster } from "@/components/ui/toast";
+import { focusEdgeCard } from "@/features/notes/card-focus";
 import { usePreferencesStore } from "@/features/preferences";
 import { useOnlineStatus, useSync, useWarnWhenUnsaved } from "@/features/sync";
 import { useTrackPageChanges } from "@/lib/app-history";
@@ -12,7 +13,15 @@ import { hasShortcutKey } from "@/lib/platform";
 import { cn } from "@/lib/utils";
 import { PageTransition } from "./page-transition";
 import { useShellStore } from "./shell-store";
+import { ShortcutsDialog } from "./shortcuts-dialog";
 import { newNoteHref, Sidebar } from "./sidebar";
+
+const GO_TO: Record<string, string> = {
+  n: "/notes",
+  a: "/archive",
+  t: "/trash",
+  s: "/settings",
+};
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   useSync();
@@ -22,9 +31,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const folded = usePreferencesStore((s) => s.ui.sidebarCollapsed);
   const setUI = usePreferencesStore((s) => s.setUIPreference);
-  const { drawerOpen, setDrawer, barShown } = useShellStore();
+  const { drawerOpen, setDrawer, barShown, shortcutsOpen, setShortcuts } =
+    useShellStore();
   const drawerRef = React.useRef<HTMLDivElement>(null);
   const drawerOpener = React.useRef<HTMLElement | null>(null);
+  const goPressedAt = React.useRef(0);
 
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -35,8 +46,31 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       );
       const mod = e.metaKey || e.ctrlKey;
       const inDialog = !!document.querySelector(
-        "[role=dialog], [role=alertdialog], [role=menu]",
+        ":is([role=dialog], [role=alertdialog], [role=menu]):not([data-state=closed])",
       );
+      const isPlain = !typing && !mod && !e.altKey && !inDialog;
+      // G and a letter goes to a page, as in Gmail; G G to the first note.
+      const after = goPressedAt.current;
+      goPressedAt.current = 0;
+      if (isPlain && performance.now() - after < 1500) {
+        const page = GO_TO[e.key];
+        if (page || e.key === "g") {
+          e.preventDefault();
+          if (page) router.push(page);
+          else focusEdgeCard("first");
+          return;
+        }
+      }
+      if (isPlain && e.key === "g") {
+        e.preventDefault();
+        goPressedAt.current = performance.now();
+        return;
+      }
+      if (isPlain && e.key === "?") {
+        e.preventDefault();
+        setShortcuts(true);
+        return;
+      }
       if (mod && e.key === "\\") {
         e.preventDefault();
         setUI(
@@ -71,16 +105,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         !inDialog
       ) {
         e.preventDefault();
-        rememberNewNoteButton(findNewNoteButton());
-        const { pathname, search } = window.location;
-        router.push(
-          newNoteHref(pathname, new URLSearchParams(search).get("tagId")),
-        );
+        startNote();
       }
     };
+    const startNote = () => {
+      rememberNewNoteButton(findNewNoteButton());
+      const { pathname, search } = window.location;
+      router.push(
+        newNoteHref(pathname, new URLSearchParams(search).get("tagId")),
+      );
+    };
     document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [router, setUI]);
+    // The desktop app's shortcut from anywhere on the computer.
+    window.addEventListener("anchor:new-note", startNote);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      window.removeEventListener("anchor:new-note", startNote);
+    };
+  }, [router, setUI, setShortcuts]);
 
   return (
     <div
@@ -127,6 +169,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <PageTransition>{children}</PageTransition>
         <Toaster className={cn(barShown && "bottom-20")} />
       </main>
+      <ShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcuts} />
     </div>
   );
 }

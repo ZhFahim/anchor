@@ -32,6 +32,11 @@ import {
   useNoteEditor,
 } from "@/features/notes";
 import { copyNote } from "@/features/notes/api";
+import {
+  forgetOpenedByKey,
+  noteLeft,
+  wasOpenedByKey,
+} from "@/features/notes/card-focus";
 import type { RichTextEditorHandle } from "@/features/notes/components/editor";
 import { isOnChecklistItem } from "@/features/notes/components/editor/use-checklist-boxes";
 import { LockDialog } from "@/features/notes/components/lock/lock-dialog";
@@ -239,6 +244,18 @@ function NoteEditor({
   const canEditNote =
     !isNew && !trashedNote && (!editor.isReadOnly || editor.isFrozen);
   const canTrash = !isNew && !trashedNote && !(editor.isFrozen && isOwner);
+  // I, as in Vim, goes back into the text, where the caret was.
+  const resumeTyping = () => {
+    if (editor.isReadOnly) return;
+    if (caretField.current === "title") {
+      editor.titleInputRef.current?.focus();
+      return;
+    }
+    const caret = contentEditorRef.current?.getCaret();
+    if (caret)
+      contentEditorRef.current?.setSelection(caret.index, caret.length);
+    else document.querySelector<HTMLElement>(".ed .ql-editor")?.focus();
+  };
   // Google Keep's keys while no text field has focus.
   useShortcuts(
     lockedOut
@@ -251,6 +268,7 @@ function NoteEditor({
               : canEditNote && actions.archive(),
           "#": () => canTrash && actions.trash(),
           f: () => canEditNote && editor.setIsPinned((was) => !was),
+          i: resumeTyping,
         },
     !editor.historyOpen,
   );
@@ -278,8 +296,8 @@ function NoteEditor({
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.defaultPrevented || e.isComposing) return;
-      // Esc while typing closes the note at once, as it does elsewhere on
-      // the page; an open menu or dialog takes it first.
+      // Esc while typing leaves the text field, as Vim leaves insert mode;
+      // the next Esc closes the note. An open menu or dialog takes it first.
       if (
         e.key === "Escape" &&
         !overlayAtPress &&
@@ -289,7 +307,7 @@ function NoteEditor({
         isTypingTarget(e.target)
       ) {
         e.preventDefault();
-        leaveRef.current();
+        (e.target as HTMLElement).blur();
       }
     };
     window.addEventListener("keydown", capture, true);
@@ -323,8 +341,35 @@ function NoteEditor({
     return () => cancelAnimationFrame(frame);
   }, [isNew, startsList]);
 
-  // Back from an undone trash: the caret goes where it was.
   const editorShown = !isNew && !isLoading && !lockedOut && !!note;
+  // Its card takes focus again when the list comes back.
+  // A new note's card has the id it will be made with.
+  const cardId = isNew ? editor.newNoteId : noteId;
+  useEffect(() => () => noteLeft(cardId), [cardId]);
+  // Opened from its card with Enter: straight into the text, where typing
+  // goes, without moving the page (a search may have scrolled to a hit).
+  useEffect(() => {
+    if (!editorShown || !wasOpenedByKey(noteId) || hasReturnCaret(noteId))
+      return;
+    let frame = 0;
+    let tries = 0;
+    const place = () => {
+      const text = document.querySelector<HTMLElement>(".ed .ql-editor");
+      if (!text) {
+        if (++tries < 120) frame = requestAnimationFrame(place);
+        return;
+      }
+      // Forgotten only once placed: an effect run that was cut short keeps it.
+      forgetOpenedByKey();
+      const isIdle =
+        !document.activeElement || document.activeElement === document.body;
+      if (text.isContentEditable && isIdle) text.focus({ preventScroll: true });
+    };
+    frame = requestAnimationFrame(place);
+    return () => cancelAnimationFrame(frame);
+  }, [editorShown, noteId]);
+
+  // Back from an undone trash: the caret goes where it was.
   useEffect(() => {
     if (!editorShown || !hasReturnCaret(noteId)) return;
     let frame = 0;

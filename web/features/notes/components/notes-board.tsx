@@ -5,11 +5,20 @@ import * as React from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTagMap } from "@/features/tags/hooks";
 import { useDelayedFlag } from "@/lib/hooks/use-delayed-flag";
+import { hasOverlay, useShortcuts } from "@/lib/hooks/use-shortcuts";
 import { cn } from "@/lib/utils";
+import {
+  CARD_KEYS,
+  focusEdgeCard,
+  moveCardFocus,
+  refocusLeftCard,
+} from "../card-focus";
 import { type DragPreview, useCardDrag } from "../hooks/use-card-drag";
 import { useMasonry } from "../hooks/use-masonry";
 import type { Note } from "../types";
 import { type CardLayout, NoteCard } from "./note-card";
+
+const focusLastCard = () => focusEdgeCard("last");
 
 interface NotesBoardGroup {
   key: string;
@@ -83,11 +92,49 @@ export const NotesBoard = React.forwardRef<HTMLDivElement, NotesBoardProps>(
           group.notes.map((n) => n.id),
         );
     }, [preview, groups, settled]);
+    React.useLayoutEffect(() => {
+      if (groups.some((g) => g.notes.length)) refocusLeftCard();
+    }, [groups]);
+    // With no card focused, J and K start at the first card, as do the
+    // arrows with nothing focused at all (L is the notes page's new list);
+    // G goes to the last. The first of two boards takes the key.
+    useShortcuts({
+      j: () => focusEdgeCard("first"),
+      k: () => focusEdgeCard("first"),
+      G: focusLastCard,
+    });
+    React.useEffect(() => {
+      const onKey = (e: KeyboardEvent) => {
+        if (e.defaultPrevented || e.target !== document.body) return;
+        if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+        if (!e.key.startsWith("Arrow") || hasOverlay()) return;
+        if (focusEdgeCard("first")) e.preventDefault();
+      };
+      document.addEventListener("keydown", onKey);
+      return () => document.removeEventListener("keydown", onKey);
+    }, []);
+    const onKeyDown = (e: React.KeyboardEvent) => {
+      const link = e.target as HTMLElement;
+      if (!link.classList.contains("nc-link")) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const direction = CARD_KEYS[e.key];
+      if (direction) {
+        e.preventDefault();
+        moveCardFocus(link, direction);
+      } else if (e.key === "Home" || e.key === "End") {
+        e.preventDefault();
+        focusEdgeCard(e.key === "Home" ? "first" : "last");
+      } else if (e.key === "o") {
+        e.preventDefault();
+        link.click();
+      }
+    };
     return (
       <div
         ref={boardRef}
         data-hold-width
         className="relative grid min-w-0 gap-3.5"
+        onKeyDown={onKeyDown}
       >
         <div
           ref={rulerRef}

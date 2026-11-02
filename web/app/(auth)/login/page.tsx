@@ -28,6 +28,7 @@ import {
   serverSignInError,
   signInError,
 } from "@/features/auth/utils/sign-in-error";
+import { focusOnArrival } from "@/lib/platform";
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
@@ -168,6 +169,7 @@ export default function LoginPage() {
         >
           <Field label="Email">
             <Input
+              ref={focusOnArrival}
               type="email"
               autoComplete="email"
               value={email}

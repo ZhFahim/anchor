@@ -183,36 +183,38 @@ export const SearchField = React.forwardRef<
     // A search brought back from the address stays shown on phones.
     const [open, setOpen] = React.useState(() => !!value);
 
+    // At once where the field is shown, so letters typed right after the key
+    // land in it; on a phone it shows first.
+    const openField = React.useCallback(() => {
+      setOpen(true);
+      const select = () => {
+        input.current?.focus();
+        input.current?.select();
+      };
+      if (input.current?.getClientRects().length) select();
+      else requestAnimationFrame(select);
+    }, []);
+
     React.useEffect(() => {
       const onKey = (e: KeyboardEvent) => {
         if (e.defaultPrevented) return;
         if (hasShortcutKey(e) && e.key.toLowerCase() === "k") {
           if (
             document.querySelector(
-              "[role=dialog], [role=alertdialog], [role=menu]",
+              ":is([role=dialog], [role=alertdialog], [role=menu]):not([data-state=closed])",
             )
           )
             return;
           e.preventDefault();
-          setOpen(true);
-          requestAnimationFrame(() => {
-            input.current?.focus();
-            input.current?.select();
-          });
+          openField();
         }
       };
       document.addEventListener("keydown", onKey);
       return () => document.removeEventListener("keydown", onKey);
-    }, []);
+    }, [openField]);
 
     useShortcuts({
-      "/": () => {
-        setOpen(true);
-        requestAnimationFrame(() => {
-          input.current?.focus();
-          input.current?.select();
-        });
-      },
+      "/": openField,
     });
 
     React.useEffect(() => {

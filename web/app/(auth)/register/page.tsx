@@ -26,6 +26,7 @@ import {
   OrDivider,
   PendingApprovalScreen,
 } from "@/features/auth/components/auth-parts";
+import { focusOnArrival } from "@/lib/platform";
 
 type Errors = {
   name?: string;
@@ -160,7 +161,10 @@ export default function RegisterPage() {
         <form className="grid gap-3.5" noValidate onSubmit={submit}>
           <Field label="Name" error={errors.name}>
             <Input
-              ref={refs.name}
+              ref={(el) => {
+                nameRef.current = el;
+                focusOnArrival(el);
+              }}
               autoComplete="name"
               placeholder="Your name"
               maxLength={NAME_MAX_LENGTH}
