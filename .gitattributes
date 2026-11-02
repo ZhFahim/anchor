@@ -3,3 +3,4 @@
 docker/backup text eol=lf
 docker/restore text eol=lf
 docker/reset-password text eol=lf
+docker/switch-check text eol=lf

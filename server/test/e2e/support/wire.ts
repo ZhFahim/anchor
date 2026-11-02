@@ -44,7 +44,7 @@ export interface TagOnWire {
 export interface AttachmentOnWire {
   id: string;
   noteId: string;
-  type: 'image' | 'audio';
+  type: 'image' | 'audio' | 'file';
   originalFilename: string;
   mimeType: string;
   fileSize: number;

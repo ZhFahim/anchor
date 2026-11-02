@@ -63,7 +63,7 @@ describe('SyncFeedService', () => {
     note: {
       findMany: vi.fn(
         ({ where, take }: { where: { id?: { gt: string } }; take: number }) => {
-          const ids = 'attachments' in where ? attachmentNoteIds : noteIds;
+          const ids = 'AND' in where ? attachmentNoteIds : noteIds;
           return Promise.resolve(keyset(ids, where, take));
         },
       ),

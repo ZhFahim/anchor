@@ -5,14 +5,29 @@ import type { AttachmentOnWire } from '../wire';
 export class AttachmentsApi {
   constructor(private readonly http: HttpClient) {}
 
-  uploadRequest(noteId: string, filename = 'pixel.png', file = PNG_1PX) {
+  uploadRequest(
+    noteId: string,
+    filename = 'pixel.png',
+    file = PNG_1PX,
+    contentType = 'image/png',
+  ) {
     return this.http
       .post(`/api/notes/${noteId}/attachments`)
-      .attach('file', file, { filename, contentType: 'image/png' });
+      .attach('file', file, { filename, contentType });
   }
 
-  async upload(noteId: string, filename?: string): Promise<AttachmentOnWire> {
-    const res = await this.uploadRequest(noteId, filename).expect(201);
+  async upload(
+    noteId: string,
+    filename?: string,
+    file?: typeof PNG_1PX,
+    contentType?: string,
+  ): Promise<AttachmentOnWire> {
+    const res = await this.uploadRequest(
+      noteId,
+      filename,
+      file,
+      contentType,
+    ).expect(201);
     return bodyOf<AttachmentOnWire>(res);
   }
 

@@ -1,0 +1,59 @@
+#!/bin/sh
+# Says what changes if this server goes back to upstream Anchor's image
+# (ghcr.io/zhfahim/anchor), before you switch. Changes nothing:
+#   docker compose exec anchor-plus switch-check
+# Switching keeps every note: what only Anchor+ has stays in the database,
+# unused, and is back on switching to Anchor+ again. What's listed here is
+# what works differently in between.
+set -eu
+. /app/anchor-env.sh
+
+count() {
+  psql "$DATABASE_URL" -Atq -c "$1"
+}
+
+# Upstream's server fails on an attachment type it doesn't know, and with it
+# every sync. Anchor+ keeps files in a table of their own since
+# 20261102130000_note_file_table; anything else here is a bug.
+unknown=$(count "SELECT count(*) FROM \"NoteAttachment\" WHERE type::text NOT IN ('image', 'audio')")
+if [ "$unknown" != "0" ]; then
+  echo "Don't switch yet: $unknown attachments are of a type upstream Anchor"
+  echo "can't read, so its server would fail to sync. Please report this."
+  exit 1
+fi
+
+note_count() {
+  count "SELECT count(*) FROM \"Note\" WHERE state <> 'deleted' AND ($1)"
+}
+
+files=$(count "SELECT count(*) FROM \"NoteFile\" f JOIN \"Note\" n ON n.id = f.\"noteId\" WHERE n.state <> 'deleted'")
+formatted=$(note_count "content LIKE '%\"color\":\"%' OR content LIKE '%\"font\":\"%' OR content LIKE '%\"highlight\":\"#%'")
+placed=$(note_count "content LIKE '%\"note-image\"%'")
+locked=$(count "SELECT count(DISTINCT \"noteId\") FROM \"NoteLock\"")
+invisible=$(count "SELECT count(DISTINCT \"noteId\") FROM \"NoteInvisible\"")
+frozen=$(note_count "\"isFrozen\"")
+links=$(count "SELECT count(*) FROM \"NoteShareLink\"")
+
+line() {
+  [ "$1" = "0" ] || printf '  %6s %s\n' "$1" "$2"
+}
+
+echo "Switching this server to upstream Anchor keeps every note. Until you"
+echo "switch back to Anchor+, these work differently:"
+echo
+line "$files" "files attached (not pictures or recordings) are hidden; they're back on switching back"
+line "$formatted" "notes have text colours, fonts or custom highlights: editing one there removes them"
+line "$placed" "notes have pictures placed in their text: editing one there takes them out of the text (they stay attached)"
+line "$locked" "locked notes open without their lock"
+line "$invisible" "invisible notes show in the lists"
+line "$frozen" "frozen notes can be changed and deleted"
+line "$links" "share links stop opening"
+echo "         Note and tag order, picture search and text read from pictures"
+echo "         are unused, and kept."
+echo
+echo "Before switching:"
+echo "  1. Let every app sync: changes not yet sent stay on that device."
+echo "  2. Back up: docker compose exec -T anchor-plus backup > anchor-backup-\$(date +%F).tar"
+echo "  3. Set the image to ghcr.io/zhfahim/anchor:latest, then docker compose up -d"
+echo "Install upstream's Android app next to Anchor+ (they are separate apps),"
+echo "and clear this site's data in each browser once its notes have synced."

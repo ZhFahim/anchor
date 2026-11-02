@@ -15,26 +15,27 @@ import {
 import { ExportFormat } from './dto/export-query.dto';
 import { planMarkdownExport } from './markdown/markdown-export.util';
 import { isStorableNoteId } from '../notes/utils/attachment-storage.util';
+import { byPosition } from '../notes/utils/attachment-rows.util';
 
 const NOTES_PAGE_SIZE = 500;
+
+const ATTACHMENT_EXPORT_SELECT = {
+  id: true,
+  originalFilename: true,
+  storedFilename: true,
+  mimeType: true,
+  fileSize: true,
+  position: true,
+  createdAt: true,
+} as const;
 
 const NOTE_EXPORT_INCLUDE = {
   tags: {
     where: { isDeleted: false },
     select: { id: true, userId: true },
   },
-  attachments: {
-    orderBy: { position: 'asc' as const },
-    select: {
-      id: true,
-      type: true,
-      originalFilename: true,
-      storedFilename: true,
-      mimeType: true,
-      fileSize: true,
-      position: true,
-    },
-  },
+  attachments: { select: { ...ATTACHMENT_EXPORT_SELECT, type: true } },
+  files: { select: ATTACHMENT_EXPORT_SELECT },
   sharedWith: {
     where: { isDeleted: false },
     select: {
@@ -218,7 +219,16 @@ export class ExportService {
         take: NOTES_PAGE_SIZE,
         ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       });
-      notes.push(...(page as unknown as ExportNoteRow[]));
+      for (const { attachments, files, ...note } of page) {
+        notes.push({
+          ...note,
+          // Files are attachments of type "file" in the export.
+          attachments: [
+            ...attachments,
+            ...files.map((file) => ({ ...file, type: 'file' })),
+          ].sort(byPosition),
+        });
+      }
       if (page.length < NOTES_PAGE_SIZE) {
         return notes;
       }

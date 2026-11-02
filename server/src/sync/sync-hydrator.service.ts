@@ -9,6 +9,7 @@ import {
   SyncOp,
 } from 'src/generated/prisma/enums';
 import { transformNote } from '../notes/utils/note-transformer.util';
+import { findAttachmentRows } from '../notes/utils/attachment-rows.util';
 import {
   AttachmentResponseDto,
   toAttachmentResponse,
@@ -67,7 +68,7 @@ interface NoteRow {
       profileImage: string | null;
     };
   }>;
-  _count: { attachments: number };
+  _count: { attachments: number; files: number };
   attachments: Array<{ id: string; text: string | null }>;
 }
 
@@ -218,9 +219,8 @@ export class SyncHydratorService {
     if (noteIds.length === 0) {
       return grouped;
     }
-    const attachments = await this.prisma.noteAttachment.findMany({
-      where: { noteId: { in: noteIds } },
-      orderBy: [{ position: 'asc' }, { createdAt: 'asc' }],
+    const attachments = await findAttachmentRows(this.prisma, {
+      in: noteIds,
     });
     for (const attachment of attachments) {
       const list = grouped.get(attachment.noteId) ?? [];

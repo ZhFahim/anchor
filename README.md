@@ -385,9 +385,9 @@ multi-arch image (amd64 and arm64, so it runs on a Raspberry Pi 5):
 | `ghcr.io/alxndrjhn/anchor:fork-preview` | The newest release candidate, or release if newer. With it, apps that have *Receive preview releases* on in their settings also update to release candidates |
 
 The original project's image is `ghcr.io/zhfahim/anchor:latest`; it has none
-of this fork's changes. Switching between them keeps your data, but
-[back it up](#backing-up-the-server) first: this fork adds database columns
-the original doesn't know.
+of this fork's changes. A server can go back to it and return to Anchor+
+later, keeping every note: see
+[Switching Back to Anchor](#switching-back-to-anchor).
 
 ### Option 2: Building from Source
 
@@ -505,6 +505,38 @@ borgmatic extract --archive latest --path var/backups/anchor/anchor-backup.tar -
 docker exec -i anchor-plus restore < /tmp/anchor-restore/var/backups/anchor/anchor-backup.tar
 rm -rf /tmp/anchor-restore
 ```
+
+### Switching Back to Anchor
+
+A server can go back to the original Anchor image and come back to Anchor+
+later without losing a note. What only Anchor+ has stays in the database,
+unused by the original, and works again on switching back; changes made in
+between come along. Each change of this fork's is tested this way, and the
+original's newest image is tried every week.
+
+First see what works differently until you return (files attached, locked,
+invisible and frozen notes, share links, formatting the original can't
+show):
+
+```bash
+docker compose exec anchor-plus switch-check
+```
+
+Then:
+
+1. Let every app sync: changes a device hasn't sent yet stay on it.
+2. Back up: `docker compose exec -T anchor-plus backup > anchor-backup-$(date +%F).tar`
+3. Set `image:` in `docker-compose.yml` to `ghcr.io/zhfahim/anchor:latest`,
+   then `docker compose up -d`.
+4. On Android, install the original app; it installs next to Anchor+. Sign
+   in, check your notes are there, then uninstall Anchor+.
+5. In each browser, clear the site's data once its notes have synced, so
+   Anchor+'s offline copy of the web app makes way for the original.
+
+To return, set the image back to `ghcr.io/alxndrjhn/anchor:fork-latest`.
+Editing a note in the original removes what it can't show (text colours,
+fonts, custom highlights, pictures placed in the text), and that stays
+removed.
 
 ### Monitoring the Server
 
@@ -832,6 +864,16 @@ git config core.hooksPath .githooks
 ```
 
 Before committing, fix issues with `pnpm check:fix` in the relevant project.
+
+### Database migrations
+
+A server has to be able to [switch back to Anchor](#switching-back-to-anchor),
+so this fork's migrations make tables of their own and only add optional (or
+defaulted) columns to the original's tables: no new values in its enums, no
+renamed or dropped columns. CI checks it with
+`cd server && node scripts/check-migrations.mjs upstream/main` (after
+`git fetch upstream`), and `sh docker/test-switch-back.sh <image>` tries a
+real switch and back.
 
 ### Design tokens
 

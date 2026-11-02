@@ -19,6 +19,7 @@ import {
 } from '../notes/utils/attachment-storage.util';
 import { ERROR_MESSAGES } from '../notes/constants/notes.constants';
 import { toAttachmentResponse } from '../notes/dto/attachment-response.dto';
+import { createAttachmentRow } from '../notes/utils/attachment-rows.util';
 import {
   SyncEmitterService,
   SyncEmission,
@@ -377,17 +378,15 @@ export class ImportService {
       const { storedFilename } = stored;
 
       const attachment = await this.prisma.$transaction(async (tx) => {
-        const created = await tx.noteAttachment.create({
-          data: {
-            noteId,
-            uploadedByUserId: userId,
-            type: attachmentTypeForMime(file.mimetype),
-            originalFilename: file.originalname,
-            storedFilename,
-            mimeType: file.mimetype,
-            fileSize: file.size,
-            position,
-          },
+        const created = await createAttachmentRow(tx, {
+          noteId,
+          uploadedByUserId: userId,
+          type: attachmentTypeForMime(file.mimetype),
+          originalFilename: file.originalname,
+          storedFilename,
+          mimeType: file.mimetype,
+          fileSize: file.size,
+          position,
         });
         const recipients = await this.syncEmitter.noteRecipients(tx, noteId);
         await this.syncEmitter.emit(

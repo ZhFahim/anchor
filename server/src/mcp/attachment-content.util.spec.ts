@@ -50,7 +50,7 @@ describe('attachmentContent', () => {
 
   it('sends a file that is not text as bytes', async () => {
     const content = await attachmentContent(
-      AttachmentType.file,
+      'file',
       'application/pdf',
       Buffer.from([0xff, 0xfe, 0x00]),
       URI,

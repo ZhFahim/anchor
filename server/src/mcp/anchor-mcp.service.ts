@@ -11,7 +11,7 @@ import { NotesService } from '../notes/services/notes.service';
 import { NoteAttachmentsService } from '../notes/services/note-attachments.service';
 import type { AttachmentResponseDto } from '../notes/dto/attachment-response.dto';
 import { TagsService } from '../tags/tags.service';
-import type { AttachmentType } from 'src/generated/prisma/enums';
+import type { AttachmentKind } from '../notes/utils/attachment-storage.util';
 import type { TransformedNote } from '../notes/utils/note-transformer.util';
 import {
   appendMarkdownToContent,
@@ -196,7 +196,7 @@ export class AnchorMcpService {
               text: JSON.stringify(attachmentSummary(attachment), null, 2),
             },
             await attachmentContent(
-              attachment.type as AttachmentType,
+              attachment.type as AttachmentKind,
               attachment.mimeType,
               data,
               `anchor://notes/${noteId}/attachments/${id}`,

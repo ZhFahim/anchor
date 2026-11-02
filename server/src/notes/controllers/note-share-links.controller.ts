@@ -17,7 +17,6 @@ import {
   UpdateLinkedNoteDto,
 } from '../dto/note-share-link.dto';
 import { servedMimeType } from '../utils/attachment-storage.util';
-import { AttachmentType } from 'src/generated/prisma/enums';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { contentDisposition } from '../../common/utils/content-disposition.util';
 import { AuthGuard } from '../../auth/auth.guard';
@@ -72,7 +71,7 @@ export class SharedNotesController {
     const { stream, attachment } =
       await this.noteShareLinksService.serveLinkedFile(token, attachmentId);
 
-    const isFile = attachment.type === AttachmentType.file;
+    const isFile = attachment.type === 'file';
     res.set({
       'Content-Type': servedMimeType(attachment.type, attachment.mimeType),
       'Content-Disposition': contentDisposition(

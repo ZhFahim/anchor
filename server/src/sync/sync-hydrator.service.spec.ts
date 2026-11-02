@@ -30,6 +30,7 @@ describe('SyncHydratorService', () => {
     note: { findMany: noteFindMany },
     tag: { findMany: tagFindMany },
     noteAttachment: { findMany: attachmentFindMany },
+    noteFile: { findMany: vi.fn(() => Promise.resolve([])) },
   } as unknown as PrismaService;
 
   const makeNote = (overrides: Record<string, unknown> & { id: string }) => ({

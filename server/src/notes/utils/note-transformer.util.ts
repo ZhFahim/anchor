@@ -89,7 +89,7 @@ interface NoteWithIncludes {
     permission: NoteSharePermission;
     sharedByUser: SharedByUser;
   }>;
-  _count?: { attachments?: number };
+  _count?: { attachments?: number; files?: number };
   attachments?: Array<{ id: string; text?: string | null }>;
 }
 
@@ -149,7 +149,7 @@ export function transformNote(
     createdAt: toISOString(rest.createdAt),
     updatedAt: toISOString(rest.updatedAt),
     permission,
-    attachmentCount: _count?.attachments ?? 0,
+    attachmentCount: (_count?.attachments ?? 0) + (_count?.files ?? 0),
     imagePreviewIds: attachments?.slice(0, 4).map((a) => a.id) ?? [],
   };
 

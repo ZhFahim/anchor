@@ -26,6 +26,16 @@ import {
   writeAttachmentFile,
 } from '../utils/attachment-storage.util';
 import { toAttachmentResponse } from '../dto/attachment-response.dto';
+import {
+  type AttachmentRowInput,
+  createAttachmentRow,
+  createAttachmentRows,
+  deleteAttachmentRow,
+  findAttachmentRow,
+  findAttachmentRows,
+  setAttachmentPosition,
+  shiftAttachmentRows,
+} from '../utils/attachment-rows.util';
 import { PictureTextService } from './picture-text.service';
 import { PictureSearchService } from '../../picture-search/picture-search.service';
 import { replaceAttachmentIds } from '../utils/inline-images.util';
@@ -93,9 +103,7 @@ export class NoteAttachmentsService {
     assertValidAttachmentFile(file);
 
     const id = clientAttachmentId(clientId);
-    const taken = id
-      ? await this.prisma.noteAttachment.findUnique({ where: { id } })
-      : null;
+    const taken = id ? await findAttachmentRow(this.prisma, id) : null;
     if (taken && taken.noteId === noteId && taken.uploadedByUserId === userId) {
       return toAttachmentResponse(taken);
     }
@@ -113,23 +121,18 @@ export class NoteAttachmentsService {
 
       const attachment = await this.prisma.$transaction(async (tx) => {
         // Shift all existing attachments down to make room at position 0
-        await tx.noteAttachment.updateMany({
-          where: { noteId },
-          data: { position: { increment: 1 } },
-        });
+        await shiftAttachmentRows(tx, noteId);
 
-        const created = await tx.noteAttachment.create({
-          data: {
-            ...(id && !taken ? { id } : {}),
-            noteId,
-            uploadedByUserId: userId,
-            type: attachmentType,
-            originalFilename: file.originalname,
-            storedFilename,
-            mimeType: file.mimetype,
-            fileSize: file.size,
-            position: 0,
-          },
+        const created = await createAttachmentRow(tx, {
+          ...(id && !taken ? { id } : {}),
+          noteId,
+          uploadedByUserId: userId,
+          type: attachmentType,
+          originalFilename: file.originalname,
+          storedFilename,
+          mimeType: file.mimetype,
+          fileSize: file.size,
+          position: 0,
         });
 
         await this.emitAttachmentChange(tx, noteId);
@@ -156,16 +159,13 @@ export class NoteAttachmentsService {
    * text are pointed at their copies.
    */
   async copyAll(userId: string, fromNoteId: string, toNoteId: string) {
-    const attachments = await this.prisma.noteAttachment.findMany({
-      where: { noteId: fromNoteId },
-      orderBy: { position: 'asc' },
-    });
+    const attachments = await findAttachmentRows(this.prisma, fromNoteId);
     if (attachments.length === 0) return;
     const newIds = new Map<string, string>();
 
     const written: string[] = [];
     try {
-      const copies: Prisma.NoteAttachmentCreateManyInput[] = [];
+      const copies: AttachmentRowInput[] = [];
       for (const attachment of attachments) {
         const data = await fs.readFile(
           this.attachmentPath(fromNoteId, attachment.storedFilename),
@@ -194,7 +194,7 @@ export class NoteAttachmentsService {
         });
       }
       await this.prisma.$transaction(async (tx) => {
-        await tx.noteAttachment.createMany({ data: copies });
+        await createAttachmentRows(tx, copies);
         const copy = await tx.note.findUnique({
           where: { id: toNoteId },
           select: { content: true },
@@ -220,10 +220,7 @@ export class NoteAttachmentsService {
       throw new NotFoundException('Note not found');
     }
 
-    const attachments = await this.prisma.noteAttachment.findMany({
-      where: { noteId },
-      orderBy: { position: 'asc' },
-    });
+    const attachments = await findAttachmentRows(this.prisma, noteId);
 
     return attachments.map(toAttachmentResponse);
   }
@@ -250,10 +247,7 @@ export class NoteAttachmentsService {
 
   /** For a share link: the caller has already checked the link opens it. */
   async listForLink(noteId: string) {
-    const attachments = await this.prisma.noteAttachment.findMany({
-      where: { noteId },
-      orderBy: { position: 'asc' },
-    });
+    const attachments = await findAttachmentRows(this.prisma, noteId);
     return attachments.map(toAttachmentResponse);
   }
 
@@ -275,9 +269,11 @@ export class NoteAttachmentsService {
   }
 
   private async findNoteFile(noteId: string, attachmentId: string) {
-    const attachment = await this.prisma.noteAttachment.findFirst({
-      where: { id: attachmentId, noteId },
-    });
+    const attachment = await findAttachmentRow(
+      this.prisma,
+      attachmentId,
+      noteId,
+    );
 
     if (!attachment) {
       throw new NotFoundException('Attachment not found');
@@ -294,9 +290,11 @@ export class NoteAttachmentsService {
   async remove(userId: string, noteId: string, attachmentId: string) {
     await this.noteAccessService.ensureNoteIsActive(noteId);
 
-    const attachment = await this.prisma.noteAttachment.findFirst({
-      where: { id: attachmentId, noteId },
-    });
+    const attachment = await findAttachmentRow(
+      this.prisma,
+      attachmentId,
+      noteId,
+    );
 
     if (!attachment) {
       throw new NotFoundException('Attachment not found');
@@ -318,7 +316,7 @@ export class NoteAttachmentsService {
     }
 
     await this.prisma.$transaction(async (tx) => {
-      await tx.noteAttachment.delete({ where: { id: attachmentId } });
+      await deleteAttachmentRow(tx, attachment);
 
       await this.emitAttachmentChange(tx, noteId);
     });
@@ -337,28 +335,23 @@ export class NoteAttachmentsService {
     );
     await this.noteAccessService.ensureNoteIsActive(noteId);
 
-    const attachments = await this.prisma.noteAttachment.findMany({
-      where: { noteId },
-    });
+    const attachments = await findAttachmentRows(this.prisma, noteId);
 
-    const attachmentIds = new Set(attachments.map((a) => a.id));
+    const byId = new Map(attachments.map((a) => [a.id, a]));
     if (orderedIds.length !== attachments.length) {
       throw new BadRequestException(
         'Reorder must include exactly all attachment IDs for the note',
       );
     }
     for (const id of orderedIds) {
-      if (!attachmentIds.has(id)) {
+      if (!byId.has(id)) {
         throw new BadRequestException(`Attachment ${id} not found in note`);
       }
     }
 
     await this.prisma.$transaction(async (tx) => {
       for (const [index, id] of orderedIds.entries()) {
-        await tx.noteAttachment.update({
-          where: { id },
-          data: { position: index },
-        });
+        await setAttachmentPosition(tx, byId.get(id)!, index);
       }
 
       await this.emitAttachmentChange(tx, noteId);

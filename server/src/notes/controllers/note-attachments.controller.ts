@@ -22,7 +22,6 @@ import { NoteAttachmentsService } from '../services/note-attachments.service';
 import { ReorderAttachmentsDto } from '../dto/reorder-attachments.dto';
 import { ATTACHMENT_MAX_FILE_SIZE } from '../constants/notes.constants';
 import { servedMimeType } from '../utils/attachment-storage.util';
-import { AttachmentType } from 'src/generated/prisma/enums';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { contentDisposition } from '../../common/utils/content-disposition.util';
 import { AuthGuard } from '../../auth/auth.guard';
@@ -70,7 +69,7 @@ export class NoteAttachmentsController {
       attachmentId,
     );
 
-    const isFile = attachment.type === AttachmentType.file;
+    const isFile = attachment.type === 'file';
     res.set({
       'Content-Type': servedMimeType(attachment.type, attachment.mimeType),
       'Content-Disposition': contentDisposition(

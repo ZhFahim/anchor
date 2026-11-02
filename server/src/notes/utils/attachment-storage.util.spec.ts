@@ -46,15 +46,15 @@ describe('attachmentTypeForMime', () => {
   });
 
   it('maps anything else to file', () => {
-    expect(attachmentTypeForMime('application/zip')).toBe(AttachmentType.file);
-    expect(attachmentTypeForMime('image/svg+xml')).toBe(AttachmentType.file);
-    expect(attachmentTypeForMime('text/html')).toBe(AttachmentType.file);
+    expect(attachmentTypeForMime('application/zip')).toBe('file');
+    expect(attachmentTypeForMime('image/svg+xml')).toBe('file');
+    expect(attachmentTypeForMime('text/html')).toBe('file');
   });
 });
 
 describe('servedMimeType', () => {
   it('serves files as bytes to download', () => {
-    expect(servedMimeType(AttachmentType.file, 'text/html')).toBe(
+    expect(servedMimeType('file', 'text/html')).toBe(
       'application/octet-stream',
     );
   });

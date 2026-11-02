@@ -158,7 +158,12 @@ export class SyncFeedService {
         const notes = await this.prisma.note.findMany({
           where: {
             ...accessibleNotesWhere(userId),
-            attachments: { some: {} },
+            // OR is taken by accessibleNotesWhere.
+            AND: [
+              {
+                OR: [{ attachments: { some: {} } }, { files: { some: {} } }],
+              },
+            ],
             ...(keyset ? { id: keyset } : {}),
           },
           orderBy: { id: 'asc' },

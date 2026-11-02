@@ -1,4 +1,4 @@
-import type { NoteAttachment } from 'src/generated/prisma/client';
+import type { AttachmentRow } from '../utils/attachment-rows.util';
 
 export class AttachmentResponseDto {
   id: string;
@@ -15,7 +15,7 @@ export class AttachmentResponseDto {
 }
 
 export function toAttachmentResponse(
-  attachment: NoteAttachment,
+  attachment: AttachmentRow,
 ): AttachmentResponseDto {
   return {
     id: attachment.id,

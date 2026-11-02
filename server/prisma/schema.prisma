@@ -24,11 +24,11 @@ enum NoteSharePermission {
   editor
 }
 
+/// Shared with upstream Anchor: only its values, so its server can read every
+/// row. Any other kind of file is a NoteFile.
 enum AttachmentType {
   image
   audio
-  /// Any other kind of file (documents, archives, a zipped folder).
-  file
 }
 
 enum SyncEntityType {
@@ -82,6 +82,7 @@ model User {
   notesSharedWithMe    NoteShare[]      @relation("SharedWith")
   refreshTokens        RefreshToken[]
   uploadedAttachments  NoteAttachment[]
+  uploadedFiles        NoteFile[]
   notePins             NotePin[]
   noteArchives         NoteArchive[]
   noteOrders           NoteOrder[]
@@ -120,6 +121,7 @@ model Note {
   sharedWith  NoteShare[]
   shareLink   NoteShareLink?
   attachments NoteAttachment[]
+  files       NoteFile[]
   pins        NotePin[]
   archives    NoteArchive[]
   orders      NoteOrder[]
@@ -342,6 +344,30 @@ model NoteAttachment {
   @@index([noteId])
   @@index([uploadedByUserId])
   @@index([type, textReadAt])
+}
+
+/// Any other kind of file attached to a note (documents, archives, a zipped
+/// folder): an attachment of type "file" to the apps, placed among the note's
+/// pictures and recordings by position. It has a table of its own, rather
+/// than an AttachmentType value, so upstream Anchor's server can run on this
+/// database: it doesn't read this table, and the files come back on
+/// switching back to Anchor+.
+model NoteFile {
+  id               String   @id @default(uuid())
+  noteId           String
+  uploadedByUserId String
+  originalFilename String
+  storedFilename   String
+  mimeType         String
+  fileSize         Int
+  position         Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  note             Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  uploadedByUser   User     @relation(fields: [uploadedByUserId], references: [id], onDelete: Cascade)
+
+  @@index([noteId])
+  @@index([uploadedByUserId])
 }
 
 /// What a picture shows, as a vector from the picture search model, to find

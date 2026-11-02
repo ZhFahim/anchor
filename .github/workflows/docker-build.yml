@@ -76,6 +76,13 @@ jobs:
       - name: Test image
         run: sh docker/test-image.sh anchor:test
 
+      # A server can go back to upstream Anchor's image and then come back,
+      # starting from data made on the last release. One architecture is
+      # enough: it tests the database, not the build.
+      - name: Test switching back to upstream Anchor
+        if: matrix.arch == 'amd64'
+        run: PREVIOUS="ghcr.io/${GITHUB_REPOSITORY,,}:fork-latest" sh docker/test-switch-back.sh anchor:test
+
       # Fails on a high or critical vulnerability that has a fix. Postgres'
       # gosu is skipped: its entrypoint runs it only to switch to the postgres
       # user, never the Go network and parsing code its old toolchain is

@@ -1,0 +1,25 @@
+name: Switch back
+
+# Checks weekly that a server on the newest Anchor+ release can still go back
+# to upstream Anchor's newest image, and come back. Upstream releases without
+# any change here, and a migration of theirs could clash with this fork's
+# tables; builds run the same test on every change (docker-build.yml).
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  switch-back:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Test switching back to upstream Anchor
+        run: sh docker/test-switch-back.sh "ghcr.io/${GITHUB_REPOSITORY,,}:fork-latest"

@@ -41,7 +41,7 @@ export const NOTE_INCLUDE_TAGS = {
 // Include attachment count and image previews for notes
 export const NOTE_INCLUDE_ATTACHMENT_COUNT = {
   _count: {
-    select: { attachments: true },
+    select: { attachments: true, files: true },
   },
   // Every picture: the first few show on the card, and the text read from
   // all of them is searched.

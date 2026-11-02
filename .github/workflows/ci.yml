@@ -50,6 +50,11 @@ jobs:
       - name: Type check, lint & format check
         run: pnpm check
 
+      - name: Migrations leave a database upstream Anchor can run on
+        run: |
+          git fetch --depth=1 https://github.com/ZhFahim/anchor.git main
+          node scripts/check-migrations.mjs FETCH_HEAD
+
       - name: Test
         run: pnpm test
 

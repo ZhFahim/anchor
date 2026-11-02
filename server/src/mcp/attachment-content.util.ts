@@ -1,5 +1,6 @@
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { AttachmentType } from 'src/generated/prisma/enums';
+import type { AttachmentKind } from '../notes/utils/attachment-storage.util';
 
 type Content = CallToolResult['content'][number];
 
@@ -19,7 +20,7 @@ export const ATTACHMENT_MAX_SENT_BYTES = 10 * 1024 * 1024;
 
 /** The MCP content for an attachment's bytes. */
 export async function attachmentContent(
-  type: AttachmentType,
+  type: AttachmentKind,
   mimeType: string,
   data: Buffer,
   uri: string,

@@ -20,11 +20,17 @@ export function assertValidAttachmentFile(file?: Express.Multer.File): void {
   }
 }
 
+/**
+ * An attachment's type as the apps see it: a picture or recording, or any
+ * other file (stored as a NoteFile, not a NoteAttachment).
+ */
+export type AttachmentKind = AttachmentType | 'file';
+
 /** Pictures and recordings the clients show; anything else is a file. */
-export function attachmentTypeForMime(mimeType: string): AttachmentType {
+export function attachmentTypeForMime(mimeType: string): AttachmentKind {
   if (ATTACHMENT_IMAGE_MIME_TYPES.has(mimeType)) return AttachmentType.image;
   if (ATTACHMENT_AUDIO_MIME_TYPES.has(mimeType)) return AttachmentType.audio;
-  return AttachmentType.file;
+  return 'file';
 }
 
 /**
@@ -32,8 +38,8 @@ export function attachmentTypeForMime(mimeType: string): AttachmentType {
  * download, never as something the browser would render (HTML, SVG) on the
  * app's own origin.
  */
-export function servedMimeType(type: AttachmentType, mimeType: string) {
-  return type === AttachmentType.file ? 'application/octet-stream' : mimeType;
+export function servedMimeType(type: AttachmentKind, mimeType: string) {
+  return type === 'file' ? 'application/octet-stream' : mimeType;
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
