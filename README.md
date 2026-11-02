@@ -282,12 +282,35 @@ rule. Or leave it closed and serve Anchor over HTTPS for free with a
 [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/)
 to `http://localhost:3000`.
 
+It also runs on a Linux desktop, such as [Omarchy](https://omarchy.org), for
+your own network: Anchor is at `http://localhost:3000` there, and other
+devices reach it at the desktop's local address, which the script prints. It
+lets them through ufw-docker, which Omarchy's firewall uses. Omarchy's Web
+App installer can then give Anchor+ its own window and launcher.
+
 Running the same command again updates Anchor and keeps the notes and the
 domain. `PORT` is the port Anchor listens on without a domain, e.g.
 `PORT=8080`; `DOMAIN=` (empty) goes back to plain HTTP;
 `ANCHOR_TAG=fork-preview` follows the release candidates.
 Anchor's own settings (see the table below) go in `/opt/anchor/anchor.env`,
 followed by `docker compose up -d` in `/opt/anchor`.
+
+To uninstall, run the same line with `UNINSTALL=1`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/AlxndrJhn/anchor/main/install.sh | sudo UNINSTALL=1 bash
+```
+
+It lists what it will take away and offers a backup first, to
+`~/anchor-backup-<date>.tar` (`BACKUP_FILE=` puts it elsewhere): a
+[server backup](#backing-up-the-server) that installing again and `restore`
+bring back. It removes nothing until you type `uninstall`, and nothing if the
+backup fails. Then it removes Anchor+ with every note and account on it, its
+containers, images and `/opt/anchor`, the firewall rules and swap it added,
+and the [borgmatic](#backing-up-with-borgmatic) configuration, if you set
+that up (the Borg repository and its backups stay). Docker stays installed.
+Without a terminal to ask on, `YES=1` runs it without questions (still with
+the backup; `BACKUP=no` skips that).
 
 ### Option 1: Using Pre-built Image (Recommended)
 

@@ -5,8 +5,8 @@
 # Made for the smallest (free tier) virtual servers: Oracle Cloud's
 # VM.Standard.E2.1.Micro and Ampere A1, AWS t2/t3/t4g.micro, Google Cloud's
 # e2-micro, a 1 GB VPS. Run as root on a fresh Ubuntu, Debian, Oracle Linux,
-# Rocky/Alma/RHEL, Fedora, Amazon Linux or Arch server (amd64 or arm64), with
-# the port Anchor listens on:
+# Rocky/Alma/RHEL, Fedora, Amazon Linux or Arch server (amd64 or arm64), or
+# on a Linux desktop such as Omarchy, with the port Anchor listens on:
 #
 #   curl -fsSL https://raw.githubusercontent.com/AlxndrJhn/anchor/main/install.sh | sudo PORT=3000 bash
 #
@@ -34,6 +34,17 @@
 #                (default fork-latest)
 #   ANCHOR_DIR   where it lives (default /opt/anchor)
 #   SWAP_SIZE    swap to add on a small server, in MB (default 2048; 0 adds none)
+#
+# Uninstalling is the same line with UNINSTALL=1. It backs everything up to
+# a .tar in your home folder, then takes away all a run put here: Anchor and
+# its notes, its images, ANCHOR_DIR, its firewall rules, its swap and the
+# borgmatic configuration from the README (Docker stays):
+#
+#   curl -fsSL https://raw.githubusercontent.com/AlxndrJhn/anchor/main/install.sh | sudo UNINSTALL=1 bash
+#
+#   BACKUP_FILE  where the backup goes (default ~/anchor-backup-<date>.tar)
+#   BACKUP=no    no backup
+#   YES=1        no questions, for when there's no terminal to ask on
 #
 # More settings for Anchor itself (OIDC, sign up, ...) go in
 # /opt/anchor/anchor.env, followed by `docker compose up -d` in /opt/anchor.
@@ -218,6 +229,17 @@ load_settings() {
   DOMAIN=${DOMAIN%%/*}
   PUBLIC_IP=$(public_ip)
 
+  # A desktop (Omarchy, or any Linux that starts to a graphical login) is
+  # likely at home, behind a router whose IP is the public one: without a
+  # domain, Anchor is at the desktop's address on the local network
+  DESKTOP=0
+  ADDRESS=$PUBLIC_IP
+  if have systemctl && [ "$(systemctl get-default 2>/dev/null)" = graphical.target ]; then
+    DESKTOP=1
+    ADDRESS=$(local_ip)
+    ADDRESS=${ADDRESS:-$PUBLIC_IP}
+  fi
+
   # HOST is the name Anchor is served at: the domain, or for sslip.io and
   # nip.io, the server's IP with dashes in front of it
   HOST=$DOMAIN
@@ -254,8 +276,10 @@ EOF
   app_url=$(get_env "$ENV_FILE" APP_URL)
   if [ -n "$HOST" ]; then
     set_env "$ENV_FILE" APP_URL "https://$HOST"
-  elif [ -z "$app_url" ] || { [ -n "$OLD_HOST" ] && [ "$app_url" = "https://$OLD_HOST" ]; }; then
-    set_env "$ENV_FILE" APP_URL "http://$PUBLIC_IP:$PORT"
+  elif [ -z "$app_url" ] || { [ -n "$OLD_HOST" ] && [ "$app_url" = "https://$OLD_HOST" ]; } ||
+    printf '%s' "$app_url" | grep -Eq '^http://[0-9.]+:[0-9]+$'; then
+    # An IP address and port, as an earlier run set it: follow a new address
+    set_env "$ENV_FILE" APP_URL "http://$ADDRESS:$PORT"
   fi
   # Search by what pictures show loads a ~380 MB model: too much for 1 GB
   if [ "$LOW_MEMORY" = 1 ] && [ -z "$(get_env "$ENV_FILE" PICTURE_SEARCH)" ]; then
@@ -329,33 +353,90 @@ EOF
 # The server's own firewall. Oracle's Ubuntu images reject everything but SSH
 # in iptables; Oracle Linux and RHEL have firewalld.
 open_ports() {
-  local port ports rules=/etc/iptables/rules.v4 rule
-  if [ -n "$DOMAIN" ]; then ports="80 443"; else ports=$PORT; fi
-  for port in $ports; do
+  local port rule
+  for port in $(ports_for "$DOMAIN" "$PORT"); do
     if have ufw && ufw status 2>/dev/null | grep -q '^Status: active'; then
       ufw allow "$port/tcp" >/dev/null
+      opened "ufw:$port"
     elif have firewall-cmd && firewall-cmd --state >/dev/null 2>&1; then
       firewall-cmd -q --permanent --add-port="$port/tcp"
+      opened "firewalld:$port"
     elif have iptables && iptables -S INPUT 2>/dev/null | grep -q -- '-j REJECT'; then
-      rule="-p tcp -m state --state NEW -m tcp --dport $port -j ACCEPT"
+      rule=$(iptables_rule "$port")
       # shellcheck disable=SC2086
       iptables -C INPUT $rule 2>/dev/null || iptables -I INPUT 1 $rule
       # And after a reboot: into the saved rules, ahead of the REJECT. Not
       # with iptables-save, which would save Docker's rules too.
-      if [ -f "$rules" ] && ! grep -qF -- "-A INPUT $rule" "$rules"; then
-        sed -i "0,/^-A INPUT .*-j REJECT/s//-A INPUT $rule\n&/" "$rules"
+      if [ -f "$IPTABLES_RULES" ] && ! grep -qF -- "-A INPUT $rule" "$IPTABLES_RULES"; then
+        sed -i "0,/^-A INPUT .*-j REJECT/s//-A INPUT $rule\n&/" "$IPTABLES_RULES"
       fi
+      opened "iptables:$port"
     fi
   done
   if have firewall-cmd && firewall-cmd --state >/dev/null 2>&1; then
     firewall-cmd -q --reload
   fi
+  # ufw-docker (Omarchy has it) keeps everyone but this machine away from
+  # containers until a route rule lets them in. It sees the traffic after
+  # Docker has passed it on, so the rule is for the container's port.
+  local forward
+  if have ufw && grep -q '^# BEGIN UFW AND DOCKER' /etc/ufw/after.rules 2>/dev/null; then
+    for forward in $(forwards_for "$DOMAIN"); do
+      ufw route allow proto "${forward%%:*}" from any to any port "${forward#*:}" >/dev/null
+      opened "ufw-route:$forward"
+    done
+  fi
+}
+
+IPTABLES_RULES=/etc/iptables/rules.v4
+
+# The ports Anchor is reached at, and the containers' ports behind them
+ports_for() { if [ -n "$1" ]; then echo "80 443"; else echo "$2"; fi; }
+forwards_for() { if [ -n "$1" ]; then echo "tcp:80 tcp:443 udp:443"; else echo "tcp:3000"; fi; }
+iptables_rule() { echo "-p tcp -m state --state NEW -m tcp --dport $1 -j ACCEPT"; }
+
+# Each firewall rule a run added, in .env, so an uninstall takes them all
+# away again, also those for an earlier PORT or DOMAIN
+opened() {
+  local list
+  list=$(get_env "$CONF" OPENED)
+  case ",$list," in *",$1,"*) return ;; esac
+  set_env "$CONF" OPENED "${list:+$list,}$1"
+}
+
+# Takes away a rule opened() noted: kind:port, or ufw-route:proto:port
+close_rule() {
+  local kind=${1%%:*} what=${1#*:} rule
+  case "$kind" in
+    ufw)
+      have ufw && ufw delete allow "$what/tcp" >/dev/null 2>&1
+      ;;
+    firewalld)
+      have firewall-cmd && firewall-cmd -q --permanent --remove-port="$what/tcp" 2>/dev/null
+      ;;
+    iptables)
+      rule=$(iptables_rule "$what")
+      # shellcheck disable=SC2086
+      have iptables && iptables -D INPUT $rule 2>/dev/null
+      [ -f "$IPTABLES_RULES" ] && sed -i "\|^-A INPUT $rule\$|d" "$IPTABLES_RULES"
+      ;;
+    ufw-route)
+      have ufw && ufw route delete allow proto "${what%%:*}" from any to any port "${what#*:}" >/dev/null 2>&1
+      ;;
+  esac
+  return 0
 }
 
 # The address the internet sees (a cloud server's own is a private one)
 public_ip() {
   curl -4 -fsS --max-time 5 https://api.ipify.org 2>/dev/null ||
     hostname -I 2>/dev/null | awk '{print $1}'
+}
+
+# This machine's address on the local network: the one it reaches the
+# internet from
+local_ip() {
+  ip -4 route get 1.1.1.1 2>/dev/null | sed -n 's/.* src \([0-9.]*\).*/\1/p'
 }
 
 # An IPv4 address the internet can reach: not private, shared (CGNAT),
@@ -411,25 +492,35 @@ start_anchor() {
   docker image prune -f >/dev/null 2>&1 || true
 
   log "Waiting for Anchor to start (a first start takes a minute or two)..."
+  wait_for_anchor anchor-plus
+}
+
+# In ANCHOR_DIR, with Anchor's service: anchor-plus, or anchor before the move
+wait_for_anchor() {
   local tries=90
   while [ "$tries" -gt 0 ]; do
     tries=$((tries - 1))
-    if docker exec anchor-plus curl -fsS http://127.0.0.1:3000/api/health >/dev/null 2>&1; then
+    if docker compose exec -T "$1" curl -fsS http://127.0.0.1:3000/api/health >/dev/null 2>&1; then
       return
     fi
     sleep 2
   done
-  die "Anchor didn't answer in 3 minutes. Its log: cd $ANCHOR_DIR && docker compose logs anchor-plus"
+  die "Anchor didn't answer in 3 minutes. Its log: cd $ANCHOR_DIR && docker compose logs $1"
 }
 
 report() {
   local url
-  if [ -n "$HOST" ]; then url="https://$HOST"; else url="http://$PUBLIC_IP:$PORT"; fi
+  if [ -n "$HOST" ]; then url="https://$HOST"; else url="http://$ADDRESS:$PORT"; fi
   echo
   log "Anchor is running: $url"
   echo
   echo "  Sign up right away: the first account is the admin."
-  if [ "$HOST" != "$DOMAIN" ]; then
+  if [ "$DESKTOP" = 1 ] && [ -z "$HOST" ]; then
+    echo "  On this computer: http://localhost:$PORT. Phones and other computers"
+    echo "  on the same network: $url (the router may give this"
+    echo "  computer another address one day; run this again then)."
+    echo "  Plain HTTP: fine at home, but don't open the port on your router."
+  elif [ "$HOST" != "$DOMAIN" ]; then
     echo "  $HOST is a free hostname for $PUBLIC_IP. If the"
     echo "  IP changes, run this again: Anchor moves to the new hostname, and the"
     echo "  apps need it too."
@@ -443,12 +534,19 @@ report() {
     echo "  $PUBLIC_IP) or DOMAIN=<your domain>."
   fi
   echo
-  echo "  Your cloud's firewall must let the port in too (only the server's own"
-  echo "  firewall was opened):"
-  echo "    Oracle Cloud  VCN > Security List > Ingress rule, TCP, source 0.0.0.0/0"
-  echo "    AWS           the instance's security group > Inbound rule"
-  echo "    Google Cloud  VPC network > Firewall > rule for the instance"
-  echo
+  if [ "$DESKTOP" = 1 ]; then
+    if [ -n "$HOST" ]; then
+      echo "  Your router must forward ports 80 and 443 to this computer ($ADDRESS)."
+      echo
+    fi
+  else
+    echo "  Your cloud's firewall must let the port in too (only the server's own"
+    echo "  firewall was opened):"
+    echo "    Oracle Cloud  VCN > Security List > Ingress rule, TCP, source 0.0.0.0/0"
+    echo "    AWS           the instance's security group > Inbound rule"
+    echo "    Google Cloud  VPC network > Firewall > rule for the instance"
+    echo
+  fi
   echo "  Update later:  run the same command again"
   echo "  Settings:      $ENV_FILE, then: cd $ANCHOR_DIR && docker compose up -d"
   echo "  Backup:        cd $ANCHOR_DIR && docker compose exec -T anchor-plus backup > anchor-backup-\$(date +%F).tar"
@@ -461,8 +559,160 @@ report() {
   fi
 }
 
+# Asks on the terminal: under `curl | bash`, the script's input is the script
+ask() {
+  local answer=
+  printf '%s ' "$1" >/dev/tty
+  read -r answer </dev/tty || true
+  printf '%s' "$answer"
+}
+
+# UNINSTALL=1: takes away all a run put here, after a backup
+uninstall() {
+  ANCHOR_DIR=${ANCHOR_DIR:-/opt/anchor}
+  CONF="$ANCHOR_DIR/.env"
+  local compose="$ANCHOR_DIR/docker-compose.yml" swap_conf=/etc/sysctl.d/90-anchor-swap.conf
+  local borg=/etc/borgmatic.d/anchor.yaml service volumes rules rule domain port ports=''
+  local home=${HOME:-/root} backup_file='' interactive=0 images old_volume
+  [ -f "$compose" ] || die "Anchor+ isn't installed in $ANCHOR_DIR (it has no docker-compose.yml)"
+  { have docker && docker info >/dev/null 2>&1; } || die "Docker isn't running, and Anchor+ needs it to be backed up and removed"
+  cd "$ANCHOR_DIR"
+  service=$(docker compose config --services 2>/dev/null | grep -vx caddy | head -n 1) || true
+  [ -n "$service" ] || die "Can't read $compose"
+  volumes=$(docker compose config --volumes 2>/dev/null | tr '\n' ' ')
+
+  # The firewall rules runs noted, and, for an install from before they did,
+  # those its settings opened, in whichever firewall is there
+  domain=$(get_env "$CONF" DOMAIN)
+  port=$(get_env "$CONF" PORT)
+  rules=$(get_env "$CONF" OPENED | tr , ' ')
+  if [ -z "$rules" ]; then
+    for port in $(ports_for "$domain" "${port:-3000}"); do
+      rules="$rules ufw:$port firewalld:$port iptables:$port"
+    done
+    if grep -q '^# BEGIN UFW AND DOCKER' /etc/ufw/after.rules 2>/dev/null; then
+      for rule in $(forwards_for "$domain"); do rules="$rules ufw-route:$rule"; done
+    fi
+  fi
+  for rule in $rules; do
+    case "$rule" in ufw:* | firewalld:* | iptables:*) ports="$ports ${rule#*:}" ;; esac
+  done
+  ports=$(printf '%s\n' "$ports" | tr ' ' '\n' | sed '/^$/d' | sort -un | tr '\n' ' ')
+
+  if [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != root ]; then
+    home=$(getent passwd "$SUDO_USER" | cut -d: -f6)
+  fi
+  case "${BACKUP:-yes}" in
+    0 | no | off | false) ;;
+    *) backup_file=${BACKUP_FILE:-$home/anchor-backup-$(date +%F-%H%M%S).tar} ;;
+  esac
+
+  echo
+  log "Uninstalling Anchor+ takes away:"
+  echo "  - every account, note, picture and file on this server (volumes: $volumes)"
+  echo "  - its containers and images, and $ANCHOR_DIR with its settings"
+  [ -n "${ports// /}" ] && echo "  - the firewall rules it added for port(s) $ports"
+  [ -f "$swap_conf" ] && echo "  - the swap it added (/swapfile)"
+  [ -f "$borg" ] && echo "  - borgmatic's daily backup of it ($borg); the Borg repository and its backups stay"
+  echo "  Docker stays installed. The apps on phones and computers aren't touched."
+  echo
+  if [ "${YES:-}" = 1 ]; then
+    :
+  elif (: </dev/tty) 2>/dev/null; then
+    interactive=1
+  else
+    die "No terminal to ask on. Run it again with YES=1 (it still backs up, to BACKUP_FILE or your home folder; BACKUP=no skips that)"
+  fi
+  if [ "$interactive" = 1 ]; then
+    if [ -n "$backup_file" ]; then
+      case "$(ask "Back up everything to $backup_file first? [Y/n]")" in
+        n | N | no | No) backup_file= ;;
+      esac
+    fi
+    if [ -z "$backup_file" ]; then
+      warn "Without a backup, the notes can't be brought back."
+    fi
+    [ "$(ask "Type uninstall to remove Anchor+:")" = uninstall ] || die "Nothing was removed"
+  fi
+
+  if [ -n "$backup_file" ]; then
+    log "Backing up to $backup_file..."
+    docker compose up -d "$service" >/dev/null 2>&1
+    wait_for_anchor "$service"
+    docker compose exec -T "$service" backup >"$backup_file.partial"
+    if ! tar -tf "$backup_file.partial" 2>/dev/null | grep -q 'database\.dump$'; then
+      rm -f "$backup_file.partial"
+      die "The backup didn't work, so nothing was removed"
+    fi
+    mv "$backup_file.partial" "$backup_file"
+    chmod 600 "$backup_file"
+    if [ -n "${SUDO_USER:-}" ]; then chown "$SUDO_USER" "$backup_file" 2>/dev/null || true; fi
+  fi
+
+  log "Removing Anchor+..."
+  images=$(docker compose config --images 2>/dev/null) || true
+  docker compose down --volumes --remove-orphans
+  # Its images, and earlier releases' ones; one something else uses stays
+  # shellcheck disable=SC2046
+  for image in $images $(docker image ls -q ghcr.io/alxndrjhn/anchor); do
+    docker image rm "$image" >/dev/null 2>&1 || true
+  done
+
+  for rule in $rules; do close_rule "$rule"; done
+  if have firewall-cmd && firewall-cmd --state >/dev/null 2>&1; then
+    firewall-cmd -q --reload
+  fi
+
+  if [ -f "$swap_conf" ]; then
+    if swapoff /swapfile 2>/dev/null || ! grep -q '^/swapfile ' /proc/swaps; then
+      rm -f /swapfile
+      sed -i '\|^/swapfile |d' /etc/fstab
+    else
+      warn "/swapfile is still in use, so it stays: swapoff /swapfile, then delete it and its line in /etc/fstab"
+    fi
+    rm -f "$swap_conf"
+    sysctl -q vm.swappiness=60 >/dev/null 2>&1 || true
+  fi
+
+  if [ -f "$borg" ]; then
+    rm -f "$borg"
+    rm -rf /var/backups/anchor
+    rmdir /etc/borgmatic.d 2>/dev/null || true
+  fi
+
+  cd /
+  rm -rf "$ANCHOR_DIR"
+
+  echo
+  log "Anchor+ is uninstalled."
+  echo
+  if [ -n "$backup_file" ]; then
+    echo "  The backup: $backup_file. Keep it safe: it holds every note and"
+    echo "  sign-in. To bring it all back, install again, then in $ANCHOR_DIR:"
+    echo "    docker compose exec -T anchor-plus restore < $backup_file"
+    echo
+  fi
+  # The notes' volume from before the move to anchor-plus's own names, if
+  # no container (the original Anchor's) uses it
+  old_volume=$(docker volume ls -q \
+    --filter label=com.docker.compose.project=anchor \
+    --filter label=com.docker.compose.volume=anchor_data)
+  if [ -n "$old_volume" ] && [ -z "$(docker ps -aq --filter volume="$old_volume")" ]; then
+    echo "  An older copy of the notes is in the volume $old_volume. If it isn't"
+    echo "  the original Anchor's: docker volume rm $old_volume"
+    echo
+  fi
+}
+
 main() {
   check_system
+  case "${UNINSTALL:-0}" in
+    0 | no | off | false | '') ;;
+    *)
+      uninstall
+      return
+      ;;
+  esac
   install_docker
   add_swap
   load_settings
