@@ -266,7 +266,7 @@ abstract final class AnchorTokens {
   /// Note title on phones
   static const TextStyle typeNoteTitlePhone = TextStyle(fontSize: 27.0, height: 1.12, fontWeight: FontWeight.w700, letterSpacing: -0.756);
   /// Note text
-  static const TextStyle typeBody = TextStyle(fontSize: 16.5, height: 1.7, fontWeight: FontWeight.w400, letterSpacing: 0.0);
+  static const TextStyle typeBody = TextStyle(fontSize: 16.5, height: 1.7, fontWeight: FontWeight.w500, letterSpacing: 0.0);
   /// Code blocks (mono)
   static const TextStyle typeCode = TextStyle(fontSize: 13.5, height: 1.7, fontWeight: FontWeight.w400, letterSpacing: 0.0);
   /// Details under the title, save status
@@ -276,7 +276,7 @@ abstract final class AnchorTokens {
   /// Title on a note card
   static const TextStyle typeCardTitle = TextStyle(fontSize: 15.5, height: 1.3, fontWeight: FontWeight.w600, letterSpacing: -0.186);
   /// Text on a note card
-  static const TextStyle typeCardBody = TextStyle(fontSize: 13.5, height: 1.5, fontWeight: FontWeight.w400, letterSpacing: 0.0);
+  static const TextStyle typeCardBody = TextStyle(fontSize: 13.5, height: 1.5, fontWeight: FontWeight.w500, letterSpacing: 0.0);
   /// Uppercase group labels
   static const TextStyle typeLabel = TextStyle(fontSize: 12.0, height: 1.3, fontWeight: FontWeight.w600, letterSpacing: 0.72);
   /// Keyboard keys, day letters, the smallest labels
@@ -673,8 +673,8 @@ class AnchorColors extends ThemeExtension<AnchorColors> {
     accentInk: Color(0xFFA44004),
     appPage: Color(0xFFF0F4F8),
     appSurface: Color(0xFFFFFFFF),
-    appText: Color(0xFF2D3142),
-    appMuted: Color(0xFF4F5D75),
+    appText: Color(0xFF12141A),
+    appMuted: Color(0xFF3A3C42),
     appBorder: Color(0xFFD8DEE6),
     appDivider: Color(0xFFE6EBF1),
     appSubtle: Color(0xFFE8ECF1),
@@ -713,19 +713,19 @@ class AnchorColors extends ThemeExtension<AnchorColors> {
     shadowFab: [BoxShadow(color: Color(0x1F000000), offset: Offset(0.0, 2.0), blurRadius: 6.0, spreadRadius: 0.0), BoxShadow(color: Color(0x73000000), offset: Offset(0.0, 10.0), blurRadius: 24.0, spreadRadius: -8.0)],
     shadowGhost: [BoxShadow(color: Color(0x1F000000), offset: Offset(0.0, 2.0), blurRadius: 5.0, spreadRadius: 0.0), BoxShadow(color: Color(0x38000000), offset: Offset(0.0, 6.0), blurRadius: 18.0, spreadRadius: 0.0)],
     notes: {
-      'paper': AnchorNoteColors(bg: Color(0xFFEEF0F3), surface: Color(0xFFDDE6EF), border: Color(0xFFCAD4DF), pattern: Color(0xFFD6E3F1), muted: Color(0xFF515F6E)),
-      'slate': AnchorNoteColors(bg: Color(0xFFE9F2F7), surface: Color(0xFFD6E8F3), border: Color(0xFFC2D6E2), pattern: Color(0xFFCEE5F4), muted: Color(0xFF496170)),
-      'red': AnchorNoteColors(bg: Color(0xFFFFE8E4), surface: Color(0xFFFFD9D5), border: Color(0xFFF2C7C2), pattern: Color(0xFFFFD4CF), muted: Color(0xFF7C504C)),
-      'orange': AnchorNoteColors(bg: Color(0xFFFFEAD6), surface: Color(0xFFFFDDC3), border: Color(0xFFEFCAB0), pattern: Color(0xFFFFD8BB), muted: Color(0xFF77553B)),
-      'yellow': AnchorNoteColors(bg: Color(0xFFFFF3CA), surface: Color(0xFFF8E7B5), border: Color(0xFFE6D5A1), pattern: Color(0xFFF6E4AC), muted: Color(0xFF6A5D35)),
-      'green': AnchorNoteColors(bg: Color(0xFFE0F7E4), surface: Color(0xFFCFEED4), border: Color(0xFFBCDCC2), pattern: Color(0xFFC8ECCE), muted: Color(0xFF45674C)),
-      'teal': AnchorNoteColors(bg: Color(0xFFDAF7F6), surface: Color(0xFFC5EEED), border: Color(0xFFB1DCDC), pattern: Color(0xFFBCECEB), muted: Color(0xFF346767)),
-      'blue': AnchorNoteColors(bg: Color(0xFFE0F3FF), surface: Color(0xFFCEE8FF), border: Color(0xFFBBD6EF), pattern: Color(0xFFC7E6FF), muted: Color(0xFF43617B)),
-      'dark_blue': AnchorNoteColors(bg: Color(0xFFECEEFF), surface: Color(0xFFDEE2FF), border: Color(0xFFCCD0F0), pattern: Color(0xFFDADEFF), muted: Color(0xFF575A7C)),
-      'purple': AnchorNoteColors(bg: Color(0xFFFAEAFD), surface: Color(0xFFF2DCF6), border: Color(0xFFE0CAE5), pattern: Color(0xFFF1D7F6), muted: Color(0xFF6C5471), highlights: {'purple': AnchorHighlight(fill: Color(0xFFE7C4FF))}),
-      'pink': AnchorNoteColors(bg: Color(0xFFFFE8F3), surface: Color(0xFFFCDAE8), border: Color(0xFFEBC7D7), pattern: Color(0xFFFCD4E6), muted: Color(0xFF765162)),
-      'brown': AnchorNoteColors(bg: Color(0xFFFAEDE5), surface: Color(0xFFF5E0D2), border: Color(0xFFE5CDBF), pattern: Color(0xFFF6DBCA), muted: Color(0xFF715746)),
-      'none': AnchorNoteColors(bg: Color(0xFFFFFFFF), surface: Color(0xFFF0F4F7), border: Color(0xFFD8DFE6), pattern: Color(0xFFFFFFFF), muted: Color(0xFF4F5D75)),
+      'paper': AnchorNoteColors(bg: Color(0xFFEEF0F3), surface: Color(0xFFDDE6EF), border: Color(0xFFCAD4DF), pattern: Color(0xFFD6E3F1), muted: Color(0xFF3A3C41)),
+      'slate': AnchorNoteColors(bg: Color(0xFFE9F2F7), surface: Color(0xFFD6E8F3), border: Color(0xFFC2D6E2), pattern: Color(0xFFCEE5F4), muted: Color(0xFF393C42)),
+      'red': AnchorNoteColors(bg: Color(0xFFFFE8E4), surface: Color(0xFFFFD9D5), border: Color(0xFFF2C7C2), pattern: Color(0xFFFFD4CF), muted: Color(0xFF3D3A3E)),
+      'orange': AnchorNoteColors(bg: Color(0xFFFFEAD6), surface: Color(0xFFFFDDC3), border: Color(0xFFEFCAB0), pattern: Color(0xFFFFD8BB), muted: Color(0xFF3D3B3C)),
+      'yellow': AnchorNoteColors(bg: Color(0xFFFFF3CA), surface: Color(0xFFF8E7B5), border: Color(0xFFE6D5A1), pattern: Color(0xFFF6E4AC), muted: Color(0xFF3D3C3A)),
+      'green': AnchorNoteColors(bg: Color(0xFFE0F7E4), surface: Color(0xFFCFEED4), border: Color(0xFFBCDCC2), pattern: Color(0xFFC8ECCE), muted: Color(0xFF373D3E)),
+      'teal': AnchorNoteColors(bg: Color(0xFFDAF7F6), surface: Color(0xFFC5EEED), border: Color(0xFFB1DCDC), pattern: Color(0xFFBCECEB), muted: Color(0xFF363D42)),
+      'blue': AnchorNoteColors(bg: Color(0xFFE0F3FF), surface: Color(0xFFCEE8FF), border: Color(0xFFBBD6EF), pattern: Color(0xFFC7E6FF), muted: Color(0xFF373C43)),
+      'dark_blue': AnchorNoteColors(bg: Color(0xFFECEEFF), surface: Color(0xFFDEE2FF), border: Color(0xFFCCD0F0), pattern: Color(0xFFDADEFF), muted: Color(0xFF393B43)),
+      'purple': AnchorNoteColors(bg: Color(0xFFFAEAFD), surface: Color(0xFFF2DCF6), border: Color(0xFFE0CAE5), pattern: Color(0xFFF1D7F6), muted: Color(0xFF3C3B43), highlights: {'purple': AnchorHighlight(fill: Color(0xFFE7C4FF))}),
+      'pink': AnchorNoteColors(bg: Color(0xFFFFE8F3), surface: Color(0xFFFCDAE8), border: Color(0xFFEBC7D7), pattern: Color(0xFFFCD4E6), muted: Color(0xFF3D3A41)),
+      'brown': AnchorNoteColors(bg: Color(0xFFFAEDE5), surface: Color(0xFFF5E0D2), border: Color(0xFFE5CDBF), pattern: Color(0xFFF6DBCA), muted: Color(0xFF3C3B3F)),
+      'none': AnchorNoteColors(bg: Color(0xFFFFFFFF), surface: Color(0xFFF0F4F7), border: Color(0xFFD8DFE6), pattern: Color(0xFFFFFFFF), muted: Color(0xFF3D3E43)),
     },
     highlights: {
       'yellow': AnchorHighlight(fill: Color(0xFFFEEA74), ink: Color(0xFF90800F)),
@@ -760,8 +760,8 @@ class AnchorColors extends ThemeExtension<AnchorColors> {
     accentInk: Color(0xFFFE976C),
     appPage: Color(0xFF111214),
     appSurface: Color(0xFF1C1D21),
-    appText: Color(0xFFEAEAEA),
-    appMuted: Color(0xFF9CA8B8),
+    appText: Color(0xFFF7F7F7),
+    appMuted: Color(0xFFCECECE),
     appBorder: Color(0xFF34353A),
     appDivider: Color(0xFF26272C),
     appSubtle: Color(0xFF26272C),
@@ -800,19 +800,19 @@ class AnchorColors extends ThemeExtension<AnchorColors> {
     shadowFab: [BoxShadow(color: Color(0x4D000000), offset: Offset(0.0, 2.0), blurRadius: 6.0, spreadRadius: 0.0), BoxShadow(color: Color(0xB3000000), offset: Offset(0.0, 10.0), blurRadius: 24.0, spreadRadius: -8.0)],
     shadowGhost: [BoxShadow(color: Color(0x1F000000), offset: Offset(0.0, 2.0), blurRadius: 5.0, spreadRadius: 0.0), BoxShadow(color: Color(0x38000000), offset: Offset(0.0, 6.0), blurRadius: 18.0, spreadRadius: 0.0)],
     notes: {
-      'paper': AnchorNoteColors(bg: Color(0xFF282C30), surface: Color(0xFF33393F), border: Color(0xFF44484C), pattern: Color(0xFF39424C), muted: Color(0xFFB9BEC3)),
-      'slate': AnchorNoteColors(bg: Color(0xFF212D35), surface: Color(0xFF2A3A44), border: Color(0xFF3C4A52), pattern: Color(0xFF2F4451), muted: Color(0xFFB1C0CA)),
-      'red': AnchorNoteColors(bg: Color(0xFF431F1D), surface: Color(0xFF532B28), border: Color(0xFF623C39), pattern: Color(0xFF60322F), muted: Color(0xFFDCB2AE)),
-      'orange': AnchorNoteColors(bg: Color(0xFF3F240C), surface: Color(0xFF4F2F16), border: Color(0xFF5E4029), pattern: Color(0xFF5B371A), muted: Color(0xFFD7B69F)),
-      'yellow': AnchorNoteColors(bg: Color(0xFF372904), surface: Color(0xFF45360D), border: Color(0xFF544623), pattern: Color(0xFF503F0F), muted: Color(0xFFCBBC9A)),
-      'green': AnchorNoteColors(bg: Color(0xFF17321E), surface: Color(0xFF224028), border: Color(0xFF344F39), pattern: Color(0xFF274A2F), muted: Color(0xFFA8C7AD)),
-      'teal': AnchorNoteColors(bg: Color(0xFF083232), surface: Color(0xFF114040), border: Color(0xFF294F4F), pattern: Color(0xFF124A4A), muted: Color(0xFF9EC7C6)),
-      'blue': AnchorNoteColors(bg: Color(0xFF102E45), surface: Color(0xFF1A3B55), border: Color(0xFF2D4B64), pattern: Color(0xFF1F4462), muted: Color(0xFFA4C2DC)),
-      'dark_blue': AnchorNoteColors(bg: Color(0xFF262748), surface: Color(0xFF323459), border: Color(0xFF414468), pattern: Color(0xFF3A3C66), muted: Color(0xFFB7BBDE)),
-      'purple': AnchorNoteColors(bg: Color(0xFF37223C), surface: Color(0xFF462D4B), border: Color(0xFF553E5A), pattern: Color(0xFF513557), muted: Color(0xFFCDB4D2), highlights: {'purple': AnchorHighlight(fill: Color(0xFF7850A1))}),
-      'pink': AnchorNoteColors(bg: Color(0xFF3F1F2F), surface: Color(0xFF4F2A3C), border: Color(0xFF5E3B4C), pattern: Color(0xFF5B3146), muted: Color(0xFFD8B1C2)),
-      'brown': AnchorNoteColors(bg: Color(0xFF352820), surface: Color(0xFF44342A), border: Color(0xFF52453C), pattern: Color(0xFF503C2F), muted: Color(0xFFCBBAAF)),
-      'none': AnchorNoteColors(bg: Color(0xFF111214), surface: Color(0xFF1C1D21), border: Color(0xFF34353A), pattern: Color(0xFF111214), muted: Color(0xFF9CA8B8)),
+      'paper': AnchorNoteColors(bg: Color(0xFF282C30), surface: Color(0xFF33393F), border: Color(0xFF44484C), pattern: Color(0xFF39424C), muted: Color(0xFFD2D2D3)),
+      'slate': AnchorNoteColors(bg: Color(0xFF212D35), surface: Color(0xFF2A3A44), border: Color(0xFF3C4A52), pattern: Color(0xFF2F4451), muted: Color(0xFFD0D3D4)),
+      'red': AnchorNoteColors(bg: Color(0xFF431F1D), surface: Color(0xFF532B28), border: Color(0xFF623C39), pattern: Color(0xFF60322F), muted: Color(0xFFD7D0D0)),
+      'orange': AnchorNoteColors(bg: Color(0xFF3F240C), surface: Color(0xFF4F2F16), border: Color(0xFF5E4029), pattern: Color(0xFF5B371A), muted: Color(0xFFD6D1CD)),
+      'yellow': AnchorNoteColors(bg: Color(0xFF372904), surface: Color(0xFF45360D), border: Color(0xFF544623), pattern: Color(0xFF503F0F), muted: Color(0xFFD4D2CB)),
+      'green': AnchorNoteColors(bg: Color(0xFF17321E), surface: Color(0xFF224028), border: Color(0xFF344F39), pattern: Color(0xFF274A2F), muted: Color(0xFFCFD4D0)),
+      'teal': AnchorNoteColors(bg: Color(0xFF083232), surface: Color(0xFF114040), border: Color(0xFF294F4F), pattern: Color(0xFF124A4A), muted: Color(0xFFCCD4D4)),
+      'blue': AnchorNoteColors(bg: Color(0xFF102E45), surface: Color(0xFF1A3B55), border: Color(0xFF2D4B64), pattern: Color(0xFF1F4462), muted: Color(0xFFCDD3D7)),
+      'dark_blue': AnchorNoteColors(bg: Color(0xFF262748), surface: Color(0xFF323459), border: Color(0xFF414468), pattern: Color(0xFF3A3C66), muted: Color(0xFFD1D2D8)),
+      'purple': AnchorNoteColors(bg: Color(0xFF37223C), surface: Color(0xFF462D4B), border: Color(0xFF553E5A), pattern: Color(0xFF513557), muted: Color(0xFFD4D1D5), highlights: {'purple': AnchorHighlight(fill: Color(0xFF7850A1))}),
+      'pink': AnchorNoteColors(bg: Color(0xFF3F1F2F), surface: Color(0xFF4F2A3C), border: Color(0xFF5E3B4C), pattern: Color(0xFF5B3146), muted: Color(0xFFD6D0D3)),
+      'brown': AnchorNoteColors(bg: Color(0xFF352820), surface: Color(0xFF44342A), border: Color(0xFF52453C), pattern: Color(0xFF503C2F), muted: Color(0xFFD4D2D0)),
+      'none': AnchorNoteColors(bg: Color(0xFF111214), surface: Color(0xFF1C1D21), border: Color(0xFF34353A), pattern: Color(0xFF111214), muted: Color(0xFFCECECE)),
     },
     highlights: {
       'yellow': AnchorHighlight(fill: Color(0xFF805C03), ink: Color(0xFFB18001)),

@@ -12,11 +12,27 @@
         "$description": "Cards, menus and dialogs"
       },
       "text": {
-        "$value": "{color.brand.offWhite}",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9686,
+            0.9686,
+            0.9686
+          ],
+          "hex": "#f7f7f7"
+        },
         "$description": "Text and primary buttons"
       },
       "muted": {
-        "$value": "{color.brand.mist}",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.8078,
+            0.8078,
+            0.8078
+          ],
+          "hex": "#cecece"
+        },
         "$description": "Secondary text and icons"
       },
       "border": {
@@ -335,11 +351,11 @@
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.7255,
-              0.7451,
-              0.7647
+              0.8235,
+              0.8235,
+              0.8275
             ],
-            "hex": "#b9bec3"
+            "hex": "#d2d2d3"
           },
           "$description": "Secondary text on this note"
         },
@@ -409,11 +425,11 @@
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.6941,
-              0.7529,
-              0.7922
+              0.8157,
+              0.8275,
+              0.8314
             ],
-            "hex": "#b1c0ca"
+            "hex": "#d0d3d4"
           },
           "$description": "Secondary text on this note"
         },
@@ -483,11 +499,11 @@
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.8627,
-              0.698,
-              0.6824
+              0.8431,
+              0.8157,
+              0.8157
             ],
-            "hex": "#dcb2ae"
+            "hex": "#d7d0d0"
           },
           "$description": "Secondary text on this note"
         },
@@ -557,11 +573,11 @@
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.8431,
-              0.7137,
-              0.6235
+              0.8392,
+              0.8196,
+              0.8039
             ],
-            "hex": "#d7b69f"
+            "hex": "#d6d1cd"
           },
           "$description": "Secondary text on this note"
         },
@@ -631,11 +647,11 @@
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.7961,
-              0.7373,
-              0.6039
+              0.8314,
+              0.8235,
+              0.7961
             ],
-            "hex": "#cbbc9a"
+            "hex": "#d4d2cb"
           },
           "$description": "Secondary text on this note"
         },
@@ -705,11 +721,11 @@
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.6588,
-              0.7804,
-              0.6784
+              0.8118,
+              0.8314,
+              0.8157
             ],
-            "hex": "#a8c7ad"
+            "hex": "#cfd4d0"
           },
           "$description": "Secondary text on this note"
         },
@@ -779,11 +795,11 @@
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.6196,
-              0.7804,
-              0.7765
+              0.8,
+              0.8314,
+              0.8314
             ],
-            "hex": "#9ec7c6"
+            "hex": "#ccd4d4"
           },
           "$description": "Secondary text on this note"
         },
@@ -853,11 +869,11 @@
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.6431,
-              0.7608,
-              0.8627
+              0.8039,
+              0.8275,
+              0.8431
             ],
-            "hex": "#a4c2dc"
+            "hex": "#cdd3d7"
           },
           "$description": "Secondary text on this note"
         },
@@ -927,11 +943,11 @@
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.7176,
-              0.7333,
-              0.8706
+              0.8196,
+              0.8235,
+              0.8471
             ],
-            "hex": "#b7bbde"
+            "hex": "#d1d2d8"
           },
           "$description": "Secondary text on this note"
         },
@@ -1001,11 +1017,11 @@
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.8039,
-              0.7059,
-              0.8235
+              0.8314,
+              0.8196,
+              0.8353
             ],
-            "hex": "#cdb4d2"
+            "hex": "#d4d1d5"
           },
           "$description": "Secondary text on this note"
         },
@@ -1082,11 +1098,11 @@
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.8471,
-              0.6941,
-              0.7608
+              0.8392,
+              0.8157,
+              0.8275
             ],
-            "hex": "#d8b1c2"
+            "hex": "#d6d0d3"
           },
           "$description": "Secondary text on this note"
         },
@@ -1156,11 +1172,11 @@
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.7961,
-              0.7294,
-              0.6863
+              0.8314,
+              0.8235,
+              0.8157
             ],
-            "hex": "#cbbaaf"
+            "hex": "#d4d2d0"
           },
           "$description": "Secondary text on this note"
         },
@@ -1199,11 +1215,11 @@
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.6118,
-              0.6588,
-              0.7216
+              0.8078,
+              0.8078,
+              0.8078
             ],
-            "hex": "#9ca8b8"
+            "hex": "#cecece"
           },
           "$description": "Secondary text on this note"
         },

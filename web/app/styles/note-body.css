@@ -42,6 +42,7 @@
   --box: var(--size-checkbox);
   position: relative;
   font-size: var(--text-body);
+  font-weight: var(--text-body--font-weight);
   line-height: 1.7;
   color: var(--foreground);
 }
@@ -261,6 +262,7 @@
   --indent: var(--size-list-indent-card);
   --box: var(--size-checkbox-card);
   font-size: var(--text-card-body);
+  font-weight: var(--text-card-body--font-weight);
   line-height: 1.5;
   padding: 0;
   display: grid;

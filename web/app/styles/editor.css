@@ -33,6 +33,7 @@
   padding: --spacing(1) 0 0;
   font-family: var(--font-sans);
   font-size: var(--text-body);
+  font-weight: var(--text-body--font-weight);
   line-height: 1.7;
   color: var(--foreground);
   overflow-y: visible;

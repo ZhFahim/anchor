@@ -1613,7 +1613,7 @@
           "value": 16.5,
           "unit": "px"
         },
-        "fontWeight": "{font.weight.regular}",
+        "fontWeight": "{font.weight.medium}",
         "letterSpacing": {
           "value": 0,
           "unit": "px"
@@ -1693,7 +1693,7 @@
           "value": 13.5,
           "unit": "px"
         },
-        "fontWeight": "{font.weight.regular}",
+        "fontWeight": "{font.weight.medium}",
         "letterSpacing": {
           "value": 0,
           "unit": "px"
