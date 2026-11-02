@@ -9,6 +9,10 @@ abstract final class AppTypography {
 
   static const String noteSerif = 'Literata';
 
+  /// DM Sans has no Greek or Cyrillic letters, and Playfair has no Greek.
+  static const List<String> sansFallback = ['Manrope'];
+  static const List<String> serifFallback = [noteSerif];
+
   /// Cap height per em, from each bundled font's OS/2 table.
   static double capHeightOf(String? family) => switch (family) {
     serif => 0.708,
@@ -20,11 +24,13 @@ abstract final class AppTypography {
   /// baseline.
   static const List<FontFeature> _liningFigures = [FontFeature.liningFigures()];
 
-  static TextStyle _sans(TextStyle style) =>
-      style.copyWith(fontFamily: sans).withSize(style.fontSize!);
+  static TextStyle _sans(TextStyle style) => style
+      .copyWith(fontFamily: sans, fontFamilyFallback: sansFallback)
+      .withSize(style.fontSize!);
 
   static final TextStyle largeTitle = AnchorTokens.typeLargeTitle.copyWith(
     fontFamily: serif,
+    fontFamilyFallback: serifFallback,
     fontFeatures: _liningFigures,
   );
 
@@ -76,6 +82,7 @@ abstract final class AppTypography {
     final size = (bodySize ?? noteBodySize) * scale;
     return TextStyle(
       fontFamily: sans,
+      fontFamilyFallback: sansFallback,
       height: height,
       fontWeight: weight,
       letterSpacing: tracking * size,
@@ -95,6 +102,7 @@ abstract final class AppTypography {
     double? height,
   }) => TextStyle(
     fontFamily: serif,
+    fontFamilyFallback: serifFallback,
     fontSize: fontSize,
     fontWeight: fontWeight,
     color: color,
