@@ -99,6 +99,7 @@ dependencies:
   crypto: ^3.0.8
   archive: ^4.0.0
   workmanager: ^0.10.10
+  zxing2: ^0.2.4
 
 dev_dependencies:
   flutter_test:

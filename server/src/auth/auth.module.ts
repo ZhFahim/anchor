@@ -9,6 +9,7 @@ import { ACCESS_TOKEN_TTL } from './constants/auth.constants';
 import { JwtStrategy } from './jwt.strategy';
 import { TokenResolverService } from './token-resolver.service';
 import { AuthGuard } from './auth.guard';
+import { MagicLoginService } from './magic-login.service';
 import { SettingsModule } from '../settings/settings.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { OidcService } from './oidc/oidc.service';
@@ -38,6 +39,7 @@ import { OidcUserService } from './oidc/oidc-user.service';
     JwtStrategy,
     TokenResolverService,
     AuthGuard,
+    MagicLoginService,
     OidcService,
     OidcConfigService,
     OidcClientService,

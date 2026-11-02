@@ -18,6 +18,9 @@ sealed class AuthFailure implements Exception {
     final serverMessage = message is String ? message : null;
     return switch ((status, serverMessage)) {
       (401, 'Invalid credentials') => const InvalidCredentialsFailure(),
+      (401, final text?)
+          when text.startsWith('This sign-in code has expired') =>
+        const MagicCodeUsedFailure(),
       (401, final text?) when text.startsWith('This account uses OIDC') =>
         const PasswordlessAccountFailure(),
       (401 || 403, final text?) when text.startsWith('Account pending') =>
@@ -43,6 +46,11 @@ final _providerPattern = RegExp(r'with (.+)\.$');
 
 final class InvalidCredentialsFailure extends AuthFailure {
   const InvalidCredentialsFailure();
+}
+
+/// A magic login code that ran out, or was used already.
+final class MagicCodeUsedFailure extends AuthFailure {
+  const MagicCodeUsedFailure();
 }
 
 final class PasswordlessAccountFailure extends AuthFailure {

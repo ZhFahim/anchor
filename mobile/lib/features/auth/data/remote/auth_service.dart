@@ -116,6 +116,11 @@ class AuthService {
         ),
       );
 
+  /// Settings' magic login on the web: a one-time code for this phone.
+  Future<Map<String, dynamic>> redeemMagicLogin(String code) => _send(
+    () => _dio.post('/api/auth/magic-login/redeem', data: {'code': code}),
+  );
+
   Future<T> _send<T>(Future<Response<dynamic>> Function() request) async {
     try {
       final response = await request();

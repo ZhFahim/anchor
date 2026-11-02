@@ -61,4 +61,9 @@ export interface OidcExchangeResponse {
   redirectUrl: string;
 }
 
+export interface MagicLoginCode {
+  code: string;
+  expiresAt: string;
+}
+
 export type RegistrationMode = "disabled" | "enabled" | "review";

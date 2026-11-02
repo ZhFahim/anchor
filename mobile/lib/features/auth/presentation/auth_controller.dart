@@ -78,6 +78,11 @@ class AuthController extends _$AuthController {
     _signedIn(await ref.read(authRepositoryProvider).login(email, password));
   }
 
+  /// A code from the web's magic login (its QR code or link).
+  Future<void> loginWithMagicCode(String code) async {
+    _signedIn(await ref.read(authRepositoryProvider).loginWithMagicCode(code));
+  }
+
   /// Returns false when an admin has to approve the account first.
   Future<bool> register(String email, String password, String name) async {
     final user = await ref

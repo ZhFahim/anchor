@@ -75,6 +75,9 @@ class AuthRepository {
     return _saveSession(data);
   }
 
+  Future<User> loginWithMagicCode(String code) async =>
+      _saveSession(await _authService.redeemMagicLogin(code));
+
   Future<void> logout() async {
     final refreshToken = await _storage.read(key: StorageKeys.refreshToken);
     if (refreshToken != null) {

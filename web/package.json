@@ -40,6 +40,7 @@
     "react-quill-new": "^3.8.3",
     "tailwind-merge": "^3.7.0",
     "tesseract.js": "^7.0.0",
+    "uqr": "^0.1.2",
     "zustand": "^5.0.16"
   },
   "devDependencies": {

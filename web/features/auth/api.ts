@@ -6,6 +6,7 @@ import type {
   AuthResponse,
   ChangePasswordCredentials,
   LoginCredentials,
+  MagicLoginCode,
   OidcConfig,
   OidcExchangeResponse,
   RegisterCredentials,
@@ -79,6 +80,17 @@ export async function revokeApiToken(): Promise<ApiTokenResponse> {
 
 export async function getOidcConfig(): Promise<OidcConfig> {
   return api.get("api/auth/oidc/config").json<OidcConfig>();
+}
+
+/** A one-time code that signs another device in as you. */
+export async function createMagicLogin(): Promise<MagicLoginCode> {
+  return api.post("api/auth/magic-login").json<MagicLoginCode>();
+}
+
+export async function redeemMagicLogin(code: string): Promise<AuthResponse> {
+  return api
+    .post("api/auth/magic-login/redeem", { json: { code } })
+    .json<AuthResponse>();
 }
 
 export async function exchangeOidcCode(

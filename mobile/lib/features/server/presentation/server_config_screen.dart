@@ -23,16 +23,23 @@ import '../../../core/widgets/pressable.dart';
 import '../../../core/widgets/reveal.dart';
 import '../../../core/widgets/switch_row.dart';
 import '../../../l10n/l10n.dart';
+import '../../auth/domain/magic_link.dart';
+import '../../auth/presentation/auth_controller.dart';
+import '../../auth/presentation/auth_error_message.dart';
+import '../../auth/presentation/magic_login_scan_screen.dart';
 import '../../sync/data/sync_compatibility.dart';
 import '../../sync/presentation/compatibility_messages.dart';
 import '../data/server_connector.dart';
 import 'harbor_illustration.dart';
 
 class ServerConfigScreen extends ConsumerStatefulWidget {
-  const ServerConfigScreen({super.key, this.initialUrl});
+  const ServerConfigScreen({super.key, this.initialUrl, this.magicLink});
 
   /// The server in use, when opened from sign in.
   final String? initialUrl;
+
+  /// A magic link opened on this phone, to sign in with at once.
+  final MagicLink? magicLink;
 
   @override
   ConsumerState<ServerConfigScreen> createState() => _ServerConfigScreenState();
@@ -53,6 +60,18 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen>
     if (initial != null && initial.isNotEmpty) {
       _address.text = initial.startsWith('http://') ? initial : hostOf(initial);
     }
+    if (widget.magicLink case final link?) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _signInWith(link);
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(ServerConfigScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final link = widget.magicLink;
+    if (link != null && link != oldWidget.magicLink) _signInWith(link);
   }
 
   @override
@@ -81,7 +100,53 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen>
     );
   }
 
+  Future<void> _scan() async {
+    final link = await MagicLoginScanScreen.open(context);
+    if (link != null && mounted) await _signInWith(link);
+  }
+
+  /// The server and the one-time code come from the web's magic login.
+  Future<void> _signInWith(MagicLink link) async {
+    final url = link.serverUrl;
+    _address.text = url.startsWith('http://') ? url : hostOf(url);
+    final l10n = context.l10n;
+    await submit(
+      () async {
+        if (!await _isServerUsable(url, isSchemeAdded: false)) return;
+        await ref.read(serverConfigProvider.notifier).setServerUrl(url);
+        // Signing in waits for the switch to the new server to settle.
+        final auth = ref.read(authControllerProvider.notifier);
+        await ref.read(authControllerProvider.future);
+        await auth.loginWithMagicCode(link.code);
+        Haptics.success();
+        if (mounted) context.go(AppRoutes.home);
+      },
+      tag: #magicLink,
+      onFailure: (error) => showError(authErrorMessageOf(error, l10n).text),
+    );
+  }
+
   Future<void> _connectTo(String url, {required bool isSchemeAdded}) async {
+    if (!await _isServerUsable(url, isSchemeAdded: isSchemeAdded)) return;
+    if (!mounted) return;
+    final serverConfig = ref.read(serverConfigProvider.notifier);
+    Haptics.success();
+    if (context.canPop()) {
+      // Leave this screen first, then switch servers.
+      context.pop();
+      await serverConfig.setServerUrl(url);
+    } else {
+      // Sign in can't open until there is a server.
+      await serverConfig.setServerUrl(url);
+      if (mounted) context.go(AppRoutes.login);
+    }
+  }
+
+  /// Shows why not, when not.
+  Future<bool> _isServerUsable(
+    String url, {
+    required bool isSchemeAdded,
+  }) async {
     final l10n = context.l10n;
     final host = hostOf(url);
     final allowSelfSigned =
@@ -106,33 +171,20 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen>
     }
 
     final words = compatibilityMessagesOf(compatibilityFor(protocols), l10n);
-    if (words != null) {
-      if (!mounted) return;
-      final isConfirmed = await showAnchorDialog(
-        context,
-        title: words.title,
-        message: words.message,
-        confirmLabel: l10n.serverConnectAnyway,
-      );
-      if (!isConfirmed) return;
-    }
-    if (!mounted) return;
-    final serverConfig = ref.read(serverConfigProvider.notifier);
-    Haptics.success();
-    if (context.canPop()) {
-      // Leave this screen first, then switch servers.
-      context.pop();
-      await serverConfig.setServerUrl(url);
-    } else {
-      // Sign in can't open until there is a server.
-      await serverConfig.setServerUrl(url);
-      if (mounted) context.go(AppRoutes.login);
-    }
+    if (words == null) return mounted;
+    if (!mounted) return false;
+    return showAnchorDialog(
+      context,
+      title: words.title,
+      message: words.message,
+      confirmLabel: l10n.serverConnectAnyway,
+    );
   }
 
-  void _fail(String errorMessage) {
+  bool _fail(String errorMessage) {
     Haptics.warning();
     showError(errorMessage);
+    return false;
   }
 
   @override
@@ -141,6 +193,7 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen>
     final isSelfSignedAllowed =
         ref.watch(allowSelfSignedCertProvider).value ?? false;
     final isBusy = isSubmitting();
+    final isSigningIn = isSubmitting(#magicLink);
     final density = context.density;
     final l10n = context.l10n;
     return FormPage(
@@ -150,7 +203,9 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen>
       topPadding: density.space16,
       bottomBar: AppButton(
         label: l10n.commonContinue,
-        busyLabel: l10n.serverConnecting,
+        busyLabel: isSigningIn
+            ? l10n.magicLoginSigningIn
+            : l10n.serverConnecting,
         isBusy: isBusy,
         hasShadow: true,
         onPressed: isBusy ? null : _connect,
@@ -176,6 +231,13 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen>
           error: errorOf(_addressField),
           onChanged: (_) => clearError(_addressField),
           onSubmitted: (_) => _connect(),
+        ),
+        SizedBox(height: density.space12),
+        AppButton(
+          label: l10n.magicLoginScan,
+          icon: LucideIcons.scanQrCode,
+          kind: AppButtonKind.secondary,
+          onPressed: isBusy ? null : _scan,
         ),
         SizedBox(height: density.space16),
         _AdvancedToggle(

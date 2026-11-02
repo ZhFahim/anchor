@@ -5467,5 +5467,37 @@
   "settingsSetupPasteFailed": "The clipboard holds no copied quick actions",
   "@settingsSetupPasteFailed": {
     "description": "Error after Paste setup when the clipboard holds something else."
+  },
+  "authMagicCodeUsed": "This QR code or magic link has run out. Make a new one in Settings on the web.",
+  "@authMagicCodeUsed": {
+    "description": "Error when a magic login QR code or link was already used or is older than 10 minutes. “Settings” is the web app’s Settings page."
+  },
+  "magicLoginScan": "Scan QR code",
+  "@magicLoginScan": {
+    "description": "Button on the first screen (server address) that opens the camera to scan the magic login QR code shown in the web app’s Settings."
+  },
+  "magicLoginScanTitle": "Scan the magic login QR code",
+  "@magicLoginScanTitle": {
+    "description": "Title of the camera screen that scans the magic login QR code."
+  },
+  "magicLoginScanHint": "On the web, open Settings and tap Show QR code under Sign in on your phone. Then point the camera at it.",
+  "@magicLoginScanHint": {
+    "description": "Instructions under the camera on the QR code scanner. “Settings”, “Show QR code” and “Sign in on your phone” are names in the web app."
+  },
+  "magicLoginNotOurs": "That QR code isn’t a magic login. Use the one from Settings on the web.",
+  "@magicLoginNotOurs": {
+    "description": "Shown on the scanner when it reads some other QR code."
+  },
+  "magicLoginNoPermission": "Anchor needs the camera permission to scan the QR code",
+  "@magicLoginNoPermission": {
+    "description": "Shown on the scanner when the camera permission was denied."
+  },
+  "magicLoginSigningIn": "Signing in…",
+  "@magicLoginSigningIn": {
+    "description": "Shown on the first screen while a magic login QR code or link signs in."
+  },
+  "magicLoginAlreadySignedIn": "You’re already signed in. Sign out first to use a magic link.",
+  "@magicLoginAlreadySignedIn": {
+    "description": "Shown when a magic link is opened while someone is signed in to the app."
   }
 }

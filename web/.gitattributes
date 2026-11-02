@@ -1,0 +1,3 @@
+# Biome formats with LF (biome.json); check out LF on Windows too, so the
+# two agree there.
+* text=auto eol=lf

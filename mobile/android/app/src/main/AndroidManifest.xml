@@ -65,6 +65,14 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- A magic link from the web's Settings, handed over by its
+                 /magic-login page (features/auth/magic_link_handler.dart). -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="anchorplus" android:host="magic-login"/>
+            </intent-filter>
         </activity>
         <!-- Another app's share: a see-through screen that shows only the share sheet. -->
         <activity

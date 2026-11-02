@@ -21,13 +21,21 @@ import io.flutter.embedding.android.RenderMode
 import io.flutter.embedding.android.TransparencyMode
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.embedding.engine.FlutterShellArgs
+import io.flutter.plugin.common.MethodChannel
 
 // A FragmentActivity so local_auth can show the fingerprint prompt (locked
 // notes).
 class MainActivity : FlutterFragmentActivity() {
 
+    private var magicLinkChannel: MethodChannel? = null
+
+    /** The magic link the app was opened with, until Flutter takes it. */
+    private var pendingMagicLink: String? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         attachWidgetNoteUri(intent)
+        // Not again when Android brings back the screen it was opened with.
+        if (savedInstanceState == null) pendingMagicLink = magicLinkOf(intent)
         super.onCreate(savedInstanceState)
         preferFastestRefreshRate()
         // Talks to the launcher, which takes a moment: not while starting up.
@@ -69,6 +77,18 @@ class MainActivity : FlutterFragmentActivity() {
     override fun onNewIntent(intent: Intent) {
         attachWidgetNoteUri(intent)
         super.onNewIntent(intent)
+        magicLinkOf(intent)?.let {
+            pendingMagicLink = it
+            magicLinkChannel?.invokeMethod("link", null)
+        }
+    }
+
+    private fun magicLinkOf(intent: Intent?): String? {
+        if (intent?.action != Intent.ACTION_VIEW) return null
+        if ((intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0) return null
+        val data = intent.data ?: return null
+        if (data.scheme != MAGIC_LINK_SCHEME || data.host != MAGIC_LINK_HOST) return null
+        return data.toString()
     }
 
     /**
@@ -101,6 +121,19 @@ class MainActivity : FlutterFragmentActivity() {
         flutterEngine.plugins.add(ScreenOffPlugin())
         flutterEngine.plugins.add(DeviceFilesPlugin())
         flutterEngine.plugins.add(DebugVideoPlugin())
+        magicLinkChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, MAGIC_LINK_CHANNEL).apply {
+            setMethodCallHandler { call, result ->
+                if (call.method != "takeLink") return@setMethodCallHandler result.notImplemented()
+                result.success(pendingMagicLink)
+                pendingMagicLink = null
+            }
+        }
+    }
+
+    override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
+        magicLinkChannel?.setMethodCallHandler(null)
+        magicLinkChannel = null
+        super.cleanUpFlutterEngine(flutterEngine)
     }
 
     private fun preferFastestRefreshRate() {
@@ -123,6 +156,10 @@ class MainActivity : FlutterFragmentActivity() {
         intent.data = Uri.parse("${NotesWidgetProvider.URI_SCHEME}://note/$noteId")
     }
 }
+
+private const val MAGIC_LINK_CHANNEL = "anchor/magic_link"
+private const val MAGIC_LINK_SCHEME = "anchorplus"
+private const val MAGIC_LINK_HOST = "magic-login"
 
 /** SystemNavigator.pop moves the app to the background instead of closing it. */
 class BackgroundingFlutterFragment : FlutterFragment() {

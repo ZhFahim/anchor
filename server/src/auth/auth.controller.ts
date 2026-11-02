@@ -16,6 +16,8 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthService } from './auth.service';
+import { MagicLoginService } from './magic-login.service';
+import { MagicLoginDto } from './dto/magic-login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -29,7 +31,10 @@ import type { User } from 'src/generated/prisma/client';
 
 @Controller('api/auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly magicLoginService: MagicLoginService,
+  ) {}
 
   @Get('registration-mode')
   getRegistrationMode() {
@@ -57,6 +62,20 @@ export class AuthController {
   @Post('logout')
   async logout(@Body() logoutDto: LogoutDto): Promise<void> {
     return this.authService.revokeRefreshToken(logoutDto.refreshToken);
+  }
+
+  /** A one-time code that signs another device in as this person. */
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @Post('magic-login')
+  createMagicLogin(@CurrentUser() user: User) {
+    return this.magicLoginService.create(user.id);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('magic-login/redeem')
+  redeemMagicLogin(@Body() magicLoginDto: MagicLoginDto) {
+    return this.magicLoginService.redeem(magicLoginDto.code);
   }
 
   @UseGuards(JwtAuthGuard)

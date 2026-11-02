@@ -8,6 +8,7 @@ import {
   AppearanceSection,
   EditorSection,
   ImportExportSection,
+  MagicLoginSection,
   NoteLocksSection,
   PasswordSection,
   ProfileSection,
@@ -35,6 +36,7 @@ export default function SettingsPage() {
           <AppearanceSection />
           <EditorSection />
           {!isServerless && <SearchSection />}
+          {!isServerless && <MagicLoginSection />}
           {!isServerless && <ApiTokenSection />}
           <ImportExportSection />
           <NoteLocksSection />

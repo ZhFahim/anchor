@@ -6225,6 +6225,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The clipboard holds no copied quick actions'**
   String get settingsSetupPasteFailed;
+
+  /// Error when a magic login QR code or link was already used or is older than 10 minutes. “Settings” is the web app’s Settings page.
+  ///
+  /// In en, this message translates to:
+  /// **'This QR code or magic link has run out. Make a new one in Settings on the web.'**
+  String get authMagicCodeUsed;
+
+  /// Button on the first screen (server address) that opens the camera to scan the magic login QR code shown in the web app’s Settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan QR code'**
+  String get magicLoginScan;
+
+  /// Title of the camera screen that scans the magic login QR code.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan the magic login QR code'**
+  String get magicLoginScanTitle;
+
+  /// Instructions under the camera on the QR code scanner. “Settings”, “Show QR code” and “Sign in on your phone” are names in the web app.
+  ///
+  /// In en, this message translates to:
+  /// **'On the web, open Settings and tap Show QR code under Sign in on your phone. Then point the camera at it.'**
+  String get magicLoginScanHint;
+
+  /// Shown on the scanner when it reads some other QR code.
+  ///
+  /// In en, this message translates to:
+  /// **'That QR code isn’t a magic login. Use the one from Settings on the web.'**
+  String get magicLoginNotOurs;
+
+  /// Shown on the scanner when the camera permission was denied.
+  ///
+  /// In en, this message translates to:
+  /// **'Anchor needs the camera permission to scan the QR code'**
+  String get magicLoginNoPermission;
+
+  /// Shown on the first screen while a magic login QR code or link signs in.
+  ///
+  /// In en, this message translates to:
+  /// **'Signing in…'**
+  String get magicLoginSigningIn;
+
+  /// Shown when a magic link is opened while someone is signed in to the app.
+  ///
+  /// In en, this message translates to:
+  /// **'You’re already signed in. Sign out first to use a magic link.'**
+  String get magicLoginAlreadySignedIn;
 }
 
 class _AppLocalizationsDelegate

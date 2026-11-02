@@ -19,6 +19,7 @@ AuthErrorMessage authErrorMessageOf(
     text: l10n.authIncorrectCredentials,
     field: null,
   ),
+  MagicCodeUsedFailure() => (text: l10n.authMagicCodeUsed, field: null),
   PasswordlessAccountFailure() => (text: l10n.authPasswordless, field: null),
   PendingApprovalFailure() => (text: l10n.authPendingApproval, field: null),
   PasswordSignInDisabledFailure(:final provider, :final isSignUp) => (

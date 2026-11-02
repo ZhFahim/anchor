@@ -2,6 +2,7 @@ export { ApiTokenSection } from "./components/api-token-section";
 export { AppearanceSection } from "./components/appearance-section";
 export { EditorSection } from "./components/editor-section";
 export { ImportExportSection } from "./components/import-export-section";
+export { MagicLoginSection } from "./components/magic-login-section";
 export { NoteLocksSection } from "./components/note-locks-section";
 export { PasswordSection } from "./components/password-section";
 export { ProfileSection } from "./components/profile-section";

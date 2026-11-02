@@ -17,3 +17,7 @@ export const MAX_FAILED_GUESSES = 10;
 export const FAILED_GUESS_WINDOW_MS = 15 * 60 * 1000;
 
 export const PROFILE_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+
+// A magic sign-in code (Settings' QR code and link) is used once, within this.
+export const MAGIC_LOGIN_VALIDITY_MS = 10 * 60 * 1000;
+export const MAGIC_LOGIN_CODE_BYTES = 32;

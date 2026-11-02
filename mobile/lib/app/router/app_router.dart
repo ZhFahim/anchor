@@ -5,6 +5,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/network/server_config_provider.dart';
 import '../../core/search/search_pattern.dart';
+import '../../features/auth/domain/magic_link.dart';
 import '../../features/auth/presentation/auth_controller.dart';
 import '../../features/auth/presentation/change_password_screen.dart';
 import '../../features/auth/presentation/edit_profile_screen.dart';
@@ -81,8 +82,12 @@ GoRouter goRouter(Ref ref) {
       GoRoute(
         path: AppRoutes.serverConfig,
         builder: (context, state) {
-          final initialUrl = state.extra as String?;
-          return ServerConfigScreen(initialUrl: initialUrl);
+          // The server in use (from sign in), or a magic link.
+          final extra = state.extra;
+          return ServerConfigScreen(
+            initialUrl: extra is String ? extra : null,
+            magicLink: extra is MagicLink ? extra : null,
+          );
         },
       ),
       GoRoute(

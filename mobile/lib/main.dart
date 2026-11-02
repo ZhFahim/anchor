@@ -9,6 +9,7 @@ import 'core/motion/springs.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/style_typography.dart';
 import 'core/update/app_updater.dart';
+import 'features/auth/presentation/magic_link_handler.dart';
 import 'features/debug_recorder/data/debug_state_observer.dart';
 import 'features/debug_recorder/presentation/debug_recorder_host.dart';
 import 'features/home_widget/data/home_widget_service.dart';
@@ -80,6 +81,7 @@ class _AnchorAppState extends ConsumerState<AnchorApp>
     ref.watch(syncManagerProvider);
     ref.watch(homeWidgetSyncProvider);
     ref.watch(homeWidgetLaunchHandlerProvider);
+    ref.watch(magicLinkHandlerProvider);
     // Look for a newer release of the fork when the app starts.
     ref.watch(updateControllerProvider);
     ref.watch(reminderSchedulerProvider);

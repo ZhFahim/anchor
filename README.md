@@ -111,6 +111,7 @@ Anchor+ does too; these are the differences. "Web" and "Android" say where each 
 | Long-press the app icon: New note, New checklist | | ✓ |
 | Hold the New Note button for New list | | ✓ |
 | Double-tap the New Note button to paste the clipboard into a new note | | ✓ |
+| Sign in on your phone without a password: the web's Settings › Sign in on your phone shows a QR code to scan from the app's first screen, or copies a magic link that opens the app and signs in (each works once, within 10 minutes) | ✓ | ✓ |
 | Updates itself from this fork's GitHub releases (Settings › Updates) | | ✓ |
 | Install and update it with F-Droid, from releases or also release candidates ([F-Droid](#f-droid)) | | ✓ |
 | A new note gets the tag the list is filtered by | | ✓ |

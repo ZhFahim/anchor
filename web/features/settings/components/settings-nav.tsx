@@ -8,6 +8,7 @@ import {
   LockKeyhole,
   PencilLine,
   Search,
+  Smartphone,
   SunMoon,
   UserRound,
 } from "lucide-react";
@@ -21,6 +22,7 @@ const ALL_SECTIONS = [
   { id: "appearance", label: "Appearance", icon: SunMoon },
   { id: "editor", label: "Editor", icon: PencilLine },
   { id: "search", label: "Search", icon: Search },
+  { id: "phone", label: "Phone sign-in", icon: Smartphone },
   { id: "token", label: "API token", icon: KeyRound },
   { id: "data", label: "Import and export", icon: HardDriveDownload },
   { id: "locks", label: "Note locks", icon: LockKeyhole },
@@ -28,10 +30,14 @@ const ALL_SECTIONS = [
   { id: "about", label: "About", icon: Info },
 ] as const;
 
-// Without a server there is no API token, password or picture search.
+// Without a server there is no phone sign-in, API token, password or
+// picture search.
 const SECTIONS = ALL_SECTIONS.filter(
   (section) =>
-    !(isServerless && ["token", "password", "search"].includes(section.id)),
+    !(
+      isServerless &&
+      ["phone", "token", "password", "search"].includes(section.id)
+    ),
 );
 
 export function SettingsNav() {

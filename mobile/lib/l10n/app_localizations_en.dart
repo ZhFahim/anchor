@@ -4212,4 +4212,33 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get settingsSetupPasteFailed =>
       'The clipboard holds no copied quick actions';
+
+  @override
+  String get authMagicCodeUsed =>
+      'This QR code or magic link has run out. Make a new one in Settings on the web.';
+
+  @override
+  String get magicLoginScan => 'Scan QR code';
+
+  @override
+  String get magicLoginScanTitle => 'Scan the magic login QR code';
+
+  @override
+  String get magicLoginScanHint =>
+      'On the web, open Settings and tap Show QR code under Sign in on your phone. Then point the camera at it.';
+
+  @override
+  String get magicLoginNotOurs =>
+      'That QR code isn’t a magic login. Use the one from Settings on the web.';
+
+  @override
+  String get magicLoginNoPermission =>
+      'Anchor needs the camera permission to scan the QR code';
+
+  @override
+  String get magicLoginSigningIn => 'Signing in…';
+
+  @override
+  String get magicLoginAlreadySignedIn =>
+      'You’re already signed in. Sign out first to use a magic link.';
 }
