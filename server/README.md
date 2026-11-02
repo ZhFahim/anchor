@@ -174,4 +174,5 @@ go in `test/` and are reused across specs.
 
 ### Health
 
-- `GET /api/health` - Health check endpoint
+- `GET /api/health` - The server's identity, version and protocols; always 200 while it runs
+- `GET /api/health/ready` - For uptime monitors: 200, or 503 when the database doesn't answer

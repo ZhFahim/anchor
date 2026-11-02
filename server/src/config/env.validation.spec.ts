@@ -60,4 +60,23 @@ describe('validate (environment)', () => {
       /USER_SIGNUP/,
     );
   });
+
+  it('accepts a heartbeat URL on the LAN and rejects a non-URL', () => {
+    expect(() =>
+      validate({
+        ...base,
+        HEARTBEAT_URL: 'http://kuma:3001/api/push/abc?status=up&msg=OK&ping=',
+        HEARTBEAT_INTERVAL: '30',
+      }),
+    ).not.toThrow();
+    expect(() => validate({ ...base, HEARTBEAT_URL: 'not a url' })).toThrow(
+      /HEARTBEAT_URL/,
+    );
+  });
+
+  it('rejects a heartbeat interval under 10 seconds', () => {
+    expect(() => validate({ ...base, HEARTBEAT_INTERVAL: '5' })).toThrow(
+      /HEARTBEAT_INTERVAL/,
+    );
+  });
 });

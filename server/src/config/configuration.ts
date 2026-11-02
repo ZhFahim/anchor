@@ -48,6 +48,13 @@ export const PictureTextConfig = registerAs('pictureText', () => ({
   enabled: process.env.PICTURE_TEXT?.trim().toLowerCase() !== 'off',
 }));
 
+/** A push heartbeat for uptime monitors, e.g. an Uptime Kuma push URL. */
+export const MonitoringConfig = registerAs('monitoring', () => ({
+  heartbeatUrl: process.env.HEARTBEAT_URL?.trim() || undefined,
+  /** Seconds between heartbeats. */
+  heartbeatInterval: parseInt(process.env.HEARTBEAT_INTERVAL ?? '60', 10),
+}));
+
 export const configurations = [
   AppConfig,
   DatabaseConfig,
@@ -55,4 +62,5 @@ export const configurations = [
   StorageConfig,
   PictureTextConfig,
   PictureSearchConfig,
+  MonitoringConfig,
 ];

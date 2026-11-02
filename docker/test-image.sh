@@ -39,6 +39,7 @@ trap cleanup EXIT
 docker run -d --name "$CONTAINER" -p "$PORT:3000" "$IMAGE" >/dev/null
 
 wait_until_ready
+curl -fsS -o /dev/null "$URL/api/health/ready" || fail "not ready for uptime monitors"
 curl -fsS -o /dev/null "$URL/login" || fail "the login page did not load"
 post /api/auth/register "{$CREDENTIALS,\"name\":\"Image test\"}" || fail "could not register"
 post /api/auth/login "{$CREDENTIALS}" || fail "could not sign in"

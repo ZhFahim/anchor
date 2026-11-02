@@ -30,6 +30,12 @@ describe('app setup', () => {
     expect(res.headers['content-security-policy']).toBeDefined();
   });
 
+  it('tells uptime monitors the server and its database are ready', async () => {
+    const res = await request(ctx.http).get('/api/health/ready').expect(200);
+
+    expect(res.body).toEqual({ status: 'ok', database: 'ok' });
+  });
+
   it('allows the configured web origin and no other', async () => {
     const allowed = await request(ctx.http)
       .get('/api/health')

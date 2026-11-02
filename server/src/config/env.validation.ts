@@ -6,6 +6,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUrl,
   Max,
   Min,
   MinLength,
@@ -80,6 +81,17 @@ export class EnvironmentVariables {
   @IsOptional()
   @IsString()
   DISABLE_INTERNAL_AUTH?: string;
+
+  @IsOptional()
+  @IsUrl({ require_tld: false, protocols: ['http', 'https'] })
+  HEARTBEAT_URL?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(10)
+  @Max(86400)
+  HEARTBEAT_INTERVAL?: number;
 }
 
 export function validate(

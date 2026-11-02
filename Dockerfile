@@ -107,8 +107,8 @@ VOLUME ["/data"]
 
 EXPOSE 3000
 
-# Validates both web and API routing via Next rewrite (/api/*)
+# Validates web and API routing via Next rewrite (/api/*), and the database
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=30s \
-  CMD curl -f http://localhost:3000/api/health || exit 1
+  CMD curl -f http://localhost:3000/api/health/ready || exit 1
 
 ENTRYPOINT ["/app/docker-entrypoint.sh"]

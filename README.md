@@ -316,6 +316,8 @@ followed by `docker compose up -d` in `/opt/anchor`.
    | `PICTURE_TEXT` | No | `on` | `off` stops reading the text in pictures for search |
    | `PICTURE_SEARCH` | No | `on` | `off` stops offering search by what pictures show (Settings › Search) |
    | `PICTURE_SEARCH_MODEL_URL` | No | (Hugging Face) | Where to download its model (~380 MB) from, e.g. a mirror |
+   | `HEARTBEAT_URL` | No | — | URL to call while the server works, e.g. an Uptime Kuma push URL (see [Monitoring](#monitoring-the-server)) |
+   | `HEARTBEAT_INTERVAL` | No | `60` | Seconds between those calls (10 or more) |
    | `CORS_ORIGINS` | No | (allow all) | Comma-separated allowlist of CORS origins |
    | `PG_HOST` | No | (empty) | External Postgres host (leave empty for embedded) |
    | `PG_PORT` | No | `5432` | Postgres port |
@@ -440,6 +442,41 @@ commands stop and say so. The database is saved as a
 model is left out; it's downloaded again when it's needed. Keep backups
 somewhere safe: whoever has one can read every note and sign in as anyone.
 In PowerShell, `>` and `<` need PowerShell 7.4 or later.
+
+### Monitoring the Server
+
+Uptime Kuma, Gatus, Healthchecks.io, Better Stack and the like can tell you
+when Anchor goes down, in one of two ways.
+
+**The monitor checks Anchor.** Add an HTTP monitor for
+
+```
+https://notes.example.com/api/health/ready
+```
+
+It answers 200 while Anchor and its database work, and 503 when the
+database doesn't answer, so the monitor goes down both when the server is
+unreachable and when it can't serve notes. In Uptime Kuma: *Add New Monitor ›
+HTTP(s)*, paste the URL, done. It needs no account or token and says nothing
+about your notes. If Uptime Kuma runs on the same Docker host, a *Docker
+Container* monitor on `anchor` works too: the image's health check uses the
+same endpoint.
+
+**Anchor checks in with the monitor.** When the monitor can't reach Anchor,
+say Anchor runs at home behind a router, let Anchor call it instead. In
+Uptime Kuma, *Add New Monitor › Push* gives a push URL; set it as
+`HEARTBEAT_URL`:
+
+```yaml
+    environment:
+      - HEARTBEAT_URL=https://kuma.example.com/api/push/AbC123?status=up&msg=OK&ping=
+```
+
+Anchor then calls it every minute (`HEARTBEAT_INTERVAL`, in seconds) while
+its database works, and the monitor goes down when the calls stop. Give the
+monitor a heartbeat interval a little longer than Anchor's. A
+Healthchecks.io ping URL, or any other URL that a GET checks in to, works
+the same way.
 
 ## Mobile App
 
