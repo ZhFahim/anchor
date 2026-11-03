@@ -163,10 +163,11 @@ export const SearchField = React.forwardRef<
     className?: string;
     autoFocus?: boolean;
     onFocus?: () => void;
+    onBlur?: () => void;
   }
 >(
   (
-    { value, onChange, placeholder, className, autoFocus, onFocus },
+    { value, onChange, placeholder, className, autoFocus, onFocus, onBlur },
     forwardedRef,
   ) => {
     const input = React.useRef<HTMLInputElement>(null);
@@ -174,7 +175,7 @@ export const SearchField = React.forwardRef<
       forwardedRef,
       () => input.current as HTMLInputElement,
     );
-    const [open, setOpen] = React.useState(false);
+    const [open, setOpen] = React.useState(value !== "");
 
     React.useEffect(() => {
       const onKey = (e: KeyboardEvent) => {
@@ -223,7 +224,10 @@ export const SearchField = React.forwardRef<
             aria-label={placeholder}
             onChange={(e) => onChange(e.target.value)}
             onFocus={onFocus}
-            onBlur={() => !value && setOpen(false)}
+            onBlur={() => {
+              if (!value) setOpen(false);
+              onBlur?.();
+            }}
             onKeyDown={(e) => {
               if (e.key !== "Escape") return;
               if (value) {

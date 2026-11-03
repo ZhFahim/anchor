@@ -30,6 +30,7 @@ export function NoteListActions({
         placeholder={placeholder}
         autoFocus={autoFocus}
         onFocus={onSearchFocus}
+        onBlur={list.flushQueryToUrl}
       />
       <ViewOptions
         layout={list.layout}

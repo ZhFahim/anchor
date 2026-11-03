@@ -1,16 +1,19 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
 import * as React from "react";
 import { usePreferencesStore } from "@/features/preferences";
 import { archivedNotesQuery } from "../queries";
 import type { Note } from "../types";
+import { QUERY_PARAM } from "../url-with-query";
 
 const NO_NOTES: Note[] = [];
 
 export function useArchivedNotes(tagId: string | null, notes: Note[]) {
   const queryClient = useQueryClient();
-  const [isSearchUsed, setIsSearchUsed] = React.useState(false);
+  const isSearchInUrl = useSearchParams().has(QUERY_PARAM);
+  const [isSearchUsed, setIsSearchUsed] = React.useState(isSearchInUrl);
   const query = useQuery({
     ...archivedNotesQuery,
     enabled: !!tagId || isSearchUsed,
