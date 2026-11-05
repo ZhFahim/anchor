@@ -360,6 +360,10 @@
   font-size: var(--text-footnote);
   line-height: 1.65;
 }
+.doc.is-card pre.code.cut {
+  -webkit-mask-image: linear-gradient(#000 calc(100% - 1.65em), transparent);
+  mask-image: linear-gradient(#000 calc(100% - 1.65em), transparent);
+}
 .doc.is-card .sum {
   display: flex;
   align-items: center;
