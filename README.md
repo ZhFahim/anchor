@@ -15,11 +15,14 @@
 
 Anchor focuses on speed, privacy, simplicity, and reliability across mobile and web. Notes are stored locally, editable offline, and synced across devices when online.
 
+<a href="https://play.google.com/store/apps/details?id=com.zhfahim.anchor"><img src="https://img.shields.io/badge/Get_it_on_Google_Play-000000?style=for-the-badge&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTYgMjgzIj48cGF0aCBmaWxsPSIjZWE0MzM1IiBkPSJNMTE5LjU1MyAxMzQuOTE2TDEuMDYgMjU5LjA2MWEzMi4xNCAzMi4xNCAwIDAgMCA0Ny4wNjIgMTkuMDcxbDEzMy4zMjctNzUuOTM0eiIvPjxwYXRoIGZpbGw9IiNmYmJjMDQiIGQ9Ik0yMzkuMzcgMTEzLjgxNEwxODEuNzE1IDgwLjc5bC02NC44OTggNTYuOTVsNjUuMTYyIDY0LjI4bDU3LjIxNi0zMi42N2EzMS4zNDUgMzEuMzQ1IDAgMCAwIDAtNTUuNTM3eiIvPjxwYXRoIGZpbGw9IiM0Mjg1ZjQiIGQ9Ik0xLjA2IDIzLjQ4N0EzMC42IDMwLjYgMCAwIDAgMCAzMS42MXYyMTkuMzI3YTMyLjMgMzIuMyAwIDAgMCAxLjA2IDguMTI0bDEyMi41NTUtMTIwLjk2NnoiLz48cGF0aCBmaWxsPSIjMzRhODUzIiBkPSJtMTIwLjQzNiAxNDEuMjc0bDYxLjI3OC02MC40ODNMNDguNTY0IDQuNTAzQTMyLjg1IDMyLjg1IDAgMCAwIDMyLjA1MSAwQzE3LjY0NC0uMDI4IDQuOTc4IDkuNTM0IDEuMDYgMjMuMzk5eiIvPjwvc3ZnPg%3D%3D" alt="Get it on Google Play"></a>
+<a href="https://testflight.apple.com/join/5982frnz"><img src="https://img.shields.io/badge/Join_the_beta_on_TestFlight-0D96F6?style=for-the-badge&logo=apple&logoColor=white" alt="Join the beta on TestFlight"></a>
+
 </div>
 
 ## Features
 
-- **Rich Text Editor** - Create and edit notes with powerful formatting (bold, italic, underline, headings, lists, checkboxes)
+- **Rich Text Editor** - Create and edit notes with powerful formatting (bold, italic, underline, highlights, headings, lists, checkboxes), or type / to pick a format
 - **Offline First** - All edits work offline with local database
 - **Note Sharing** - Share notes with other users (viewer or editor)
 - **Note History** - Read earlier versions of a note and put one back
@@ -29,10 +32,11 @@ Anchor focuses on speed, privacy, simplicity, and reliability across mobile and 
 - **Pin Notes** - Pin important notes for quick access
 - **Archive Notes** - Archive notes for later reference
 - **Reminders** - Set a time on any note and get a notification on your phone, once or repeating
-- **Search** - Search notes locally by title or content
+- **Search** - Search notes locally by title or content, archived notes included
+- **Share to Anchor** - Save text, links and pictures from other apps on your phone
 - **Trash** - Soft delete notes with recovery period
 - **Automatic Sync** - Sync changes across devices when online
-- **Import & Export** - Back up your full library, or move notes in and out as plain Markdown
+- **Import & Export** - Back up your full library, move notes in and out as plain Markdown, or bring them over from Google Keep
 - **Home Screen Widget** - Quick access to your notes from the Android home screen
 - **Admin Panel** - User management, registration control, and system statistics
 - **OIDC Authentication** - Sign in with OpenID Connect providers (Pocket ID, Authelia, Keycloak, etc.)
@@ -49,8 +53,8 @@ Anchor focuses on speed, privacy, simplicity, and reliability across mobile and 
 ### Mobile App
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/zhfahim/anchor/main/.github/assets/screenshot-mobile-light.jpg" alt="Mobile Light Mode" width="20%">
-  <img src="https://raw.githubusercontent.com/zhfahim/anchor/main/.github/assets/screenshot-mobile-dark.jpg" alt="Mobile Dark Mode" width="20%">
+  <img src="https://raw.githubusercontent.com/zhfahim/anchor/main/.github/assets/screenshot-mobile-light.png" alt="Mobile Light Mode" width="45%">
+  <img src="https://raw.githubusercontent.com/zhfahim/anchor/main/.github/assets/screenshot-mobile-dark.png" alt="Mobile Dark Mode" width="45%">
 </div>
 
 ## Self Hosting With Docker
@@ -90,11 +94,11 @@ Anchor focuses on speed, privacy, simplicity, and reliability across mobile and 
    | `PG_PASSWORD` | No | `password` | Postgres password |
    | `PG_DATABASE` | No | `anchor` | Database name |
    | `USER_SIGNUP` | No | (not set) | Sign up mode: `disabled`, `enabled`, or `review`. If not set, admins can control it via the admin panel |
-   | `OIDC_ENABLED` | No | — | Enable OIDC authentication |
+   | `OIDC_ENABLED` | No | (not set) | Enable OIDC authentication |
    | `OIDC_PROVIDER_NAME` | No | `"OIDC Provider"` | Display name for the login button |
-   | `OIDC_ISSUER_URL` | When OIDC enabled | — | Base URL of your OIDC provider |
-   | `OIDC_CLIENT_ID` | When OIDC enabled | — | OIDC client ID |
-   | `OIDC_CLIENT_SECRET` | No | — | OIDC client secret. Omit for public client (PKCE) |
+   | `OIDC_ISSUER_URL` | When OIDC enabled | (not set) | Base URL of your OIDC provider |
+   | `OIDC_CLIENT_ID` | When OIDC enabled | (not set) | OIDC client ID |
+   | `OIDC_CLIENT_SECRET` | No | (not set) | OIDC client secret. Omit for public client (PKCE) |
    | `DISABLE_INTERNAL_AUTH` | No | `false` | Hide local login form when OIDC is enabled (OIDC-only mode) |
 
 3. **Start the container:**
@@ -148,15 +152,21 @@ If you want to build from source or customize the image:
 
 ## Mobile App
 
-Download the Android mobile app.
+The mobile app works with your Anchor server. Set up the server first, then sign in with its address.
 
-1. **Visit the releases page:**
-   Go to [GitHub Releases](https://github.com/zhfahim/anchor/releases).
+### Android
 
-2. **Download the latest release:**
-   Multiple APK files are available:
-   - **Universal APK** (`anchor-{version}.apk`) - Recommended for most users, works on all devices
-   - **Architecture-specific APKs** - Smaller file sizes for specific CPU architectures
+<a href="https://play.google.com/store/apps/details?id=com.zhfahim.anchor"><img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="80"></a>
+<a href="https://github.com/zhfahim/anchor/releases/latest"><img src="https://raw.githubusercontent.com/Kunzisoft/Github-badge/main/get-it-on-github.png" alt="Get it on GitHub" height="80"></a>
+
+Each GitHub release has these APK files:
+
+- **Universal APK** (`anchor-{version}.apk`) - Recommended for most users, works on all devices
+- **Architecture-specific APKs** - Smaller file sizes for specific CPU architectures
+
+### iPhone and iPad
+
+The iOS app is in beta on TestFlight. Install [TestFlight](https://apps.apple.com/app/testflight/id899247664) from the App Store, then open the [Anchor beta link](https://testflight.apple.com/join/5982frnz) on your iPhone or iPad.
 
 ## OIDC Authentication
 
@@ -215,18 +225,18 @@ services:
 
 #### Admin UI Configuration
 
-Alternatively, configure OIDC via the admin panel (Settings → OIDC Authentication) when the three env vars are not all set.
+Alternatively, configure OIDC in the admin panel (Admin → Sign-in → Single sign-on) when the three env vars are not all set.
 
 ## Backup and Restore
 
-Log into your Anchor deployment, go to **Settings**, scroll to **Export & Import** and export **Anchor backup (.zip)**.
+Log into your Anchor deployment, go to **Settings**, scroll to **Import and export**, click **Export** and choose **Anchor backup (.zip)**.
 
 The resulting `anchor-export-YYYY-MM-DD.zip` contains:
 
 - `manifest.json` which includes the backup metadata, tags, notes, and attachment references in plain text
 - the referenced attachments, stored within the `attachments` folder structure
 
-Restore the notes by uploading that file through the web UI. Go to **Settings**, then scroll down to the **Export & Import** section.
+To restore, go to the same section, click **Import** and pick that file. Import also takes Google Keep exports and Markdown files from Obsidian and Nextcloud Notes.
 
 ## Troubleshooting & Collecting Logs
 
@@ -235,8 +245,8 @@ Anchor never collects any data. When you need to report a bug, you can collect l
 **Mobile app**
 
 1. Reproduce the issue.
-2. Open Settings → View Logs.
-3. Tap the **Export** button at the bottom, then share the saved `.log` file in your bug report.
+2. Open Settings → Logs.
+3. Tap **•••**, choose **Save to a file**, then attach the saved `.log` file to your bug report.
 
 > Sensitive values are stripped before anything is written to the log file. This includes authorization headers, passwords, tokens, refresh tokens, secrets, and email addresses, which are always replaced with `***`.
 
@@ -251,7 +261,7 @@ Future planned features:
 ## Tech Stack
 
 - **Backend**: Nest.js, PostgreSQL, Prisma
-- **Mobile**: Flutter
+- **Mobile**: Flutter (Android and iOS)
 - **Web**: Next.js, TypeScript
 
 ## Contributing
@@ -265,6 +275,7 @@ Future planned features:
 4. Ensure builds pass and code is linted:
    - Web: `cd web && pnpm build && pnpm check`
    - Server: `cd server && pnpm build && pnpm check`
+   - Mobile: `cd mobile && flutter analyze && flutter test`
 5. Commit changes:
    ```bash
    git commit -m "Describe your change"
@@ -299,11 +310,21 @@ node design/build/build.mjs
 
 CI runs it with `--check` and fails if the built files are out of date.
 
+## Community
+
+Questions, bugs or ideas? Join us on [Discord](https://discord.gg/sAfqjy8EYK) or [open an issue](https://github.com/zhfahim/anchor/issues).
+
 ## Support
 
 If you find Anchor useful, consider supporting its development:
 
 [<img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy me a coffee" height="60">](https://www.buymeacoffee.com/zahid)
+
+### Sponsors
+
+Thank you to our sponsors. [Become a sponsor](https://buymeacoffee.com/zahid/membership).
+
+<a href="https://github.com/heydabop"><img src="https://images.weserv.nl/?url=github.com/heydabop.png&w=96&h=96&fit=cover&mask=circle&output=png" width="48" height="48" alt="heydabop" title="heydabop"></a>
 
 ## License
 
