@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deltaToBlocks, foldTickedItems } from "./note-blocks";
+import { cardCodeLines, deltaToBlocks, foldTickedItems } from "./note-blocks";
 
 const doc = (ops: unknown[]) => JSON.stringify({ ops });
 
@@ -112,5 +112,39 @@ describe("foldTickedItems", () => {
 
   it("adds no line to a list with nothing ticked", () => {
     expect(fold(open("Milk"), line("Later"))).toEqual(["Milk", "Later"]);
+  });
+});
+
+describe("cardCodeLines", () => {
+  it("keeps the first lines of a long block and says it was cut", () => {
+    const code = Array.from({ length: 14 }, (_, i) => `line ${i + 1}`).join(
+      "\n",
+    );
+    expect(cardCodeLines(code, 3)).toEqual({
+      lines: ["line 1", "line 2", "line 3"],
+      isCut: true,
+    });
+  });
+
+  it("keeps a short block whole", () => {
+    expect(cardCodeLines("ls\ncd ..", 3)).toEqual({
+      lines: ["ls", "cd .."],
+      isCut: false,
+    });
+  });
+
+  it("leaves out blank lines at the start and end but keeps those inside", () => {
+    expect(cardCodeLines("\n  \nif (x) {\n\n}\n\n", 3)).toEqual({
+      lines: ["if (x) {", "", "}"],
+      isCut: false,
+    });
+  });
+
+  it("keeps the indent of the first line", () => {
+    expect(cardCodeLines("\n    indented", 3).lines).toEqual(["    indented"]);
+  });
+
+  it("gives nothing for a blank block", () => {
+    expect(cardCodeLines(" \n\n", 3)).toEqual({ lines: [], isCut: false });
   });
 });

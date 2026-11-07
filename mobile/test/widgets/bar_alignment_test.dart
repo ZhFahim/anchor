@@ -48,10 +48,9 @@ void main() {
     await (FontLoader(
       AppTypography.sans,
     )..addFont(bytes('DMSans-Variable.ttf'))).load();
-    final serif = FontLoader(AppTypography.serif)
-      ..addFont(bytes('PlayfairDisplay-SemiBold.ttf'))
-      ..addFont(bytes('PlayfairDisplay-Bold.ttf'));
-    await serif.load();
+    await (FontLoader(
+      AppTypography.serif,
+    )..addFont(bytes('PlayfairDisplay-Bold.ttf'))).load();
   });
 
   test('the cap heights are the bundled fonts\' own', () {

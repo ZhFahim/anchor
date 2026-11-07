@@ -40,6 +40,61 @@ DateTime? nextOccurrence(NoteReminder reminder, {required DateTime from}) {
   };
 }
 
+List<DateTime> nextOccurrences(
+  NoteReminder reminder, {
+  required DateTime from,
+  required int count,
+}) {
+  final dates = <DateTime>[];
+  var next = nextOccurrence(reminder, from: from);
+  while (next != null && dates.length < count) {
+    dates.add(next);
+    next = nextOccurrence(reminder, from: next.add(const Duration(minutes: 1)));
+  }
+  return dates;
+}
+
+/// The OS repeat has no start date and skips months that lack the day.
+bool canUseOsRepeat(NoteReminder reminder, {required DateTime now}) {
+  final anchor = parseWallClock(reminder.remindAt);
+  final at = nextOccurrence(reminder, from: now);
+  if (anchor == null || at == null) return false;
+
+  final isLeapDay = anchor.month == 2 && anchor.day == 29;
+  final previous = switch (reminder.recurrence) {
+    ReminderRecurrence.daily => DateTime(
+      at.year,
+      at.month,
+      at.day - 1,
+      at.hour,
+      at.minute,
+    ),
+    ReminderRecurrence.weekly => DateTime(
+      at.year,
+      at.month,
+      at.day - 7,
+      at.hour,
+      at.minute,
+    ),
+    ReminderRecurrence.monthly when anchor.day <= 28 => DateTime(
+      at.year,
+      at.month - 1,
+      at.day,
+      at.hour,
+      at.minute,
+    ),
+    ReminderRecurrence.yearly when !isLeapDay => DateTime(
+      at.year - 1,
+      at.month,
+      at.day,
+      at.hour,
+      at.minute,
+    ),
+    _ => null,
+  };
+  return previous != null && previous.isBefore(now);
+}
+
 /// Rebuilds from calendar parts to keep the wall-clock time across daylight
 /// saving.
 DateTime _advanceDays(DateTime anchor, DateTime from, int step) {

@@ -1,5 +1,6 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import * as React from "react";
 import {
   type SortBy,
@@ -11,6 +12,9 @@ import { useFlip } from "@/lib/use-flip";
 import { deltaToFullPlainText } from "../quill";
 import { compareNotes } from "../sort";
 import type { Note } from "../types";
+import { QUERY_PARAM, urlWithQuery } from "../url-with-query";
+
+const URL_UPDATE_DELAY = 500;
 
 const searchTextByNote = new WeakMap<Note, string>();
 
@@ -58,7 +62,10 @@ export function useNoteList(
   const boardRef = React.useRef<HTMLDivElement>(null);
   const searchRef = React.useRef<HTMLInputElement>(null);
   const flip = useFlip(boardRef);
-  const [query, setQueryValue] = React.useState("");
+  const urlQuery = useSearchParams().get(QUERY_PARAM) ?? "";
+  const [query, setQueryValue] = React.useState(urlQuery);
+  const queryInUrl = React.useRef(urlQuery);
+  const urlUpdate = React.useRef<ReturnType<typeof setTimeout>>(undefined);
   const searchedQuery = React.useDeferredValue(query);
   const [picking, setPicking] = React.useState(false);
   const [picked, setPicked] = React.useState<Set<string>>(new Set());
@@ -98,6 +105,27 @@ export function useNoteList(
   React.useLayoutEffect(() => {
     shownRef.current = shown;
   });
+
+  const writeQueryToUrl = React.useCallback((value: string) => {
+    clearTimeout(urlUpdate.current);
+    if (value === queryInUrl.current) return;
+    queryInUrl.current = value;
+    const { pathname, search } = window.location;
+    window.history.replaceState(
+      null,
+      "",
+      urlWithQuery(pathname, search, value),
+    );
+  }, []);
+
+  React.useEffect(() => {
+    if (urlQuery === queryInUrl.current) return;
+    clearTimeout(urlUpdate.current);
+    queryInUrl.current = urlQuery;
+    setQueryValue(urlQuery);
+  }, [urlQuery]);
+
+  React.useEffect(() => () => clearTimeout(urlUpdate.current), []);
 
   const stopPicking = React.useCallback(() => {
     setPicking(false);
@@ -164,7 +192,13 @@ export function useNoteList(
     setQuery: (value: string) => {
       flip.prepare();
       setQueryValue(value);
+      clearTimeout(urlUpdate.current);
+      urlUpdate.current = setTimeout(
+        () => writeQueryToUrl(value),
+        URL_UPDATE_DELAY,
+      );
     },
+    flushQueryToUrl: () => writeQueryToUrl(query),
     layout: viewMode,
     setLayout: (layout: ViewMode) => {
       flip.prepare();

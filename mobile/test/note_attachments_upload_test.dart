@@ -13,6 +13,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 class _SlowServer implements HttpClientAdapter {
   final answer = Completer<void>();
+  final received = Completer<void>();
   final requests = <String>[];
   int? refusesWith;
   bool isOffline = false;
@@ -26,6 +27,7 @@ class _SlowServer implements HttpClientAdapter {
     requests.add('${options.method} ${options.path}');
     await requestStream?.drain<void>();
     if (options.method != 'POST') return ResponseBody.fromString('', 200);
+    if (!received.isCompleted) received.complete();
     if (isOffline) throw const SocketException('offline');
     await answer.future;
     if (refusesWith case final status?) {
@@ -98,7 +100,7 @@ void main() {
 
   test('a picture deleted while it uploads is deleted on the server', () async {
     final syncing = repo.sync();
-    await pumpEventQueue();
+    await server.received.future;
     await repo.deleteAttachment('n1', 'local1');
     server.answer.complete();
     await syncing;

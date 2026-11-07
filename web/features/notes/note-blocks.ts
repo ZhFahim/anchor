@@ -134,3 +134,15 @@ export function foldTickedItems(blocks: NoteBlock[]): (NoteBlock | DoneRow)[] {
   endList();
   return rows;
 }
+
+export function cardCodeLines(code: string, max: number) {
+  const lines = code.split("\n");
+  let start = 0;
+  let end = lines.length;
+  while (start < end && !lines[start].trim()) start++;
+  while (end > start && !lines[end - 1].trim()) end--;
+  return {
+    lines: lines.slice(start, Math.min(end, start + max)),
+    isCut: end - start > max,
+  };
+}

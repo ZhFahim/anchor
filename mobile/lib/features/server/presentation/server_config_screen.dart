@@ -48,6 +48,8 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen>
   final List<_HeaderRow> _headerRows = [];
   final Map<int, CustomHeaderIssue> _headerIssues = {};
   bool _isAdvancedOpen = false;
+  late final AppLifecycleListener _lifecycle;
+  String? _unreachableAddress;
 
   @override
   void initState() {
@@ -67,10 +69,12 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen>
         _headerRows.add(_HeaderRow(name: header.name, value: header.value));
       }
     });
+    _lifecycle = AppLifecycleListener(onResume: _retryUnreachable);
   }
 
   @override
   void dispose() {
+    _lifecycle.dispose();
     _address.dispose();
     _focus.dispose();
     for (final row in _headerRows) {
@@ -120,9 +124,12 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen>
     Haptics.warning();
     setState(() => _headerIssues..clear()..addAll(issues));
     return false;
+  void _retryUnreachable() {
+    if (_address.text == _unreachableAddress && !isSubmitting()) _connect();
   }
 
   Future<void> _connect() async {
+    _unreachableAddress = null;
     final typed = _address.text.trim();
     final url = normalizeServerUrl(typed);
     final error = typed.isEmpty
@@ -162,6 +169,7 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen>
       case UntrustedCertificate():
         return _fail(l10n.serverUntrusted(host));
       case ServerUnreachable():
+        _unreachableAddress = _address.text;
         return _fail(
           isSchemeAdded
               ? l10n.serverUnreachableNoScheme(host)

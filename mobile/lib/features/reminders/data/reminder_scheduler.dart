@@ -21,6 +21,11 @@ part 'reminder_scheduler.g.dart';
 /// iOS keeps only the soonest 64 pending notifications.
 const int maxScheduledReminders = 60;
 
+const int _datedRings = 12;
+
+/// Must stay above every note's slot.
+const int _datedRingIdStep = 1000000;
+
 const Duration _settleWindow = Duration(milliseconds: 500);
 
 const List<Duration> _retryDelays = [
@@ -292,16 +297,25 @@ List<DesiredReminder> desiredReminders(
     }
 
     final heading = reminderHeading(note);
-    desired.add(
-      DesiredReminder(
-        id: slot,
-        at: at,
-        title: heading ?? l10n.reminderTitle,
-        body: heading == null ? '' : reminderBody(note),
-        repeat: matchComponentsFor(reminder.recurrence),
-        noteId: note.id,
-      ),
-    );
+    DesiredReminder ring(int id, DateTime ringAt, DateTimeComponents? repeat) =>
+        DesiredReminder(
+          id: id,
+          at: ringAt,
+          title: heading ?? l10n.reminderTitle,
+          body: heading == null ? '' : reminderBody(note),
+          repeat: repeat,
+          noteId: note.id,
+        );
+
+    final repeat = matchComponentsFor(reminder.recurrence);
+    if (repeat == null || canUseOsRepeat(reminder, now: now)) {
+      desired.add(ring(slot, at, repeat));
+    } else {
+      final dates = nextOccurrences(reminder, from: now, count: _datedRings);
+      for (final (index, date) in dates.indexed) {
+        desired.add(ring(slot + index * _datedRingIdStep, date, null));
+      }
+    }
   }
 
   desired.sort((a, b) => a.at.compareTo(b.at));

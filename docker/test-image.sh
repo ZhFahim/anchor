@@ -1,5 +1,5 @@
 #!/bin/sh
-# Starts an image on empty data and checks that it works, before and after a restart.
+# Starts an image on empty data and checks that it works, before and after a restart with a live sync stream.
 #   sh docker/test-image.sh <image>
 set -eu
 
@@ -41,10 +41,18 @@ docker run -d --name "$CONTAINER" -p "$PORT:3000" "$IMAGE" >/dev/null
 wait_until_ready
 curl -fsS -o /dev/null "$URL/login" || fail "the login page did not load"
 post /api/auth/register "{$CREDENTIALS,\"name\":\"Image test\"}" || fail "could not register"
-post /api/auth/login "{$CREDENTIALS}" || fail "could not sign in"
+TOKEN=$(curl -fsS -X POST -H "Content-Type: application/json" -d "{$CREDENTIALS}" "$URL/api/auth/login" | sed -E 's/.*"access_token":"([^"]+)".*/\1/')
+[ -n "$TOKEN" ] || fail "could not sign in"
+curl -fsN -o /dev/null -H "Authorization: Bearer $TOKEN" "$URL/api/sync/events" &
+SYNC_STREAM=$!
+sleep 1
+kill -0 "$SYNC_STREAM" 2>/dev/null || fail "could not open the sync stream"
 
 docker restart "$CONTAINER" >/dev/null
 wait_until_ready
+if docker logs "$CONTAINER" 2>&1 | grep -q "not properly shut down"; then
+  fail "Postgres did not shut down cleanly"
+fi
 post /api/auth/login "{$CREDENTIALS}" || fail "could not sign in after a restart"
 
 echo "[image-test] passed"

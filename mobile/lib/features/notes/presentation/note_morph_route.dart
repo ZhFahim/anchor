@@ -461,7 +461,7 @@ class _NoteMorphState extends State<_NoteMorph>
       child: widget.child,
     );
 
-    return AnimatedBuilder(
+    final morph = AnimatedBuilder(
       animation: widget.animation,
       builder: (context, _) {
         final animationValue = widget.animation.value;
@@ -474,35 +474,7 @@ class _NoteMorphState extends State<_NoteMorph>
           _route._followCard(size, animationValue, closingRect);
         }
 
-        if (animationValue >= 1 && closingRect == null) {
-          return Stack(
-            children: [
-              Positioned.fill(child: page),
-              if (isCupertino)
-                Positioned(
-                  left: 0,
-                  top: 0,
-                  bottom: 0,
-                  width: 22, // off-scale: the edge a swipe starts from
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.translucent,
-                    onHorizontalDragUpdate: (details) => _updateDrag(
-                      (details.globalPosition.dx) / size.width,
-                      Offset(details.globalPosition.dx * 0.5, 0),
-                    ),
-                    onHorizontalDragEnd: (details) {
-                      final velocity = details.velocity.pixelsPerSecond.dx;
-                      _release(
-                        close: velocity > 400 || _pull > 0.33,
-                        velocity: -velocity / size.width,
-                      );
-                    },
-                    onHorizontalDragCancel: () => _release(close: false),
-                  ),
-                ),
-            ],
-          );
-        }
+        if (animationValue >= 1 && closingRect == null) return page;
 
         final progress = opening
             ? animationValue.clamp(0.0, 1.0)
@@ -626,6 +598,40 @@ class _NoteMorphState extends State<_NoteMorph>
           ],
         );
       },
+    );
+    if (!isCupertino) return morph;
+
+    return Stack(
+      children: [
+        Positioned.fill(child: morph),
+        Positioned(
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: 22, // off-scale: the edge a swipe starts from
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onHorizontalDragUpdate: (details) {
+              if (!_isTop) return;
+              _updateDrag(
+                details.globalPosition.dx / size.width,
+                Offset(details.globalPosition.dx * 0.5, 0),
+              );
+            },
+            onHorizontalDragEnd: (details) {
+              if (!_pulling) return;
+              final velocity = details.velocity.pixelsPerSecond.dx;
+              _release(
+                close: velocity > 400 || _pull > 0.33,
+                velocity: -velocity / size.width,
+              );
+            },
+            onHorizontalDragCancel: () {
+              if (_pulling) _release(close: false);
+            },
+          ),
+        ),
+      ],
     );
   }
 }
