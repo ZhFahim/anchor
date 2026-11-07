@@ -8,10 +8,12 @@ import type {
   CreateNoteDto,
   Note,
   NoteAttachment,
+  NoteLink,
   NoteRevision,
   NoteRevisionPage,
   NoteShare,
   NoteSharePermission,
+  PublicNote,
   UpdateNoteDto,
   UserSearchResult,
 } from "./types";
@@ -239,6 +241,40 @@ export async function revokeShare(
   return api
     .delete(`api/notes/${noteId}/shares/${shareId}`)
     .json<{ success: boolean }>();
+}
+
+// Public link: one read-only link per note, owner only.
+export async function getNoteLink(noteId: string): Promise<NoteLink | null> {
+  const { link } = await api
+    .get(`api/notes/${noteId}/link`)
+    .json<{ link: NoteLink | null }>();
+  return link;
+}
+
+export async function createNoteLink(noteId: string): Promise<NoteLink> {
+  return api.post(`api/notes/${noteId}/link`).json<NoteLink>();
+}
+
+export async function deleteNoteLink(noteId: string): Promise<void> {
+  await api.delete(`api/notes/${noteId}/link`);
+}
+
+export const publicNoteUrl = (token: string) =>
+  `${window.location.origin}/s/${token}`;
+
+/** The link is off, the token is wrong, or the note is in the trash. */
+export class PublicNoteMissing extends Error {}
+
+// Plain fetch: whoever opens a link may be signed in, and their session has
+// nothing to do with it.
+export async function getPublicNote(token: string): Promise<PublicNote> {
+  const response = await fetch(
+    `/api/public/notes/${encodeURIComponent(token)}`,
+    { cache: "no-store" },
+  );
+  if (response.status === 404) throw new PublicNoteMissing();
+  if (!response.ok) throw new Error(`Public note: ${response.status}`);
+  return response.json();
 }
 
 export async function searchUsers(query: string): Promise<UserSearchResult[]> {
