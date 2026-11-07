@@ -165,6 +165,7 @@ void main() {
     expect(find.text('Name'), findsNothing);
     expect(find.byType(TextField), findsOneWidget);
   });
+
   group('when the server can\'t be reached', () {
     late _RefusingHttp http;
     final overrides = HttpOverrides.current;

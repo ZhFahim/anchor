@@ -58,6 +58,7 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen>
     if (initial != null && initial.isNotEmpty) {
       _address.text = initial.startsWith('http://') ? initial : hostOf(initial);
     }
+    _lifecycle = AppLifecycleListener(onResume: _retryUnreachable);
     Future.microtask(_loadHeaders);
   }
 
@@ -69,7 +70,6 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen>
         _headerRows.add(_HeaderRow(name: header.name, value: header.value));
       }
     });
-    _lifecycle = AppLifecycleListener(onResume: _retryUnreachable);
   }
 
   @override
@@ -124,6 +124,8 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen>
     Haptics.warning();
     setState(() => _headerIssues..clear()..addAll(issues));
     return false;
+  }
+
   void _retryUnreachable() {
     if (_address.text == _unreachableAddress && !isSubmitting()) _connect();
   }
