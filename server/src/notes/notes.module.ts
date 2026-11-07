@@ -9,6 +9,9 @@ import { NoteAttachmentsService } from './services/note-attachments.service';
 import { NoteAttachmentsController } from './controllers/note-attachments.controller';
 import { NoteHistoryService } from './services/note-history.service';
 import { NoteRevisionsController } from './controllers/note-revisions.controller';
+import { NoteLinksService } from './services/note-links.service';
+import { NoteLinksController } from './controllers/note-links.controller';
+import { PublicNotesController } from './controllers/public-notes.controller';
 import { UsersModule } from '../users/users.module';
 import { AuthModule } from '../auth/auth.module';
 import { SyncModule } from '../sync/sync.module';
@@ -25,6 +28,8 @@ import { SyncModule } from '../sync/sync.module';
     NoteSharesController,
     NoteAttachmentsController,
     NoteRevisionsController,
+    NoteLinksController,
+    PublicNotesController,
   ],
   providers: [
     NotesService,
@@ -32,6 +37,7 @@ import { SyncModule } from '../sync/sync.module';
     NoteAccessService,
     NoteAttachmentsService,
     NoteHistoryService,
+    NoteLinksService,
   ],
   exports: [
     NotesService,

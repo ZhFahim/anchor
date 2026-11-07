@@ -2,6 +2,7 @@ import type { AddressInfo } from 'net';
 import { HttpClient, TestServer } from './http';
 import { AttachmentsApi } from './api/attachments.api';
 import { ExportApi } from './api/export.api';
+import { LinksApi } from './api/links.api';
 import { NotesApi } from './api/notes.api';
 import { RevisionsApi } from './api/revisions.api';
 import { SharesApi } from './api/shares.api';
@@ -21,6 +22,7 @@ export class Actor implements TestUser {
   readonly notes: NotesApi;
   readonly tags: TagsApi;
   readonly shares: SharesApi;
+  readonly links: LinksApi;
   readonly attachments: AttachmentsApi;
   readonly revisions: RevisionsApi;
   readonly export: ExportApi;
@@ -37,6 +39,7 @@ export class Actor implements TestUser {
     this.notes = new NotesApi(this.http);
     this.tags = new TagsApi(this.http);
     this.shares = new SharesApi(this.http);
+    this.links = new LinksApi(this.http);
     this.attachments = new AttachmentsApi(this.http);
     this.revisions = new RevisionsApi(this.http);
     this.export = new ExportApi(this.http);
