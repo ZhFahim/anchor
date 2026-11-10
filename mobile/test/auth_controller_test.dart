@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:anchor/core/network/custom_headers.dart';
 import 'package:anchor/core/network/server_config_provider.dart';
 import 'package:anchor/core/session/active_user_id_provider.dart';
 import 'package:anchor/features/auth/data/remote/auth_service.dart';
@@ -59,12 +60,18 @@ class _NoSelfSignedCert extends AllowSelfSignedCert {
   Future<bool> build() async => false;
 }
 
+class _NoCustomHeaders extends CustomHeaders {
+  @override
+  Future<List<CustomHeader>> build() async => const [];
+}
+
 ProviderContainer _container(_FakeAuthService service) {
   final container = ProviderContainer(
     overrides: [
       authServiceProvider.overrideWithValue(service),
       serverConfigProvider.overrideWith(_FixedServerConfig.new),
       allowSelfSignedCertProvider.overrideWith(_NoSelfSignedCert.new),
+      customHeadersProvider.overrideWith(_NoCustomHeaders.new),
     ],
   );
   addTearDown(container.dispose);

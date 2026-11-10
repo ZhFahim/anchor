@@ -2,6 +2,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../network/custom_headers.dart';
+import '../network/server_address.dart';
 import '../network/server_config_provider.dart';
 import '../theme/app_typography.dart';
 import '../theme/tokens/anchor_tokens.dart';
@@ -54,6 +56,8 @@ class PersonAvatar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final serverUrl = ref.watch(serverUrlProvider);
+    final customHeaders =
+        ref.watch(customHeadersProvider).value ?? const <CustomHeader>[];
     final words = name
         .trim()
         .split(RegExp(r'\s+'))
@@ -69,6 +73,10 @@ class PersonAvatar extends ConsumerWidget {
         : serverUrl == null
         ? null
         : '$serverUrl$imageUrl';
+    final httpHeaders =
+        url != null && serverUrl != null && isOnServer(url, serverUrl)
+        ? customHeaderMapOf(customHeaders)
+        : null;
     final initialsText = Text(
       size < 30 ? initials.substring(0, 1) : initials,
       textScaler: TextScaler.noScaling,
@@ -96,6 +104,7 @@ class PersonAvatar extends ConsumerWidget {
           ? initialsText
           : CachedNetworkImage(
               imageUrl: url,
+              httpHeaders: httpHeaders,
               width: size,
               height: size,
               fit: BoxFit.cover,

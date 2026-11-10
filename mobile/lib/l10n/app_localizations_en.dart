@@ -438,7 +438,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get serverCustomHeadersHint =>
-      'Extra headers sent with every request to your server.';
+      'Sent with every request. For a proxy in front of your server, such as Cloudflare Access.';
 
   @override
   String get serverAddHeader => 'Add header';
@@ -447,15 +447,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get serverRemoveHeader => 'Remove header';
 
   @override
+  String serverRemoveNamedHeader(String name) {
+    return 'Remove $name';
+  }
+
+  @override
+  String get serverHeaderRemoved => 'Header removed';
+
+  @override
+  String get serverHeaderNameLabel => 'Header name';
+
+  @override
+  String get serverHeaderValueLabel => 'Header value';
+
+  @override
+  String get serverShowHeaderValue => 'Show value';
+
+  @override
+  String get serverHideHeaderValue => 'Hide value';
+
+  @override
   String get serverHeaderNameHint => 'Name';
 
   @override
   String get serverHeaderValueHint => 'Value';
-
-  @override
-  String serverHeaderCount(int count, int max) {
-    return '$count/$max';
-  }
 
   @override
   String serverHeaderLimit(int max) {
@@ -463,17 +478,19 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get serverHeaderInvalidName =>
-      'Enter a name with only letters, numbers, and dashes, like X-Anchor-User.';
+  String get serverHeaderMissingName => 'Enter a header name.';
 
   @override
-  String serverHeaderReserved(String name) {
-    return 'The app sets $name itself, so it can’t be changed here.';
-  }
+  String get serverHeaderInvalidName => 'Enter a valid header name.';
 
   @override
-  String get serverHeaderDuplicate =>
-      'A header with this name is already added.';
+  String get serverHeaderInvalidValue => 'Enter a valid header value.';
+
+  @override
+  String get serverHeaderReserved => 'Anchor sets this header itself.';
+
+  @override
+  String get serverHeaderDuplicate => 'This header is already added.';
 
   @override
   String get serverSelfHosted => 'Anchor requires a self-hosted server.';

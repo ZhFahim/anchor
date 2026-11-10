@@ -120,7 +120,6 @@ class PreferencesRepository {
     );
   }
 
-  /// Most recent last.
   Future<List<CustomHeader>> getCustomHeaders() async {
     final value = await _storage.read(key: StorageKeys.customHeaders);
     if (value == null) return const [];
@@ -137,13 +136,12 @@ class PreferencesRepository {
     }
   }
 
-  Future<void> setCustomHeaders(List<CustomHeader> headers) =>
-      _storage.write(
-        key: StorageKeys.customHeaders,
-        value: jsonEncode([
-          for (final header in headers.take(maxCustomHeaders)) header.toJson(),
-        ]),
-      );
+  Future<void> setCustomHeaders(List<CustomHeader> headers) => _storage.write(
+    key: StorageKeys.customHeaders,
+    value: jsonEncode([
+      for (final header in headers.take(maxCustomHeaders)) header.toJson(),
+    ]),
+  );
 
   Future<String?> getNotesViewType() =>
       _storage.read(key: StorageKeys.notesViewType);

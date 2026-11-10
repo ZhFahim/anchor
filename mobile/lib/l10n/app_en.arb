@@ -582,9 +582,9 @@
   "@serverCustomHeaders": {
     "description": "Heading of the list of extra headers sent to the server, under the self-signed certificates switch."
   },
-  "serverCustomHeadersHint": "Extra headers sent with every request to your server.",
+  "serverCustomHeadersHint": "Sent with every request. For a proxy in front of your server, such as Cloudflare Access.",
   "@serverCustomHeadersHint": {
-    "description": "Under the custom headers heading."
+    "description": "Under the custom headers heading: what they are for. Cloudflare Access is a product name; keep it as it is."
   },
   "serverAddHeader": "Add header",
   "@serverAddHeader": {
@@ -592,7 +592,37 @@
   },
   "serverRemoveHeader": "Remove header",
   "@serverRemoveHeader": {
-    "description": "Screen reader label of the button that removes a custom header row."
+    "description": "Screen reader label of the trash button beside a custom header that has no name yet."
+  },
+  "serverRemoveNamedHeader": "Remove {name}",
+  "@serverRemoveNamedHeader": {
+    "description": "Screen reader label of the trash button beside a custom header, naming it. Keep the header name as it is.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "CF-Access-Client-Id"
+      }
+    }
+  },
+  "serverHeaderRemoved": "Header removed",
+  "@serverHeaderRemoved": {
+    "description": "Snackbar after removing a custom header, with Undo."
+  },
+  "serverHeaderNameLabel": "Header name",
+  "@serverHeaderNameLabel": {
+    "description": "Screen reader name of the field for a custom header’s name."
+  },
+  "serverHeaderValueLabel": "Header value",
+  "@serverHeaderValueLabel": {
+    "description": "Screen reader name of the field for a custom header’s value."
+  },
+  "serverShowHeaderValue": "Show value",
+  "@serverShowHeaderValue": {
+    "description": "Screen reader label of the eye button that shows a custom header’s hidden value."
+  },
+  "serverHideHeaderValue": "Hide value",
+  "@serverHideHeaderValue": {
+    "description": "Screen reader label of the eye button that hides a custom header’s value again."
   },
   "serverHeaderNameHint": "Name",
   "@serverHeaderNameHint": {
@@ -602,23 +632,9 @@
   "@serverHeaderValueHint": {
     "description": "Placeholder in the field for a custom header’s value."
   },
-  "serverHeaderCount": "{count}/{max}",
-  "@serverHeaderCount": {
-    "description": "How many custom headers are added, of the most that fit.",
-    "placeholders": {
-      "count": {
-        "type": "int",
-        "example": "3"
-      },
-      "max": {
-        "type": "int",
-        "example": "10"
-      }
-    }
-  },
   "serverHeaderLimit": "Up to {max} headers.",
   "@serverHeaderLimit": {
-    "description": "Note when the most custom headers are added and no more fit.",
+    "description": "Note next to the disabled Add header button once the most custom headers are added.",
     "placeholders": {
       "max": {
         "type": "int",
@@ -626,23 +642,25 @@
       }
     }
   },
-  "serverHeaderInvalidName": "Enter a name with only letters, numbers, and dashes, like X-Anchor-User.",
+  "serverHeaderMissingName": "Enter a header name.",
+  "@serverHeaderMissingName": {
+    "description": "Error under a custom header’s name field when it has a value but no name."
+  },
+  "serverHeaderInvalidName": "Enter a valid header name.",
   "@serverHeaderInvalidName": {
-    "description": "Error under a custom header row whose name isn’t valid."
+    "description": "Error under a custom header’s name field when the name has characters a header name can’t have."
   },
-  "serverHeaderReserved": "The app sets {name} itself, so it can’t be changed here.",
+  "serverHeaderInvalidValue": "Enter a valid header value.",
+  "@serverHeaderInvalidValue": {
+    "description": "Error under a custom header’s value field when the value has characters a header can’t carry."
+  },
+  "serverHeaderReserved": "Anchor sets this header itself.",
   "@serverHeaderReserved": {
-    "description": "Error under a custom header row whose name the app manages.",
-    "placeholders": {
-      "name": {
-        "type": "String",
-        "example": "Authorization"
-      }
-    }
+    "description": "Error under a custom header’s name field when the app already sends a header with that name, such as Authorization. Keep it short: it sits under a narrow field."
   },
-  "serverHeaderDuplicate": "A header with this name is already added.",
+  "serverHeaderDuplicate": "This header is already added.",
   "@serverHeaderDuplicate": {
-    "description": "Error under a custom header row whose name repeats an earlier one."
+    "description": "Error under a custom header’s name field when an earlier header has the same name. Keep it short: it sits under a narrow field."
   },
   "serverSelfHosted": "Anchor requires a self-hosted server.",
   "@serverSelfHosted": {

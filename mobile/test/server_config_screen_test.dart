@@ -2,20 +2,26 @@ import 'dart:io';
 
 import 'package:anchor/core/network/connectivity_provider.dart';
 import 'package:anchor/core/network/custom_headers.dart';
+import 'package:anchor/core/network/server_config_provider.dart';
 import 'package:anchor/core/theme/app_theme.dart';
 import 'package:anchor/core/widgets/page_bar.dart';
 import 'package:anchor/features/server/presentation/harbor_illustration.dart';
 import 'package:anchor/features/server/presentation/server_config_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 void main() {
-  Future<void> pumpApp(WidgetTester tester, Widget home) async {
+  Future<void> pumpApp(
+    WidgetTester tester,
+    Widget home, {
+    List<Override> overrides = const [],
+  }) async {
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [isOnlineProvider.overrideWithValue(true)],
+        overrides: [isOnlineProvider.overrideWithValue(true), ...overrides],
         child: MaterialApp(theme: AppTheme.light(), home: home),
       ),
     );
@@ -25,18 +31,18 @@ void main() {
   String addressOf(WidgetTester tester) =>
       tester.widget<TextField>(find.byType(TextField)).controller!.text;
 
-  /// The server page is tall; give it a window it fully fits in.
   void tallWindow(WidgetTester tester) {
     tester.view.physicalSize = const Size(800, 2400);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
   }
 
-  /// The harbor illustration sways forever, so there is no settling; a pair
-  /// of pumps is enough for a reveal to grow to its full size.
+  /// The harbor sways forever, so pumpAndSettle would never return.
   Future<void> settle(WidgetTester tester) async {
     await tester.pump();
-    await tester.pump(const Duration(seconds: 2));
+    for (var i = 0; i < 3; i++) {
+      await tester.pump(const Duration(milliseconds: 400));
+    }
   }
 
   Future<void> openAdvanced(WidgetTester tester) async {
@@ -102,11 +108,7 @@ void main() {
       await settle(tester);
     }
 
-    // Each row has a name and a value field; the address makes one more.
-    expect(
-      find.byType(TextField),
-      findsNWidgets(maxCustomHeaders * 2 + 1),
-    );
+    expect(find.byType(TextField), findsNWidgets(maxCustomHeaders * 2 + 1));
     expect(find.text('Up to 10 headers.'), findsOneWidget);
   });
 
@@ -115,10 +117,7 @@ void main() {
     tallWindow(tester);
     await pumpApp(tester, const ServerConfigScreen());
 
-    await tester.enterText(
-      find.byType(TextField).first,
-      'notes.example.com',
-    );
+    await tester.enterText(find.byType(TextField).first, 'notes.example.com');
 
     await openAdvanced(tester);
 
@@ -131,16 +130,92 @@ void main() {
     await tester.tap(find.text('Continue'));
     await tester.pump(const Duration(milliseconds: 300));
 
-    expect(
-      find.text(
-        'Enter a name with only letters, numbers, and dashes, like '
-        'X-Anchor-User.',
-      ),
-      findsOneWidget,
+    expect(find.text('Enter a header name.'), findsOneWidget);
+    final name = tester.widget<TextField>(
+      find.widgetWithText(TextField, 'Name'),
     );
+    expect(name.focusNode!.hasFocus, isTrue);
   });
 
-  testWidgets('a named custom header is kept and can be removed', (tester) async {
+  testWidgets('a header the app sends itself, or one added twice, is told '
+      'so before connecting', (tester) async {
+    tallWindow(tester);
+    await pumpApp(tester, const ServerConfigScreen());
+    await tester.enterText(find.byType(TextField).first, 'notes.example.com');
+    await openAdvanced(tester);
+
+    for (final name in ['Authorization', 'X-Team', 'x-team']) {
+      await tester.ensureVisible(find.text('Add header'));
+      await tester.tap(find.text('Add header'));
+      await settle(tester);
+      await tester.enterText(find.widgetWithText(TextField, 'Name').last, name);
+      await tester.enterText(find.widgetWithText(TextField, 'Value').last, 'a');
+    }
+
+    await tester.ensureVisible(find.text('Continue'));
+    await tester.tap(find.text('Continue'));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Anchor sets this header itself.'), findsOneWidget);
+    expect(find.text('This header is already added.'), findsOneWidget);
+  });
+
+  testWidgets('adding a header moves the typing to its name, even from '
+      'another field', (tester) async {
+    tallWindow(tester);
+    await pumpApp(tester, const ServerConfigScreen());
+    await openAdvanced(tester);
+    await tester.tap(find.text('Add header'));
+    await settle(tester);
+    await tester.enterText(find.widgetWithText(TextField, 'Value'), 'abc');
+
+    await tester.ensureVisible(find.text('Add header'));
+    await tester.tap(find.text('Add header'));
+    await settle(tester);
+
+    final newName = tester.widget<TextField>(
+      find.widgetWithText(TextField, 'Name').last,
+    );
+    expect(newName.focusNode!.hasFocus, isTrue);
+  });
+
+  testWidgets('removing the header being typed closes the keyboard', (
+    tester,
+  ) async {
+    tallWindow(tester);
+    await pumpApp(tester, const ServerConfigScreen());
+    await openAdvanced(tester);
+    for (final name in ['X-One', 'X-Two']) {
+      await tester.ensureVisible(find.text('Add header'));
+      await tester.tap(find.text('Add header'));
+      await settle(tester);
+      await tester.enterText(find.widgetWithText(TextField, 'Name').last, name);
+    }
+
+    await tester.tap(find.byIcon(LucideIcons.trash2).last);
+    await settle(tester);
+
+    final focused = FocusManager.instance.primaryFocus?.context;
+    expect(focused?.findAncestorWidgetOfExactType<TextField>(), isNull);
+    expect(find.text('X-One'), findsOneWidget);
+  });
+
+  testWidgets('a header value keeps only what can be sent', (tester) async {
+    tallWindow(tester);
+    await pumpApp(tester, const ServerConfigScreen());
+    await openAdvanced(tester);
+    await tester.tap(find.text('Add header'));
+    await settle(tester);
+
+    final value = find.widgetWithText(TextField, 'Value');
+    await tester.enterText(value, 'tok—en é1');
+
+    expect(tester.widget<TextField>(value).controller!.text, 'token 1');
+  });
+
+  testWidgets('a removed header goes at once, and Undo brings it back', (
+    tester,
+  ) async {
     tallWindow(tester);
     await pumpApp(tester, const ServerConfigScreen());
     await openAdvanced(tester);
@@ -152,18 +227,47 @@ void main() {
       find.widgetWithText(TextField, 'Name'),
       'X-Anchor-User',
     );
-    await tester.enterText(
-      find.widgetWithText(TextField, 'Value'),
-      'ada',
-    );
+    await tester.enterText(find.widgetWithText(TextField, 'Value'), 'ada');
 
-    // The row is removed with its trash button.
-    final trash = find.byIcon(LucideIcons.trash2);
-    expect(trash, findsOneWidget);
-    await tester.tap(trash);
-    await tester.pump();
-    expect(find.text('Name'), findsNothing);
+    await tester.tap(find.bySemanticsLabel('Remove X-Anchor-User'));
+    await settle(tester);
+    expect(find.text('Header removed'), findsOneWidget);
     expect(find.byType(TextField), findsOneWidget);
+
+    await tester.tap(find.text('Undo'));
+    await settle(tester);
+    expect(find.text('X-Anchor-User'), findsOneWidget);
+
+    await tester.tap(find.bySemanticsLabel('Remove X-Anchor-User'));
+    await settle(tester);
+    await tester.pump(const Duration(seconds: 8));
+    await settle(tester);
+    expect(find.text('Header removed'), findsNothing);
+    expect(find.byType(TextField), findsOneWidget);
+  });
+
+  testWidgets('saved headers open Advanced, their values hidden', (
+    tester,
+  ) async {
+    tallWindow(tester);
+    await pumpApp(
+      tester,
+      const ServerConfigScreen(),
+      overrides: [customHeadersProvider.overrideWith(_SavedHeaders.new)],
+    );
+    await settle(tester);
+
+    expect(find.text('CF-Access-Client-Id'), findsOneWidget);
+    final value = tester.widget<TextField>(find.byType(TextField).last);
+    expect(value.controller!.text, 'client-1');
+    expect(value.obscureText, isTrue);
+
+    await tester.tap(find.bySemanticsLabel('Show value'));
+    await tester.pump();
+    expect(
+      tester.widget<TextField>(find.byType(TextField).last).obscureText,
+      isFalse,
+    );
   });
 
   group('when the server can\'t be reached', () {
@@ -211,6 +315,13 @@ void main() {
       expect(http.attempts, 1);
     });
   });
+}
+
+class _SavedHeaders extends CustomHeaders {
+  @override
+  Future<List<CustomHeader>> build() async => const [
+    CustomHeader(name: 'CF-Access-Client-Id', value: 'client-1'),
+  ];
 }
 
 class _RefusingHttp extends HttpOverrides {

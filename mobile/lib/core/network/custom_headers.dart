@@ -1,11 +1,16 @@
-/// How many custom headers a person can add for their server.
 const int maxCustomHeaders = 10;
 
-/// Characters a header name may contain, per RFC 9110.
-final RegExp _headerNamePattern = RegExp(r"^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$");
+/// RFC 9110 token characters.
+final RegExp headerNameCharacter = RegExp(r"[!#$%&'*+\-.^_`|~0-9A-Za-z]");
 
-/// Names the app or the transport layer sets themselves; the value
-/// typed for one of these would never reach the server as intended.
+/// Dart's HTTP client throws on anything else in a header value.
+final RegExp headerValueCharacter = RegExp(r'[\t\x20-\x7E]');
+
+final RegExp _headerNamePattern = RegExp('^${headerNameCharacter.pattern}+\$');
+final RegExp _headerValuePattern = RegExp(
+  '^${headerValueCharacter.pattern}*\$',
+);
+
 const Set<String> _reservedHeaderNames = {
   'accept',
   'authorization',
@@ -20,10 +25,8 @@ const Set<String> _reservedHeaderNames = {
 class CustomHeader {
   const CustomHeader({required this.name, required this.value});
 
-  factory CustomHeader.of(String name, String value) => CustomHeader(
-    name: name.trim(),
-    value: value.trim(),
-  );
+  factory CustomHeader.of(String name, String value) =>
+      CustomHeader(name: name.trim(), value: value.trim());
 
   final String name;
   final String value;
@@ -50,36 +53,38 @@ class CustomHeader {
   String toString() => 'CustomHeader($name: $value)';
 }
 
-/// Names are case-insensitive, like on the wire.
 bool isHeaderNameValid(String name) =>
     name.isNotEmpty && _headerNamePattern.hasMatch(name);
+
+bool isHeaderValueValid(String value) => _headerValuePattern.hasMatch(value);
 
 bool isHeaderNameReserved(String name) =>
     _reservedHeaderNames.contains(name.trim().toLowerCase());
 
-/// Whether [name] repeats an earlier one, case-insensitively.
 bool isHeaderNameDuplicate(String name, Iterable<CustomHeader> earlier) =>
     earlier.any((header) => header.name.toLowerCase() == name.toLowerCase());
 
-/// What's wrong with a header row, if anything.
-enum CustomHeaderIssue { invalidName, reservedName, duplicateName }
+enum CustomHeaderIssue {
+  missingName,
+  invalidName,
+  reservedName,
+  duplicateName,
+  invalidValue,
+}
 
-/// Checks the header at [index] against the ones before it.
 CustomHeaderIssue? customHeaderIssueOf(int index, List<CustomHeader> headers) {
   final header = headers[index];
   if (header.isBlank) return null;
-  if (!isHeaderNameValid(header.name)) {
-    return CustomHeaderIssue.invalidName;
-  }
+  if (header.name.isEmpty) return CustomHeaderIssue.missingName;
+  if (!isHeaderNameValid(header.name)) return CustomHeaderIssue.invalidName;
   if (isHeaderNameReserved(header.name)) return CustomHeaderIssue.reservedName;
   if (isHeaderNameDuplicate(header.name, headers.take(index))) {
     return CustomHeaderIssue.duplicateName;
   }
+  if (!isHeaderValueValid(header.value)) return CustomHeaderIssue.invalidValue;
   return null;
 }
 
-/// The headers safe to send: filled-in rows that pass every rule,
-/// capped at [maxCustomHeaders].
 List<CustomHeader> validCustomHeadersOf(List<CustomHeader> headers) {
   final valid = <CustomHeader>[];
   for (var i = 0; i < headers.length; i++) {
@@ -90,3 +95,7 @@ List<CustomHeader> validCustomHeadersOf(List<CustomHeader> headers) {
   }
   return List.unmodifiable(valid);
 }
+
+Map<String, String> customHeaderMapOf(List<CustomHeader> headers) => {
+  for (final header in validCustomHeadersOf(headers)) header.name: header.value,
+};

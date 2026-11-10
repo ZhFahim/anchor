@@ -15,6 +15,7 @@ import '../../../core/theme/context_extensions.dart';
 import '../../../core/theme/tokens/anchor_tokens.dart';
 import '../../../core/widgets/anchor_dialog.dart';
 import '../../../core/widgets/app_buttons.dart';
+import '../../../core/widgets/app_snackbar.dart';
 import '../../../core/widgets/app_text_field.dart';
 import '../../../core/widgets/form_page.dart';
 import '../../../core/widgets/form_submit.dart';
@@ -45,8 +46,9 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen>
 
   final _address = TextEditingController();
   final _focus = FocusNode();
+
   final List<_HeaderRow> _headerRows = [];
-  final Map<int, CustomHeaderIssue> _headerIssues = {};
+  final Map<_HeaderRow, CustomHeaderIssue> _headerIssues = {};
   bool _isAdvancedOpen = false;
   late final AppLifecycleListener _lifecycle;
   String? _unreachableAddress;
@@ -59,17 +61,26 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen>
       _address.text = initial.startsWith('http://') ? initial : hostOf(initial);
     }
     _lifecycle = AppLifecycleListener(onResume: _retryUnreachable);
-    Future.microtask(_loadHeaders);
+    _isAdvancedOpen = ref.read(allowSelfSignedCertProvider).value ?? false;
+    final stored = ref.read(customHeadersProvider).value;
+    if (stored != null) {
+      _showStoredHeaders(stored);
+    } else {
+      Future.microtask(_loadHeaders);
+    }
   }
 
   Future<void> _loadHeaders() async {
     final stored = await ref.read(customHeadersProvider.future);
     if (!mounted || _headerRows.isNotEmpty) return;
-    setState(() {
-      for (final header in stored) {
-        _headerRows.add(_HeaderRow(name: header.name, value: header.value));
-      }
-    });
+    setState(() => _showStoredHeaders(stored));
+  }
+
+  void _showStoredHeaders(List<CustomHeader> stored) {
+    for (final header in stored) {
+      _headerRows.add(_HeaderRow(name: header.name, value: header.value));
+    }
+    if (stored.isNotEmpty) _isAdvancedOpen = true;
   }
 
   @override
@@ -83,46 +94,75 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen>
     super.dispose();
   }
 
+  Iterable<_HeaderRow> get _liveRows =>
+      _headerRows.where((row) => !row.isRemoved);
+
   void _addHeaderRow() {
-    if (_headerRows.length >= maxCustomHeaders) return;
-    Haptics.selection();
-    setState(() => _headerRows.add(_HeaderRow()));
-    _saveHeaders();
+    if (_liveRows.length >= maxCustomHeaders) return;
+    final row = _HeaderRow(isShown: false);
+    setState(() => _headerRows.add(row));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() => row.isShown = true);
+      row.nameFocus.requestFocus();
+    });
   }
 
-  void _removeHeaderRow(int index) {
-    Haptics.selection();
-    setState(() => _headerRows.removeAt(index));
-    // The rows below shift up, so old errors can't be trusted anymore.
-    _headerIssues.clear();
-    _saveHeaders();
-  }
-
-  void _headerChanged(int index) {
-    setState(() => _headerIssues.remove(index));
-    _saveHeaders();
-  }
-
-  List<CustomHeader> get _headers => [
-    for (final row in _headerRows) row.header,
-  ];
-
-  /// Keeps what's stored to what's safe to send.
-  void _saveHeaders() {
-    ref.read(customHeadersProvider.notifier).set(validCustomHeadersOf(_headers));
-  }
-
-  /// False when a row still has a problem; the errors are shown under it.
-  bool _checkHeaders() {
-    final issues = <int, CustomHeaderIssue>{};
-    final headers = _headers;
-    for (var i = 0; i < headers.length; i++) {
-      final issue = customHeaderIssueOf(i, headers);
-      if (issue != null) issues[i] = issue;
+  void _removeHeaderRow(_HeaderRow row) {
+    if (row.nameFocus.hasFocus || row.valueFocus.hasFocus) {
+      FocusManager.instance.primaryFocus?.unfocus();
     }
+    setState(() {
+      row.isRemoved = true;
+      _headerIssues.remove(row);
+    });
+    _saveHeaders();
+    AppSnackbar.show(
+      context,
+      context.l10n.serverHeaderRemoved,
+      actionLabel: context.l10n.commonUndo,
+      onAction: () {
+        if (!mounted || _liveRows.length >= maxCustomHeaders) return;
+        setState(() => row.isRemoved = false);
+        _saveHeaders();
+      },
+      onClosed: (isUndone) {
+        if (isUndone || !mounted || !row.isRemoved) return;
+        setState(() => _headerRows.remove(row));
+        WidgetsBinding.instance.addPostFrameCallback((_) => row.dispose());
+      },
+    );
+  }
+
+  void _headerChanged(_HeaderRow row) {
+    setState(() => _headerIssues.remove(row));
+    _saveHeaders();
+  }
+
+  void _saveHeaders() {
+    ref
+        .read(customHeadersProvider.notifier)
+        .set(validCustomHeadersOf([for (final row in _liveRows) row.header]));
+  }
+
+  bool _checkHeaders() {
+    final rows = _liveRows.toList();
+    final headers = [for (final row in rows) row.header];
+    final issues = <_HeaderRow, CustomHeaderIssue>{
+      for (var i = 0; i < rows.length; i++)
+        rows[i]: ?customHeaderIssueOf(i, headers),
+    };
     if (issues.isEmpty) return true;
     Haptics.warning();
-    setState(() => _headerIssues..clear()..addAll(issues));
+    setState(() {
+      _isAdvancedOpen = true;
+      _headerIssues
+        ..clear()
+        ..addAll(issues);
+    });
+    final MapEntry(key: row, value: issue) = issues.entries.first;
+    final isValueWrong = issue == CustomHeaderIssue.invalidValue;
+    (isValueWrong ? row.valueFocus : row.nameFocus).requestFocus();
     return false;
   }
 
@@ -209,17 +249,21 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen>
     showError(errorMessage);
   }
 
-  String? _headerIssueText(int index) {
-    final issue = _headerIssues[index];
-    if (issue == null) return null;
+  String? _headerNameError(_HeaderRow row) {
     final l10n = context.l10n;
-    return switch (issue) {
+    return switch (_headerIssues[row]) {
+      CustomHeaderIssue.missingName => l10n.serverHeaderMissingName,
       CustomHeaderIssue.invalidName => l10n.serverHeaderInvalidName,
-      CustomHeaderIssue.reservedName =>
-        l10n.serverHeaderReserved(_headerRows[index].header.name),
+      CustomHeaderIssue.reservedName => l10n.serverHeaderReserved,
       CustomHeaderIssue.duplicateName => l10n.serverHeaderDuplicate,
+      CustomHeaderIssue.invalidValue || null => null,
     };
   }
+
+  String? _headerValueError(_HeaderRow row) =>
+      _headerIssues[row] == CustomHeaderIssue.invalidValue
+      ? context.l10n.serverHeaderInvalidValue
+      : null;
 
   @override
   Widget build(BuildContext context) {
@@ -285,21 +329,24 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     mainAxisSize: MainAxisSize.min,
-                    spacing: density.space8,
                     children: [
-                      for (var i = 0; i < _headerRows.length; i++)
-                        _HeaderFields(
-                          key: ValueKey(_headerRows[i]),
-                          row: _headerRows[i],
-                          error: _headerIssueText(i),
-                          // Only a freshly added row is empty, and only it
-                          // takes the focus.
-                          autofocus: _headerRows[i].isEmpty,
-                          onChanged: () => _headerChanged(i),
-                          onRemove: () => _removeHeaderRow(i),
+                      for (final row in _headerRows)
+                        Reveal(
+                          key: ObjectKey(row),
+                          visible: row.isShown && !row.isRemoved,
+                          child: Padding(
+                            padding: EdgeInsets.only(bottom: density.space16),
+                            child: _HeaderFields(
+                              row: row,
+                              nameError: _headerNameError(row),
+                              valueError: _headerValueError(row),
+                              onChanged: () => _headerChanged(row),
+                              onRemove: () => _removeHeaderRow(row),
+                            ),
+                          ),
                         ),
                       _AddHeader(
-                        count: _headerRows.length,
+                        isFull: _liveRows.length >= maxCustomHeaders,
                         onAdd: _addHeaderRow,
                       ),
                     ],
@@ -384,208 +431,140 @@ class _AdvancedToggle extends StatelessWidget {
   }
 }
 
-/// The name and value fields of one custom header.
 class _HeaderRow {
-  _HeaderRow({String name = '', String value = ''})
+  _HeaderRow({String name = '', String value = '', this.isShown = true})
     : nameField = TextEditingController(text: name),
       valueField = TextEditingController(text: value);
 
   final TextEditingController nameField;
   final TextEditingController valueField;
+  final FocusNode nameFocus = FocusNode();
   final FocusNode valueFocus = FocusNode();
 
-  bool get isEmpty => nameField.text.isEmpty && valueField.text.isEmpty;
+  bool isShown;
+  bool isRemoved = false;
 
   CustomHeader get header => CustomHeader.of(nameField.text, valueField.text);
 
   void dispose() {
     nameField.dispose();
     valueField.dispose();
+    nameFocus.dispose();
     valueFocus.dispose();
   }
 }
 
 class _HeaderFields extends StatelessWidget {
   const _HeaderFields({
-    super.key,
     required this.row,
-    required this.error,
-    required this.autofocus,
+    required this.nameError,
+    required this.valueError,
     required this.onChanged,
     required this.onRemove,
   });
 
   final _HeaderRow row;
-  final String? error;
-  final bool autofocus;
+  final String? nameError;
+  final String? valueError;
   final VoidCallback onChanged;
   final VoidCallback onRemove;
 
-  /// The characters a header name may hold; the rest are dropped as typed.
-  static final RegExp _nameCharacters = RegExp(r"[!#$%&'*+\-.^_`|~0-9A-Za-z]");
-
   @override
   Widget build(BuildContext context) {
-    final colors = context.anchor;
     final l10n = context.l10n;
-    final hasError = error != null;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
+    final density = context.density;
+    final name = row.header.name;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       spacing: 8,
       children: [
-        Row(
-          spacing: 8,
-          children: [
-            Expanded(
-              flex: 2,
-              child: _HeaderInput(
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            spacing: density.space8,
+            children: [
+              AppTextField(
                 controller: row.nameField,
+                focusNode: row.nameFocus,
+                semanticLabel: l10n.serverHeaderNameLabel,
                 hint: l10n.serverHeaderNameHint,
-                autofocus: autofocus,
-                isError: hasError,
+                error: nameError,
+                autocorrect: false,
+                enableSuggestions: false,
+                textInputAction: TextInputAction.next,
                 inputFormatters: [
-                  FilteringTextInputFormatter.allow(_nameCharacters),
+                  FilteringTextInputFormatter.allow(headerNameCharacter),
                 ],
-                onChanged: onChanged,
+                onChanged: (_) => onChanged(),
                 onSubmitted: (_) => row.valueFocus.requestFocus(),
               ),
-            ),
-            Expanded(
-              flex: 3,
-              child: _HeaderInput(
+              AppTextField(
                 controller: row.valueField,
                 focusNode: row.valueFocus,
+                semanticLabel: l10n.serverHeaderValueLabel,
                 hint: l10n.serverHeaderValueHint,
-                isError: hasError,
+                error: valueError,
+                isPassword: true,
+                showLabel: l10n.serverShowHeaderValue,
+                hideLabel: l10n.serverHideHeaderValue,
+                textInputAction: TextInputAction.done,
                 inputFormatters: [
-                  FilteringTextInputFormatter.deny(RegExp(r'[\r\n]')),
+                  FilteringTextInputFormatter.allow(headerValueCharacter),
                 ],
-                onChanged: onChanged,
-              ),
-            ),
-            BarButton(
-              icon: LucideIcons.trash2,
-              label: l10n.serverRemoveHeader,
-              size: BarButtonSize.medium,
-              color: colors.appMuted,
-              onPressed: onRemove,
-            ),
-          ],
-        ),
-        if (hasError)
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            spacing: 8,
-            children: [
-              SizedBox(
-                height: 16,
-                child: Icon(
-                  LucideIcons.circleAlert,
-                  size: AnchorTokens.sizeIconSmall,
-                  color: colors.statusDanger,
-                ),
-              ),
-              Expanded(
-                child: Semantics(
-                  liveRegion: true,
-                  child: Text(
-                    error!,
-                    style: AppTypography.secondary.copyWith(
-                      color: colors.statusDanger,
-                    ),
-                  ),
-                ),
+                onChanged: (_) => onChanged(),
               ),
             ],
           ),
+        ),
+        SizedBox(
+          height: density.control,
+          child: Center(
+            child: BarButton(
+              icon: LucideIcons.trash2,
+              label: name.isEmpty
+                  ? l10n.serverRemoveHeader
+                  : l10n.serverRemoveNamedHeader(name),
+              size: BarButtonSize.medium,
+              color: context.anchor.appMuted,
+              onPressed: onRemove,
+            ),
+          ),
+        ),
       ],
     );
   }
 }
 
-class _HeaderInput extends StatelessWidget {
-  const _HeaderInput({
-    required this.controller,
-    required this.hint,
-    this.focusNode,
-    this.autofocus = false,
-    this.isError = false,
-    this.inputFormatters,
-    this.onChanged,
-    this.onSubmitted,
-  });
-
-  final TextEditingController controller;
-  final String hint;
-  final FocusNode? focusNode;
-  final bool autofocus;
-  final bool isError;
-  final List<TextInputFormatter>? inputFormatters;
-  final VoidCallback? onChanged;
-  final ValueChanged<String>? onSubmitted;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.anchor;
-    return Container(
-      height: AnchorTokens.sizeControlMedium,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: colors.appText.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(AnchorTokens.radius2xl),
-        border: Border.all(
-          color: isError ? colors.statusDanger : colors.appFieldLine,
-          width: isError ? 2 : 1,
-        ),
-      ),
-      child: TextField(
-        controller: controller,
-        focusNode: focusNode,
-        autofocus: autofocus,
-        autocorrect: false,
-        enableSuggestions: false,
-        textInputAction: onSubmitted == null
-            ? TextInputAction.done
-            : TextInputAction.next,
-        inputFormatters: inputFormatters,
-        onChanged: onChanged == null ? null : (_) => onChanged!(),
-        onSubmitted: onSubmitted,
-        style: AppTypography.row.copyWith(color: colors.appText),
-        cursorColor: colors.accentStrong,
-        decoration: InputDecoration.collapsed(
-          hintText: hint,
-          hintStyle: AppTypography.row.copyWith(color: colors.appMuted),
-        ),
-      ),
-    );
-  }
-}
-
 class _AddHeader extends StatelessWidget {
-  const _AddHeader({required this.count, required this.onAdd});
+  const _AddHeader({required this.isFull, required this.onAdd});
 
-  final int count;
+  final bool isFull;
   final VoidCallback onAdd;
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.anchor;
     final l10n = context.l10n;
-    final isFull = count >= maxCustomHeaders;
     return Row(
       spacing: 12,
       children: [
-        BarTextButton(
+        AppButton(
           label: l10n.serverAddHeader,
+          icon: LucideIcons.plus,
+          kind: AppButtonKind.secondary,
+          size: AppButtonSize.medium,
+          isExpanded: false,
           onPressed: isFull ? null : onAdd,
         ),
-        Text(
-          isFull
-              ? l10n.serverHeaderLimit(maxCustomHeaders)
-              : l10n.serverHeaderCount(count, maxCustomHeaders),
-          style: AppTypography.secondary.copyWith(color: colors.appMuted),
-        ),
+        if (isFull)
+          Flexible(
+            child: Text(
+              l10n.serverHeaderLimit(maxCustomHeaders),
+              style: AppTypography.secondary.copyWith(
+                color: context.anchor.appMuted,
+              ),
+            ),
+          ),
       ],
     );
   }

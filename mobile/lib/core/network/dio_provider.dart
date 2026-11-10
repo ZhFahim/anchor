@@ -45,8 +45,7 @@ Dio createServerDio(
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        for (final header in validCustomHeadersOf(customHeaders))
-          header.name: header.value,
+        ...customHeaderMapOf(customHeaders),
       },
     ),
   );

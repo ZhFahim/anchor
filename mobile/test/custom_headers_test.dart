@@ -1,11 +1,33 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
+import 'package:anchor/core/logging/app_logger.dart';
+import 'package:anchor/core/logging/logging_interceptor.dart';
 import 'package:anchor/core/network/custom_headers.dart';
 import 'package:anchor/core/network/dio_provider.dart';
 import 'package:anchor/core/storage/preferences_repository.dart';
 import 'package:anchor/core/storage/storage_keys.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+class _FakeServer implements HttpClientAdapter {
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async => ResponseBody.fromString(
+    '[]',
+    200,
+    headers: {
+      Headers.contentTypeHeader: [Headers.jsonContentType],
+    },
+  );
+
+  @override
+  void close({bool force = false}) {}
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -62,16 +84,54 @@ void main() {
       expect(kept.last, const CustomHeader(name: 'X-9', value: '9'));
     });
 
-    test('a name with a value has to be named', () {
+    test('a header with a value has to be named', () {
       expect(
         customHeaderIssueOf(0, const [CustomHeader(name: '', value: '1')]),
-        CustomHeaderIssue.invalidName,
+        CustomHeaderIssue.missingName,
       );
       expect(
         customHeaderIssueOf(0, const [CustomHeader(name: 'X-A', value: '')]),
         isNull,
       );
     });
+
+    test('a value outside printable ASCII is never sent', () {
+      const headers = [
+        CustomHeader(name: 'X-Dash', value: 'a—b'),
+        CustomHeader(name: 'X-Accent', value: 'café'),
+        CustomHeader(name: 'X-Tab', value: 'a\tb ~'),
+      ];
+      expect(customHeaderIssueOf(0, headers), CustomHeaderIssue.invalidValue);
+      expect(customHeaderMapOf(headers), {'X-Tab': 'a\tb ~'});
+    });
+  });
+
+  test('the headers stay out of the logs', () async {
+    await AppLogger.instance.clear();
+    addTearDown(AppLogger.instance.clear);
+    final dio =
+        createServerDio(
+            'https://notes.example.com',
+            allowSelfSigned: false,
+            customHeaders: const [
+              CustomHeader(name: 'CF-Access-Client-Id', value: 'client-1'),
+              CustomHeader(
+                name: 'CF-Access-Client-Secret',
+                value: 'secret-7f3a',
+              ),
+            ],
+          )
+          ..httpClientAdapter = _FakeServer()
+          ..interceptors.add(LoggingInterceptor());
+
+    await dio.get<Object?>('/api/notes');
+
+    final logged = AppLogger.instance.snapshot
+        .map((entry) => entry.message)
+        .join('\n');
+    expect(logged, contains('CF-Access-Client-Secret: ***'));
+    expect(logged, isNot(contains('secret-7f3a')));
+    expect(logged, isNot(contains('client-1')));
   });
 
   test('dio sends the custom headers along', () {
