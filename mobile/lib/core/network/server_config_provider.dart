@@ -5,6 +5,7 @@ import '../logging/log_tags.dart';
 import '../storage/preferences_repository.dart';
 import '../storage/secure_storage_provider.dart';
 import '../storage/storage_keys.dart';
+import 'custom_headers.dart';
 import 'server_address.dart';
 
 part 'server_config_provider.g.dart';
@@ -59,6 +60,36 @@ class AllowSelfSignedCert extends _$AllowSelfSignedCert {
       AppLogger.instance.warn(
         LogTags.settings,
         'Saving the self-signed setting failed',
+        error: error,
+      );
+    }
+  }
+}
+
+@Riverpod(keepAlive: true)
+class CustomHeaders extends _$CustomHeaders {
+  @override
+  Future<List<CustomHeader>> build() async {
+    try {
+      return await ref.watch(preferencesRepositoryProvider).getCustomHeaders();
+    } catch (error) {
+      AppLogger.instance.warn(
+        LogTags.settings,
+        'Reading the custom headers failed',
+        error: error,
+      );
+      return const [];
+    }
+  }
+
+  Future<void> set(List<CustomHeader> headers) async {
+    state = AsyncData(headers);
+    try {
+      await ref.read(preferencesRepositoryProvider).setCustomHeaders(headers);
+    } catch (error) {
+      AppLogger.instance.warn(
+        LogTags.settings,
+        'Saving the custom headers failed',
         error: error,
       );
     }

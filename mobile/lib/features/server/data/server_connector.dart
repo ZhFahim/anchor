@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../../core/network/api_error.dart';
+import '../../../core/network/custom_headers.dart';
 import '../../../core/network/dio_provider.dart';
 import 'server_info_provider.dart';
 
@@ -27,16 +28,27 @@ final class ServerUnreachable extends ServerCheck {
 }
 
 class ServerConnector {
-  ServerConnector({required bool allowSelfSigned, Dio? dio})
-    : _allowSelfSigned = allowSelfSigned,
-      _dio = dio;
+  ServerConnector({
+    required bool allowSelfSigned,
+    List<CustomHeader> customHeaders = const [],
+    Dio? dio,
+  }) : _allowSelfSigned = allowSelfSigned,
+       _customHeaders = customHeaders,
+       _dio = dio;
 
   final bool _allowSelfSigned;
+  final List<CustomHeader> _customHeaders;
   final Dio? _dio;
 
   /// [url] must be a normalized address.
   Future<ServerCheck> check(String url) async {
-    final dio = _dio ?? createServerDio(url, allowSelfSigned: _allowSelfSigned);
+    final dio =
+        _dio ??
+        createServerDio(
+          url,
+          allowSelfSigned: _allowSelfSigned,
+          customHeaders: _customHeaders,
+        );
     try {
       final response = await dio.get<Object?>('$url/api/health');
       final data = response.data;

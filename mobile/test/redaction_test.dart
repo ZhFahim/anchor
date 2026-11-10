@@ -39,6 +39,22 @@ void main() {
     }
   });
 
+  test('a proxy’s headers are logged by name only', () {
+    final headers = redactHeaders({
+      'X-Anchor-Protocol': '4',
+      'Authorization': 'Bearer abc.def',
+      'CF-Access-Client-Id': 'client-1.access',
+      'CF-Access-Client-Secret': 'secret-7f3a',
+    });
+
+    expect(headers, {
+      'X-Anchor-Protocol': '4',
+      'Authorization': 'Bearer ***',
+      'CF-Access-Client-Id': '***',
+      'CF-Access-Client-Secret': '***',
+    });
+  });
+
   test('a people search keeps its words out of the logs', () {
     final query = redactQuery(Uri.parse('/api/users/search?q=maya&limit=5'));
 

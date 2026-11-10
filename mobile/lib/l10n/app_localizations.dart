@@ -826,6 +826,114 @@ abstract class AppLocalizations {
   /// **'Use only with a server you manage. Anchor can’t verify its identity.'**
   String get serverSelfSignedWarning;
 
+  /// Heading of the list of extra headers sent to the server, under the self-signed certificates switch.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom headers'**
+  String get serverCustomHeaders;
+
+  /// Under the custom headers heading: what they are for. Cloudflare Access is a product name; keep it as it is.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent with every request. For a proxy in front of your server, such as Cloudflare Access.'**
+  String get serverCustomHeadersHint;
+
+  /// Button that adds another empty name and value pair to the custom headers.
+  ///
+  /// In en, this message translates to:
+  /// **'Add header'**
+  String get serverAddHeader;
+
+  /// Screen reader label of the trash button beside a custom header that has no name yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove header'**
+  String get serverRemoveHeader;
+
+  /// Screen reader label of the trash button beside a custom header, naming it. Keep the header name as it is.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name}'**
+  String serverRemoveNamedHeader(String name);
+
+  /// Snackbar after removing a custom header, with Undo.
+  ///
+  /// In en, this message translates to:
+  /// **'Header removed'**
+  String get serverHeaderRemoved;
+
+  /// Screen reader name of the field for a custom header’s name.
+  ///
+  /// In en, this message translates to:
+  /// **'Header name'**
+  String get serverHeaderNameLabel;
+
+  /// Screen reader name of the field for a custom header’s value.
+  ///
+  /// In en, this message translates to:
+  /// **'Header value'**
+  String get serverHeaderValueLabel;
+
+  /// Screen reader label of the eye button that shows a custom header’s hidden value.
+  ///
+  /// In en, this message translates to:
+  /// **'Show value'**
+  String get serverShowHeaderValue;
+
+  /// Screen reader label of the eye button that hides a custom header’s value again.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide value'**
+  String get serverHideHeaderValue;
+
+  /// Placeholder in the field for a custom header’s name.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get serverHeaderNameHint;
+
+  /// Placeholder in the field for a custom header’s value.
+  ///
+  /// In en, this message translates to:
+  /// **'Value'**
+  String get serverHeaderValueHint;
+
+  /// Note next to the disabled Add header button once the most custom headers are added.
+  ///
+  /// In en, this message translates to:
+  /// **'Up to {max} headers.'**
+  String serverHeaderLimit(int max);
+
+  /// Error under a custom header’s name field when it has a value but no name.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a header name.'**
+  String get serverHeaderMissingName;
+
+  /// Error under a custom header’s name field when the name has characters a header name can’t have.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid header name.'**
+  String get serverHeaderInvalidName;
+
+  /// Error under a custom header’s value field when the value has characters a header can’t carry.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid header value.'**
+  String get serverHeaderInvalidValue;
+
+  /// Error under a custom header’s name field when the app already sends a header with that name, such as Authorization. Keep it short: it sits under a narrow field.
+  ///
+  /// In en, this message translates to:
+  /// **'Anchor sets this header itself.'**
+  String get serverHeaderReserved;
+
+  /// Error under a custom header’s name field when an earlier header has the same name. Keep it short: it sits under a narrow field.
+  ///
+  /// In en, this message translates to:
+  /// **'This header is already added.'**
+  String get serverHeaderDuplicate;
+
   /// Note at the bottom of the server page: Anchor has no shared public server.
   ///
   /// In en, this message translates to:

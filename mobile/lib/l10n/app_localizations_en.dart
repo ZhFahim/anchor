@@ -434,6 +434,65 @@ class AppLocalizationsEn extends AppLocalizations {
       'Use only with a server you manage. Anchor can’t verify its identity.';
 
   @override
+  String get serverCustomHeaders => 'Custom headers';
+
+  @override
+  String get serverCustomHeadersHint =>
+      'Sent with every request. For a proxy in front of your server, such as Cloudflare Access.';
+
+  @override
+  String get serverAddHeader => 'Add header';
+
+  @override
+  String get serverRemoveHeader => 'Remove header';
+
+  @override
+  String serverRemoveNamedHeader(String name) {
+    return 'Remove $name';
+  }
+
+  @override
+  String get serverHeaderRemoved => 'Header removed';
+
+  @override
+  String get serverHeaderNameLabel => 'Header name';
+
+  @override
+  String get serverHeaderValueLabel => 'Header value';
+
+  @override
+  String get serverShowHeaderValue => 'Show value';
+
+  @override
+  String get serverHideHeaderValue => 'Hide value';
+
+  @override
+  String get serverHeaderNameHint => 'Name';
+
+  @override
+  String get serverHeaderValueHint => 'Value';
+
+  @override
+  String serverHeaderLimit(int max) {
+    return 'Up to $max headers.';
+  }
+
+  @override
+  String get serverHeaderMissingName => 'Enter a header name.';
+
+  @override
+  String get serverHeaderInvalidName => 'Enter a valid header name.';
+
+  @override
+  String get serverHeaderInvalidValue => 'Enter a valid header value.';
+
+  @override
+  String get serverHeaderReserved => 'Anchor sets this header itself.';
+
+  @override
+  String get serverHeaderDuplicate => 'This header is already added.';
+
+  @override
   String get serverSelfHosted => 'Anchor requires a self-hosted server.';
 
   @override

@@ -17,12 +17,15 @@ class AppTextField extends StatefulWidget {
     this.controller,
     this.focusNode,
     this.label,
+    this.semanticLabel,
     this.hint,
     this.help,
     this.error,
     this.icon,
     this.trailing,
     this.isPassword = false,
+    this.showLabel,
+    this.hideLabel,
     this.enabled = true,
     this.readOnlyText,
     this.keyboardType,
@@ -31,6 +34,7 @@ class AppTextField extends StatefulWidget {
     this.autofocus = false,
     this.textCapitalization = TextCapitalization.none,
     this.autocorrect = true,
+    this.enableSuggestions = true,
     this.onChanged,
     this.onSubmitted,
     this.inputFormatters,
@@ -39,6 +43,10 @@ class AppTextField extends StatefulWidget {
   final TextEditingController? controller;
   final FocusNode? focusNode;
   final String? label;
+
+  /// The field's name for screen readers when it shows no [label].
+  final String? semanticLabel;
+
   final String? hint;
 
   final String? help;
@@ -49,6 +57,9 @@ class AppTextField extends StatefulWidget {
   final IconData? icon;
   final Widget? trailing;
   final bool isPassword;
+  final String? showLabel;
+  final String? hideLabel;
+
   final bool enabled;
 
   /// Non-null shows this text in place of an input.
@@ -60,6 +71,10 @@ class AppTextField extends StatefulWidget {
   final bool autofocus;
   final TextCapitalization textCapitalization;
   final bool autocorrect;
+
+  /// False also turns off smart quotes and dashes.
+  final bool enableSuggestions;
+
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
   final List<TextInputFormatter>? inputFormatters;
@@ -109,6 +124,12 @@ class _AppTextFieldState extends State<AppTextField> {
     );
 
     final density = context.density;
+    final below = widget.error ?? widget.help;
+    final note = AppTypography.secondary;
+    // Room for two lines of help or error.
+    final belowRoom = below == null
+        ? 0.0
+        : density.space8 + note.fontSize! * note.height! * 2;
     final field = AnimatedContainer(
       duration: context.motion(AnchorTokens.motionDurationHover),
       height: density.control,
@@ -150,7 +171,14 @@ class _AppTextFieldState extends State<AppTextField> {
                     autofillHints: widget.autofillHints,
                     textCapitalization: widget.textCapitalization,
                     autocorrect: widget.isPassword ? false : widget.autocorrect,
-                    enableSuggestions: !widget.isPassword,
+                    enableSuggestions:
+                        !widget.isPassword && widget.enableSuggestions,
+                    smartDashesType: widget.enableSuggestions
+                        ? null
+                        : SmartDashesType.disabled,
+                    smartQuotesType: widget.enableSuggestions
+                        ? null
+                        : SmartQuotesType.disabled,
                     inputFormatters: widget.inputFormatters,
                     onChanged: widget.onChanged,
                     onSubmitted: widget.onSubmitted,
@@ -159,7 +187,9 @@ class _AppTextFieldState extends State<AppTextField> {
                     scrollPadding: const EdgeInsets.all(AnchorTokens.space24)
                         .copyWith(
                           bottom:
-                              AnchorTokens.space24 + BottomBarInset.of(context),
+                              AnchorTokens.space24 +
+                              BottomBarInset.of(context) +
+                              belowRoom,
                         ),
                     decoration: InputDecoration(
                       hintText: widget.hint,
@@ -179,8 +209,8 @@ class _AppTextFieldState extends State<AppTextField> {
             BarButton(
               icon: _shown ? LucideIcons.eyeOff : LucideIcons.eye,
               label: _shown
-                  ? context.l10n.commonHidePassword
-                  : context.l10n.commonShowPassword,
+                  ? widget.hideLabel ?? context.l10n.commonHidePassword
+                  : widget.showLabel ?? context.l10n.commonShowPassword,
               size: BarButtonSize.medium,
               color: colors.appMuted,
               onPressed: widget.enabled
@@ -192,11 +222,9 @@ class _AppTextFieldState extends State<AppTextField> {
       ),
     );
 
-    final below = widget.error ?? widget.help;
-    final note = AppTypography.secondary;
     return Semantics(
       textField: true,
-      label: widget.label,
+      label: widget.label ?? widget.semanticLabel,
       hint: widget.help,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

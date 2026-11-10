@@ -6,6 +6,15 @@ String hostOf(String url) {
       : uri.host;
 }
 
+bool isOnServer(String url, String serverUrl) {
+  final uri = Uri.tryParse(url);
+  final server = Uri.tryParse(serverUrl);
+  if (uri == null || server == null || !uri.hasAuthority) return false;
+  return uri.scheme == server.scheme &&
+      uri.host == server.host &&
+      uri.port == server.port;
+}
+
 /// Null when [address] isn't a web address.
 String? normalizeServerUrl(String address) {
   var url = address.trim();

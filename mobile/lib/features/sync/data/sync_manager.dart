@@ -191,6 +191,7 @@ class SyncManager extends _$SyncManager {
   Future<bool> _runSyncCycle() async {
     final serverUrl = await ref.read(serverConfigProvider.future);
     await ref.read(allowSelfSignedCertProvider.future);
+    await ref.read(customHeadersProvider.future);
     if (serverUrl == null || serverUrl.isEmpty) {
       AppLogger.instance.info(
         LogTags.sync,

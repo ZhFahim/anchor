@@ -40,4 +40,29 @@ void main() {
       expect(normalizeServerUrl('notes_example com'), isNull);
     });
   });
+
+  group('isOnServer', () {
+    const server = 'https://notes.example.com';
+
+    test('a file on the server, with or without the usual port', () {
+      expect(isOnServer('$server/uploads/profiles/a.png', server), isTrue);
+      expect(
+        isOnServer('https://notes.example.com:443/uploads/a.png', server),
+        isTrue,
+      );
+    });
+
+    test('another host, scheme or port is not the server', () {
+      expect(isOnServer('https://id.example.com/picture/a', server), isFalse);
+      expect(
+        isOnServer('http://notes.example.com/uploads/a.png', server),
+        isFalse,
+      );
+      expect(
+        isOnServer('https://notes.example.com:8443/uploads/a.png', server),
+        isFalse,
+      );
+      expect(isOnServer('/uploads/a.png', server), isFalse);
+    });
+  });
 }

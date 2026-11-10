@@ -20,6 +20,7 @@ class AuthController extends _$AuthController {
   Future<User?> build() async {
     final serverUrl = await ref.watch(serverConfigProvider.future);
     await ref.watch(allowSelfSignedCertProvider.future);
+    await ref.watch(customHeadersProvider.future);
 
     final authRepo = ref.watch(authRepositoryProvider);
 
