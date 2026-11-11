@@ -150,12 +150,13 @@
   font-family: var(--font-mono);
   font-size: var(--text-code);
   line-height: 1.7;
-  overflow-x: auto;
-  white-space: pre;
-  scrollbar-width: thin;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  tab-size: 4;
 }
 .anchor-quill .ql-editor .ql-code-block {
-  white-space: pre;
+  white-space: pre-wrap;
+  text-indent: min(calc((var(--code-indent, 0) + 2) * 1ch), 50%) hanging;
 }
 @media (hover: none) {
   .anchor-quill .ql-editor .ql-code-block-container {

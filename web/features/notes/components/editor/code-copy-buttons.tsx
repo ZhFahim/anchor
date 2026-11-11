@@ -29,15 +29,6 @@ export function CodeCopyButtons({
     let frame = 0;
     const measure = () => {
       frame = 0;
-      const readOnly = container.querySelector(
-        '.ql-editor[contenteditable="false"]',
-      );
-      for (const el of container.querySelectorAll<HTMLElement>(BLOCKS)) {
-        if (!readOnly || el.tabIndex === 0) continue;
-        el.tabIndex = 0;
-        el.setAttribute("role", "group");
-        el.setAttribute("aria-label", "Code");
-      }
       const box = container.getBoundingClientRect();
       const next = [...container.querySelectorAll<HTMLElement>(BLOCKS)].map(
         (el) => {
