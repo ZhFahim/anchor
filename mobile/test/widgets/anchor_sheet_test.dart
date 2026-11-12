@@ -84,6 +84,49 @@ void main() {
     expect(find.text('Choose'), findsNothing);
   });
 
+  testWidgets('onGone comes once a closing sheet is off the screen, before '
+      'its spring comes to rest', (tester) async {
+    var goneCount = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Builder(
+          builder: (context) => Center(
+            child: TextButton(
+              onPressed: () => showAnchorSheet<void>(
+                context,
+                onGone: () => goneCount++,
+                builder: (sheetContext) => TextButton(
+                  onPressed: () => Navigator.pop(sheetContext),
+                  child: const Text('Close'),
+                ),
+              ),
+              child: const Text('Open'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Close'));
+    final screen =
+        tester.view.physicalSize.height / tester.view.devicePixelRatio;
+    while (goneCount == 0) {
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+
+    expect(
+      tester.getRect(find.text('Close')).top,
+      greaterThanOrEqualTo(screen),
+    );
+    expect(find.text('Close'), findsOneWidget);
+    await tester.pumpAndSettle();
+    expect(find.text('Close'), findsNothing);
+    expect(goneCount, 1);
+  });
+
   testWidgets('with reduced motion, a closed sheet is gone at once', (
     tester,
   ) async {

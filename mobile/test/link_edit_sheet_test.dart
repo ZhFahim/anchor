@@ -49,6 +49,37 @@ void main() {
     find.byWidgetPredicate((w) => w is AppButton && w.label == label),
   );
 
+  testWidgets('the words field takes focus as the sheet starts to rise', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => Center(
+              child: TextButton(
+                onPressed: () => LinkEditSheet.show(
+                  context,
+                  initialText: '',
+                  initialUrl: '',
+                  onSubmit: (_, _) {},
+                ),
+                child: const Text('Open'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Open'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(tester.widget<TextField>(field('Text')).focusNode!.hasFocus, isTrue);
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('Add link stays off until the address looks like one', (
     tester,
   ) async {

@@ -117,9 +117,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
     _editorOverlay.addListener(_editorOverlayChanged);
     if (_openedAsNew) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        Future.delayed(const Duration(milliseconds: 280), () {
-          if (mounted) _titleFocus.requestFocus();
-        });
+        if (mounted) _titleFocus.requestFocus();
       });
     }
     _titleFocus.addListener(_focusChanged);

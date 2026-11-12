@@ -5,6 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons_600.dart';
 
 import '../../l10n/l10n.dart';
 import '../motion/haptics.dart';
+import '../motion/snapshot_scale.dart';
 import '../motion/springs.dart';
 import '../theme/app_typography.dart';
 import '../theme/context_extensions.dart';
@@ -114,10 +115,10 @@ class _MenuRoute<T> extends PopupRoute<T> {
               opacity: AnchorTokens.motionEaseStandard.transform(
                 math.min(1, progress * 2),
               ),
-              child: Transform.scale(
+              child: SnapshotScale(
                 scale: scale,
                 alignment: Alignment(fromLeft ? -1 : 1, below ? -1 : 1),
-                child: child,
+                child: child!,
               ),
             );
           },

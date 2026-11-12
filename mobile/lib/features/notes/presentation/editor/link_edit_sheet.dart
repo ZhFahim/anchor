@@ -62,7 +62,7 @@ class _LinkEditSheetState extends State<LinkEditSheet> {
     super.initState();
     _url.addListener(() => setState(() {}));
     if (!_isEditing) _prefillFromClipboard();
-    Future.delayed(const Duration(milliseconds: 320), () {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       (widget.initialText.isEmpty && widget.initialUrl.isEmpty
               ? _textFocus

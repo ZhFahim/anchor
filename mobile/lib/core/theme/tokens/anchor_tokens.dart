@@ -377,7 +377,7 @@ abstract final class AnchorTokens {
   static const Cubic motionEasePop = Cubic(0.2, 0.8, 0.3, 1.3);
   /// Things that sway and settle: the floating cards, the waiting picture
   static const Cubic motionEaseInOut = Cubic(0.45, 0, 0.25, 1);
-  static const Duration motionSpringSmoothDuration = Duration(milliseconds: 500);
+  static const Duration motionSpringSmoothDuration = Duration(milliseconds: 380);
   static const double motionSpringSmoothBounce = 0.0;
   static const Duration motionSpringSnappyDuration = Duration(milliseconds: 320);
   static const double motionSpringSnappyBounce = 0.12;

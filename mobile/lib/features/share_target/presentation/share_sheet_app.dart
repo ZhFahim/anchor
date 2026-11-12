@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../core/motion/springs.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/context_extensions.dart';
 import '../../../core/theme/system_bars.dart';
@@ -98,9 +97,11 @@ class _SheetHostState extends State<_SheetHost> {
   }
 
   Future<void> _open() async {
+    final gone = Completer<void>();
     final isSaved = await showAnchorSheet<bool>(
       context,
       semanticLabel: context.l10n.shareSheetTitle,
+      onGone: gone.complete,
       builder: (_) => ShareSheet(
         intake: _app.intake,
         shareContext: _app.shareContext,
@@ -108,7 +109,7 @@ class _SheetHostState extends State<_SheetHost> {
         onOpenApp: _app.channel.openApp,
       ),
     );
-    await Future<void>.delayed(Spring.smooth.duration);
+    await gone.future;
     await _app.channel.close(saved: isSaved ?? false);
   }
 
