@@ -124,6 +124,39 @@ void main() {
     return (state, focusNode);
   }
 
+  test('a visible match needs no scroll', () {
+    final target = RichTextEditorState.scrollTargetFor(
+      top: 100,
+      bottom: 125,
+      viewport: 600,
+      current: 0,
+      maxScrollExtent: 1000,
+    );
+    expect(target, isNull);
+  });
+
+  test('an off-screen match scrolls the smallest amount', () {
+    final target = RichTextEditorState.scrollTargetFor(
+      top: 700,
+      bottom: 725,
+      viewport: 600,
+      current: 0,
+      maxScrollExtent: 1000,
+    );
+    expect(target, 580);
+  });
+
+  test('a match above the viewport is clamped at zero', () {
+    final target = RichTextEditorState.scrollTargetFor(
+      top: -50,
+      bottom: -25,
+      viewport: 600,
+      current: 100,
+      maxScrollExtent: 1000,
+    );
+    expect(target, 0);
+  });
+
   testWidgets('focusEnd focuses and moves the caret to the end', (
     tester,
   ) async {

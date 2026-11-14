@@ -142,6 +142,25 @@ class RichTextEditorState extends State<RichTextEditor>
 
   QuillController get controller => _controller;
 
+  /// Where [range]'s line should sit so the person can see it.
+  ///
+  /// Returns null when the line is already fully inside the viewport.
+  @visibleForTesting
+  static double? scrollTargetFor({
+    required double top,
+    required double bottom,
+    required double viewport,
+    required double current,
+    required double maxScrollExtent,
+  }) {
+    if (top >= 0 && bottom <= viewport) return null;
+    const headroom = 120.0;
+    final target = top < 0
+        ? current + bottom - headroom
+        : current + top - headroom;
+    return target.clamp(0.0, maxScrollExtent);
+  }
+
   /// Scrolls so [range] is on screen, without touching the selection.
   void revealRange(TextRange range) {
     final render = _renderEditor;
@@ -150,16 +169,22 @@ class RichTextEditorState extends State<RichTextEditor>
     final rect = render.getLocalRectForCaret(
       TextPosition(offset: range.start),
     );
-    final offset = render.localToGlobal(rect.topLeft, ancestor: box).dy;
+    final topLeft = render.localToGlobal(rect.topLeft, ancestor: box);
+    final bottomRight = render.localToGlobal(rect.bottomRight, ancestor: box);
     final position = widget.scrollController.hasClients
         ? widget.scrollController.position
         : null;
     if (position == null) return;
+    final target = scrollTargetFor(
+      top: topLeft.dy,
+      bottom: bottomRight.dy,
+      viewport: position.viewportDimension,
+      current: position.pixels,
+      maxScrollExtent: position.maxScrollExtent,
+    );
+    if (target == null) return;
     widget.scrollController.animateTo(
-      (widget.scrollController.offset + offset - 120).clamp(
-        0.0,
-        position.maxScrollExtent,
-      ),
+      target,
       duration: context.motion(Spring.snappy.duration),
       curve: Spring.snappy.curve,
     );
