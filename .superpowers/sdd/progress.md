@@ -41,3 +41,19 @@ Task 10: complete (1171 tests pass on box-03, analyze clean, format clean)
 - BackupFolderPlugin compiled into the APK (classes18/20.dex contain zhfahim/anchor/backup/BackupFolderPlugin).
 - The gradle signingConfig fix (key.properties guard) works on a machine without the keystore.
 - box-03 gotcha: universal build hit transient TLS rate-limiting to storage.googleapis.com; single-ABI succeeded. GitHub mobile-android job (ubuntu-latest) is the universal gate.
+
+## 2026-11-14 15:06 WITA — release v0.23.0 shipped
+- Checkbox compact fix visual-verified: golden PNGs rendered on box-03 (compact 15px box, standard 22px box, no bleed onto title or neighbour rows); temp test + PNGs deleted.
+- GitHub Actions was wedged on the fork (runs queued 6h with no jobs, dispatch 422 "disabled" while API said enabled). Unblock: added `workflow_dispatch` to ci.yml; new push triggered run 43568523842 → ALL SUCCESS in 8m43s (incl. mobile-android on GitHub runner).
+- Merged PR #2 into fork main (c1c7b17); closed PR #3 (superseded).
+- Bumped mobile/pubspec.yaml → 0.23.0+32, tagged v0.23.0, pushed. Release workflow 43569305339 → success: docker amd64/arm64 + universal/split APKs published to the v0.23.0 GitHub release (4 assets).
+- box-03: universal build fails on parallel engine-JAR download + /data fills 20G; arm64 build kept working after clearing stale gradle transforms cache. Universal builds stay on GitHub.
+- DONE: spec, plan, 10 tasks, PR, release. No open items.
+
+## 2026-11-14 19:50 WITA — upstream sync and v0.23.1
+- Grilling and domain modeling resolved. Glossary and ADR-0001/0002 written. Research report corrected.
+- Merged origin/main (dfa65c8 + e56fd02) into a worktree. Merge tree CLEAN.
+- Kept the 22 px visual check size. Raised compact note line height to 1.40. Removed NoteCheckBox.sizeFor.
+- Restored read-only code-block accessibility attributes. Extended upstream drawer test mocks.
+- Gates on box-03: token check OK, web check OK, web 444 tests, server check OK, server 348 tests, flutter analyze OK, flutter 1191 tests, Dart format OK.
+- Scheduled a daily 08:00 WITA read-only upstream check (id de5059).
