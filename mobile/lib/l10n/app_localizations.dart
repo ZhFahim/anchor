@@ -97,7 +97,7 @@ abstract class AppLocalizations {
   /// The app's name in Android's recent apps, the same as its launcher name.
   ///
   /// In en, this message translates to:
-  /// **'Anchor Notes'**
+  /// **'Notesx'**
   String get appName;
 
   /// Screen reader label of the back arrow in the top bar and the editor toolbar.

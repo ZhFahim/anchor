@@ -34,6 +34,10 @@ void main() {
       if (!key.startsWith('@')) key,
   ];
 
+  test('the app name is Notesx', () {
+    expect(english.appName, 'Notesx');
+  });
+
   test('messages use no em or en dashes', () {
     final dashed = [
       for (final MapEntry(:key, :value) in arb.entries)

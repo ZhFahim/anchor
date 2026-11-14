@@ -9,7 +9,7 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appName => 'Anchor Notes';
+  String get appName => 'Notesx';
 
   @override
   String get commonBack => 'Back';

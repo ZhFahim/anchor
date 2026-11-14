@@ -1,6 +1,6 @@
 {
   "@@locale": "en",
-  "appName": "Anchor Notes",
+  "appName": "Notesx",
   "@appName": {
     "description": "The app's name in Android's recent apps, the same as its launcher name."
   },
