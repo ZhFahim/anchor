@@ -27,14 +27,23 @@ class BackupSettings {
   bool get hasFolder => folderUri != null && folderUri!.isNotEmpty;
 
   /// The folder name to show, from [folderName] or the last part of the URI.
-  String? get folderDisplayName =>
-      folderName ?? (hasFolder ? nameFromUri(folderUri!) : null);
+  String? get folderDisplayName {
+    final name = folderName?.trim();
+    if (name != null && name.isNotEmpty) return name;
+    return hasFolder ? nameFromUri(folderUri!) : null;
+  }
 
   /// The last path segment of a document tree URI, decoded.
   static String? nameFromUri(String uri) {
     final parts = Uri.parse(uri).pathSegments;
-    if (parts.isEmpty || parts.last.isEmpty) return null;
-    return Uri.decodeComponent(parts.last);
+    if (parts.isEmpty) return null;
+    var last = Uri.decodeComponent(parts.last);
+    final colon = last.lastIndexOf(':');
+    if (colon >= 0 && colon < last.length - 1) {
+      last = last.substring(colon + 1);
+    }
+    if (last.isEmpty || last == 'tree' || last == 'primary') return null;
+    return last;
   }
 
   BackupSettings copyWith({

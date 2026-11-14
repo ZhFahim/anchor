@@ -71,6 +71,7 @@ void main() {
       ),
     );
     expect(find.text('Backups'), findsOneWidget);
+    expect(find.text('Back up now'), findsOneWidget);
     expect(find.text('Choose a folder'), findsNothing);
   });
 }

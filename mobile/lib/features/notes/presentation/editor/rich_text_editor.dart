@@ -144,7 +144,8 @@ class RichTextEditorState extends State<RichTextEditor>
 
   /// Where [range]'s line should sit so the person can see it.
   ///
-  /// Returns null when the line is already fully inside the viewport.
+  /// Returns null when the line is already inside the viewport. [top] and
+  /// [bottom] are relative to the viewport's top edge.
   @visibleForTesting
   static double? scrollTargetFor({
     required double top,
@@ -153,31 +154,34 @@ class RichTextEditorState extends State<RichTextEditor>
     required double current,
     required double maxScrollExtent,
   }) {
-    if (top >= 0 && bottom <= viewport) return null;
+    if (top < viewport && bottom > 0) return null;
     const headroom = 120.0;
-    final target = top < 0
+    final target = bottom <= 0
         ? current + bottom - headroom
-        : current + top - headroom;
+        : current + top - viewport;
     return target.clamp(0.0, maxScrollExtent);
   }
 
   /// Scrolls so [range] is on screen, without touching the selection.
   void revealRange(TextRange range) {
     final render = _renderEditor;
-    final box = context.findRenderObject();
-    if (render == null || !render.attached || box is! RenderBox) return;
+    if (render == null || !render.attached) return;
+    final scrollable = Scrollable.maybeOf(context);
+    final viewportBox = scrollable?.context.findRenderObject();
+    if (viewportBox is! RenderBox) return;
     final rect = render.getLocalRectForCaret(
       TextPosition(offset: range.start),
     );
-    final topLeft = render.localToGlobal(rect.topLeft, ancestor: box);
-    final bottomRight = render.localToGlobal(rect.bottomRight, ancestor: box);
+    final viewportTop = viewportBox.localToGlobal(Offset.zero).dy;
+    final top = render.localToGlobal(rect.topLeft).dy - viewportTop;
+    final bottom = render.localToGlobal(rect.bottomRight).dy - viewportTop;
     final position = widget.scrollController.hasClients
         ? widget.scrollController.position
         : null;
     if (position == null) return;
     final target = scrollTargetFor(
-      top: topLeft.dy,
-      bottom: bottomRight.dy,
+      top: top,
+      bottom: bottom,
       viewport: position.viewportDimension,
       current: position.pixels,
       maxScrollExtent: position.maxScrollExtent,

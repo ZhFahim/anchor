@@ -23,7 +23,9 @@ class BackupFolder {
     final map = Map<String, dynamic>.from(result as Map);
     final uri = map['uri'] as String?;
     if (uri == null || uri.isEmpty) return null;
-    return BackupFolderChoice(uri, map['name'] as String?);
+    final raw = map['name'] as String?;
+    final name = raw == null || raw.trim().isEmpty ? null : raw;
+    return BackupFolderChoice(uri, name);
   }
 
   /// `bytes` must reach Kotlin as a byte array, so it is sent as a Uint8List.

@@ -214,6 +214,22 @@ void main() {
     expect(auth.calls, 1, reason: 'the second entry must not prompt');
   });
 
+  testWidgets('a grace of zero always asks again', (tester) async {
+    final auth = await _pump(tester, isLocked: true);
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(AppLockGate)));
+    container.read(appLockGraceMinutesProvider.notifier).set(0);
+    container
+        .read(appLockControllerProvider.notifier)
+        .debugMarkUnlocked(DateTime.now());
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+
+    expect(auth.calls, 2, reason: 'a zero grace must not skip the prompt');
+  });
+
   testWidgets('the cover waits without a spinner on its button', (
     tester,
   ) async {

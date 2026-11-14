@@ -1,4 +1,5 @@
 import 'package:anchor/core/storage/preferences_repository.dart';
+import 'package:anchor/features/backup/domain/backup_settings.dart';
 import 'package:anchor/features/backup/presentation/backup_settings_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -53,6 +54,37 @@ void main() {
     final settings = container.read(backupSettingsControllerProvider).value!;
     expect(settings.folderUri, 'content://tree/primary%3ABackups');
     expect(settings.folderDisplayName, 'Backups');
+  });
+
+  test('nameFromUri takes the part after the colon', () {
+    expect(
+      BackupSettings.nameFromUri('content://x/tree/primary%3AAnchor'),
+      'Anchor',
+    );
+    expect(
+      BackupSettings.nameFromUri('content://x/tree/1234-ABCD%3ABackups'),
+      'Backups',
+    );
+  });
+
+  test('nameFromUri refuses a URI with no folder name', () {
+    expect(BackupSettings.nameFromUri('content://x/tree/primary'), isNull);
+    expect(BackupSettings.nameFromUri('content://x/tree/tree'), isNull);
+  });
+
+  test('folderDisplayName prefers the picked name', () {
+    const settings = BackupSettings(
+      folderUri: 'content://x/tree/primary%3AAnchor',
+      folderName: 'Backups',
+    );
+    expect(settings.folderDisplayName, 'Backups');
+  });
+
+  test('folderDisplayName falls back to the URI name', () {
+    const settings = BackupSettings(
+      folderUri: 'content://x/tree/primary%3AAnchor',
+    );
+    expect(settings.folderDisplayName, 'Anchor');
   });
 
   test('a period outside 1 to 31 is clamped', () async {

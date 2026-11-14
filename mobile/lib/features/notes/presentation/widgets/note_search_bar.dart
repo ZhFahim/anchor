@@ -33,10 +33,13 @@ class NoteSearchBar extends StatefulWidget {
 class _NoteSearchBarState extends State<NoteSearchBar> {
   final _field = TextEditingController();
   final _focus = FocusNode();
+  bool _asked = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (_asked) return;
+    _asked = true;
     _focus.requestFocus();
   }
 

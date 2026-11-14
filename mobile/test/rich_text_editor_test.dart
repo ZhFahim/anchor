@@ -143,7 +143,18 @@ void main() {
       current: 0,
       maxScrollExtent: 1000,
     );
-    expect(target, 580);
+    expect(target, 100);
+  });
+
+  test('a partly visible match needs no scroll', () {
+    final target = RichTextEditorState.scrollTargetFor(
+      top: 590,
+      bottom: 610,
+      viewport: 600,
+      current: 0,
+      maxScrollExtent: 1000,
+    );
+    expect(target, isNull);
   });
 
   test('a match above the viewport is clamped at zero', () {
@@ -155,6 +166,30 @@ void main() {
       maxScrollExtent: 1000,
     );
     expect(target, 0);
+  });
+
+  testWidgets('revealRange scrolls a caret that is above the viewport', (
+    tester,
+  ) async {
+    final content = jsonEncode({
+      'ops': [
+        for (var i = 0; i < 60; i++) {'insert': 'line $i\n'},
+      ],
+    });
+    final (state, _) = await pumpEditor(tester, content: content);
+    final scroll = tester
+        .widget<SingleChildScrollView>(find.byType(SingleChildScrollView))
+        .controller!;
+    await tester.pumpAndSettle();
+    scroll.jumpTo(scroll.position.maxScrollExtent);
+    await tester.pump();
+    final before = scroll.offset;
+    expect(before, greaterThan(0));
+
+    state.revealRange(const TextRange(start: 0, end: 1));
+    await tester.pumpAndSettle();
+
+    expect(scroll.offset, lessThan(before));
   });
 
   testWidgets('focusEnd focuses and moves the caret to the end', (

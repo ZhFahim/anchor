@@ -32,6 +32,23 @@ void main() {
     expect(choice?.name, 'Backups');
   });
 
+  test('pick treats an empty name as no name', () async {
+    final messenger = TestDefaultBinaryMessengerBinding
+        .instance
+        .defaultBinaryMessenger;
+    messenger.setMockMethodCallHandler(channel, (call) async {
+      return switch (call.method) {
+        'pickFolder' => {'uri': 'content://tree/backups', 'name': ''},
+        _ => null,
+      };
+    });
+    addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
+
+    final choice = await BackupFolder().pick();
+    expect(choice?.uri, 'content://tree/backups');
+    expect(choice?.name, isNull);
+  });
+
   test('write sends the name and the bytes', () async {
     await BackupFolder().write('content://tree/backups', 'a.zip', [1, 2]);
     expect(calls.single.method, 'writeFile');
