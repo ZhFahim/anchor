@@ -29,6 +29,7 @@ import '../../../core/widgets/pill.dart';
 import '../../../core/widgets/pressable.dart';
 import '../../../core/widgets/segmented_control.dart';
 import '../../../core/widgets/switch_row.dart';
+import '../../../core/storage/preferences_repository.dart';
 import '../../../l10n/l10n.dart';
 import '../../auth/domain/user.dart';
 import '../../auth/presentation/auth_controller.dart';
@@ -409,6 +410,7 @@ class _SecuritySection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isEnabled = ref.watch(appLockEnabledProvider);
+    final graceMinutes = ref.watch(appLockGraceMinutesProvider);
     final l10n = context.l10n;
     return Section(
       label: l10n.settingsSecurity,
@@ -420,6 +422,46 @@ class _SecuritySection extends ConsumerWidget {
             subtitle: l10n.settingsAppLockHelp,
             value: isEnabled,
             onChanged: (value) => _setAppLock(context, ref, value),
+          ),
+          StackedListTile(
+            label: l10n.settingsLockGrace,
+            subtitle: l10n.settingsLockGraceHelp,
+            child: Opacity(
+              opacity: isEnabled ? 1 : 0.4,
+              child: IgnorePointer(
+                ignoring: !isEnabled,
+                child: SegmentedControl<int>(
+                  semanticLabel: l10n.settingsLockGrace,
+                  value: graceMinutes,
+                  segments: [
+                    Segment(
+                      value: 0,
+                      label: l10n.settingsLockGraceOff,
+                    ),
+                    Segment(
+                      value: 1,
+                      label: l10n.settingsLockGraceMinutes(1),
+                    ),
+                    Segment(
+                      value: 5,
+                      label: l10n.settingsLockGraceMinutes(5),
+                    ),
+                    Segment(
+                      value: 15,
+                      label: l10n.settingsLockGraceMinutes(15),
+                    ),
+                  ],
+                  onChanged: (minutes) {
+                    ref
+                        .read(appLockGraceMinutesProvider.notifier)
+                        .set(minutes);
+                    ref
+                        .read(preferencesRepositoryProvider)
+                        .setLockGraceMinutes(minutes);
+                  },
+                ),
+              ),
+            ),
           ),
         ],
       ),

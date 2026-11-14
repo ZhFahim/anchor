@@ -65,11 +65,19 @@ class AppLockEnabled extends _$AppLockEnabled {
 
 /// How long a quick return skips the biometric prompt.
 ///
-/// A plain `Provider` keeps the choice out of the code generation pipeline
+/// A `NotifierProvider` keeps the choice out of the code generation pipeline
 /// that the rest of this file uses.
-final appLockGraceMinutesProvider = Provider<int>((ref) {
-  return ref.watch(appBootstrapProvider).lockGraceMinutes;
-});
+class AppLockGraceMinutes extends Notifier<int> {
+  @override
+  int build() => ref.watch(appBootstrapProvider).lockGraceMinutes;
+
+  void set(int minutes) {
+    state = minutes;
+  }
+}
+
+final appLockGraceMinutesProvider =
+    NotifierProvider<AppLockGraceMinutes, int>(AppLockGraceMinutes.new);
 
 /// Whether the notes are covered right now.
 ///

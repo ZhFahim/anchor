@@ -1126,6 +1126,30 @@ abstract class AppLocalizations {
   /// **'Ask for your fingerprint, face or screen lock each time Anchor opens.'**
   String get settingsAppLockHelp;
 
+  /// Row in Security that picks how long the app stays open after the person leaves it.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-lock after'**
+  String get settingsLockGrace;
+
+  /// Under the re-lock row: what the setting changes.
+  ///
+  /// In en, this message translates to:
+  /// **'How long the app stays open after you leave it'**
+  String get settingsLockGraceHelp;
+
+  /// Re-lock choice that asks for the device on every return.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get settingsLockGraceOff;
+
+  /// Re-lock choice for a number of minutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min'**
+  String settingsLockGraceMinutes(Object minutes);
+
   /// Heading of the cover shown over the notes while the app lock is on.
   ///
   /// In en, this message translates to:
