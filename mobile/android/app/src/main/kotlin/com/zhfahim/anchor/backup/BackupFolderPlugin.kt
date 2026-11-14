@@ -100,7 +100,13 @@ class BackupFolderPlugin :
         } catch (_: SecurityException) {
             // Some providers refuse; the folder still works for this session.
         }
-        result.success(uri.toString())
+        val current = activity
+        val name = current
+            ?.let { DocumentFile.fromTreeUri(it, uri)?.name }
+            ?: uri.lastPathSegment
+                ?.substringAfterLast(':')
+                ?.let { Uri.decode(it) }
+        result.success(mapOf("uri" to uri.toString(), "name" to name))
         return true
     }
 

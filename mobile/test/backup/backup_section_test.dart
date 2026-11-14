@@ -51,9 +51,12 @@ void main() {
   testWidgets('with a folder it offers a backup now', (tester) async {
     await pump(
       tester,
-      const BackupSettings(folderUri: 'content://tree/backups'),
+      const BackupSettings(
+        folderUri: 'content://tree/backups',
+        folderName: 'Backups',
+      ),
     );
-    expect(find.text('Back up now'), findsOneWidget);
+    expect(find.text('Backups'), findsOneWidget);
     expect(find.text('Choose a folder'), findsNothing);
   });
 }

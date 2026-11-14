@@ -1,5 +1,13 @@
 import 'package:flutter/services.dart';
 
+/// The folder the person picked, and the name Android gave it.
+class BackupFolderChoice {
+  const BackupFolderChoice(this.uri, this.name);
+
+  final String uri;
+  final String? name;
+}
+
 /// The folder the person picked, reached through Android's document tree so it
 /// stays writable after a restart.
 class BackupFolder {
@@ -8,7 +16,15 @@ class BackupFolder {
 
   final MethodChannel _channel;
 
-  Future<String?> pick() => _channel.invokeMethod<String>('pickFolder');
+  Future<BackupFolderChoice?> pick() async {
+    final result = await _channel.invokeMethod<Object?>('pickFolder');
+    if (result == null) return null;
+    if (result is String) return BackupFolderChoice(result, null);
+    final map = Map<String, dynamic>.from(result as Map);
+    final uri = map['uri'] as String?;
+    if (uri == null || uri.isEmpty) return null;
+    return BackupFolderChoice(uri, map['name'] as String?);
+  }
 
   /// `bytes` must reach Kotlin as a byte array, so it is sent as a Uint8List.
   /// A plain `List<int>` arrives as an int array and the plugin refuses it.

@@ -34,9 +34,7 @@ class BackupSection extends ConsumerWidget {
       children: [
         _Row(
           label: l10n.backupFolder,
-          value: settings.hasFolder
-              ? l10n.backupFolder
-              : l10n.backupChooseFolder,
+          value: settings.folderDisplayName ?? l10n.backupChooseFolder,
           onTap: () => _pickFolder(context, ref),
         ),
         _Row(
@@ -79,9 +77,11 @@ class BackupSection extends ConsumerWidget {
   }
 
   Future<void> _pickFolder(BuildContext context, WidgetRef ref) async {
-    final uri = await ref.read(backupFolderProvider).pick();
-    if (uri == null) return;
-    await ref.read(backupSettingsControllerProvider.notifier).setFolder(uri);
+    final choice = await ref.read(backupFolderProvider).pick();
+    if (choice == null) return;
+    await ref
+        .read(backupSettingsControllerProvider.notifier)
+        .setFolder(choice.uri, name: choice.name);
   }
 
   Future<void> _backupNow(BuildContext context, WidgetRef ref) async {

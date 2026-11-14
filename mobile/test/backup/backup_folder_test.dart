@@ -14,7 +14,7 @@ void main() {
         .setMockMethodCallHandler(channel, (call) async {
           calls.add(call);
           return switch (call.method) {
-            'pickFolder' => 'content://tree/backups',
+            'pickFolder' => {'uri': 'content://tree/backups', 'name': 'Backups'},
             'listFiles' => ['anchor-auto-1.zip', 'anchor-auto-2.zip'],
             _ => null,
           };
@@ -26,8 +26,10 @@ void main() {
         .setMockMethodCallHandler(channel, null);
   });
 
-  test('pick returns the folder the person chose', () async {
-    expect(await BackupFolder().pick(), 'content://tree/backups');
+  test('pick returns the folder and its name', () async {
+    final choice = await BackupFolder().pick();
+    expect(choice?.uri, 'content://tree/backups');
+    expect(choice?.name, 'Backups');
   });
 
   test('write sends the name and the bytes', () async {

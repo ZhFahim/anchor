@@ -10,8 +10,10 @@ class BackupSettingsController extends _$BackupSettingsController {
   @override
   Future<BackupSettings> build() async {
     final repository = ref.watch(preferencesRepositoryProvider);
+    final folderUri = await repository.getBackupFolder();
     return BackupSettings(
-      folderUri: await repository.getBackupFolder(),
+      folderUri: folderUri,
+      folderName: folderUri == null ? null : BackupSettings.nameFromUri(folderUri),
       automatic: await repository.getBackupAutomatic(),
       periodDays: await repository.getBackupPeriodDays(),
       keepFiles: await repository.getBackupKeepFiles(),
@@ -20,12 +22,15 @@ class BackupSettingsController extends _$BackupSettingsController {
     );
   }
 
-  Future<void> setFolder(String? uri) async {
+  Future<void> setFolder(String? uri, {String? name}) async {
     await ref.read(preferencesRepositoryProvider).setBackupFolder(uri);
     _update(
       (settings) => uri == null
           ? settings.copyWith(clearFolder: true)
-          : settings.copyWith(folderUri: uri),
+          : settings.copyWith(
+              folderUri: uri,
+              folderName: name ?? BackupSettings.nameFromUri(uri),
+            ),
     );
   }
 

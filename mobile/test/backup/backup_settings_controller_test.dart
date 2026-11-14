@@ -18,6 +18,7 @@ void main() {
     when(() => repository.getBackupKeepFiles()).thenAnswer((_) async => 3);
     when(() => repository.getBackupPassword()).thenAnswer((_) async => null);
     when(() => repository.getBackupLastAt()).thenAnswer((_) async => null);
+    when(() => repository.setBackupFolder(any())).thenAnswer((_) async {});
     when(() => repository.setBackupPeriodDays(any())).thenAnswer((_) async {});
     when(() => repository.setBackupKeepFiles(any())).thenAnswer((_) async {});
 
@@ -36,6 +37,22 @@ void main() {
     expect(settings.keepFiles, 3);
     expect(settings.automatic, isTrue);
     expect(settings.folderUri, isNull);
+  });
+
+  test('a picked folder keeps the name it came with', () async {
+    final controller = container.read(
+      backupSettingsControllerProvider.notifier,
+    );
+    await container.read(backupSettingsControllerProvider.future);
+
+    await controller.setFolder(
+      'content://tree/primary%3ABackups',
+      name: 'Backups',
+    );
+
+    final settings = container.read(backupSettingsControllerProvider).value!;
+    expect(settings.folderUri, 'content://tree/primary%3ABackups');
+    expect(settings.folderDisplayName, 'Backups');
   });
 
   test('a period outside 1 to 31 is clamped', () async {
