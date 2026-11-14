@@ -137,6 +137,11 @@ export class NoteAttachmentsService {
       throw new NotFoundException('Note not found');
     }
 
+    return this.openFile(noteId, attachmentId);
+  }
+
+  /** Opens an attachment's file. The caller has already checked access. */
+  async openFile(noteId: string, attachmentId: string) {
     const attachment = await this.prisma.noteAttachment.findFirst({
       where: { id: attachmentId, noteId },
     });

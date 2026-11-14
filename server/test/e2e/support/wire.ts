@@ -172,3 +172,21 @@ export interface ExportManifestOnWire {
   notes: ExportManifestNoteOnWire[];
   warnings: string[];
 }
+
+export interface NoteLinkOnWire {
+  token: string;
+  createdAt: string;
+}
+
+export interface PublicNoteOnWire {
+  title: string;
+  content: string | null;
+  background: string | null;
+  updatedAt: string;
+  attachments: {
+    id: string;
+    type: string;
+    mimeType: string;
+    originalFilename: string;
+  }[];
+}

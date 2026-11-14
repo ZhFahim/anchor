@@ -24,7 +24,7 @@ Anchor focuses on speed, privacy, simplicity, and reliability across mobile and 
 
 - **Rich Text Editor** - Create and edit notes with powerful formatting (bold, italic, underline, highlights, headings, lists, checkboxes), or type / to pick a format
 - **Offline First** - All edits work offline with local database
-- **Note Sharing** - Share notes with other users (viewer or editor)
+- **Note Sharing** - Share notes with other users (viewer or editor), or with anyone through a read-only link
 - **Note History** - Read earlier versions of a note and put one back
 - **Tags System** - Organize notes with custom tags and colors
 - **Attachments** - Attach images and audio to notes
