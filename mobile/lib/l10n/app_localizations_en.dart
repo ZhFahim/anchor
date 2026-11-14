@@ -236,6 +236,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authEmailTaken => 'An account with this email already exists.';
 
   @override
+  String get authLastAdmin =>
+      'You’re the only admin on this server. Make someone else an admin first.';
+
+  @override
   String get authWrongCurrentPassword => 'Your current password is incorrect.';
 
   @override
@@ -332,6 +336,43 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authBackToSignIn => 'Back to sign in';
+
+  @override
+  String get deleteAccountTitle => 'Delete account';
+
+  @override
+  String get deleteAccountWarning => 'This can’t be undone.';
+
+  @override
+  String get deleteAccountMessage =>
+      'Your account, notes, tags, attachments and reminders will be permanently deleted from this server. Notes you shared will no longer be available to other people.';
+
+  @override
+  String get deleteAccountExport =>
+      'To keep a copy of your notes, export them from Settings on the web first.';
+
+  @override
+  String get deleteAccountPasswordHelp => 'Enter your password to confirm.';
+
+  @override
+  String get deleteAccountConfirm => 'Delete account';
+
+  @override
+  String get deleteAccountDeleting => 'Deleting…';
+
+  @override
+  String get deleteAccountDone => 'Account deleted';
+
+  @override
+  String get deleteAccountOffline =>
+      'You’re offline. Connect to the internet to delete your account.';
+
+  @override
+  String get deleteAccountDialogTitle => 'Delete your account?';
+
+  @override
+  String get deleteAccountDialogMessage =>
+      'Your account and notes will be permanently deleted from this server.';
 
   @override
   String get passwordTitle => 'Password';
@@ -625,6 +666,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsSignOut => 'Sign out';
+
+  @override
+  String get settingsDeleteAccount => 'Delete account';
 
   @override
   String get settingsSigningOut => 'Signing out…';

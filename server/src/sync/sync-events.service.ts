@@ -78,6 +78,12 @@ export class SyncEventsService implements OnModuleDestroy {
     return this.streams.get(userId)?.size ?? 0;
   }
 
+  disconnect(userId: string): void {
+    for (const stream of [...(this.streams.get(userId) ?? [])]) {
+      stream.closed.next();
+    }
+  }
+
   onModuleDestroy(): void {
     for (const set of this.streams.values()) {
       for (const stream of [...set]) {

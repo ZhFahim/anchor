@@ -104,6 +104,7 @@ dev_dependencies:
   flutter_lints: ^6.0.0
 
   # Testing
+  flutter_cache_manager: ^3.4.1
   mocktail: ^1.0.5
 
   # Code Generation

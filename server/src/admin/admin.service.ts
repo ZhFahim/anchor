@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
 import { OidcConfigService } from '../auth/oidc/oidc-config.service';
+import { UserDeletionService } from '../users/user-deletion.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { NoteState } from 'src/generated/prisma/enums';
@@ -22,6 +23,7 @@ export class AdminService {
     private prisma: PrismaService,
     private settingsService: SettingsService,
     private oidcConfigService: OidcConfigService,
+    private userDeletionService: UserDeletionService,
   ) {}
 
   async getStats() {
@@ -255,10 +257,7 @@ export class AdminService {
       }
     }
 
-    // Delete user - notes and tags will be cascade deleted by database constraint
-    await this.prisma.user.delete({
-      where: { id },
-    });
+    await this.userDeletionService.deleteUser(id);
 
     return { message: 'User deleted successfully' };
   }

@@ -1,5 +1,6 @@
 export { ApiTokenSection } from "./components/api-token-section";
 export { AppearanceSection } from "./components/appearance-section";
+export { DeleteAccountSection } from "./components/delete-account-section";
 export { EditorSection } from "./components/editor-section";
 export { ImportExportSection } from "./components/import-export-section";
 export { PasswordSection } from "./components/password-section";

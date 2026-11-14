@@ -13,6 +13,7 @@ import { deleteFileIfExists } from '../common/utils/file-system.util';
 import {
   assertValidAttachmentFile,
   attachmentTypeForMime,
+  noteAttachmentDir,
   writeAttachmentFile,
 } from '../notes/utils/attachment-storage.util';
 import { toAttachmentResponse } from '../notes/dto/attachment-response.dto';
@@ -33,7 +34,6 @@ import {
   ImportNotesDto,
   ImportNotesResponse,
 } from './dto/import-notes.dto';
-import * as path from 'path';
 
 /**
  * Truncate to whole seconds: mobile sync clients store timestamps with
@@ -348,7 +348,10 @@ export class ImportService {
 
     assertValidAttachmentFile(file);
 
-    const noteDir = path.join(this.storageConfig.attachmentsDir, noteId);
+    const noteDir = noteAttachmentDir(
+      this.storageConfig.attachmentsDir,
+      noteId,
+    );
 
     let stored: { storedFilename: string; filePath: string } | null = null;
     try {

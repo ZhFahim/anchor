@@ -7,6 +7,7 @@ import {
   expect,
   it,
 } from 'vitest';
+import { randomUUID } from 'crypto';
 import request from 'supertest';
 import { Actor, createE2EApp, E2EApp } from '../support';
 
@@ -54,7 +55,7 @@ describe('sync events', () => {
   it('pokes the stream on a sync push', async () => {
     const stream = await user.openEventStream();
 
-    await user.sync.push([{ type: 'note', id: 'sse-note-1', title: 'pushed' }]);
+    await user.sync.push([{ type: 'note', id: randomUUID(), title: 'pushed' }]);
 
     await stream.waitFor('event: sync');
   });

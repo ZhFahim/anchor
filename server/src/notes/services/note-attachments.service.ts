@@ -20,10 +20,11 @@ import { deleteFileIfExists } from '../../common/utils/file-system.util';
 import {
   assertValidAttachmentFile,
   attachmentTypeForMime,
+  noteAttachmentDir,
+  removeNoteAttachmentDir,
   writeAttachmentFile,
 } from '../utils/attachment-storage.util';
 import { toAttachmentResponse } from '../dto/attachment-response.dto';
-import * as fs from 'fs/promises';
 import * as path from 'path';
 import { createReadStream, existsSync } from 'fs';
 
@@ -40,7 +41,7 @@ export class NoteAttachmentsService {
   ) {}
 
   private attachmentDir(noteId: string): string {
-    return path.join(this.storageConfig.attachmentsDir, noteId);
+    return noteAttachmentDir(this.storageConfig.attachmentsDir, noteId);
   }
 
   private async emitAttachmentChange(
@@ -59,7 +60,7 @@ export class NoteAttachmentsService {
   }
 
   private attachmentPath(noteId: string, storedFilename: string): string {
-    return path.join(this.storageConfig.attachmentsDir, noteId, storedFilename);
+    return path.join(this.attachmentDir(noteId), storedFilename);
   }
 
   async upload(userId: string, noteId: string, file: Express.Multer.File) {
@@ -230,17 +231,11 @@ export class NoteAttachmentsService {
     return this.findAll(userId, noteId);
   }
 
-  async deleteAllForNote(noteId: string) {
-    const noteDir = this.attachmentDir(noteId);
-    try {
-      await fs.rm(noteDir, { recursive: true, force: true });
-    } catch (error) {
-      // Directory may not exist, log only if it's not ENOENT
-      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-        this.logger.error(
-          `Failed to delete attachments directory for note ${noteId}: ${String(error)}`,
-        );
-      }
-    }
+  deleteAllForNote(noteId: string): Promise<void> {
+    return removeNoteAttachmentDir(
+      this.storageConfig.attachmentsDir,
+      noteId,
+      this.logger,
+    );
   }
 }

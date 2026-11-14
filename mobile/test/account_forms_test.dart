@@ -14,6 +14,7 @@ import 'package:anchor/features/auth/domain/registration_mode.dart';
 import 'package:anchor/features/auth/domain/user.dart';
 import 'package:anchor/features/auth/presentation/auth_controller.dart';
 import 'package:anchor/features/auth/presentation/change_password_screen.dart';
+import 'package:anchor/features/auth/presentation/delete_account_screen.dart';
 import 'package:anchor/features/auth/presentation/edit_profile_screen.dart';
 import 'package:anchor/features/auth/presentation/login_screen.dart';
 import 'package:anchor/features/auth/presentation/oidc_config_provider.dart';
@@ -53,6 +54,29 @@ class _PhotoAccount extends AuthController {
 
   @override
   Future<void> removePhoto() async => calls.add('removePhoto');
+}
+
+class _DeletingAccount extends AuthController {
+  _DeletingAccount({this.hasPassword = true, this.failure});
+
+  final bool hasPassword;
+  final AuthFailure? failure;
+  final passwords = <String?>[];
+
+  @override
+  Future<User?> build() async => User(
+    id: 'user-1',
+    email: 'ada@example.com',
+    name: 'Ada',
+    hasPassword: hasPassword,
+  );
+
+  @override
+  Future<void> deleteAccount({String? password}) async {
+    passwords.add(password);
+    final failure = this.failure;
+    if (failure != null) throw failure;
+  }
 }
 
 class _WrongPassword extends AuthController {
@@ -191,6 +215,137 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Your current password is incorrect.'), findsNothing);
+    });
+  });
+
+  group('Delete account', () {
+    Future<_DeletingAccount> open(
+      WidgetTester tester, {
+      bool hasPassword = true,
+      AuthFailure? failure,
+      bool isOnline = true,
+    }) async {
+      final account = _DeletingAccount(
+        hasPassword: hasPassword,
+        failure: failure,
+      );
+      await _pump(
+        tester,
+        const DeleteAccountScreen(),
+        isOnline: isOnline,
+        overrides: [authControllerProvider.overrideWith(() => account)],
+      );
+      return account;
+    }
+
+    Finder button() => find.widgetWithText(AppButton, 'Delete account');
+    bool isEnabled(WidgetTester tester) =>
+        tester.widget<AppButton>(button()).onPressed != null;
+
+    testWidgets('it says what goes, and waits for the password', (
+      tester,
+    ) async {
+      final account = await open(tester);
+
+      expect(
+        find.textContaining('This can’t be undone', findRichText: true),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('permanently deleted', findRichText: true),
+        findsOneWidget,
+      );
+      expect(isEnabled(tester), isFalse);
+
+      await tester.enterText(find.byType(TextField), 'my password');
+      await tester.pump();
+      expect(isEnabled(tester), isTrue);
+
+      await tester.tap(button());
+      await tester.pump();
+      expect(account.passwords, ['my password']);
+    });
+
+    testWidgets('no password manager offers to save a deleted account', (
+      tester,
+    ) async {
+      await open(tester);
+
+      await tester.enterText(find.byType(TextField), 'my password');
+      await tester.pump();
+      await tester.tap(button());
+      await tester.pump();
+
+      expect(
+        tester.testTextInput.log.where(
+          (call) =>
+              call.method == 'TextInput.finishAutofillContext' &&
+              call.arguments == false,
+        ),
+        isNotEmpty,
+      );
+    });
+
+    testWidgets('a wrong password says so under it and clears it', (
+      tester,
+    ) async {
+      await open(tester, failure: const WrongCurrentPasswordFailure());
+
+      await tester.enterText(find.byType(TextField), 'not it');
+      await tester.pump();
+      await tester.tap(button());
+      await tester.pumpAndSettle();
+
+      expect(
+        _under('Password', 'Your current password is incorrect.'),
+        findsOneWidget,
+      );
+      expect(_textIn(tester, 0), isEmpty);
+    });
+
+    testWidgets('the only admin is told what to do first', (tester) async {
+      await open(tester, failure: const LastAdminFailure());
+
+      await tester.enterText(find.byType(TextField), 'my password');
+      await tester.pump();
+      await tester.tap(button());
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('only admin on this server'), findsOneWidget);
+    });
+
+    testWidgets('offline, it says deleting needs a connection', (tester) async {
+      await open(tester, isOnline: false);
+
+      expect(find.textContaining('Connect to the internet'), findsOneWidget);
+      expect(isEnabled(tester), isFalse);
+    });
+
+    group('with no password', () {
+      testWidgets('there is no field, and a dialog confirms', (tester) async {
+        final account = await open(tester, hasPassword: false);
+        expect(find.byType(TextField), findsNothing);
+
+        await tester.tap(button());
+        await tester.pumpAndSettle();
+        expect(find.text('Delete your account?'), findsOneWidget);
+        expect(account.passwords, isEmpty);
+
+        await tester.tap(button().last);
+        await tester.pumpAndSettle();
+        expect(account.passwords, [null]);
+      });
+
+      testWidgets('cancelling the dialog deletes nothing', (tester) async {
+        final account = await open(tester, hasPassword: false);
+
+        await tester.tap(button());
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Cancel'));
+        await tester.pumpAndSettle();
+
+        expect(account.passwords, isEmpty);
+      });
     });
   });
 

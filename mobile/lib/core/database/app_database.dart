@@ -33,6 +33,12 @@ class AppDatabase extends _$AppDatabase {
 
   AppDatabase.forTesting(super.e);
 
+  Future<void>? _closing;
+
+  /// Drift's close throws if a second call starts before the first finishes.
+  @override
+  Future<void> close() => _closing ??= super.close();
+
   @override
   int get schemaVersion => 11;
 
@@ -116,7 +122,7 @@ class AppDatabase extends _$AppDatabase {
 LazyDatabase _openConnection(String userId) {
   return LazyDatabase(() async {
     final dbFolder = await getApplicationDocumentsDirectory();
-    final userDbFile = File(path.join(dbFolder.path, 'db_$userId.sqlite'));
+    final userDbFile = File(_userDatabasePath(dbFolder, userId));
 
     if (!userDbFile.existsSync()) {
       final legacyFile = File(path.join(dbFolder.path, 'db.sqlite'));
@@ -127,6 +133,19 @@ LazyDatabase _openConnection(String userId) {
 
     return NativeDatabase.createInBackground(userDbFile);
   });
+}
+
+String _userDatabasePath(Directory folder, String userId) =>
+    path.join(folder.path, 'db_$userId.sqlite');
+
+/// Close the database first: SQLite can corrupt a file removed while open.
+Future<void> deleteUserDatabaseFiles(String userId) async {
+  final dbFolder = await getApplicationDocumentsDirectory();
+  final database = _userDatabasePath(dbFolder, userId);
+  for (final suffix in const ['', '-journal', '-wal', '-shm']) {
+    final file = File('$database$suffix');
+    if (file.existsSync()) await file.delete();
+  }
 }
 
 @Riverpod(keepAlive: true)

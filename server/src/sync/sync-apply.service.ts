@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { isUUID } from 'class-validator';
 import { PrismaService } from '../prisma/prisma.service';
 import type { Note, Prisma } from 'src/generated/prisma/client';
 import {
@@ -116,6 +117,9 @@ export class SyncApplyService {
       // note was purged rather than never created. Recreating it would undo a
       // delete the client hasn't caught up with yet.
       if (change.baseVersion !== undefined) {
+        return { ...base, status: 'denied' };
+      }
+      if (!isUUID(change.id)) {
         return { ...base, status: 'denied' };
       }
       const version = await this.createNote(userId, change);

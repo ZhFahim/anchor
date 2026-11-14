@@ -80,6 +80,15 @@ class AuthRepository {
     if (refreshToken != null) {
       await _authService.revokeRefreshToken(refreshToken);
     }
+    await _clearSession();
+  }
+
+  Future<void> deleteAccount(String? password) async {
+    await _authService.deleteAccount(password);
+    await _clearSession();
+  }
+
+  Future<void> _clearSession() async {
     await _storage.delete(key: StorageKeys.accessToken);
     await _storage.delete(key: StorageKeys.refreshToken);
     await _storage.delete(key: StorageKeys.userData);

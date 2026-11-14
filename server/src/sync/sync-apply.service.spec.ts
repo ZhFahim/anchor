@@ -25,6 +25,8 @@ import {
 describe('SyncApplyService', () => {
   const USER = 'user-1';
   const OTHER = 'user-2';
+  const NOTE_ID = '0b7c5d2e-4a1f-4c3b-9d8e-2f6a1b3c4d5e';
+  const SECOND_NOTE_ID = '9e8d7c6b-5a4f-4e3d-8c2b-1a0f9e8d7c6b';
   const AT = new Date('2026-08-01T00:00:00.000Z');
 
   let service: SyncApplyService;
@@ -42,7 +44,7 @@ describe('SyncApplyService', () => {
   const noteFindUnique = vi.fn(
     (args: { select?: unknown; include?: unknown }) => {
       if (args.select) {
-        return Promise.resolve(noteExists ? { id: 'n1' } : null);
+        return Promise.resolve(noteExists ? { id: NOTE_ID } : null);
       }
       if (args.include) {
         return Promise.resolve(fullNote);
@@ -138,7 +140,7 @@ describe('SyncApplyService', () => {
   const noteShares = { leaveShare } as unknown as NoteSharesService;
 
   const makeFullNote = (overrides: Record<string, unknown> = {}) => ({
-    id: 'n1',
+    id: NOTE_ID,
     title: 'server title',
     content: 'server content',
     version: 5,
@@ -157,7 +159,7 @@ describe('SyncApplyService', () => {
   });
 
   const makePrior = (overrides: Record<string, unknown> = {}) => ({
-    id: 'n1',
+    id: NOTE_ID,
     title: 'server title',
     content: 'server content',
     version: 5,
@@ -170,7 +172,7 @@ describe('SyncApplyService', () => {
   const noteChange = (overrides: Record<string, unknown> = {}): SyncChange =>
     ({
       type: 'note',
-      id: 'n1',
+      id: NOTE_ID,
       title: 'client title',
       ...overrides,
     }) as unknown as SyncChange;
@@ -235,16 +237,23 @@ describe('SyncApplyService', () => {
       const results = await service.apply(USER, [noteChange()]);
 
       expect(results).toEqual([
-        { type: 'note', id: 'n1', status: 'applied', version: 1 },
+        { type: 'note', id: NOTE_ID, status: 'applied', version: 1 },
       ]);
       expect(emitter.emit).toHaveBeenCalledWith(prisma, [
         expect.objectContaining({
           recipientUserId: USER,
           entityType: 'note',
-          entityId: 'n1',
+          entityId: NOTE_ID,
           op: 'upsert',
         }),
       ]);
+    });
+
+    it('turns away a new note whose id is not a UUID', async () => {
+      const results = await service.apply(USER, [noteChange({ id: '..' })]);
+
+      expect(results).toEqual([{ type: 'note', id: '..', status: 'denied' }]);
+      expect(noteCreate).not.toHaveBeenCalled();
     });
 
     it('a created tombstone emits a remove instead of an upsert', async () => {
@@ -255,7 +264,7 @@ describe('SyncApplyService', () => {
       ]);
 
       expect(results[0].status).toBe('applied');
-      expect(emitter.removeNote).toHaveBeenCalledWith(prisma, [USER], 'n1');
+      expect(emitter.removeNote).toHaveBeenCalledWith(prisma, [USER], NOTE_ID);
       expect(emitter.emit).not.toHaveBeenCalled();
     });
 
@@ -265,7 +274,9 @@ describe('SyncApplyService', () => {
 
       const results = await service.apply(USER, [noteChange()]);
 
-      expect(results).toEqual([{ type: 'note', id: 'n1', status: 'denied' }]);
+      expect(results).toEqual([
+        { type: 'note', id: NOTE_ID, status: 'denied' },
+      ]);
       expect(noteUpdateMany).not.toHaveBeenCalled();
       expect(revisions.recordConflict).not.toHaveBeenCalled();
     });
@@ -290,7 +301,7 @@ describe('SyncApplyService', () => {
       expect(revisions.recordConflict).toHaveBeenCalledWith(
         prisma,
         {
-          noteId: 'n1',
+          noteId: NOTE_ID,
           title: 'viewer edit',
           content: null,
           baseVersion: 5,
@@ -354,10 +365,10 @@ describe('SyncApplyService', () => {
       ]);
 
       expect(results).toEqual([
-        { type: 'note', id: 'n1', status: 'applied', version: 6 },
+        { type: 'note', id: NOTE_ID, status: 'applied', version: 6 },
       ]);
       const call = noteUpdateMany.mock.calls[0][0];
-      expect(call.where).toEqual({ id: 'n1', version: 5 });
+      expect(call.where).toEqual({ id: NOTE_ID, version: 5 });
       expect(call.data).toMatchObject({
         title: 'new title',
         version: { increment: 1 },
@@ -400,7 +411,7 @@ describe('SyncApplyService', () => {
       expect(results[0]).toMatchObject({ status: 'applied', version: 6 });
       expect(revisions.recordClient).toHaveBeenCalledWith(
         prisma,
-        'n1',
+        NOTE_ID,
         recorded,
         USER,
       );
@@ -446,7 +457,7 @@ describe('SyncApplyService', () => {
       );
       expect(revisions.recordClient).toHaveBeenCalledWith(
         prisma,
-        'n1',
+        NOTE_ID,
         recorded,
         USER,
       );
@@ -472,7 +483,7 @@ describe('SyncApplyService', () => {
       expect(results[0]).toMatchObject({ status: 'applied', version: 1 });
       expect(revisions.recordClient).toHaveBeenCalledWith(
         prisma,
-        'n1',
+        NOTE_ID,
         recorded,
         USER,
       );
@@ -573,7 +584,7 @@ describe('SyncApplyService', () => {
       expect('isArchived' in data).toBe(false);
       expect('state' in data).toBe(false);
       expect(archiveCreateMany).toHaveBeenCalledWith({
-        data: [{ userId: USER, noteId: 'n1' }],
+        data: [{ userId: USER, noteId: NOTE_ID }],
         skipDuplicates: true,
       });
     });
@@ -585,7 +596,9 @@ describe('SyncApplyService', () => {
         noteChange({ baseVersion: 4 }),
       ]);
 
-      expect(results).toEqual([{ type: 'note', id: 'n1', status: 'denied' }]);
+      expect(results).toEqual([
+        { type: 'note', id: NOTE_ID, status: 'denied' },
+      ]);
       expect(noteCreate).not.toHaveBeenCalled();
     });
 
@@ -604,7 +617,7 @@ describe('SyncApplyService', () => {
       ]);
 
       expect(results).toEqual([
-        { type: 'note', id: 'n1', status: 'applied', version: 6 },
+        { type: 'note', id: NOTE_ID, status: 'applied', version: 6 },
       ]);
       expect(revisions.recordConflict).not.toHaveBeenCalled();
     });
@@ -630,7 +643,7 @@ describe('SyncApplyService', () => {
       expect(results[0]).toMatchObject({ status: 'applied', version: 6 });
       expect(revisions.recordClient).toHaveBeenCalledWith(
         prisma,
-        'n1',
+        NOTE_ID,
         [expect.objectContaining({ id: 'r1' })],
         USER,
       );
@@ -676,11 +689,11 @@ describe('SyncApplyService', () => {
       ]);
 
       expect(results).toEqual([
-        { type: 'note', id: 'n1', status: 'applied', version: 8 },
+        { type: 'note', id: NOTE_ID, status: 'applied', version: 8 },
       ]);
       expect(revisions.recordClient).toHaveBeenCalledWith(
         prisma,
-        'n1',
+        NOTE_ID,
         [expect.objectContaining({ id: 'r1' })],
         USER,
       );
@@ -707,7 +720,7 @@ describe('SyncApplyService', () => {
       ]);
 
       expect(results).toEqual([
-        { type: 'note', id: 'n1', status: 'applied', version: 5 },
+        { type: 'note', id: NOTE_ID, status: 'applied', version: 5 },
       ]);
       expect(revisions.recordClient).not.toHaveBeenCalled();
       expect(emitter.emit).not.toHaveBeenCalled();
@@ -722,13 +735,13 @@ describe('SyncApplyService', () => {
       });
 
       const results = await service.apply(USER, [
-        noteChange({ id: 'n1' }),
-        noteChange({ id: 'n2' }),
+        noteChange({ id: NOTE_ID }),
+        noteChange({ id: SECOND_NOTE_ID }),
       ]);
 
       expect(results).toEqual([
-        { type: 'note', id: 'n1', status: 'failed' },
-        { type: 'note', id: 'n2', status: 'applied', version: 1 },
+        { type: 'note', id: NOTE_ID, status: 'failed' },
+        { type: 'note', id: SECOND_NOTE_ID, status: 'applied', version: 1 },
       ]);
     });
   });
@@ -890,8 +903,10 @@ describe('SyncApplyService', () => {
           noteChange({ state: 'trashed', baseVersion: 5 }),
         ]);
 
-        expect(results).toEqual([{ type: 'note', id: 'n1', status: 'denied' }]);
-        expect(leaveShare).toHaveBeenCalledWith(USER, 'n1');
+        expect(results).toEqual([
+          { type: 'note', id: NOTE_ID, status: 'denied' },
+        ]);
+        expect(leaveShare).toHaveBeenCalledWith(USER, NOTE_ID);
         expect(noteUpdateMany).not.toHaveBeenCalled();
       },
     );
@@ -918,7 +933,7 @@ describe('SyncApplyService', () => {
       ]);
 
       expect(results[0].status).toBe('denied');
-      expect(leaveShare).toHaveBeenCalledWith(USER, 'n1');
+      expect(leaveShare).toHaveBeenCalledWith(USER, NOTE_ID);
     });
 
     it('leaves nothing when the owner already trashed the note', async () => {
@@ -951,14 +966,14 @@ describe('SyncApplyService', () => {
       ]);
 
       expect(noteUpdate).toHaveBeenCalledWith({
-        where: { id: 'n1' },
+        where: { id: NOTE_ID },
         data: { tags: { connect: [{ id: 't1' }], disconnect: [] } },
       });
       expect(emitter.emit).toHaveBeenCalledWith(prisma, [
         {
           recipientUserId: USER,
           entityType: 'note',
-          entityId: 'n1',
+          entityId: NOTE_ID,
           op: 'upsert',
         },
       ]);
@@ -970,7 +985,7 @@ describe('SyncApplyService', () => {
     const archiveEmission = {
       recipientUserId: USER,
       entityType: 'note',
-      entityId: 'n1',
+      entityId: NOTE_ID,
       op: 'upsert',
     };
 
@@ -994,10 +1009,10 @@ describe('SyncApplyService', () => {
       ]);
 
       expect(results).toEqual([
-        { type: 'note', id: 'n1', status: 'applied', version: 5 },
+        { type: 'note', id: NOTE_ID, status: 'applied', version: 5 },
       ]);
       expect(archiveCreateMany).toHaveBeenCalledWith({
-        data: [{ userId: USER, noteId: 'n1' }],
+        data: [{ userId: USER, noteId: NOTE_ID }],
         skipDuplicates: true,
       });
       expect(emitter.emit).toHaveBeenCalledWith(prisma, [archiveEmission]);
@@ -1028,7 +1043,7 @@ describe('SyncApplyService', () => {
       ]);
       expect(unarchived[0].status).toBe('applied');
       expect(archiveDeleteMany).toHaveBeenCalledWith({
-        where: { userId: USER, noteId: 'n1' },
+        where: { userId: USER, noteId: NOTE_ID },
       });
 
       expect(noteUpdateMany).not.toHaveBeenCalled();
@@ -1072,10 +1087,10 @@ describe('SyncApplyService', () => {
       hasNoteAccess.mockResolvedValue({ hasAccess: false, isOwner: false });
 
       const results = await service.apply(USER, [
-        { type: 'pin', id: 'n1', isPinned: true } as unknown as SyncChange,
+        { type: 'pin', id: NOTE_ID, isPinned: true } as unknown as SyncChange,
       ]);
 
-      expect(results).toEqual([{ type: 'pin', id: 'n1', status: 'denied' }]);
+      expect(results).toEqual([{ type: 'pin', id: NOTE_ID, status: 'denied' }]);
       expect(pinUpsert).not.toHaveBeenCalled();
     });
 
@@ -1087,17 +1102,17 @@ describe('SyncApplyService', () => {
       });
 
       const pinned = await service.apply(USER, [
-        { type: 'pin', id: 'n1', isPinned: true } as unknown as SyncChange,
+        { type: 'pin', id: NOTE_ID, isPinned: true } as unknown as SyncChange,
       ]);
-      expect(pinned).toEqual([{ type: 'pin', id: 'n1', status: 'applied' }]);
+      expect(pinned).toEqual([{ type: 'pin', id: NOTE_ID, status: 'applied' }]);
       expect(pinUpsert).toHaveBeenCalled();
       expect(emitter.emit).toHaveBeenCalledWith(prisma, [
         expect.objectContaining({ entityType: 'pin', op: 'upsert' }),
       ]);
 
-      pinRow = { noteId: 'n1' };
+      pinRow = { noteId: NOTE_ID };
       const unpinned = await service.apply(USER, [
-        { type: 'pin', id: 'n1', isPinned: false } as unknown as SyncChange,
+        { type: 'pin', id: NOTE_ID, isPinned: false } as unknown as SyncChange,
       ]);
       expect(unpinned[0].status).toBe('applied');
       expect(pinDeleteMany).toHaveBeenCalled();
@@ -1113,14 +1128,14 @@ describe('SyncApplyService', () => {
     ): SyncChange =>
       ({
         type: 'reminder',
-        id: 'n1',
+        id: NOTE_ID,
         remindAt: '2026-09-04T09:00',
         ...overrides,
       }) as unknown as SyncChange;
 
     const stored = (overrides: Record<string, unknown> = {}) => ({
       userId: USER,
-      noteId: 'n1',
+      noteId: NOTE_ID,
       remindAt: '2026-09-04T09:00',
       recurrence: 'none',
       version: 3,
@@ -1141,13 +1156,13 @@ describe('SyncApplyService', () => {
       const results = await service.apply(USER, [reminderChange()]);
 
       expect(results).toEqual([
-        { type: 'reminder', id: 'n1', status: 'applied', version: 1 },
+        { type: 'reminder', id: NOTE_ID, status: 'applied', version: 1 },
       ]);
       expect(emitter.emit).toHaveBeenCalledWith(prisma, [
         expect.objectContaining({
           recipientUserId: USER,
           entityType: 'reminder',
-          entityId: 'n1',
+          entityId: NOTE_ID,
           op: 'upsert',
         }),
       ]);
@@ -1193,7 +1208,7 @@ describe('SyncApplyService', () => {
       ]);
 
       expect(results).toEqual([
-        { type: 'reminder', id: 'n1', status: 'applied', version: 3 },
+        { type: 'reminder', id: NOTE_ID, status: 'applied', version: 3 },
       ]);
       expect(reminderUpdateMany).not.toHaveBeenCalled();
     });
@@ -1239,10 +1254,10 @@ describe('SyncApplyService', () => {
       ]);
 
       expect(results).toEqual([
-        { type: 'reminder', id: 'n1', status: 'applied', version: 4 },
+        { type: 'reminder', id: NOTE_ID, status: 'applied', version: 4 },
       ]);
       expect(reminderUpdateMany).toHaveBeenCalledWith({
-        where: { userId: USER, noteId: 'n1', version: 3 },
+        where: { userId: USER, noteId: NOTE_ID, version: 3 },
         data: { remindAt: '2026-09-09T07:00', recurrence: 'daily', version: 4 },
       });
     });

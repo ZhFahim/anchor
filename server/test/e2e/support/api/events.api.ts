@@ -10,6 +10,7 @@ export class SyncEventStream {
     readonly status: number,
     readonly headers: http.IncomingHttpHeaders,
     private readonly buffer: () => string,
+    private readonly hasEnded: () => boolean,
   ) {}
 
   read(): string {
@@ -23,6 +24,16 @@ export class SyncEventStream {
         throw new Error(
           `timed out waiting for ${JSON.stringify(needle)}; received: ${this.read()}`,
         );
+      }
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+  }
+
+  async waitForEnd(timeoutMs = DEFAULT_WAIT_MS): Promise<void> {
+    const deadline = Date.now() + timeoutMs;
+    while (!this.hasEnded()) {
+      if (Date.now() > deadline) {
+        throw new Error('timed out waiting for the stream to end');
       }
       await new Promise((resolve) => setTimeout(resolve, 20));
     }
@@ -47,6 +58,10 @@ export function openSyncEventStream(
       },
       (res) => {
         let buffer = '';
+        let hasEnded = false;
+        res.on('close', () => {
+          hasEnded = true;
+        });
         res.setEncoding('utf8');
         res.on('data', (chunk: string) => {
           buffer += chunk;
@@ -57,6 +72,7 @@ export function openSyncEventStream(
             res.statusCode ?? 0,
             res.headers,
             () => buffer,
+            () => hasEnded,
           ),
         );
       },

@@ -11,6 +11,7 @@ import { TokenResolverService } from './token-resolver.service';
 import { AuthGuard } from './auth.guard';
 import { SettingsModule } from '../settings/settings.module';
 import { PrismaModule } from '../prisma/prisma.module';
+import { UserDeletionModule } from '../users/user-deletion.module';
 import { OidcService } from './oidc/oidc.service';
 import { OidcController } from './oidc/oidc.controller';
 import { OidcConfigService } from './oidc/oidc-config.service';
@@ -31,6 +32,7 @@ import { OidcUserService } from './oidc/oidc-user.service';
     }),
     SettingsModule,
     PrismaModule,
+    UserDeletionModule,
   ],
   controllers: [AuthController, OidcController],
   providers: [

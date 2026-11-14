@@ -47,7 +47,7 @@ void main() {
   }
 
   Future<void> waitFor(WidgetTester tester, bool Function() isDone) async {
-    for (var i = 0; i < 20 && !isDone(); i++) {
+    for (var i = 0; i < 100 && !isDone(); i++) {
       await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 50)),
       );

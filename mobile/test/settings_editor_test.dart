@@ -18,6 +18,7 @@ import 'package:anchor/features/settings/presentation/editor_preferences_control
 import 'package:anchor/features/settings/presentation/settings_screen.dart';
 import 'package:anchor/features/sync/data/sync_compatibility.dart';
 import 'package:anchor/l10n/app_localizations.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -270,5 +271,34 @@ void main() {
     await tester.pump();
     await tester.pump();
     expect(styleOf(tester, preview).fontSize, closeTo(16.5 * 0.88, 0.001));
+  });
+
+  testWidgets('Account has Delete account, under Sign out', (tester) async {
+    await pumpSettings(tester);
+
+    final signOut = find.text('Sign out');
+    final delete = find.text('Delete account');
+    await tester.scrollUntilVisible(delete, 200);
+
+    expect(
+      tester.getTopLeft(signOut).dy,
+      lessThan(tester.getTopLeft(delete).dy),
+    );
+  });
+
+  testWidgets('the coffee link shows on Android', (tester) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.android;
+    await pumpSettings(tester);
+
+    expect(find.text('Support Anchor', skipOffstage: false), findsOneWidget);
+    debugDefaultTargetPlatformOverride = null;
+  });
+
+  testWidgets('the coffee link doesn’t show on iPhone', (tester) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    await pumpSettings(tester);
+
+    expect(find.text('Support Anchor', skipOffstage: false), findsNothing);
+    debugDefaultTargetPlatformOverride = null;
   });
 }

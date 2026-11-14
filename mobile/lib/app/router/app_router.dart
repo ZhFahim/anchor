@@ -6,6 +6,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../core/network/server_config_provider.dart';
 import '../../features/auth/presentation/auth_controller.dart';
 import '../../features/auth/presentation/change_password_screen.dart';
+import '../../features/auth/presentation/delete_account_screen.dart';
 import '../../features/auth/presentation/edit_profile_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
@@ -32,6 +33,7 @@ const _trashPath = 'trash';
 const _archivePath = 'archive';
 const _settingsPath = 'settings';
 const _changePasswordPath = 'change-password';
+const _deleteAccountPath = 'delete-account';
 const _editProfilePath = 'edit-profile';
 const _logsPath = 'logs';
 const _widgetNotePath = '/widget/note/:id';
@@ -136,6 +138,10 @@ GoRouter goRouter(Ref ref) {
               GoRoute(
                 path: _changePasswordPath,
                 builder: (context, state) => const ChangePasswordScreen(),
+              ),
+              GoRoute(
+                path: _deleteAccountPath,
+                builder: (context, state) => const DeleteAccountScreen(),
               ),
               GoRoute(
                 path: _editProfilePath,

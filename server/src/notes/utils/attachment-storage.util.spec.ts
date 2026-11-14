@@ -5,6 +5,7 @@ import { ATTACHMENT_MAX_FILE_SIZE } from '../constants/notes.constants';
 import {
   assertValidAttachmentFile,
   attachmentTypeForMime,
+  noteAttachmentDir,
 } from './attachment-storage.util';
 
 const fileOf = (overrides: Partial<Express.Multer.File>): Express.Multer.File =>
@@ -32,6 +33,25 @@ describe('assertValidAttachmentFile', () => {
       assertValidAttachmentFile(fileOf({ size: ATTACHMENT_MAX_FILE_SIZE + 1 })),
     ).toThrow(/exceeds/);
   });
+});
+
+describe('noteAttachmentDir', () => {
+  const root = '/data/uploads/attachments';
+
+  it('names a folder inside the attachments folder', () => {
+    expect(
+      noteAttachmentDir(root, '3b241101-e2bb-4255-8caf-4136c566a962'),
+    ).toBe(`${root}/3b241101-e2bb-4255-8caf-4136c566a962`);
+  });
+
+  it.each(['..', '.', '', '../profiles', 'a/b', 'a\\b', '/etc', 'a\0b'])(
+    'refuses %j, which could point somewhere else',
+    (noteId) => {
+      expect(() => noteAttachmentDir(root, noteId)).toThrow(
+        BadRequestException,
+      );
+    },
+  );
 });
 
 describe('attachmentTypeForMime', () => {

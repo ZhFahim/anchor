@@ -16,6 +16,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { UserDeletionService } from '../users/user-deletion.service';
 import { UserStatus } from '../generated/prisma/enums';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
@@ -42,6 +43,7 @@ export class AuthService {
     private jwtService: JwtService,
     private settingsService: SettingsService,
     private oidcConfigService: OidcConfigService,
+    private userDeletionService: UserDeletionService,
     @Inject(StorageConfig.KEY)
     private storageConfig: ConfigType<typeof StorageConfig>,
   ) {}
@@ -357,6 +359,42 @@ export class AuthService {
     });
 
     return { message: 'Password changed successfully' };
+  }
+
+  async deleteAccount(userId: string, password?: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { password: true, isAdmin: true },
+    });
+
+    if (!user) {
+      throw new ForbiddenException('User not found');
+    }
+
+    // Accounts from a sign-in provider have no password to check.
+    if (user.password) {
+      const isPasswordValid =
+        !!password && (await bcrypt.compare(password, user.password));
+      if (!isPasswordValid) {
+        throw new ForbiddenException('Current password is incorrect');
+      }
+    }
+
+    if (user.isAdmin) {
+      const [adminCount, userCount] = await Promise.all([
+        this.prisma.user.count({ where: { isAdmin: true } }),
+        this.prisma.user.count(),
+      ]);
+      if (adminCount === 1 && userCount > 1) {
+        throw new ConflictException(
+          'Make someone else an admin before deleting this account',
+        );
+      }
+    }
+
+    await this.userDeletionService.deleteUser(userId);
+
+    return { message: 'Account deleted' };
   }
 
   async updateProfile(userId: string, updateProfileDto: UpdateProfileDto) {

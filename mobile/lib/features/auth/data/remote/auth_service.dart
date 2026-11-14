@@ -52,6 +52,13 @@ class AuthService {
     );
   }
 
+  Future<void> deleteAccount(String? password) async {
+    await _send<Object?>(
+      () =>
+          _dio.post('/api/auth/delete-account', data: {'password': ?password}),
+    );
+  }
+
   Future<Map<String, dynamic>> updateProfile({String? name}) =>
       _send(() => _dio.patch('/api/auth/profile', data: {'name': ?name}));
 

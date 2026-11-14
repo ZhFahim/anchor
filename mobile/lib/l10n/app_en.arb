@@ -304,6 +304,10 @@
   "@authEmailTaken": {
     "description": "Error under the email field when signing up with an email already in use."
   },
+  "authLastAdmin": "You’re the only admin on this server. Make someone else an admin first.",
+  "@authLastAdmin": {
+    "description": "Error at the top of the delete account page when the server would be left with no admin."
+  },
   "authWrongCurrentPassword": "Your current password is incorrect.",
   "@authWrongCurrentPassword": {
     "description": "Error under the current password field when it’s wrong."
@@ -441,6 +445,50 @@
   "authBackToSignIn": "Back to sign in",
   "@authBackToSignIn": {
     "description": "Button on the waiting for approval page that returns to the sign-in page."
+  },
+  "deleteAccountTitle": "Delete account",
+  "@deleteAccountTitle": {
+    "description": "Title of the delete account page."
+  },
+  "deleteAccountWarning": "This can’t be undone.",
+  "@deleteAccountWarning": {
+    "description": "Heading of the warning on the delete account page."
+  },
+  "deleteAccountMessage": "Your account, notes, tags, attachments and reminders will be permanently deleted from this server. Notes you shared will no longer be available to other people.",
+  "@deleteAccountMessage": {
+    "description": "Warning on the delete account page: what gets deleted."
+  },
+  "deleteAccountExport": "To keep a copy of your notes, export them from Settings on the web first.",
+  "@deleteAccountExport": {
+    "description": "Hint on the delete account page. Export is only on the web app, not on the phone."
+  },
+  "deleteAccountPasswordHelp": "Enter your password to confirm.",
+  "@deleteAccountPasswordHelp": {
+    "description": "Under the password field on the delete account page."
+  },
+  "deleteAccountConfirm": "Delete account",
+  "@deleteAccountConfirm": {
+    "description": "Button that permanently deletes the account, on the page and in its dialog."
+  },
+  "deleteAccountDeleting": "Deleting…",
+  "@deleteAccountDeleting": {
+    "description": "Text on the Delete account button while the account is being deleted."
+  },
+  "deleteAccountDone": "Account deleted",
+  "@deleteAccountDone": {
+    "description": "Toast on the sign-in page after the account was deleted."
+  },
+  "deleteAccountOffline": "You’re offline. Connect to the internet to delete your account.",
+  "@deleteAccountOffline": {
+    "description": "Notice at the top of the delete account page while the phone is offline."
+  },
+  "deleteAccountDialogTitle": "Delete your account?",
+  "@deleteAccountDialogTitle": {
+    "description": "Title of the dialog that confirms deleting an account with no password, one from a sign-in provider."
+  },
+  "deleteAccountDialogMessage": "Your account and notes will be permanently deleted from this server.",
+  "@deleteAccountDialogMessage": {
+    "description": "Text of the dialog that confirms deleting an account with no password."
   },
   "passwordTitle": "Password",
   "@passwordTitle": {
@@ -865,6 +913,10 @@
   "settingsSignOut": "Sign out",
   "@settingsSignOut": {
     "description": "Row in Settings and the confirm button of its dialog: signs out of the account."
+  },
+  "settingsDeleteAccount": "Delete account",
+  "@settingsDeleteAccount": {
+    "description": "Row in Settings that opens the page for permanently deleting the account."
   },
   "settingsSigningOut": "Signing out…",
   "@settingsSigningOut": {

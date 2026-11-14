@@ -19,6 +19,7 @@ import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { DeleteAccountDto } from './dto/delete-account.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { LogoutDto } from './dto/logout.dto';
@@ -92,6 +93,16 @@ export class AuthController {
     @Body() changePasswordDto: ChangePasswordDto,
   ) {
     return this.authService.changePassword(user.id, changePasswordDto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @Post('delete-account')
+  deleteAccount(
+    @CurrentUser() user: User,
+    @Body() deleteAccountDto: DeleteAccountDto,
+  ) {
+    return this.authService.deleteAccount(user.id, deleteAccountDto.password);
   }
 
   @UseGuards(JwtAuthGuard)

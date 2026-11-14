@@ -5,6 +5,7 @@ import { AppPage, PageTitle } from "@/components/layout/app-page";
 import {
   ApiTokenSection,
   AppearanceSection,
+  DeleteAccountSection,
   EditorSection,
   ImportExportSection,
   PasswordSection,
@@ -26,6 +27,7 @@ export default function SettingsPage() {
           <ApiTokenSection />
           <ImportExportSection />
           <PasswordSection />
+          <DeleteAccountSection />
           <Section id="about" title="About">
             <Row>
               <div className="flex items-center gap-3">

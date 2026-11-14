@@ -140,6 +140,19 @@ describe('SyncEventsService', () => {
     expect(service.connectionCount('user-1')).toBe(0);
   });
 
+  it('ends every connection of a disconnected user and no one else', () => {
+    const first = connect('user-1');
+    const second = connect('user-1');
+    const other = connect('user-2');
+
+    service.disconnect('user-1');
+
+    expect(first.completed).toBe(true);
+    expect(second.completed).toBe(true);
+    expect(other.completed).toBe(false);
+    expect(service.connectionCount('user-1')).toBe(0);
+  });
+
   it('completes every stream on module destroy', () => {
     const first = connect('user-1');
     const second = connect('user-2');

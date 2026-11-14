@@ -186,6 +186,17 @@ describe('SyncEmitterService', () => {
     );
   });
 
+  it('removeNotes sends extra emissions even with no notes to remove', async () => {
+    const recipients = await service.removeNotes(
+      tx,
+      new Map(),
+      noteEmissions(['user-a'], 'note-1'),
+    );
+
+    expect(recipients).toEqual(['user-a']);
+    expect(changeLogDeleteMany).not.toHaveBeenCalled();
+  });
+
   it('emits nothing and touches no locks for an empty emission list', async () => {
     const recipients = await service.emit(tx, []);
 

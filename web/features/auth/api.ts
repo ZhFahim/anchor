@@ -46,6 +46,10 @@ export async function changePassword(
     .json<{ message: string }>();
 }
 
+export async function deleteAccount(password?: string): Promise<void> {
+  await api.post("api/auth/delete-account", { json: { password } });
+}
+
 export async function updateProfile(data: UpdateProfileDto): Promise<User> {
   return api.patch("api/auth/profile", { json: data }).json<User>();
 }

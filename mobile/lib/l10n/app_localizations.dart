@@ -478,6 +478,12 @@ abstract class AppLocalizations {
   /// **'An account with this email already exists.'**
   String get authEmailTaken;
 
+  /// Error at the top of the delete account page when the server would be left with no admin.
+  ///
+  /// In en, this message translates to:
+  /// **'You’re the only admin on this server. Make someone else an admin first.'**
+  String get authLastAdmin;
+
   /// Error under the current password field when it’s wrong.
   ///
   /// In en, this message translates to:
@@ -639,6 +645,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Back to sign in'**
   String get authBackToSignIn;
+
+  /// Title of the delete account page.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete account'**
+  String get deleteAccountTitle;
+
+  /// Heading of the warning on the delete account page.
+  ///
+  /// In en, this message translates to:
+  /// **'This can’t be undone.'**
+  String get deleteAccountWarning;
+
+  /// Warning on the delete account page: what gets deleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account, notes, tags, attachments and reminders will be permanently deleted from this server. Notes you shared will no longer be available to other people.'**
+  String get deleteAccountMessage;
+
+  /// Hint on the delete account page. Export is only on the web app, not on the phone.
+  ///
+  /// In en, this message translates to:
+  /// **'To keep a copy of your notes, export them from Settings on the web first.'**
+  String get deleteAccountExport;
+
+  /// Under the password field on the delete account page.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your password to confirm.'**
+  String get deleteAccountPasswordHelp;
+
+  /// Button that permanently deletes the account, on the page and in its dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete account'**
+  String get deleteAccountConfirm;
+
+  /// Text on the Delete account button while the account is being deleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting…'**
+  String get deleteAccountDeleting;
+
+  /// Toast on the sign-in page after the account was deleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Account deleted'**
+  String get deleteAccountDone;
+
+  /// Notice at the top of the delete account page while the phone is offline.
+  ///
+  /// In en, this message translates to:
+  /// **'You’re offline. Connect to the internet to delete your account.'**
+  String get deleteAccountOffline;
+
+  /// Title of the dialog that confirms deleting an account with no password, one from a sign-in provider.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete your account?'**
+  String get deleteAccountDialogTitle;
+
+  /// Text of the dialog that confirms deleting an account with no password.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account and notes will be permanently deleted from this server.'**
+  String get deleteAccountDialogMessage;
 
   /// Title of the change password page.
   ///
@@ -1161,6 +1233,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sign out'**
   String get settingsSignOut;
+
+  /// Row in Settings that opens the page for permanently deleting the account.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete account'**
+  String get settingsDeleteAccount;
 
   /// The Sign out button of the sign-out dialog while signing out runs.
   ///

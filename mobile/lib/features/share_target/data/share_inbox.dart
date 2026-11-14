@@ -90,6 +90,12 @@ class ShareInbox {
     }
   }
 
+  Future<void> removeEntriesOf(String userId) async {
+    for (final (:entry, :folder) in await entries()) {
+      if (entry.userId == userId) await remove(folder);
+    }
+  }
+
   Future<ShareContext> readContext() async {
     try {
       return ShareContext.fromJson(jsonDecode(await _context.readAsString()));

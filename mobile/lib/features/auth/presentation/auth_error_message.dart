@@ -35,6 +35,7 @@ AuthErrorMessage authErrorMessageOf(
     field: null,
   ),
   EmailTakenFailure() => (text: l10n.authEmailTaken, field: AuthField.email),
+  LastAdminFailure() => (text: l10n.authLastAdmin, field: null),
   WrongCurrentPasswordFailure() => (
     text: l10n.authWrongCurrentPassword,
     field: AuthField.currentPassword,

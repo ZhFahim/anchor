@@ -133,21 +133,22 @@ export class SyncEmitterService {
   async removeNotes(
     tx: Prisma.TransactionClient,
     recipientsByNote: Map<string, string[]>,
+    extraEmissions: SyncEmission[] = [],
   ): Promise<string[]> {
     const noteIds = [...recipientsByNote.keys()];
-    if (noteIds.length === 0) {
-      return [];
-    }
-    const recipients = await this.emit(
-      tx,
-      noteIds.flatMap((noteId) =>
+    const recipients = await this.emit(tx, [
+      ...noteIds.flatMap((noteId) =>
         noteEmissions(
           recipientsByNote.get(noteId) ?? [],
           noteId,
           SyncOp.remove,
         ),
       ),
-    );
+      ...extraEmissions,
+    ]);
+    if (noteIds.length === 0) {
+      return recipients;
+    }
     await tx.changeLog.deleteMany({
       where: {
         entityId: { in: noteIds },

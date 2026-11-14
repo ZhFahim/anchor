@@ -11,6 +11,7 @@ import { AuthService } from './auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
 import { OidcConfigService } from './oidc/oidc-config.service';
+import { UserDeletionService } from '../users/user-deletion.service';
 import { REFRESH_TOKEN_REUSE_WINDOW_MS } from './constants/auth.constants';
 
 /**
@@ -194,6 +195,10 @@ describe('AuthService', () => {
     ),
   } as unknown as OidcConfigService;
 
+  const userDeletionService = {
+    deleteUser: vi.fn(() => Promise.resolve()),
+  };
+
   const storageConfig = {
     root: '/data',
     uploadsDir: '/data/uploads',
@@ -211,6 +216,7 @@ describe('AuthService', () => {
       jwtService,
       settingsService,
       oidcConfigService,
+      userDeletionService as unknown as UserDeletionService,
       storageConfig,
     );
     vi.clearAllMocks();
@@ -418,6 +424,63 @@ describe('AuthService', () => {
       } finally {
         vi.useRealTimers();
       }
+    });
+  });
+
+  describe('deleteAccount', () => {
+    it('deletes with the right password', async () => {
+      addUser({ id: 'u1' });
+
+      await service.deleteAccount('u1', 'correct horse');
+
+      expect(userDeletionService.deleteUser).toHaveBeenCalledWith('u1');
+    });
+
+    it.each([['wrong'], [undefined], ['']])(
+      'keeps the account with the password %s',
+      async (password) => {
+        addUser({ id: 'u1' });
+
+        await expect(service.deleteAccount('u1', password)).rejects.toThrow(
+          new ForbiddenException('Current password is incorrect'),
+        );
+        expect(userDeletionService.deleteUser).not.toHaveBeenCalled();
+      },
+    );
+
+    it('needs no password when the account has none', async () => {
+      addUser({ id: 'u1', password: null });
+
+      await service.deleteAccount('u1');
+
+      expect(userDeletionService.deleteUser).toHaveBeenCalledWith('u1');
+    });
+
+    it('keeps the only admin while other people use the server', async () => {
+      addUser({ id: 'admin', isAdmin: true });
+      addUser({ id: 'u1' });
+
+      await expect(
+        service.deleteAccount('admin', 'correct horse'),
+      ).rejects.toBeInstanceOf(ConflictException);
+      expect(userDeletionService.deleteUser).not.toHaveBeenCalled();
+    });
+
+    it('lets an admin go when another admin stays', async () => {
+      addUser({ id: 'admin', isAdmin: true });
+      addUser({ id: 'other', isAdmin: true });
+
+      await service.deleteAccount('admin', 'correct horse');
+
+      expect(userDeletionService.deleteUser).toHaveBeenCalledWith('admin');
+    });
+
+    it('lets the only person on the server go', async () => {
+      addUser({ id: 'admin', isAdmin: true });
+
+      await service.deleteAccount('admin', 'correct horse');
+
+      expect(userDeletionService.deleteUser).toHaveBeenCalledWith('admin');
     });
   });
 

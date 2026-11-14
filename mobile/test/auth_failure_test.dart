@@ -85,6 +85,16 @@ void main() {
     });
   });
 
+  test('deleting the only admin reads as its own failure', () {
+    final failure = AuthFailure.fromResponse(
+      409,
+      'Make someone else an admin before deleting this account',
+      error: const ServerApiError(),
+    );
+
+    expect(failure, isA<LastAdminFailure>());
+  });
+
   group('the server’s answers', () {
     test('a wrong password', () async {
       expect(

@@ -7,6 +7,7 @@ import {
   Lock,
   PencilLine,
   SunMoon,
+  Trash2,
   UserRound,
 } from "lucide-react";
 import * as React from "react";
@@ -20,6 +21,7 @@ const SECTIONS = [
   { id: "token", label: "API token", icon: KeyRound },
   { id: "data", label: "Import and export", icon: HardDriveDownload },
   { id: "password", label: "Password", icon: Lock },
+  { id: "delete-account", label: "Delete account", icon: Trash2 },
   { id: "about", label: "About", icon: Info },
 ] as const;
 

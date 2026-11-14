@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, Logger } from '@nestjs/common';
 import * as crypto from 'crypto';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -7,6 +7,37 @@ import {
   ATTACHMENT_ALLOWED_MIME_TYPES,
   ATTACHMENT_MAX_FILE_SIZE,
 } from '../constants/notes.constants';
+
+const NOTE_FOLDER_NAME = /^[\w-]+$/;
+
+/** Throws for an id that could point outside the attachments folder. */
+export function noteAttachmentDir(
+  attachmentsDir: string,
+  noteId: string,
+): string {
+  if (!NOTE_FOLDER_NAME.test(noteId)) {
+    throw new BadRequestException('Invalid note id');
+  }
+  return path.join(attachmentsDir, noteId);
+}
+
+/** Never throws; a failure is logged. */
+export async function removeNoteAttachmentDir(
+  attachmentsDir: string,
+  noteId: string,
+  logger: Logger,
+): Promise<void> {
+  try {
+    await fs.rm(noteAttachmentDir(attachmentsDir, noteId), {
+      recursive: true,
+      force: true,
+    });
+  } catch (error) {
+    logger.error(
+      `Failed to delete the attachments of note ${noteId}: ${String(error)}`,
+    );
+  }
+}
 
 export function assertValidAttachmentFile(file?: Express.Multer.File): void {
   if (!file) {

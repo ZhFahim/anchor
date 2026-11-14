@@ -7,6 +7,7 @@ import * as path from 'path';
 import { PrismaService } from '../prisma/prisma.service';
 import { NoteState } from 'src/generated/prisma/enums';
 import { StorageConfig } from '../config/configuration';
+import { noteAttachmentDir } from '../notes/utils/attachment-storage.util';
 import {
   buildManifest,
   ExportManifestV1,
@@ -248,11 +249,7 @@ export class ExportService {
       for (const attachment of note.attachments) {
         const storedFilename = storedFilenames.get(attachment.id);
         const filePath = storedFilename
-          ? path.join(
-              this.storageConfig.attachmentsDir,
-              note.id,
-              storedFilename,
-            )
+          ? this.attachmentFilePath(note.id, storedFilename)
           : null;
         if (filePath && fs.existsSync(filePath)) {
           diskPaths.set(attachment.id, filePath);
@@ -272,6 +269,20 @@ export class ExportService {
     );
 
     return diskPaths;
+  }
+
+  private attachmentFilePath(
+    noteId: string,
+    storedFilename: string,
+  ): string | null {
+    try {
+      return path.join(
+        noteAttachmentDir(this.storageConfig.attachmentsDir, noteId),
+        storedFilename,
+      );
+    } catch {
+      return null;
+    }
   }
 
   private readServerVersion(): string | null {

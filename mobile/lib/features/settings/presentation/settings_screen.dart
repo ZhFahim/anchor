@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -376,6 +377,13 @@ class _AccountSection extends ConsumerWidget {
             isDanger: true,
             onTap: () => _signOut(context, ref),
           ),
+          GroupedListTile(
+            icon: LucideIcons.trash2,
+            label: l10n.settingsDeleteAccount,
+            isDanger: true,
+            showChevron: true,
+            onTap: () => context.push(AppRoutes.deleteAccount),
+          ),
         ],
       ),
     );
@@ -400,18 +408,19 @@ class _HelpSection extends StatelessWidget {
             showChevron: true,
             onTap: () => context.push(AppRoutes.logs),
           ),
-          GroupedListTile(
-            icon: LucideIcons.coffee,
-            label: l10n.settingsSupport,
-            subtitle: l10n.settingsSupportHelp,
-            trailing: Icon(
-              LucideIcons.arrowUpRight,
-              size: AnchorTokens.sizeIconSmall,
-              color: colors.appMuted.withValues(alpha: 0.7),
+          if (defaultTargetPlatform != TargetPlatform.iOS)
+            GroupedListTile(
+              icon: LucideIcons.coffee,
+              label: l10n.settingsSupport,
+              subtitle: l10n.settingsSupportHelp,
+              trailing: Icon(
+                LucideIcons.arrowUpRight,
+                size: AnchorTokens.sizeIconSmall,
+                color: colors.appMuted.withValues(alpha: 0.7),
+              ),
+              onTap: () =>
+                  launchExternal(context, 'https://www.buymeacoffee.com/zahid'),
             ),
-            onTap: () =>
-                launchExternal(context, 'https://www.buymeacoffee.com/zahid'),
-          ),
         ],
       ),
     );

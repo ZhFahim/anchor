@@ -3,6 +3,7 @@ import { AdminService } from './admin.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
 import { OidcConfigService } from '../auth/oidc/oidc-config.service';
+import { UserDeletionService } from '../users/user-deletion.service';
 
 describe('AdminService.findUsers', () => {
   let findMany: ReturnType<typeof vi.fn>;
@@ -23,6 +24,7 @@ describe('AdminService.findUsers', () => {
       { user: { findMany, count } } as unknown as PrismaService,
       {} as SettingsService,
       {} as OidcConfigService,
+      {} as UserDeletionService,
     );
   });
 
@@ -106,6 +108,7 @@ describe('AdminService.getPendingUsers', () => {
       { user: { findMany } } as unknown as PrismaService,
       {} as SettingsService,
       {} as OidcConfigService,
+      {} as UserDeletionService,
     );
 
     const waiting = await service.getPendingUsers();
