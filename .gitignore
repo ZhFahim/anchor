@@ -11,3 +11,6 @@ thumbs.db
 .idea/
 *.swp
 *.swo
+
+# Agent worktrees
+.worktrees/
