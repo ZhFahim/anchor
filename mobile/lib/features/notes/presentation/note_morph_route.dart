@@ -139,6 +139,18 @@ class NoteMorphRoute extends PageRoute<void> {
 
   static const Duration _cardWait = Duration(milliseconds: 300);
 
+  static const double _touchableAt = 0.9;
+
+  void _finishOpening() {
+    final controller = this.controller!;
+    if (controller.status != AnimationStatus.forward) return;
+    controller.animateTo(
+      1,
+      duration: const Duration(milliseconds: 80),
+      curve: Curves.easeOut,
+    );
+  }
+
   void _closeOnceCardIsIn() {
     final waited = Stopwatch()..start();
     void check(Duration _) {
@@ -317,6 +329,11 @@ class _NoteMorphState extends State<_NoteMorph>
   }
 
   @override
+  void didChangeMetrics() {
+    if (widget.animation.status == AnimationStatus.forward) _snapshot.clear();
+  }
+
+  @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     if (_route._refresh == _snapshot.clear) _route._refresh = null;
@@ -456,9 +473,12 @@ class _NoteMorphState extends State<_NoteMorph>
     final full = Offset.zero & size;
     final reduce = context.isMotionReduced;
     final isCupertino = context.isCupertino;
-    final page = NotificationListener<ScrollNotification>(
-      onNotification: _onScroll,
-      child: widget.child,
+    final page = Listener(
+      onPointerDown: (_) => _route._finishOpening(),
+      child: NotificationListener<ScrollNotification>(
+        onNotification: _onScroll,
+        child: widget.child,
+      ),
     );
 
     final morph = AnimatedBuilder(
@@ -519,7 +539,7 @@ class _NoteMorphState extends State<_NoteMorph>
             Positioned.fromRect(
               rect: rect,
               child: IgnorePointer(
-                ignoring: animationValue < 1,
+                ignoring: animationValue < NoteMorphRoute._touchableAt,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(radius),
                   child: Stack(

@@ -22,6 +22,7 @@ Future<T?> showAnchorSheet<T>(
   SheetDetent detent = SheetDetent.fit,
   bool canGrow = false,
   String? semanticLabel,
+  VoidCallback? onGone,
 }) {
   final navigator = Navigator.of(context, rootNavigator: true);
   return navigator.push(
@@ -30,6 +31,7 @@ Future<T?> showAnchorSheet<T>(
       detent: detent,
       canGrow: canGrow,
       semanticLabel: semanticLabel,
+      onGone: onGone,
       capturedThemes: InheritedTheme.capture(
         from: context,
         to: navigator.context,
@@ -45,6 +47,7 @@ class _AnchorSheetRoute<T> extends PopupRoute<T> {
     required this.canGrow,
     required this.capturedThemes,
     this.semanticLabel,
+    this.onGone,
   });
 
   final WidgetBuilder builder;
@@ -52,6 +55,10 @@ class _AnchorSheetRoute<T> extends PopupRoute<T> {
   final bool canGrow;
   final CapturedThemes capturedThemes;
   final String? semanticLabel;
+
+  /// Called once the closing sheet has left the screen.
+  final VoidCallback? onGone;
+  bool _isGone = false;
 
   /// In sheet heights per second.
   double _releaseVelocity = 0;
@@ -69,7 +76,7 @@ class _AnchorSheetRoute<T> extends PopupRoute<T> {
   Duration get transitionDuration => Spring.smooth.duration;
 
   @override
-  Duration get reverseTransitionDuration => Spring.smooth.duration;
+  Duration get reverseTransitionDuration => Spring.snappy.duration;
 
   @override
   TickerFuture didPush() {
@@ -80,9 +87,32 @@ class _AnchorSheetRoute<T> extends PopupRoute<T> {
   @override
   bool didPop(T? result) {
     final popped = super.didPop(result);
-    controller!.springBackTo(-0.02, velocity: -_releaseVelocity.abs());
+    controller!
+      ..addListener(_checkGone)
+      ..springBackTo(
+        -0.02,
+        spring: Spring.snappy,
+        velocity: -_releaseVelocity.abs(),
+      );
     _releaseVelocity = 0;
+    _checkGone();
     return popped;
+  }
+
+  void _checkGone() {
+    if (_isGone || controller!.value > 0) return;
+    _isGone = true;
+    controller!.removeListener(_checkGone);
+    onGone?.call();
+  }
+
+  @override
+  void dispose() {
+    if (!_isGone) {
+      _isGone = true;
+      onGone?.call();
+    }
+    super.dispose();
   }
 
   AnimationController get sheetController => controller!;

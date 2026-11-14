@@ -28,6 +28,7 @@ import { useDelayedFlag } from "@/lib/hooks/use-delayed-flag";
 import { isPhoneWidth, useIsPhone } from "@/lib/hooks/use-is-phone";
 import { cn } from "@/lib/utils";
 import { getNoteRevision, getNoteRevisions, restoreNoteRevision } from "../api";
+import { codeIndentColumns, splitCodeLines } from "../code-lines";
 import {
   CURRENT_ENTRY_ID,
   canRestoreRevisions,
@@ -833,7 +834,10 @@ function VersionBody({
               data-line={segment.i}
               className={cn("code-wrap", markClass)}
             >
-              <pre className="code">{text}</pre>
+              <pre className="code">
+                <MarkLabel kind={line.kind} />
+                <CodeText line={line} />
+              </pre>
             </div>
           );
         return (
@@ -858,7 +862,11 @@ function MarkLabel({ kind }: { kind: VersionLine["kind"] }) {
 function LineText({ line }: { line: VersionLine }) {
   if (line.kind !== "changed")
     return <TextRuns runs={line.block.runs} card={false} />;
-  return line.words.map((word: WordPart, i) =>
+  return <Words words={line.words} />;
+}
+
+function Words({ words }: { words: WordPart[] }) {
+  return words.map((word, i) =>
     word.kind === "same" ? (
       <React.Fragment key={i}>{word.text}</React.Fragment>
     ) : word.kind === "del" ? (
@@ -867,4 +875,34 @@ function LineText({ line }: { line: VersionLine }) {
       <ins key={i}>{word.text}</ins>
     ),
   );
+}
+
+function CodeText({ line }: { line: VersionLine }) {
+  const words: WordPart[] =
+    line.kind === "changed"
+      ? line.words
+      : [
+          {
+            kind: "same",
+            text: line.block.runs.map((run) => run.text).join(""),
+          },
+        ];
+  return splitCodeLines(words).map((lineWords, i) => {
+    const columns = codeIndentColumns(
+      lineWords.map((word) => word.text).join(""),
+    );
+    return (
+      <span
+        key={i}
+        className="code-line"
+        style={
+          columns
+            ? ({ "--code-indent": columns } as React.CSSProperties)
+            : undefined
+        }
+      >
+        {lineWords.length ? <Words words={lineWords} /> : <br />}
+      </span>
+    );
+  });
 }

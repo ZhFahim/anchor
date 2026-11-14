@@ -74,10 +74,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
     ref.read(searchQueryProvider.notifier).set('');
     NoteSelection(ref).end();
     widget.onOpenList();
-    Future.delayed(
-      context.motion(const Duration(milliseconds: 160)),
-      widget.onClose,
-    );
+    widget.onClose();
   }
 
   @override

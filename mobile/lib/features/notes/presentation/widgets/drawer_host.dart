@@ -34,16 +34,46 @@ class DrawerHostState extends State<DrawerHost>
 
   bool _isClosing = false;
 
+  final SnapshotController _still = SnapshotController();
+
+  Animation<double>? _pageOver;
+
   bool get isOpen => _drawer.value > 0.5;
 
   /// True while any of the drawer shows, opening or closing.
   bool get isCovered => _isCovered.value;
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final pageOver = ModalRoute.of(context)?.secondaryAnimation;
+    if (pageOver == _pageOver) return;
+    _pageOver?.removeStatusListener(_pageOverChanged);
+    _pageOver = pageOver?..addStatusListener(_pageOverChanged);
+  }
+
+  @override
   void dispose() {
+    _pageOver?.removeStatusListener(_pageOverChanged);
     _drawer.dispose();
     _isCovered.dispose();
+    _still.dispose();
     super.dispose();
+  }
+
+  void _pageOverChanged(AnimationStatus status) {
+    switch (status) {
+      case AnimationStatus.forward:
+        if (_drawer.value > 0) _still.allowSnapshotting = true;
+      case AnimationStatus.completed:
+        _isClosing = false;
+        _drawer.value = 0;
+        _still.allowSnapshotting = false;
+      case AnimationStatus.dismissed:
+        _still.allowSnapshotting = false;
+      case AnimationStatus.reverse:
+        break;
+    }
   }
 
   void open([double velocity = 0]) {
@@ -54,7 +84,7 @@ class DrawerHostState extends State<DrawerHost>
 
   void close([double velocity = 0]) {
     _isClosing = true;
-    _drawer.springTo(0, velocity: velocity);
+    _drawer.springTo(0, spring: Spring.snappy, velocity: velocity);
   }
 
   void _dragUpdate(DragUpdateDetails details) {
@@ -76,6 +106,16 @@ class DrawerHostState extends State<DrawerHost>
   Widget build(BuildContext context) {
     final colors = context.anchor;
     final width = MediaQuery.sizeOf(context).width;
+    final drawer = ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: width * 0.84),
+      child: Semantics(
+        scopesRoute: true,
+        namesRoute: true,
+        explicitChildNodes: true,
+        label: context.l10n.commonMenu,
+        child: widget.drawerBuilder(close),
+      ),
+    );
     final host = AnimatedBuilder(
       animation: _drawer,
       builder: (context, child) {
@@ -123,16 +163,7 @@ class DrawerHostState extends State<DrawerHost>
                   child: GestureDetector(
                     onHorizontalDragUpdate: _dragUpdate,
                     onHorizontalDragEnd: _dragEnd,
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: width * 0.84),
-                      child: Semantics(
-                        scopesRoute: true,
-                        namesRoute: true,
-                        explicitChildNodes: true,
-                        label: context.l10n.commonMenu,
-                        child: widget.drawerBuilder(close),
-                      ),
-                    ),
+                    child: drawer,
                   ),
                 ),
               ),
@@ -152,7 +183,11 @@ class DrawerHostState extends State<DrawerHost>
         },
         child: child!,
       ),
-      child: host,
+      child: SnapshotWidget(
+        controller: _still,
+        mode: SnapshotMode.permissive,
+        child: host,
+      ),
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'snapshot_scale.dart';
 import 'springs.dart';
 
 class ReorderAnimationScope extends InheritedWidget {
@@ -137,7 +138,7 @@ class _ReorderAnimatedBoxState extends State<ReorderAnimatedBox>
           if (progress >= 1) return child!;
           return Opacity(
             opacity: progress.clamp(0.0, 1.0),
-            child: Transform.scale(scale: 0.96 + 0.04 * progress, child: child),
+            child: SnapshotScale(scale: 0.96 + 0.04 * progress, child: child!),
           );
         }
         return Transform.translate(

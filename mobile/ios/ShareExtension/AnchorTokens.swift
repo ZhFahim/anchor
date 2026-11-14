@@ -361,7 +361,7 @@ enum AnchorTokens {
     static let motionDurationSway: TimeInterval = 2.4
     /// Phone: how long a finger rests before a long press starts selecting
     static let motionDurationLongPress: TimeInterval = 0.42
-    static let motionSpringSmoothDuration: TimeInterval = 0.5
+    static let motionSpringSmoothDuration: TimeInterval = 0.38
     static let motionSpringSmoothBounce: CGFloat = 0
     static let motionSpringSnappyDuration: TimeInterval = 0.32
     static let motionSpringSnappyBounce: CGFloat = 0.12

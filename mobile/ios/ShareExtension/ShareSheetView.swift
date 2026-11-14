@@ -212,11 +212,11 @@ struct ShareSheetView: View {
 
     private func close(isSaved: Bool) {
         endEditing()
-        withAnimation(Springs.smooth) {
+        withAnimation(Springs.snappy) {
             isShown = false
             drag = 0
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + AnchorTokens.motionSpringSmoothDuration) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + AnchorTokens.motionSpringSnappyDuration) {
             onClose(isSaved)
         }
     }

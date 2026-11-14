@@ -209,6 +209,19 @@ void main() {
     expect(caret().renderEditable.cursorColor!.a, 0);
   });
 
+  testWidgets('a new note\'s title takes focus as soon as the note is drawn, '
+      'so the keyboard comes up while it opens', (tester) async {
+    await pumpScreen(tester, opensFromList: true);
+    GoRouter.of(tester.element(find.text('Notes'))).push('/note');
+    await tester.pump();
+    await tester.pump();
+
+    final route = ModalRoute.of(tester.element(titleField))!;
+    expect(route.animation!.status, AnimationStatus.forward);
+    expect(tester.widget<TextField>(titleField).focusNode!.hasFocus, isTrue);
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('on iPhone, Back on a note that is the only page opens the '
       'notes list', (tester) async {
     await pumpScreen(

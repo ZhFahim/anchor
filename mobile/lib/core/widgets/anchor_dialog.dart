@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/l10n.dart';
 import '../motion/haptics.dart';
+import '../motion/snapshot_scale.dart';
 import '../motion/springs.dart';
 import '../theme/app_typography.dart';
 import '../theme/context_extensions.dart';
@@ -57,7 +58,12 @@ Future<bool> showAnchorDialog(
           ),
           child: context.isMotionReduced
               ? child
-              : ScaleTransition(scale: scale, child: child),
+              : AnimatedBuilder(
+                  animation: scale,
+                  builder: (context, child) =>
+                      SnapshotScale(scale: scale.value, child: child!),
+                  child: child,
+                ),
         );
       },
     ),

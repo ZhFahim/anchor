@@ -410,4 +410,93 @@ void main() {
     CardRegistry.show('x');
     expect(CardRegistry.hidden.value, isNot(contains('x')));
   });
+
+  group('touches while a note opens', () {
+    late int taps;
+
+    Future<NoteMorphRoute> pushNote(
+      WidgetTester tester, {
+      WidgetBuilder? builder,
+    }) async {
+      await pumpList(tester, ['a', 'b']);
+      taps = 0;
+      final route = NoteMorphRoute(
+        settings: const RouteSettings(),
+        noteId: 'a',
+        builder:
+            builder ??
+            (_) => Center(
+              child: GestureDetector(
+                onTap: () => taps++,
+                child: const SizedBox.square(
+                  dimension: 200,
+                  child: Text('The note'),
+                ),
+              ),
+            ),
+      );
+      navigator.currentState!.push(route);
+      await tester.pump();
+      return route;
+    }
+
+    Future<void> openTo(
+      WidgetTester tester,
+      NoteMorphRoute route,
+      double share,
+    ) async {
+      while (route.animation!.value < share) {
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      expect(route.animation!.status, AnimationStatus.forward);
+    }
+
+    testWidgets('a touch on a note that looks open lands on it and finishes '
+        'the opening quickly', (tester) async {
+      final route = await pushNote(tester);
+      await openTo(tester, route, 0.9);
+      expect(route.animation!.value, lessThan(0.97));
+
+      await tester.tap(find.text('The note'));
+      await tester.pump();
+      expect(taps, 1);
+
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(route.animation!.status, AnimationStatus.completed);
+      expect(find.byType(SnapshotWidget), findsNothing);
+    });
+
+    testWidgets('a swipe on a note that looks open scrolls it', (tester) async {
+      final scroll = ScrollController();
+      addTearDown(scroll.dispose);
+      final route = await pushNote(
+        tester,
+        builder: (_) => ListView(
+          controller: scroll,
+          children: [
+            for (var line = 0; line < 60; line++)
+              SizedBox(height: 40, child: Text('Line $line')),
+          ],
+        ),
+      );
+      await openTo(tester, route, 0.9);
+
+      await tester.dragFrom(const Offset(200, 500), const Offset(0, -300));
+      await tester.pumpAndSettle();
+
+      expect(scroll.offset, greaterThan(100));
+    });
+
+    testWidgets('a note that is still growing ignores touches', (tester) async {
+      final route = await pushNote(tester);
+      await openTo(tester, route, 0.5);
+
+      await tester.tap(find.text('The note'), warnIfMissed: false);
+      await tester.pump();
+
+      expect(taps, 0);
+      expect(route.animation!.status, AnimationStatus.forward);
+      await tester.pumpAndSettle();
+    });
+  });
 }

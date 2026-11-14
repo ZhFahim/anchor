@@ -2220,7 +2220,7 @@
         "duration": {
           "$type": "duration",
           "$value": {
-            "value": 500,
+            "value": 380,
             "unit": "ms"
           }
         },
@@ -2242,7 +2242,7 @@
           "$type": "number",
           "$value": 0.12
         },
-        "$description": "Presses, switches, the dock, a card settling after a swipe"
+        "$description": "Presses, switches, the dock, a card settling after a swipe, sheets and the drawer leaving"
       },
       "pop": {
         "duration": {

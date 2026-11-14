@@ -15,7 +15,7 @@ class AnchorPageTransitionsBuilder extends PageTransitionsBuilder {
 
   @override
   Duration get reverseTransitionDuration =>
-      isSystemMotionReduced ? Duration.zero : const Duration(milliseconds: 420);
+      isSystemMotionReduced ? Duration.zero : Spring.smooth.duration;
 
   @override
   Widget buildTransitions<T>(
@@ -43,7 +43,7 @@ class AnchorPageTransitionsBuilder extends PageTransitionsBuilder {
   }
 }
 
-enum _BackPhase { idle, gesture, commit }
+enum _BackPhase { idle, gesture, cancel, commit }
 
 class _AndroidPageTransition extends StatefulWidget {
   const _AndroidPageTransition({
@@ -70,8 +70,11 @@ class _AndroidPageTransitionState extends State<_AndroidPageTransition>
   double _progress = 0;
   double _dy = 0;
   double _startY = 0;
-  double _commitFrom = 1;
-  ({double value, double shown})? _closing;
+  double _cancelFrom = 1;
+  final _Slide _slide = _Slide();
+  final _Slide _covered = _Slide();
+
+  final SnapshotController _still = SnapshotController();
 
   bool get _enabled => widget.route.isCurrent && widget.route.popGestureEnabled;
 
@@ -84,7 +87,13 @@ class _AndroidPageTransitionState extends State<_AndroidPageTransition>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _still.dispose();
     super.dispose();
+  }
+
+  void _enter(_BackPhase phase) {
+    _phase = phase;
+    _still.allowSnapshotting = phase != _BackPhase.idle;
   }
 
   @override
@@ -94,7 +103,7 @@ class _AndroidPageTransitionState extends State<_AndroidPageTransition>
     _startY = backEvent.touchOffset?.dy ?? 0;
     widget.route.handleStartBackGesture(progress: 1 - backEvent.progress);
     setState(() {
-      _phase = _BackPhase.gesture;
+      _enter(_BackPhase.gesture);
       _progress = backEvent.progress;
       _dy = 0;
     });
@@ -116,15 +125,15 @@ class _AndroidPageTransitionState extends State<_AndroidPageTransition>
   @override
   void handleCancelBackGesture() {
     if (_phase != _BackPhase.gesture) return;
+    _cancelFrom = widget.animation.value;
+    setState(() => _enter(_BackPhase.cancel));
     widget.route.handleCancelBackGesture();
-    setState(() => _phase = _BackPhase.idle);
   }
 
   @override
   void handleCommitBackGesture() {
     if (_phase != _BackPhase.gesture) return;
-    _commitFrom = math.max(0.01, widget.animation.value);
-    setState(() => _phase = _BackPhase.commit);
+    setState(() => _enter(_BackPhase.commit));
     widget.route.handleCommitBackGesture();
   }
 
@@ -135,17 +144,31 @@ class _AndroidPageTransitionState extends State<_AndroidPageTransition>
       animation: Listenable.merge([
         widget.animation,
         widget.secondaryAnimation,
+        widget.route.navigator?.userGestureInProgressNotifier,
       ]),
-      child: widget.child,
+      child: SnapshotWidget(
+        controller: _still,
+        mode: SnapshotMode.permissive,
+        child: widget.child,
+      ),
       builder: (context, child) {
-        final dim = _dimOf(widget.secondaryAnimation.value);
+        final covered = _covered.of(widget.secondaryAnimation);
         Widget page;
         if (_phase == _BackPhase.gesture && widget.route.popGestureInProgress) {
           page = _shrunk(child!, size, _eased(_progress), 0, 1);
+        } else if (_phase == _BackPhase.cancel &&
+            !widget.animation.isCompleted) {
+          final back = _cancelFrom >= 1
+              ? 1.0
+              : (widget.animation.value - _cancelFrom) / (1 - _cancelFrom);
+          final left = 1 - Spring.smooth.curve.transform(back.clamp(0.0, 1.0));
+          page = _shrunk(child!, size, _eased(_progress) * left, 0, 1, left);
         } else if (_phase == _BackPhase.commit &&
             !widget.animation.isCompleted) {
-          final left =
-              1 - (widget.animation.value / _commitFrom).clamp(0.0, 1.0);
+          // Letting go restarts the closing animation from the end.
+          final left = Spring.smooth.curve.transform(
+            1 - widget.animation.value,
+          );
           page = _shrunk(
             child!,
             size,
@@ -156,14 +179,13 @@ class _AndroidPageTransitionState extends State<_AndroidPageTransition>
         } else {
           if (_phase != _BackPhase.idle && widget.animation.isCompleted) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) setState(() => _phase = _BackPhase.idle);
+              if (mounted) setState(() => _enter(_BackPhase.idle));
             });
           }
-          final progress = _slideIn();
+          final progress = _slide.of(widget.animation);
           page = FractionalTranslation(
             translation: Offset(1 - progress, 0),
             child: DecoratedBox(
-              position: DecorationPosition.foreground,
               decoration: BoxDecoration(
                 boxShadow: progress < 1
                     ? [
@@ -181,13 +203,21 @@ class _AndroidPageTransitionState extends State<_AndroidPageTransition>
             ),
           );
         }
-        if (dim <= 0) return page;
+        if (covered <= 0) return page;
+        if (!widget.route.popGestureInProgress) {
+          page = FractionalTranslation(
+            translation: Offset(-covered / 3, 0),
+            child: page,
+          );
+        }
         return Stack(
           fit: StackFit.passthrough,
           children: [
             page,
             IgnorePointer(
-              child: ColoredBox(color: Colors.black.withValues(alpha: dim)),
+              child: ColoredBox(
+                color: Colors.black.withValues(alpha: 0.1 * covered),
+              ),
             ),
           ],
         );
@@ -195,39 +225,22 @@ class _AndroidPageTransitionState extends State<_AndroidPageTransition>
     );
   }
 
-  double _slideIn() {
-    final animation = widget.animation;
-    final curve = Spring.smooth.curve;
-    if (animation.status != AnimationStatus.reverse) {
-      _closing = null;
-      return curve.transform(animation.value);
-    }
-    final closing = _closing ??= (
-      value: animation.value,
-      shown: curve.transform(animation.value),
-    );
-    if (closing.value == 0) return 0;
-    final elapsed = (closing.value - animation.value) / closing.value;
-    return closing.shown * (1 - curve.transform(elapsed.clamp(0.0, 1.0)));
-  }
-
   double _eased(double progress) =>
       Curves.easeOut.transform(progress.clamp(0.0, 1.0));
-
-  double _dimOf(double secondary) => 0.1 * secondary;
 
   Widget _shrunk(
     Widget child,
     Size size,
     double shrink,
     double slide,
-    double opacity,
-  ) {
+    double opacity, [
+    double drag = 1,
+  ]) {
     final radius = 34.0 * shrink;
     return Opacity(
       opacity: opacity,
       child: Transform.translate(
-        offset: Offset(_side * (8 * shrink + slide), _dy * 0.08),
+        offset: Offset(_side * 8 * shrink + slide, _dy * 0.08 * drag),
         child: Transform.scale(
           scale: 1 - 0.1 * shrink,
           alignment: _side < 0 ? Alignment.centerRight : Alignment.centerLeft,
@@ -238,5 +251,23 @@ class _AndroidPageTransitionState extends State<_AndroidPageTransition>
         ),
       ),
     );
+  }
+}
+
+class _Slide {
+  double _shown = 0;
+  ({double value, double shown})? _closing;
+
+  double of(Animation<double> animation) {
+    final curve = Spring.smooth.curve;
+    if (animation.status != AnimationStatus.reverse) {
+      _closing = null;
+      return _shown = curve.transform(animation.value);
+    }
+    final closing = _closing ??= (value: animation.value, shown: _shown);
+    if (closing.value == 0) return _shown = 0;
+    final elapsed = (closing.value - animation.value) / closing.value;
+    return _shown =
+        closing.shown * (1 - curve.transform(elapsed.clamp(0.0, 1.0)));
   }
 }

@@ -38,6 +38,36 @@ void main() {
     expect(drawer.currentState!.isOpen, isFalse);
   });
 
+  testWidgets('the drawer builds once while it opens and closes', (
+    tester,
+  ) async {
+    final drawer = GlobalKey<DrawerHostState>();
+    var builds = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: DrawerHost(
+          key: drawer,
+          drawerBuilder: (close) => Builder(
+            builder: (_) {
+              builds++;
+              return const SizedBox(width: 300);
+            },
+          ),
+          child: const SizedBox.expand(),
+        ),
+      ),
+    );
+    drawer.currentState!.open();
+    await tester.pumpAndSettle();
+    expect(builds, 1);
+
+    drawer.currentState!.close();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(builds, 1);
+  });
+
   testWidgets('Back closes the drawer instead of leaving the app', (
     tester,
   ) async {

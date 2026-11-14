@@ -58,6 +58,7 @@ import { useChecklistBoxes } from "./use-checklist-boxes";
 import { scrollerOf, useChecklistDrag } from "./use-checklist-drag";
 import { useChecklistEdits } from "./use-checklist-edits";
 import { useChecklistSort } from "./use-checklist-sort";
+import { useCodeIndents } from "./use-code-indents";
 import { type FirstLineHandlers, useFirstLine } from "./use-first-line";
 
 // Our formats must be registered before any note opens.
@@ -232,6 +233,7 @@ export const RichTextEditor = forwardRef<
       enabled: !readOnly,
     });
     useChecklistBoxes({ containerEl: editorContainerEl, getQuill, readOnly });
+    useCodeIndents({ containerEl: editorContainerEl });
     const checkedFolds = useCheckedFolds({
       containerEl: editorContainerEl,
       getQuill,
