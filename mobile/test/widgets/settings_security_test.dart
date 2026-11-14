@@ -1,7 +1,7 @@
 import 'package:anchor/app/app_bootstrap.dart';
 import 'package:anchor/core/storage/preferences_repository.dart';
-import 'package:anchor/core/widgets/segmented_control.dart';
 import 'package:anchor/core/theme/app_theme.dart';
+import 'package:anchor/core/widgets/segmented_control.dart';
 import 'package:anchor/features/settings/presentation/app_lock_controller.dart';
 import 'package:anchor/features/settings/presentation/settings_screen.dart';
 import 'package:flutter/material.dart';

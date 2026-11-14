@@ -1,13 +1,13 @@
+import 'package:anchor/core/widgets/grouped_list.dart';
 import 'package:anchor/features/backup/domain/backup_settings.dart';
 import 'package:anchor/features/backup/presentation/backup_controller.dart';
 import 'package:anchor/features/backup/presentation/backup_section.dart';
 import 'package:anchor/features/backup/presentation/backup_settings_controller.dart';
-import 'package:anchor/core/widgets/grouped_list.dart';
 import 'package:anchor/l10n/l10n.dart';
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class FakeSettings extends BackupSettingsController {
   FakeSettings(this.initial);
