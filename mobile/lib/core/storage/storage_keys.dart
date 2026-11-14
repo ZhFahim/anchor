@@ -20,6 +20,7 @@ class StorageKeys {
   static const notesSortAscending = 'notes_is_ascending';
   static const openArchivedTags = 'notes_open_archived_tags';
   static const appLockEnabled = 'security_app_lock_enabled';
+  static const lockGraceMinutes = 'security_lock_grace_minutes';
   static const motionSpeed = 'motion_speed';
   static const backupFolder = 'backup_folder_uri';
   static const backupAutomatic = 'backup_automatic';

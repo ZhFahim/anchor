@@ -50,6 +50,14 @@ class _AppLockGateState extends ConsumerState<AppLockGate>
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.hidden) {
       ref.read(appLockControllerProvider.notifier).lock();
+      return;
+    }
+    if (state == AppLifecycleState.resumed) {
+      final controller = ref.read(appLockControllerProvider.notifier);
+      final lockEnabled = ref.read(appLockEnabledProvider);
+      if (lockEnabled && controller.isWithinGrace(DateTime.now())) {
+        controller.uncover();
+      }
     }
   }
 

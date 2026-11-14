@@ -177,6 +177,13 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(AppLockScreen), findsNothing);
 
+    // The default grace is five minutes, so push the unlock out of it.
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(AppLockGate)));
+    container
+        .read(appLockControllerProvider.notifier)
+        .debugMarkUnlocked(DateTime.now().subtract(const Duration(minutes: 10)));
+
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
     // A paused app draws no frame, so the cover shows on the way back.
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
@@ -184,6 +191,27 @@ void main() {
 
     expect(find.byType(AppLockScreen), findsOneWidget);
     expect(auth.calls, 2);
+  });
+
+  testWidgets('a return inside the grace window does not ask again', (
+    tester,
+  ) async {
+    final auth = await _pump(tester, isLocked: true);
+    await tester.pumpAndSettle();
+    expect(auth.calls, 1);
+
+    // The person unlocked, then left and came back inside the window.
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(AppLockGate)));
+    container
+        .read(appLockControllerProvider.notifier)
+        .debugMarkUnlocked(DateTime.now());
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AppLockScreen), findsNothing);
+    expect(auth.calls, 1, reason: 'the second entry must not prompt');
   });
 
   testWidgets('the cover waits without a spinner on its button', (

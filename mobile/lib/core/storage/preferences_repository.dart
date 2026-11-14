@@ -186,6 +186,18 @@ class PreferencesRepository {
     );
   }
 
+  Future<int> getLockGraceMinutes() async {
+    final value = await _storage.read(key: StorageKeys.lockGraceMinutes);
+    return int.tryParse(value ?? '') ?? 5;
+  }
+
+  Future<void> setLockGraceMinutes(int minutes) async {
+    await _storage.write(
+      key: StorageKeys.lockGraceMinutes,
+      value: minutes.toString(),
+    );
+  }
+
   Future<String?> getMotionSpeedName() =>
       _storage.read(key: StorageKeys.motionSpeed);
 

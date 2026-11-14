@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -61,6 +63,14 @@ class AppLockEnabled extends _$AppLockEnabled {
   }
 }
 
+/// How long a quick return skips the biometric prompt.
+///
+/// A plain `Provider` keeps the choice out of the code generation pipeline
+/// that the rest of this file uses.
+final appLockGraceMinutesProvider = Provider<int>((ref) {
+  return ref.watch(appBootstrapProvider).lockGraceMinutes;
+});
+
 /// Whether the notes are covered right now.
 ///
 /// Starts covered when the setting is on, so a cold start never shows a note
@@ -70,6 +80,10 @@ class AppLockController extends _$AppLockController {
   /// True while the system prompt is up, so the pause it causes does not lock.
   bool _asking = false;
 
+  /// The last time the device let the person in. A return inside the grace
+  /// window does not ask again.
+  DateTime? lastUnlockedAt;
+
   @override
   bool build() => ref.read(appLockEnabledProvider);
 
@@ -77,6 +91,26 @@ class AppLockController extends _$AppLockController {
   void lock() {
     if (!ref.read(appLockEnabledProvider) || _asking) return;
     state = true;
+  }
+
+  /// Clears the cover without asking the device. Used on a return inside the
+  /// grace window.
+  void uncover() {
+    state = false;
+  }
+
+  /// True when the last unlock is inside the grace window, so a quick return
+  /// does not ask the device again.
+  bool isWithinGrace(DateTime now) {
+    final at = lastUnlockedAt;
+    final minutes = ref.read(appLockGraceMinutesProvider);
+    if (at == null || minutes <= 0) return false;
+    return now.difference(at) < Duration(minutes: minutes);
+  }
+
+  @visibleForTesting
+  void debugMarkUnlocked(DateTime at) {
+    lastUnlockedAt = at;
   }
 
   /// Asks the device to authenticate the person and uncovers the notes.
@@ -90,6 +124,7 @@ class AppLockController extends _$AppLockController {
           .read(deviceAuthenticatorProvider)
           .authenticate();
       if (!didAuthenticate) return AppLockProblem.interrupted;
+      lastUnlockedAt = DateTime.now();
       state = false;
       return null;
     } on LocalAuthException catch (error) {
