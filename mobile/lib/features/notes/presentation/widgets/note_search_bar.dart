@@ -32,10 +32,18 @@ class NoteSearchBar extends StatefulWidget {
 
 class _NoteSearchBarState extends State<NoteSearchBar> {
   final _field = TextEditingController();
+  final _focus = FocusNode();
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _focus.requestFocus();
+  }
 
   @override
   void dispose() {
     _field.dispose();
+    _focus.dispose();
     super.dispose();
   }
 
@@ -71,6 +79,7 @@ class _NoteSearchBarState extends State<NoteSearchBar> {
               Expanded(
                 child: TextField(
                   controller: _field,
+                  focusNode: _focus,
                   autofocus: true,
                   textInputAction: TextInputAction.search,
                   onChanged: widget.onQueryChanged,

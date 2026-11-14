@@ -2233,6 +2233,52 @@ void main() {
       expect(calls.haptics, ['HapticFeedbackType.selectionClick']);
     });
   });
+  testWidgets('tapping search moves the caret into the field', (tester) async {
+    final note = Note(
+      id: 'n1',
+      title: 'Harbour',
+      content: '{"ops":[{"insert":"body\\n"}]}',
+      updatedAt: DateTime.utc(2026, 1, 1),
+    );
+    when(
+      () => notesRepo.watchNote(any()),
+    ).thenAnswer((_) => Stream<Note?>.value(note));
+
+    await pumpScreen(tester, note: note);
+    await tester.tap(find.bySemanticsLabel('Search in this note'));
+    await tester.pumpAndSettle();
+
+    final field = tester.widget<TextField>(
+      find.byWidgetPredicate(
+        (w) => w is TextField && w.decoration?.hintText == 'Find in note',
+      ),
+    );
+    expect(field.focusNode?.hasFocus, isTrue);
+  });
+
+  testWidgets('closing the search returns the caret to the editor', (
+    tester,
+  ) async {
+    final note = Note(
+      id: 'n1',
+      title: 'Harbour',
+      content: '{"ops":[{"insert":"body\\n"}]}',
+      updatedAt: DateTime.utc(2026, 1, 1),
+    );
+    when(
+      () => notesRepo.watchNote(any()),
+    ).thenAnswer((_) => Stream<Note?>.value(note));
+
+    await pumpScreen(tester, note: note);
+    await tester.tap(find.bySemanticsLabel('Search in this note'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.bySemanticsLabel('Close search'));
+    await tester.pumpAndSettle();
+
+    final editor = tester.widget<RichTextEditor>(find.byType(RichTextEditor));
+    expect(editor.focusNode.hasFocus, isTrue);
+  });
+
 }
 
 class PlatformCalls {

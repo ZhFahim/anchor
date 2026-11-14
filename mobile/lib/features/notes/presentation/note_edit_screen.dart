@@ -77,6 +77,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
         _editorKey.currentState?.controller.document.toPlainText() ?? '',
   );
   bool _isSearching = false;
+  FocusNode? _focusBeforeSearch;
   double _readOnlyBarHeight = 0;
   late final AnimationController _nudge = AnimationController(
     vsync: this,
@@ -184,11 +185,25 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
     _leave();
   }
 
-  void _openSearch() => setState(() => _isSearching = true);
+  void _openSearch() {
+    _focusBeforeSearch = _editorFocus.hasFocus
+        ? _editorFocus
+        : _titleFocus.hasFocus
+        ? _titleFocus
+        : null;
+    _titleFocus.unfocus();
+    _editorFocus.unfocus();
+    setState(() => _isSearching = true);
+  }
 
   void _closeSearch() {
     _search.clear();
     setState(() => _isSearching = false);
+    final target = _focusBeforeSearch ?? _editorFocus;
+    _focusBeforeSearch = null;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) target.requestFocus();
+    });
   }
 
   void _searchChanged() {
