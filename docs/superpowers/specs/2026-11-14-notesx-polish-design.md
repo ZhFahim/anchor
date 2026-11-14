@@ -53,7 +53,8 @@ New behaviour:
   thumbnail must not show a note.
 - On resume, the cover is removed without a biometric prompt when the time since
   the last successful unlock is below the grace period.
-- The grace period is stored on the device. The default is 5 minutes.
+- The grace duration is stored on the device. The default is 5 minutes.
+- The last unlock time stays in memory. A cold start therefore always asks.
 - The setting offers `Off`, `1`, `5`, and `15` minutes.
 
 `AppLockController` gains `lastUnlockedAt` in memory. `AppLockGate` reads it on
