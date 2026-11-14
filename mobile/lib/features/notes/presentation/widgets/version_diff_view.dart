@@ -312,7 +312,7 @@ class _Line extends StatelessWidget {
             child: Center(
               child: NoteCheckBox(
                 checked: block.done,
-                size: NoteCheckBox.sizeFor(lineHeight),
+                size: NoteCheckBox.maxSize,
                 border: appearance.colors.muted,
                 tick: themeColors.checkMark,
               ),

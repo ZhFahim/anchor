@@ -132,7 +132,7 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
-          draft: true
+          draft: false
           body_path: release-notes.md
           prerelease: ${{ contains(github.ref, '-') }}
           files: |

@@ -112,7 +112,7 @@ Widget? buildListMarker(
   final guide = palette.border.withValues(alpha: palette.border.a * 0.85);
   if (config.attrs.isChecklist) {
     final enabled = (config.enabled ?? true) && canEdit;
-    final checkboxSize = NoteCheckBox.sizeFor(lineHeight);
+    final checkboxSize = NoteCheckBox.maxSize;
     final boxLeft = left + _checkboxInset;
     final targetLeft = math.max(
       0.0,
@@ -344,16 +344,8 @@ class NoteCheckBox extends StatelessWidget {
     required this.tick,
   });
 
-  /// The box for a standard line.
+  /// The box for a note checkbox. The compact line is tall enough for it.
   static const double maxSize = 22; // off-scale: the note's checkbox
-
-  /// The smallest box that still reads at the smallest text size.
-  static const double minSize = 14; // off-scale: the note's checkbox
-
-  /// The box fits its line. A compact line is shorter than [maxSize], so a
-  /// fixed size would draw the box over the line above and the one below.
-  static double sizeFor(double lineHeight) =>
-      math.min(maxSize, math.max(minSize, lineHeight));
 
   final bool checked;
   final bool isJustChecked;

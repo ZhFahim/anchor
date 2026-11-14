@@ -1,3 +1,4 @@
+import 'package:anchor/app/app_bootstrap.dart';
 import 'package:anchor/core/network/connectivity_provider.dart';
 import 'package:anchor/core/network/server_config_provider.dart';
 import 'package:anchor/core/storage/preferences_repository.dart';
@@ -40,6 +41,22 @@ void main() {
   setUp(() {
     preferences = _MockPreferences();
     when(preferences.getCustomHeaders).thenAnswer((_) async => const []);
+    when(preferences.getAllowSelfSignedCert).thenAnswer((_) async => false);
+    when(preferences.getFoldedChecklistNotes).thenAnswer((_) async => const []);
+    when(preferences.getOpenArchivedTags).thenAnswer((_) async => const []);
+    when(preferences.getNotesViewType).thenAnswer((_) async => null);
+    when(preferences.getNotesSortOption).thenAnswer((_) async => null);
+    when(preferences.getNotesSortAscending).thenAnswer((_) async => true);
+    when(preferences.getMotionSpeedName).thenAnswer((_) async => null);
+    when(preferences.getAppLockEnabled).thenAnswer((_) async => false);
+    when(preferences.getNotificationsAsked).thenAnswer((_) async => true);
+    when(preferences.getExactAlarmsOffered).thenAnswer((_) async => true);
+    when(preferences.getBackupFolder).thenAnswer((_) async => null);
+    when(preferences.getBackupAutomatic).thenAnswer((_) async => true);
+    when(preferences.getBackupPeriodDays).thenAnswer((_) async => 7);
+    when(preferences.getBackupKeepFiles).thenAnswer((_) async => 3);
+    when(preferences.getBackupPassword).thenAnswer((_) async => null);
+    when(preferences.getBackupLastAt).thenAnswer((_) async => null);
   });
 
   Future<void> pumpList(WidgetTester tester) async {
@@ -63,6 +80,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          appBootstrapProvider.overrideWithValue(const AppBootstrap()),
           serverUrlProvider.overrideWithValue('https://example.test'),
           authControllerProvider.overrideWith(_SignedIn.new),
           notesRepositoryProvider.overrideWithValue(_MockNotes()),

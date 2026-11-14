@@ -250,7 +250,9 @@ void main() {
     ], boxes);
   });
 
-  testWidgets('a compact line is tall enough for its checkbox', (tester) async {
+  testWidgets('a compact line keeps the visual check size without overlap', (
+    tester,
+  ) async {
     const checklist =
         '{"ops":[{"insert":"a"},{"insert":"\\n","attributes":{"list":"unchecked"}}, '
         '{"insert":"b"},{"insert":"\\n","attributes":{"list":"checked"}}, '
@@ -265,7 +267,13 @@ void main() {
         tester.getRect(find.byType(NoteCheckBox).at(i)),
     ];
 
-    expect(boxes.first.height, lessThan(NoteCheckBox.maxSize));
+    expect(boxes.first.height, NoteCheckBox.maxSize);
+    expect(
+      boxes.first.height,
+      lessThan(
+        AnchorTokens.typeBody.fontSize! * AnchorDensity.compact.noteLineHeight,
+      ),
+    );
     for (var i = 1; i < boxes.length; i++) {
       expect(
         boxes[i].top,

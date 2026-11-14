@@ -224,7 +224,7 @@ abstract final class AnchorTokens {
   /// The top bar under the status bar, as tall as its buttons
   static const double densityCompactBar = 44.0;
   /// Line height of note text in the editor and versions
-  static const double densityCompactNoteLineHeight = 1.15;
+  static const double densityCompactNoteLineHeight = 1.4;
   static const int densityCompactPreviewMasonry = 4;
   static const int densityCompactPreviewGrid = 3;
   static const int densityCompactPreviewList = 1;
