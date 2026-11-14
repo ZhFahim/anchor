@@ -119,9 +119,10 @@ jobs:
         run: pnpm test
 
   mobile-lint:
-    # The Flutter SDK is installed on the runner itself, so the job needs no
-    # download and no cache step.
-    runs-on: [self-hosted, linux, x64, flutter]
+    # The Flutter SDK is installed on the arm64 self-hosted runner (box-03).
+    # The x64 runner has no Flutter, so the job pins arm64 to avoid a false
+    # "flutter: command not found" failure.
+    runs-on: [self-hosted, linux, arm64, flutter]
     defaults:
       run:
         working-directory: mobile
