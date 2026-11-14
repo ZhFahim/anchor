@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
@@ -32,13 +33,17 @@ class BackupSection extends ConsumerWidget {
     final l10n = context.l10n;
     return GroupedList(
       children: [
-        _Row(
+        GroupedListTile(
+          icon: LucideIcons.archive,
           label: l10n.backupFolder,
           value: settings.folderDisplayName ?? l10n.backupChooseFolder,
+          showChevron: true,
           onTap: () => _pickFolder(context, ref),
         ),
-        _Row(
+        GroupedListTile(
+          icon: LucideIcons.download,
           label: running ? l10n.backupRunning : l10n.backupNow,
+          showChevron: !running,
           trailing: running
               ? const SizedBox(
                   width: 16,
@@ -48,28 +53,37 @@ class BackupSection extends ConsumerWidget {
               : null,
           onTap: running ? null : () => _backupNow(context, ref),
         ),
-        _Row(
+        GroupedListTile(
+          icon: LucideIcons.archiveRestore,
           label: l10n.backupRestore,
+          showChevron: !running,
           onTap: running ? null : () => _restore(context, ref),
         ),
         SwitchRow(
+          icon: LucideIcons.history,
           label: l10n.backupAutomatic,
           value: settings.automatic,
           onChanged: (value) => ref
               .read(backupSettingsControllerProvider.notifier)
               .setAutomatic(value),
         ),
-        _Row(
+        GroupedListTile(
+          icon: LucideIcons.calendarClock,
           label: l10n.backupPeriod(settings.periodDays),
+          showChevron: true,
           onTap: () => _pickPeriod(context, ref, settings),
         ),
-        _Row(
+        GroupedListTile(
+          icon: LucideIcons.copy,
           label: l10n.backupKeep(settings.keepFiles),
+          showChevron: true,
           onTap: () => _pickKeep(context, ref, settings),
         ),
-        _Row(
+        GroupedListTile(
+          icon: LucideIcons.keyRound,
           label: l10n.backupPassword,
           value: settings.password == null ? l10n.backupPasswordNone : '••••••',
+          showChevron: true,
           onTap: () => _pickPassword(context, ref),
         ),
       ],
@@ -285,38 +299,5 @@ class BackupSection extends ConsumerWidget {
     scaffoldMessengerKey.currentState
       ?..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(message)));
-  }
-}
-
-class _Row extends StatelessWidget {
-  const _Row({required this.label, this.value, this.trailing, this.onTap});
-
-  final String label;
-  final String? value;
-  final Widget? trailing;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AnchorTokens.space16,
-          vertical: AnchorTokens.space12,
-        ),
-        child: Row(
-          children: [
-            Expanded(child: Text(label, style: textTheme.bodyMedium)),
-            if (value != null) Text(value!, style: textTheme.bodySmall),
-            if (trailing != null) ...[
-              const SizedBox(width: AnchorTokens.space8),
-              trailing!,
-            ],
-          ],
-        ),
-      ),
-    );
   }
 }
