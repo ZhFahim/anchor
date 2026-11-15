@@ -523,6 +523,8 @@
   align-self: stretch;
   min-width: 0;
   display: grid;
+  /* Fixed tracks so the picture's max-height: 100% means the stage, not its own height. */
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
   place-items: center;
   position: relative;
 }
