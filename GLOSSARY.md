@@ -36,6 +36,17 @@ _Avoid_: animation speed, motion speed
 The work that Flutter does to redraw a widget during a transition.
 _Avoid_: jank, frame cost
 
+## Checklists
+
+**Checked section**:
+The run of checked checklist blocks at the bottom of a checklist group.
+_Avoid_: done section, completed list
+
+**Frozen block**:
+A checked checklist block with at least one unchecked descendant. It stays in
+place, and its children do not move, until every descendant is checked.
+_Avoid_: locked block, pending parent
+
 ## Fork maintenance
 
 **Upstream**:

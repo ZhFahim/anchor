@@ -169,9 +169,7 @@ class RichTextEditorState extends State<RichTextEditor>
     final scrollable = Scrollable.maybeOf(context);
     final viewportBox = scrollable?.context.findRenderObject();
     if (viewportBox is! RenderBox) return;
-    final rect = render.getLocalRectForCaret(
-      TextPosition(offset: range.start),
-    );
+    final rect = render.getLocalRectForCaret(TextPosition(offset: range.start));
     final viewportTop = viewportBox.localToGlobal(Offset.zero).dy;
     final top = render.localToGlobal(rect.topLeft).dy - viewportTop;
     final bottom = render.localToGlobal(rect.bottomRight).dy - viewportTop;
@@ -852,14 +850,19 @@ class RichTextEditorState extends State<RichTextEditor>
     final lines = parseDocumentLines(_controller.document);
     final index = lineIndexAt(lines, line.documentOffset);
     if (index == -1) return;
+    final blockEnd = checklistBlockEnd(lines, index, lines.length - 1);
+    var toggledLines = 0;
+    for (var i = index; i <= blockEnd; i++) {
+      if (lines[i].isChecklist) toggledLines++;
+    }
     final delta = buildChecklistToggleDelta(lines, index, checked);
     _editWithoutFocus(
-      () => _controller.compose(
-        delta,
-        _controller.selection,
-        ChangeSource.local,
-      ),
+      () =>
+          _controller.compose(delta, _controller.selection, ChangeSource.local),
     );
+    // A cascade changes several lines in one delta, so handleChange cannot
+    // read it as one toggle. A single line still uses the delayed path.
+    if (toggledLines > 1) _sorter.sortAfterToggle(index);
   }
 
   /// Quill's own tap recognizer gets a tap on a control in the text too;

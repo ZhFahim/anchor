@@ -76,11 +76,24 @@ class ChecklistSorter {
     if (_isDisposed || !_waiting.remove(pending) || !_isEnabled()) return;
     final history = _controller.document.history;
     // The move joins the check's Undo step unless something came between.
-    if (history.lastRecorded == pending.lastRecorded &&
-        history.stack.undo.length == pending.steps) {
-      history.lastRecorded = DateTime.now().millisecondsSinceEpoch;
-    }
-    _sortToggledLine(pending.newline);
+    final joinUndo =
+        history.lastRecorded == pending.lastRecorded &&
+        history.stack.undo.length == pending.steps;
+    _sortToggledLine(pending.newline, joinUndo: joinUndo);
+  }
+
+  /// Sorts after a cascade that [handleChange] cannot read as one toggle.
+  ///
+  /// The caller composes the cascade first, then calls this with the line the
+  /// reader tapped. The move joins the cascade's Undo step.
+  void sortAfterToggle(int lineIndex) {
+    if (_isDisposed || !_isEnabled()) return;
+    final lines = parseDocumentLines(_controller.document);
+    if (lineIndex < 0 || lineIndex >= lines.length) return;
+    _sortToggledLine(
+      lines[lineIndex].startOffset + lines[lineIndex].length - 1,
+      joinUndo: true,
+    );
   }
 
   int? _toggledNewlineOffset(DocChange change) {
@@ -111,7 +124,7 @@ class ChecklistSorter {
     return null;
   }
 
-  void _sortToggledLine(int newlineOffset) {
+  void _sortToggledLine(int newlineOffset, {bool joinUndo = false}) {
     final lines = parseDocumentLines(_controller.document);
     final lineIndex = lineIndexAt(lines, newlineOffset);
     if (lineIndex == -1 || !lines[lineIndex].isChecklist) return;
@@ -124,6 +137,11 @@ class ChecklistSorter {
       prefer: lineIndex,
     );
     if (plan == null) return;
+
+    if (joinUndo) {
+      _controller.document.history.lastRecorded =
+          DateTime.now().millisecondsSinceEpoch;
+    }
 
     final move = buildCheckedSectionDelta(
       _controller.document,

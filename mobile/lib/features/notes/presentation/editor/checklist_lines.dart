@@ -339,6 +339,18 @@ CheckedSectionPlan? checklistCheckedSectionPlan(
   final doneIndents = <int>[];
   final blocks = _checklistBlocks(lines, groupStart, groupEnd);
   final late = prefer == null ? null : _blockStartingAt(blocks, prefer);
+  // A checked block with an unchecked descendant is frozen as a whole. It does
+  // not move, and neither does a child toggled inside it.
+  final parent = late == null ? null : _blockParent(blocks, late);
+  final parentFrozen =
+      parent != null &&
+      lines[parent.start].isChecked &&
+      !_blockFullyChecked(lines, parent);
+  final lateMoves =
+      late != null &&
+      !parentFrozen &&
+      (!lines[late.start].isChecked || _blockFullyChecked(lines, late));
+  final effectiveLate = lateMoves ? late : null;
   _planSiblings(
     lines,
     blocks,
@@ -346,21 +358,16 @@ CheckedSectionPlan? checklistCheckedSectionPlan(
     openIndents,
     done,
     doneIndents,
-    late: late,
+    late: effectiveLate,
   );
   // The toggled block was skipped everywhere above, so it is appended once,
-  // here. A checked one leaves its parent and starts at the absolute root; an
-  // unchecked one keeps its own indent. An unchecked block stays with the
-  // section its container lands in, so unchecking the child of a checked
-  // parent leaves it at the end of the checked section.
-  if (late != null) {
-    final container = _blockParent(blocks, late);
-    final toDone =
-        lines[late.start].isChecked ||
-        (container != null && lines[container.start].isChecked);
+  // here. A checked block with only checked descendants leaves its parent and
+  // starts at the absolute root. An unchecked block keeps its own indent.
+  if (lateMoves) {
+    final toDone = _blockFullyChecked(lines, late);
     _appendWholeBlock(
       late,
-      lines[late.start].isChecked ? 0 : lines[late.start].indent,
+      toDone ? 0 : lines[late.start].indent,
       toDone ? done : open,
       toDone ? doneIndents : openIndents,
       late: null,
@@ -407,16 +414,11 @@ void _appendBlock(
   List<int> doneIndents,
   _ChecklistBlock? late,
 ) {
-  if (lines[block.start].isChecked) {
+  if (lines[block.start].isChecked && _blockFullyChecked(lines, block)) {
     // A checked block leaves its parent and starts the checked section at
-    // the absolute root indent.
-    _appendWholeBlock(
-      block,
-      0,
-      done,
-      doneIndents,
-      late: late,
-    );
+    // the absolute root indent. A parent with an unchecked descendant stays
+    // in the open list, and its checked children may still leave it.
+    _appendWholeBlock(block, 0, done, doneIndents, late: late);
     return;
   }
   _appendLine(block.start, lines[block.start].indent, open, openIndents);
@@ -462,6 +464,15 @@ _ChecklistBlock? _blockParent(
   return null;
 }
 
+/// True when every line in the block is checked. A block with any unchecked
+/// descendant stays in the open list.
+bool _blockFullyChecked(List<ParsedLine> lines, _ChecklistBlock block) {
+  for (var i = block.start; i <= block.end; i++) {
+    if (!lines[i].isChecked) return false;
+  }
+  return true;
+}
+
 /// A checked block moves whole. [headIndent] is absolute: the head takes it,
 /// and each descendant is one level below its own parent.
 void _appendWholeBlock(
@@ -476,13 +487,7 @@ void _appendWholeBlock(
     // The toggled block is appended last by the caller, so it is never
     // emitted here. Without this the same line lands in [order] twice.
     if (child == late) continue;
-    _appendWholeBlock(
-      child,
-      headIndent + 1,
-      order,
-      indents,
-      late: late,
-    );
+    _appendWholeBlock(child, headIndent + 1, order, indents, late: late);
   }
 }
 
@@ -592,9 +597,7 @@ Delta buildChecklistToggleDelta(
   bool checked,
 ) {
   final end = checklistBlockEnd(lines, index, lines.length - 1);
-  final value = checked
-      ? Attribute.checked.value
-      : Attribute.unchecked.value;
+  final value = checked ? Attribute.checked.value : Attribute.unchecked.value;
   final delta = Delta();
   var cursor = 0;
   for (var i = index; i <= end; i++) {

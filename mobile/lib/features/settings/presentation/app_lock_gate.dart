@@ -32,6 +32,9 @@ class _AppLockGateState extends ConsumerState<AppLockGate>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _handleForeground();
+    });
   }
 
   @override
@@ -45,20 +48,27 @@ class _AppLockGateState extends ConsumerState<AppLockGate>
     // Cover the notes the moment the app leaves the screen, so the switch to
     // another app does not show them.
     // Covering on the way out means the switch to another app, and the
-    // thumbnail the system keeps, show the cover and not the note. The cover
-    // asks the device itself when it is built again on the way back.
+    // thumbnail the system keeps, show the cover and not the note. The gate
+    // asks the device on the way back, after the grace check.
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.hidden) {
       ref.read(appLockControllerProvider.notifier).lock();
       return;
     }
     if (state == AppLifecycleState.resumed) {
-      final controller = ref.read(appLockControllerProvider.notifier);
-      final lockEnabled = ref.read(appLockEnabledProvider);
-      if (lockEnabled && controller.isWithinGrace(DateTime.now())) {
-        controller.uncover();
-      }
+      _handleForeground();
     }
+  }
+
+  void _handleForeground() {
+    if (!ref.read(appLockEnabledProvider)) return;
+    if (!ref.read(appLockControllerProvider)) return;
+    final controller = ref.read(appLockControllerProvider.notifier);
+    if (controller.isWithinGrace(DateTime.now())) {
+      controller.uncover();
+      return;
+    }
+    _unlock();
   }
 
   Future<void> _unlock() async {
@@ -80,23 +90,16 @@ class _AppLockGateState extends ConsumerState<AppLockGate>
         ),
         if (isLocked)
           Positioned.fill(
-            child: AppLockScreen(
-              problem: _problem,
-              onUnlock: _unlock,
-            ),
+            child: AppLockScreen(problem: _problem, onUnlock: _unlock),
           ),
       ],
     );
   }
 }
 
-/// The cover itself. Asks the device as soon as it appears.
+/// The cover itself. The gate decides when to ask the device.
 class AppLockScreen extends StatefulWidget {
-  const AppLockScreen({
-    super.key,
-    required this.onUnlock,
-    this.problem,
-  });
+  const AppLockScreen({super.key, required this.onUnlock, this.problem});
 
   final AppLockProblem? problem;
   final Future<void> Function() onUnlock;
@@ -107,12 +110,6 @@ class AppLockScreen extends StatefulWidget {
 
 class _AppLockScreenState extends State<AppLockScreen> {
   bool _isAsking = false;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _ask());
-  }
 
   Future<void> _ask() async {
     if (_isAsking) return;

@@ -14,6 +14,7 @@ class AppBootstrap {
     this.displayDensity = DisplayDensity.standard,
     this.appLockEnabled = false,
     this.lockGraceMinutes = 5,
+    this.lastUnlockedAt,
     this.motionSpeed = MotionSpeed.slow,
     this.editorPreferences = const EditorPreferences(),
     this.foldedChecklistNotes = const [],
@@ -26,6 +27,7 @@ class AppBootstrap {
   final DisplayDensity displayDensity;
   final bool appLockEnabled;
   final int lockGraceMinutes;
+  final DateTime? lastUnlockedAt;
   final MotionSpeed motionSpeed;
   final EditorPreferences editorPreferences;
 

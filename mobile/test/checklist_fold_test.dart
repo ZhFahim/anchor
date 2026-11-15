@@ -141,6 +141,16 @@ void main() {
     (w) => w is Semantics && w.properties.label == words,
   );
 
+  Map<String, bool> checkedByText(RichTextEditorState state) {
+    final lines = parseDocumentLines(state.controller.document);
+    final text = state.controller.document.toPlainText();
+    return {
+      for (final line in lines)
+        text.substring(line.startOffset, line.startOffset + line.length - 1):
+            line.isChecked,
+    };
+  }
+
   const groceries = [
     ('Oat milk', 'unchecked', 0),
     ('Coffee beans', 'unchecked', 0),
@@ -159,10 +169,11 @@ void main() {
     await tester.tap(checkboxOf('A'));
     await tester.pump(AnchorTokens.motionDurationSinkDelay);
 
-    final lines = parseDocumentLines(state.controller.document);
-    expect(lines[0].isChecked, isTrue);
-    expect(lines[1].isChecked, isTrue);
-    expect(lines[2].isChecked, isFalse);
+    final checked = checkedByText(state);
+    expect(checked['A'], isTrue);
+    expect(checked['A1'], isTrue);
+    expect(checked['B'], isFalse);
+    expect(state.getPlainText(), startsWith('B\nA\nA1'));
   });
 
   testWidgets('unchecking a parent unchecks its sub-items', (tester) async {
@@ -181,7 +192,7 @@ void main() {
     expect(lines[2].isChecked, isFalse);
   });
 
-  testWidgets('checking a parent keeps a hidden checked item hidden', (
+  testWidgets('checking a parent joins the folded checked items', (
     tester,
   ) async {
     final state = await pumpNote(tester, const [
@@ -195,9 +206,10 @@ void main() {
     await tester.pump(AnchorTokens.motionDurationSinkDelay);
 
     expect(checkboxOf('B1'), findsNothing);
-    expect(checkboxOf('A'), findsOneWidget);
-    expect(checkboxOf('A1'), findsOneWidget);
-    expect(state.getPlainText(), startsWith('A\nA1\nB\nB1'));
+    expect(checkboxOf('A'), findsNothing);
+    expect(checkboxOf('A1'), findsNothing);
+    expect(checkboxOf('B'), findsOneWidget);
+    expect(state.getPlainText(), startsWith('B\nB1\nA\nA1'));
   });
 
   testWidgets('a flat item still moves to the bottom when checked', (
@@ -215,24 +227,28 @@ void main() {
     expect(state.getPlainText(), startsWith('B\nC\nA'));
   });
 
-  testWidgets('a child tap then a parent tap keeps the parent in place', (
-    tester,
-  ) async {
-    final state = await pumpNote(tester, const [
-      ('A', 'unchecked', 0),
-      ('A1', 'unchecked', 1),
-      ('B', 'unchecked', 0),
-      ('B1', 'checked', 1),
-    ], folded: true);
+  testWidgets(
+    'a child tap then a parent tap moves the parent with its subtree',
+    (tester) async {
+      final state = await pumpNote(tester, const [
+        ('A', 'unchecked', 0),
+        ('A1', 'unchecked', 1),
+        ('B', 'unchecked', 0),
+        ('B1', 'checked', 1),
+      ], folded: true);
 
-    await tester.tap(checkboxOf('A1'));
-    await tester.pump(const Duration(milliseconds: 50));
-    await tester.tap(checkboxOf('A'));
-    await tester.pump(AnchorTokens.motionDurationSinkDelay);
+      await tester.tap(checkboxOf('A1'));
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.tap(checkboxOf('A'));
+      await tester.pump(AnchorTokens.motionDurationSinkDelay);
 
-    expect(state.getPlainText(), startsWith('A\nA1\nB\nB1'));
-    expect(checkboxOf('B1'), findsNothing);
-  });
+      final checked = checkedByText(state);
+      expect(checked['A'], isTrue);
+      expect(checked['A1'], isTrue);
+      expect(state.getPlainText(), startsWith('B\nB1\nA\nA1'));
+      expect(checkboxOf('A'), findsNothing);
+    },
+  );
 
   testWidgets('list lines keep one rhythm across indents, ticks and kinds', (
     tester,
@@ -323,10 +339,7 @@ void main() {
   ) async {
     // The checked lines are not all at the bottom, so there is no section to
     // fold. This pins today's behavior.
-    await pumpNote(tester, const [
-      ('p', 'checked', 0),
-      ('c', 'unchecked', 1),
-    ]);
+    await pumpNote(tester, const [('p', 'checked', 0), ('c', 'unchecked', 1)]);
 
     expect(find.byType(CheckedFoldRow), findsNothing);
   });

@@ -45,20 +45,37 @@ class _FakeAuthenticator implements DeviceAuthenticator {
   }
 }
 
-AppBootstrap _bootstrap({required bool isLocked}) =>
-    AppBootstrap(appLockEnabled: isLocked, userId: 'user-1');
+AppBootstrap _bootstrap({
+  required bool isLocked,
+  DateTime? lastUnlockedAt,
+  int graceMinutes = 5,
+}) => AppBootstrap(
+  appLockEnabled: isLocked,
+  lockGraceMinutes: graceMinutes,
+  lastUnlockedAt: lastUnlockedAt,
+  userId: 'user-1',
+);
 
 class _MockPreferences extends Mock implements PreferencesRepository {}
 
 ProviderContainer _container({
   required bool isLocked,
   required DeviceAuthenticator authenticator,
+  DateTime? lastUnlockedAt,
+  int graceMinutes = 5,
 }) {
   final preferences = _MockPreferences();
   when(() => preferences.setAppLockEnabled(any())).thenAnswer((_) async {});
+  when(() => preferences.setLastUnlockedAt(any())).thenAnswer((_) async {});
   final container = ProviderContainer(
     overrides: [
-      appBootstrapProvider.overrideWithValue(_bootstrap(isLocked: isLocked)),
+      appBootstrapProvider.overrideWithValue(
+        _bootstrap(
+          isLocked: isLocked,
+          lastUnlockedAt: lastUnlockedAt,
+          graceMinutes: graceMinutes,
+        ),
+      ),
       deviceAuthenticatorProvider.overrideWithValue(authenticator),
       preferencesRepositoryProvider.overrideWithValue(preferences),
     ],
@@ -71,9 +88,16 @@ Future<_FakeAuthenticator> _pump(
   WidgetTester tester, {
   required bool isLocked,
   _FakeAuthenticator? authenticator,
+  DateTime? lastUnlockedAt,
+  int graceMinutes = 5,
 }) async {
   final auth = authenticator ?? _FakeAuthenticator();
-  final container = _container(isLocked: isLocked, authenticator: auth);
+  final container = _container(
+    isLocked: isLocked,
+    authenticator: auth,
+    lastUnlockedAt: lastUnlockedAt,
+    graceMinutes: graceMinutes,
+  );
 
   await tester.pumpWidget(
     UncontrolledProviderScope(
@@ -162,7 +186,10 @@ void main() {
     );
 
     expect(find.byType(AppLockScreen), findsOneWidget);
-    expect(find.text('Set a screen lock on this device first.'), findsOneWidget);
+    expect(
+      find.text('Set a screen lock on this device first.'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('covers the notes again when the app goes to the background', (
@@ -178,11 +205,14 @@ void main() {
     expect(find.byType(AppLockScreen), findsNothing);
 
     // The default grace is five minutes, so push the unlock out of it.
-    final container =
-        ProviderScope.containerOf(tester.element(find.byType(AppLockGate)));
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(AppLockGate)),
+    );
     container
         .read(appLockControllerProvider.notifier)
-        .debugMarkUnlocked(DateTime.now().subtract(const Duration(minutes: 10)));
+        .debugMarkUnlocked(
+          DateTime.now().subtract(const Duration(minutes: 10)),
+        );
 
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
     // A paused app draws no frame, so the cover shows on the way back.
@@ -201,8 +231,9 @@ void main() {
     expect(auth.calls, 1);
 
     // The person unlocked, then left and came back inside the window.
-    final container =
-        ProviderScope.containerOf(tester.element(find.byType(AppLockGate)));
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(AppLockGate)),
+    );
     container
         .read(appLockControllerProvider.notifier)
         .debugMarkUnlocked(DateTime.now());
@@ -214,10 +245,29 @@ void main() {
     expect(auth.calls, 1, reason: 'the second entry must not prompt');
   });
 
+  testWidgets('a cover built inside the grace window does not prompt', (
+    tester,
+  ) async {
+    final auth = await _pump(tester, isLocked: true);
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(AppLockGate)),
+    );
+    container
+        .read(appLockControllerProvider.notifier)
+        .debugMarkUnlocked(DateTime.now());
+
+    container.read(appLockControllerProvider.notifier).lock();
+    await tester.pump();
+
+    expect(find.byType(AppLockScreen), findsOneWidget);
+    expect(auth.calls, 1, reason: 'the cover must not ask on its own');
+  });
+
   testWidgets('a grace of zero always asks again', (tester) async {
     final auth = await _pump(tester, isLocked: true);
-    final container =
-        ProviderScope.containerOf(tester.element(find.byType(AppLockGate)));
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(AppLockGate)),
+    );
     container.read(appLockGraceMinutesProvider.notifier).set(0);
     container
         .read(appLockControllerProvider.notifier)
@@ -230,34 +280,61 @@ void main() {
     expect(auth.calls, 2, reason: 'a zero grace must not skip the prompt');
   });
 
-  testWidgets('the cover waits without a spinner on its button', (
-    tester,
-  ) async {
+  testWidgets('the cover offers an unlock button', (tester) async {
     await _pump(
       tester,
       isLocked: true,
       authenticator: _FakeAuthenticator(holds: true),
     );
 
-    expect(find.text('Waiting for the device…'), findsOneWidget);
+    expect(find.text('Unlock'), findsOneWidget);
     expect(find.byType(Spinner), findsNothing);
   });
 
-  test('turning the lock off stores the choice and takes the cover away', () async {
-    final container = _container(
+  testWidgets('a cold start inside the persisted grace does not prompt', (
+    tester,
+  ) async {
+    final auth = await _pump(
+      tester,
       isLocked: true,
-      authenticator: _FakeAuthenticator(),
+      lastUnlockedAt: DateTime.now().subtract(const Duration(minutes: 1)),
     );
-    expect(container.read(appLockControllerProvider), isTrue);
 
-    final problem = await container
-        .read(appLockControllerProvider.notifier)
-        .setEnabled(false);
-
-    expect(problem, isNull);
-    expect(container.read(appLockEnabledProvider), isFalse);
-    expect(container.read(appLockControllerProvider), isFalse);
+    expect(auth.calls, 0, reason: 'the persisted grace must skip the prompt');
+    expect(find.text('a note about the harbour'), findsOneWidget);
+    expect(find.byType(AppLockScreen), findsNothing);
   });
+
+  testWidgets('a cold start outside the persisted grace prompts', (
+    tester,
+  ) async {
+    final auth = await _pump(
+      tester,
+      isLocked: true,
+      lastUnlockedAt: DateTime.now().subtract(const Duration(minutes: 10)),
+    );
+
+    expect(auth.calls, 1);
+  });
+
+  test(
+    'turning the lock off stores the choice and takes the cover away',
+    () async {
+      final container = _container(
+        isLocked: true,
+        authenticator: _FakeAuthenticator(),
+      );
+      expect(container.read(appLockControllerProvider), isTrue);
+
+      final problem = await container
+          .read(appLockControllerProvider.notifier)
+          .setEnabled(false);
+
+      expect(problem, isNull);
+      expect(container.read(appLockEnabledProvider), isFalse);
+      expect(container.read(appLockControllerProvider), isFalse);
+    },
+  );
 
   test('a lock that is off does not cover the notes', () async {
     final container = _container(

@@ -1,9 +1,11 @@
+import 'package:anchor/features/notes/presentation/editor/checklist_lines.dart';
 import 'package:anchor/features/notes/presentation/editor/checklist_sorter.dart';
+import 'package:anchor/features/notes/presentation/editor/document_lines.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-void sortWith(
+ChecklistSorter sortWith(
   QuillController controller, {
   bool sortEnabled = true,
   Duration delay = Duration.zero,
@@ -18,6 +20,7 @@ void sortWith(
     changes.cancel();
     sorter.dispose();
   });
+  return sorter;
 }
 
 QuillController makeController(List<(String, String?)> lines) {
@@ -222,17 +225,24 @@ void main() {
     ];
     final controller = makeNestedController(lines);
     addTearDown(controller.dispose);
-    sortWith(controller);
+    final sorter = sortWith(controller);
 
-    controller.formatText(lineStartOf(lines, 1), 0, Attribute.checked);
+    // The UI toggles the whole block in one delta, so the sorter cannot read
+    // it from the change alone.
+    final parsed = parseDocumentLines(controller.document);
+    controller.compose(
+      buildChecklistToggleDelta(parsed, 1, true),
+      controller.selection,
+      ChangeSource.local,
+    );
+    sorter.sortAfterToggle(1);
     await tester.pump();
 
-    // c1 leaves its parent with g1, which stays one level below it.
     expect(nestedLinesOf(controller), [
       ('p', 'unchecked', 0),
       ('q', 'unchecked', 0),
       ('c1', 'checked', 0),
-      ('g1', 'unchecked', 1),
+      ('g1', 'checked', 1),
     ]);
   });
 

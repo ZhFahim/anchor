@@ -76,8 +76,9 @@ class AppLockGraceMinutes extends Notifier<int> {
   }
 }
 
-final appLockGraceMinutesProvider =
-    NotifierProvider<AppLockGraceMinutes, int>(AppLockGraceMinutes.new);
+final appLockGraceMinutesProvider = NotifierProvider<AppLockGraceMinutes, int>(
+  AppLockGraceMinutes.new,
+);
 
 /// Whether the notes are covered right now.
 ///
@@ -93,7 +94,10 @@ class AppLockController extends _$AppLockController {
   DateTime? lastUnlockedAt;
 
   @override
-  bool build() => ref.read(appLockEnabledProvider);
+  bool build() {
+    lastUnlockedAt = ref.read(appBootstrapProvider).lastUnlockedAt;
+    return ref.read(appLockEnabledProvider);
+  }
 
   /// Covers the notes again. Does nothing while the lock is off.
   void lock() {
@@ -132,8 +136,17 @@ class AppLockController extends _$AppLockController {
           .read(deviceAuthenticatorProvider)
           .authenticate();
       if (!didAuthenticate) return AppLockProblem.interrupted;
-      lastUnlockedAt = DateTime.now();
+      final now = DateTime.now();
+      lastUnlockedAt = now;
       state = false;
+      try {
+        await ref.read(preferencesRepositoryProvider).setLastUnlockedAt(now);
+      } catch (error) {
+        AppLogger.instance.warn(
+          LogTags.auth,
+          'Could not save the last unlock time: $error',
+        );
+      }
       return null;
     } on LocalAuthException catch (error) {
       AppLogger.instance.warn(

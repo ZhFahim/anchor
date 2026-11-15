@@ -252,11 +252,21 @@ void main() {
       ]);
     });
 
-    test('checking a parent sinks its whole subtree', () {
+    test('a checked parent with an unchecked child stays in place', () {
       final doc = nestedDoc([
         ('a', 'unchecked', 0),
         ('b', 'checked', 0),
         ('b1', 'unchecked', 1),
+        ('c', 'unchecked', 0),
+      ]);
+      expect(planOf(doc, prefer: 1), isNull);
+    });
+
+    test('a fully checked parent sinks its whole subtree', () {
+      final doc = nestedDoc([
+        ('a', 'unchecked', 0),
+        ('b', 'checked', 0),
+        ('b1', 'checked', 1),
         ('c', 'unchecked', 0),
       ]);
       final plan = planOf(doc, prefer: 1)!;
@@ -270,7 +280,7 @@ void main() {
         ('a', 'unchecked', 0),
         ('c', 'unchecked', 0),
         ('b', 'checked', 0),
-        ('b1', 'unchecked', 1),
+        ('b1', 'checked', 1),
       ]);
     });
 
@@ -296,11 +306,21 @@ void main() {
       ]);
     });
 
-    test('a checked child carries its deeper subtree to the section', () {
+    test('a checked child with an unchecked descendant stays in place', () {
       final doc = nestedDoc([
         ('p', 'unchecked', 0),
         ('c1', 'checked', 1),
         ('g1', 'unchecked', 2),
+        ('c2', 'unchecked', 1),
+      ]);
+      expect(planOf(doc, prefer: 1), isNull);
+    });
+
+    test('a fully checked child carries its deeper subtree to the section', () {
+      final doc = nestedDoc([
+        ('p', 'unchecked', 0),
+        ('c1', 'checked', 1),
+        ('g1', 'checked', 2),
         ('c2', 'unchecked', 1),
       ]);
       final plan = planOf(doc, prefer: 1)!;
@@ -315,7 +335,7 @@ void main() {
         ('p', 'unchecked', 0),
         ('c2', 'unchecked', 1),
         ('c1', 'checked', 0),
-        ('g1', 'unchecked', 1),
+        ('g1', 'checked', 1),
       ]);
     });
 
@@ -331,19 +351,15 @@ void main() {
       expect(checklistCheckedSectionPlan(lines, 0, 2, prefer: 2), isNull);
     });
 
-    test('unchecking the only child of a checked parent keeps one line each', () {
-      // The toggled line is emitted once, after its parent leaves for the
-      // checked section. Emitting it twice made the length guard return null.
+    test('unchecking the only child of a checked parent keeps it in place', () {
+      // The parent has an unchecked descendant, so it waits in the open list.
       final doc = nestedDoc([
         ('p', 'checked', 0),
         ('c', 'unchecked', 1),
         ('q', 'unchecked', 0),
       ]);
       final lines = parseDocumentLines(doc);
-      final plan = checklistCheckedSectionPlan(lines, 0, 2, prefer: 1);
-      expect(plan, isNotNull);
-      expect(plan!.order, [2, 0, 1]);
-      expect(plan.indents, [0, 0, 1]);
+      expect(checklistCheckedSectionPlan(lines, 0, 2, prefer: 1), isNull);
     });
 
     test('a checked child under an unchecked parent always re-indents', () {
@@ -950,10 +966,7 @@ void main() {
     });
 
     test('a plan that only changes indents applies', () {
-      final doc = nestedDoc([
-        ('p', 'unchecked', 0),
-        ('c', 'checked', 1),
-      ]);
+      final doc = nestedDoc([('p', 'unchecked', 0), ('c', 'checked', 1)]);
       final plan = planOf(doc)!;
       expect(plan.order, [0, 1]);
       expect(plan.indents, [0, 0]);
@@ -984,16 +997,13 @@ void main() {
       final c1 = moved.firstWhere(
         (line) =>
             doc.toPlainText().substring(
-                  line.startOffset,
-                  line.startOffset + line.length - 1,
-                ) ==
+              line.startOffset,
+              line.startOffset + line.length - 1,
+            ) ==
             'c1',
       );
       final boldOffset = c1.startOffset + 1;
-      final bold = doc
-          .toDelta()
-          .slice(boldOffset, boldOffset + 1)
-          .first;
+      final bold = doc.toDelta().slice(boldOffset, boldOffset + 1).first;
       expect(bold.data, '1');
       expect(bold.attributes, containsPair('bold', true));
     });

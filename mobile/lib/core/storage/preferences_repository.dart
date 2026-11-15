@@ -198,6 +198,23 @@ class PreferencesRepository {
     );
   }
 
+  Future<DateTime?> getLastUnlockedAt() async {
+    final value = await _storage.read(key: StorageKeys.lastUnlockedAt);
+    final millis = int.tryParse(value ?? '');
+    return millis == null ? null : DateTime.fromMillisecondsSinceEpoch(millis);
+  }
+
+  Future<void> setLastUnlockedAt(DateTime? at) async {
+    if (at == null) {
+      await _storage.delete(key: StorageKeys.lastUnlockedAt);
+      return;
+    }
+    await _storage.write(
+      key: StorageKeys.lastUnlockedAt,
+      value: at.millisecondsSinceEpoch.toString(),
+    );
+  }
+
   Future<String?> getMotionSpeedName() =>
       _storage.read(key: StorageKeys.motionSpeed);
 

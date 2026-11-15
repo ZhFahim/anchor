@@ -133,6 +133,7 @@ Future<AppBootstrap> initializeApp({
     displayDensity: displayDensity,
     appLockEnabled: await preferences.getAppLockEnabled(),
     lockGraceMinutes: await preferences.getLockGraceMinutes(),
+    lastUnlockedAt: await preferences.getLastUnlockedAt(),
     motionSpeed: motionSpeed,
     editorPreferences: editorPreferences,
     foldedChecklistNotes: await preferences.getFoldedChecklistNotes(),
