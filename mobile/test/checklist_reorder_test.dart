@@ -35,6 +35,53 @@ QuillController makeController(List<(String, String?)> lines) {
   );
 }
 
+QuillController makeNestedController(List<(String, String?, int)> lines) {
+  final ops = <Map<String, dynamic>>[];
+  for (final (text, list, indent) in lines) {
+    if (text.isNotEmpty) ops.add({'insert': text});
+    ops.add({
+      'insert': '\n',
+      if (list != null || indent > 0)
+        'attributes': {'list': ?list, if (indent > 0) 'indent': indent},
+    });
+  }
+  return QuillController(
+    document: Document.fromJson(ops),
+    selection: const TextSelection.collapsed(offset: 0),
+  );
+}
+
+List<(String, String?, int)> nestedLinesOf(QuillController controller) {
+  final out = <(String, String?, int)>[];
+  final buffer = StringBuffer();
+  for (final op in controller.document.toDelta().toList()) {
+    final data = op.data;
+    if (data is! String) continue;
+    final parts = data.split('\n');
+    for (var i = 0; i < parts.length; i++) {
+      buffer.write(parts[i]);
+      if (i < parts.length - 1) {
+        final attrs = op.attributes;
+        out.add((
+          buffer.toString(),
+          attrs?['list'] as String?,
+          (attrs?['indent'] as int?) ?? 0,
+        ));
+        buffer.clear();
+      }
+    }
+  }
+  return out;
+}
+
+int lineStartOf(List<(String, String?, int)> lines, int index) {
+  var offset = 0;
+  for (var i = 0; i < index; i++) {
+    offset += lines[i].$1.length + 1;
+  }
+  return offset;
+}
+
 List<(String, String?)> docLines(QuillController controller) {
   final lines = <(String, String?)>[];
   final buffer = StringBuffer();
@@ -141,6 +188,51 @@ void main() {
       ('a', 'unchecked'),
       ('c', 'unchecked'),
       ('b', 'checked'),
+    ]);
+  });
+
+  testWidgets('a checked child moves to the checked section', (tester) async {
+    final lines = <(String, String?, int)>[
+      ('p', 'unchecked', 0),
+      ('c1', 'unchecked', 1),
+      ('c2', 'unchecked', 1),
+      ('q', 'unchecked', 0),
+    ];
+    final controller = makeNestedController(lines);
+    addTearDown(controller.dispose);
+    sortWith(controller);
+
+    controller.formatText(lineStartOf(lines, 1), 0, Attribute.checked);
+    await tester.pump();
+
+    expect(nestedLinesOf(controller), [
+      ('p', 'unchecked', 0),
+      ('c2', 'unchecked', 1),
+      ('q', 'unchecked', 0),
+      ('c1', 'checked', 0),
+    ]);
+  });
+
+  testWidgets('toggling a child moves its whole subtree', (tester) async {
+    final lines = <(String, String?, int)>[
+      ('p', 'unchecked', 0),
+      ('c1', 'unchecked', 1),
+      ('g1', 'unchecked', 2),
+      ('q', 'unchecked', 0),
+    ];
+    final controller = makeNestedController(lines);
+    addTearDown(controller.dispose);
+    sortWith(controller);
+
+    controller.formatText(lineStartOf(lines, 1), 0, Attribute.checked);
+    await tester.pump();
+
+    // c1 leaves its parent with g1, which stays one level below it.
+    expect(nestedLinesOf(controller), [
+      ('p', 'unchecked', 0),
+      ('q', 'unchecked', 0),
+      ('c1', 'checked', 0),
+      ('g1', 'unchecked', 1),
     ]);
   });
 

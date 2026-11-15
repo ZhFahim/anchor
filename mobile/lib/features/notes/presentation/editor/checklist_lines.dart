@@ -268,57 +268,231 @@ Delta _buildSpanMoveDelta(
   return move;
 }
 
-/// Unchecked blocks before checked at each level, in document order, with
-/// the toggled block last in its section. Null when already in order.
-List<int>? checklistSortOrder(
+/// Lines of a checklist group in the checked section's order, with the absolute
+/// indent each line takes. [order] holds original line indices; [indents]
+/// follows it. An unchecked line keeps its own indent. A checked block starts
+/// the checked section at absolute indent 0, and its descendants follow one
+/// level below their own parent.
+class CheckedSectionPlan {
+  final List<int> order;
+  final List<int> indents;
+
+  const CheckedSectionPlan({required this.order, required this.indents});
+}
+
+class _ChecklistBlock {
+  final int start;
+  final int end;
+  final List<_ChecklistBlock> children = [];
+
+  _ChecklistBlock(this.start, this.end);
+}
+
+/// Splits [start..end] into sibling blocks, each with its own descendants.
+/// A block is a head line and the deeper-indented lines after it; the next
+/// line at the head's indent or shallower ends the block.
+List<_ChecklistBlock> _checklistBlocks(
+  List<ParsedLine> lines,
+  int start,
+  int end,
+) {
+  final heads = <int>[];
+  for (var i = start; i <= end; i++) {
+    if (i == start || lines[i].indent <= lines[heads.last].indent) {
+      heads.add(i);
+    }
+  }
+
+  final blocks = <_ChecklistBlock>[];
+  for (var h = 0; h < heads.length; h++) {
+    final head = heads[h];
+    final blockEnd = h + 1 < heads.length ? heads[h + 1] - 1 : end;
+    blocks.add(_checklistSubtree(lines, head, blockEnd));
+  }
+  return blocks;
+}
+
+/// Block [start..end] with its descendants nested by indent.
+_ChecklistBlock _checklistSubtree(List<ParsedLine> lines, int start, int end) {
+  final root = _ChecklistBlock(start, end);
+  final children = _checklistBlocks(lines, start + 1, end);
+  root.children.addAll(children);
+  return root;
+}
+
+/// One checked section at the bottom of the group, after every unchecked
+/// line. Null when the group is already in that order.
+///
+/// [prefer] is the line the reader just toggled. Its block goes last in the
+/// section its container lands in: the container is its parent block when it
+/// has one, otherwise its own checked or unchecked section. Pass null for the
+/// plain order, which keeps every section in document order.
+CheckedSectionPlan? checklistCheckedSectionPlan(
   List<ParsedLine> lines,
   int groupStart,
-  int groupEnd,
-  int toggledIndex,
-) {
-  final order = <int>[];
-  _orderSiblingBlocks(lines, groupStart, groupEnd, toggledIndex, order);
+  int groupEnd, {
+  int? prefer,
+}) {
+  final open = <int>[];
+  final openIndents = <int>[];
+  final done = <int>[];
+  final doneIndents = <int>[];
+  final blocks = _checklistBlocks(lines, groupStart, groupEnd);
+  final late = prefer == null ? null : _blockStartingAt(blocks, prefer);
+  _planSiblings(
+    lines,
+    blocks,
+    open,
+    openIndents,
+    done,
+    doneIndents,
+    late: late,
+  );
+  // The toggled block was skipped everywhere above, so it is appended once,
+  // here. A checked one leaves its parent and starts at the absolute root; an
+  // unchecked one keeps its own indent. An unchecked block stays with the
+  // section its container lands in, so unchecking the child of a checked
+  // parent leaves it at the end of the checked section.
+  if (late != null) {
+    final container = _blockParent(blocks, late);
+    final toDone =
+        lines[late.start].isChecked ||
+        (container != null && lines[container.start].isChecked);
+    _appendWholeBlock(
+      late,
+      lines[late.start].isChecked ? 0 : lines[late.start].indent,
+      toDone ? done : open,
+      toDone ? doneIndents : openIndents,
+      late: null,
+    );
+  }
+  final order = [...open, ...done];
+  final indents = [...openIndents, ...doneIndents];
+  if (order.length != groupEnd - groupStart + 1) return null;
+
   for (var k = 0; k < order.length; k++) {
-    if (order[k] != groupStart + k) return order;
+    final line = lines[groupStart + k];
+    if (order[k] != groupStart + k || indents[k] != line.indent) {
+      return CheckedSectionPlan(order: order, indents: indents);
+    }
   }
   return null;
 }
 
-void _orderSiblingBlocks(
+/// One level of blocks, in document order. An unchecked block emits its head
+/// at its own absolute indent, then its children in place. A checked block
+/// goes to the group's one checked section.
+void _planSiblings(
   List<ParsedLine> lines,
-  int start,
-  int end,
-  int toggledIndex,
-  List<int> out,
-) {
-  final unchecked = <(int, int)>[];
-  final checked = <(int, int)>[];
-  (int, int)? toggled;
-
-  var i = start;
-  while (i <= end) {
-    final blockEnd = checklistBlockEnd(lines, i, end);
-    final block = (i, blockEnd);
-    if (i == toggledIndex) {
-      toggled = block;
-    } else {
-      (lines[i].isChecked ? checked : unchecked).add(block);
-    }
-    i = blockEnd + 1;
-  }
-  if (toggled != null) {
-    (lines[toggled.$1].isChecked ? checked : unchecked).add(toggled);
-  }
-
-  for (final (blockStart, blockEnd) in [...unchecked, ...checked]) {
-    out.add(blockStart);
-    if (blockEnd > blockStart) {
-      _orderSiblingBlocks(lines, blockStart + 1, blockEnd, toggledIndex, out);
-    }
+  List<_ChecklistBlock> blocks,
+  List<int> open,
+  List<int> openIndents,
+  List<int> done,
+  List<int> doneIndents, {
+  required _ChecklistBlock? late,
+}) {
+  for (final block in blocks) {
+    // The toggled block waits for the caller to append it last.
+    if (block == late) continue;
+    _appendBlock(lines, block, open, openIndents, done, doneIndents, late);
   }
 }
 
-/// [order] holds indices into [lines] and must differ from the current order.
+void _appendBlock(
+  List<ParsedLine> lines,
+  _ChecklistBlock block,
+  List<int> open,
+  List<int> openIndents,
+  List<int> done,
+  List<int> doneIndents,
+  _ChecklistBlock? late,
+) {
+  if (lines[block.start].isChecked) {
+    // A checked block leaves its parent and starts the checked section at
+    // the absolute root indent.
+    _appendWholeBlock(
+      block,
+      0,
+      done,
+      doneIndents,
+      late: late,
+    );
+    return;
+  }
+  _appendLine(block.start, lines[block.start].indent, open, openIndents);
+  _appendChildren(lines, block, open, openIndents, done, doneIndents, late);
+}
+
+void _appendChildren(
+  List<ParsedLine> lines,
+  _ChecklistBlock block,
+  List<int> open,
+  List<int> openIndents,
+  List<int> done,
+  List<int> doneIndents,
+  _ChecklistBlock? late,
+) {
+  for (final child in block.children) {
+    // The toggled block waits its turn in _planSiblings.
+    if (child == late) continue;
+    _appendBlock(lines, child, open, openIndents, done, doneIndents, late);
+  }
+}
+
+/// The innermost block that starts at line [index].
+_ChecklistBlock? _blockStartingAt(List<_ChecklistBlock> blocks, int index) {
+  for (final block in blocks) {
+    if (block.start == index) return block;
+    final inner = _blockStartingAt(block.children, index);
+    if (inner != null) return inner;
+  }
+  return null;
+}
+
+/// The block whose children hold [target], or null when it is top level.
+_ChecklistBlock? _blockParent(
+  List<_ChecklistBlock> blocks,
+  _ChecklistBlock target,
+) {
+  for (final block in blocks) {
+    if (block.children.contains(target)) return block;
+    final inner = _blockParent(block.children, target);
+    if (inner != null) return inner;
+  }
+  return null;
+}
+
+/// A checked block moves whole. [headIndent] is absolute: the head takes it,
+/// and each descendant is one level below its own parent.
+void _appendWholeBlock(
+  _ChecklistBlock block,
+  int headIndent,
+  List<int> order,
+  List<int> indents, {
+  _ChecklistBlock? late,
+}) {
+  _appendLine(block.start, headIndent, order, indents);
+  for (final child in block.children) {
+    // The toggled block is appended last by the caller, so it is never
+    // emitted here. Without this the same line lands in [order] twice.
+    if (child == late) continue;
+    _appendWholeBlock(
+      child,
+      headIndent + 1,
+      order,
+      indents,
+      late: late,
+    );
+  }
+}
+
+void _appendLine(int index, int indent, List<int> order, List<int> indents) {
+  order.add(index);
+  indents.add(indent);
+}
+
+/// [order] holds indices into [lines]. It may be the identity order when only
+/// the indents change; that case makes an empty delta.
 Delta buildGroupReorderDelta(
   Document document,
   List<ParsedLine> lines,
@@ -362,7 +536,53 @@ Delta buildGroupReorderDelta(
     }
   }
 
-  return total!;
+  // An order that only re-indents makes no move of its own.
+  return total ?? Delta();
+}
+
+/// Writes [lines] newline indent attributes to their absolute [indents],
+/// keeping every other attribute of each newline.
+Delta buildIndentsDelta(
+  List<ParsedLine> lines,
+  int groupStart,
+  List<int> indents,
+) {
+  final delta = Delta();
+  var cursor = 0;
+  for (var k = 0; k < indents.length; k++) {
+    final line = lines[groupStart + k];
+    if (indents[k] == line.indent) continue;
+    final newlineOffset = line.startOffset + line.length - 1;
+    if (newlineOffset > cursor) delta.retain(newlineOffset - cursor);
+    delta.retain(1, indentAttributes(indents[k]));
+    cursor = newlineOffset + 1;
+  }
+  return delta;
+}
+
+/// Moves the group at [groupStart] into the checked section [plan] describes,
+/// in one delta: the reorder, then the indent each line takes in the new
+/// order.
+Delta buildCheckedSectionDelta(
+  Document document,
+  List<ParsedLine> lines,
+  int groupStart,
+  CheckedSectionPlan plan,
+) {
+  final move = buildGroupReorderDelta(document, lines, groupStart, plan.order);
+  // A plan that only re-indents makes no move of its own, and Document.compose
+  // rejects an empty delta.
+  if (move.isEmpty) {
+    return buildIndentsDelta(lines, groupStart, plan.indents);
+  }
+  final moved = Document.fromDelta(document.toDelta())
+    ..compose(move, ChangeSource.local);
+  final reindent = buildIndentsDelta(
+    parseDocumentLines(moved),
+    groupStart,
+    plan.indents,
+  );
+  return reindent.isEmpty ? move : move.compose(reindent);
 }
 
 /// Toggles [index] and every checklist line in its block.

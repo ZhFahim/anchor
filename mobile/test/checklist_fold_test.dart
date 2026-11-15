@@ -302,6 +302,35 @@ void main() {
     expect(find.text('1 checked item'), findsOneWidget);
   });
 
+  testWidgets('a nested group counts every checked line in its row', (
+    tester,
+  ) async {
+    await pumpNote(tester, const [
+      ('A', 'unchecked', 0),
+      ('A1', 'unchecked', 1),
+      ('B', 'unchecked', 0),
+      ('B1', 'checked', 1),
+      ('B2', 'checked', 1),
+    ]);
+
+    final row = tester.widget<CheckedFoldRow>(find.byType(CheckedFoldRow));
+    expect(row.count, 2);
+    expect(find.text('2 checked items'), findsOneWidget);
+  });
+
+  testWidgets('a checked parent with an open child has no fold row', (
+    tester,
+  ) async {
+    // The checked lines are not all at the bottom, so there is no section to
+    // fold. This pins today's behavior.
+    await pumpNote(tester, const [
+      ('p', 'checked', 0),
+      ('c', 'unchecked', 1),
+    ]);
+
+    expect(find.byType(CheckedFoldRow), findsNothing);
+  });
+
   testWidgets('a checked item with an open one after it has no row', (
     tester,
   ) async {

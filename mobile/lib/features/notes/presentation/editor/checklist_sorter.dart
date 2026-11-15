@@ -117,21 +117,26 @@ class ChecklistSorter {
     if (lineIndex == -1 || !lines[lineIndex].isChecklist) return;
 
     final (groupStart, groupEnd) = checklistGroupAround(lines, lineIndex);
-    final order = checklistSortOrder(lines, groupStart, groupEnd, lineIndex);
-    if (order == null) return;
+    final plan = checklistCheckedSectionPlan(
+      lines,
+      groupStart,
+      groupEnd,
+      prefer: lineIndex,
+    );
+    if (plan == null) return;
 
-    final move = buildGroupReorderDelta(
+    final move = buildCheckedSectionDelta(
       _controller.document,
       lines,
       groupStart,
-      order,
+      plan,
     );
     int follow(int offset) {
       final index = lineIndexAt(lines, offset);
-      final position = order.indexOf(index);
+      final position = plan.order.indexOf(index);
       if (position == -1 || index == lineIndex) return offset;
       var start = lines[groupStart].startOffset;
-      for (final moved in order.take(position)) {
+      for (final moved in plan.order.take(position)) {
         start += lines[moved].length;
       }
       return start + offset - lines[index].startOffset;

@@ -61,6 +61,16 @@ List<(String, String?, int)> nestedLinesOf(Document doc) {
 }
 
 void main() {
+  CheckedSectionPlan? planOf(Document doc, {int? prefer}) {
+    final lines = parseDocumentLines(doc);
+    return checklistCheckedSectionPlan(
+      lines,
+      0,
+      lines.length - 1,
+      prefer: prefer,
+    );
+  }
+
   group('buildLineMoveDelta', () {
     test('moves a middle line down', () {
       final doc = docFrom([
@@ -142,74 +152,6 @@ void main() {
         ('a', 'unchecked'),
         ('note', null),
       ]);
-    });
-
-    test('group heal: one toggle re-sorts a mixed group, stably', () {
-      // "e" (index 4) was just checked in a group that was never sorted.
-      final doc = docFrom([
-        ('a', 'unchecked'),
-        ('b', 'checked'),
-        ('c', 'checked'),
-        ('d', 'unchecked'),
-        ('e', 'checked'),
-        ('f', 'unchecked'),
-      ]);
-      final lines = parseDocumentLines(doc);
-      final order = checklistSortOrder(lines, 0, 5, 4);
-      expect(order, [0, 3, 5, 1, 2, 4]);
-
-      doc.compose(
-        buildGroupReorderDelta(doc, lines, 0, order!),
-        ChangeSource.local,
-      );
-      expect(linesOf(doc), [
-        ('a', 'unchecked'),
-        ('d', 'unchecked'),
-        ('f', 'unchecked'),
-        ('b', 'checked'),
-        ('c', 'checked'),
-        ('e', 'checked'),
-      ]);
-    });
-
-    test('group heal at end of document survives an undo round-trip', () {
-      final doc = docFrom([
-        ('a', 'checked'),
-        ('b', 'unchecked'),
-        ('c', 'checked'),
-      ]);
-      final lines = parseDocumentLines(doc);
-      final order = checklistSortOrder(lines, 0, 2, 2);
-      expect(order, [1, 0, 2]);
-
-      final before = doc.toDelta();
-      final heal = buildGroupReorderDelta(doc, lines, 0, order!);
-      final inverted = heal.invert(before);
-      doc.compose(heal, ChangeSource.local);
-      expect(linesOf(doc), [
-        ('b', 'unchecked'),
-        ('a', 'checked'),
-        ('c', 'checked'),
-      ]);
-      doc.compose(inverted, ChangeSource.local);
-      expect(doc.toDelta(), before);
-    });
-
-    test('checklistSortOrder is null for an already sorted group', () {
-      final doc = docFrom([('a', 'unchecked'), ('b', 'checked')]);
-      final lines = parseDocumentLines(doc);
-      expect(checklistSortOrder(lines, 0, 1, 1), isNull);
-      expect(checklistSortOrder(lines, 0, 1, 0), isNull);
-    });
-
-    test('the toggled line goes to the end of its own section', () {
-      final doc = docFrom([
-        ('a', 'checked'),
-        ('b', 'checked'),
-        ('c', 'unchecked'),
-      ]);
-      final lines = parseDocumentLines(doc);
-      expect(checklistSortOrder(lines, 0, 2, 0), [2, 1, 0]);
     });
 
     test('moves survive an undo round-trip', () {
@@ -317,12 +259,11 @@ void main() {
         ('b1', 'unchecked', 1),
         ('c', 'unchecked', 0),
       ]);
-      final lines = parseDocumentLines(doc);
-      final order = checklistSortOrder(lines, 0, 3, 1);
-      expect(order, [0, 3, 1, 2]);
+      final plan = planOf(doc, prefer: 1)!;
+      expect(plan.order, [0, 3, 1, 2]);
 
       doc.compose(
-        buildGroupReorderDelta(doc, lines, 0, order!),
+        buildCheckedSectionDelta(doc, parseDocumentLines(doc), 0, plan),
         ChangeSource.local,
       );
       expect(nestedLinesOf(doc), [
@@ -333,53 +274,79 @@ void main() {
       ]);
     });
 
-    test('checking a child re-sorts only within its parent', () {
+    test('a checked child leaves its parent for the checked section', () {
       final doc = nestedDoc([
         ('p', 'unchecked', 0),
         ('c1', 'checked', 1),
         ('c2', 'unchecked', 1),
         ('q', 'unchecked', 0),
       ]);
-      final lines = parseDocumentLines(doc);
-      final order = checklistSortOrder(lines, 0, 3, 1);
-      expect(order, [0, 2, 1, 3]);
+      final plan = planOf(doc, prefer: 1)!;
+      expect(plan.order, [0, 2, 3, 1]);
 
       doc.compose(
-        buildGroupReorderDelta(doc, lines, 0, order!),
+        buildCheckedSectionDelta(doc, parseDocumentLines(doc), 0, plan),
         ChangeSource.local,
       );
       expect(nestedLinesOf(doc), [
         ('p', 'unchecked', 0),
         ('c2', 'unchecked', 1),
-        ('c1', 'checked', 1),
         ('q', 'unchecked', 0),
+        ('c1', 'checked', 0),
       ]);
     });
 
-    test('a sorted child block carries its deeper subtree', () {
+    test('a checked child carries its deeper subtree to the section', () {
       final doc = nestedDoc([
         ('p', 'unchecked', 0),
         ('c1', 'checked', 1),
         ('g1', 'unchecked', 2),
         ('c2', 'unchecked', 1),
       ]);
-      final lines = parseDocumentLines(doc);
-      final order = checklistSortOrder(lines, 0, 3, 1);
-      expect(order, [0, 3, 1, 2]);
+      final plan = planOf(doc, prefer: 1)!;
+      expect(plan.order, [0, 3, 1, 2]);
+      expect(plan.indents, [0, 1, 0, 1]);
 
       doc.compose(
-        buildGroupReorderDelta(doc, lines, 0, order!),
+        buildCheckedSectionDelta(doc, parseDocumentLines(doc), 0, plan),
         ChangeSource.local,
       );
       expect(nestedLinesOf(doc), [
         ('p', 'unchecked', 0),
         ('c2', 'unchecked', 1),
-        ('c1', 'checked', 1),
-        ('g1', 'unchecked', 2),
+        ('c1', 'checked', 0),
+        ('g1', 'unchecked', 1),
       ]);
     });
 
-    test('checklistSortOrder is null for an ordered nested group', () {
+    test('checklistCheckedSectionPlan is null for an ordered group', () {
+      final doc = nestedDoc([
+        ('p', 'unchecked', 0),
+        ('c1', 'checked', 0),
+        ('c2', 'checked', 0),
+      ]);
+      final lines = parseDocumentLines(doc);
+      expect(checklistCheckedSectionPlan(lines, 0, 2), isNull);
+      // The same order with the toggled line last in the section.
+      expect(checklistCheckedSectionPlan(lines, 0, 2, prefer: 2), isNull);
+    });
+
+    test('unchecking the only child of a checked parent keeps one line each', () {
+      // The toggled line is emitted once, after its parent leaves for the
+      // checked section. Emitting it twice made the length guard return null.
+      final doc = nestedDoc([
+        ('p', 'checked', 0),
+        ('c', 'unchecked', 1),
+        ('q', 'unchecked', 0),
+      ]);
+      final lines = parseDocumentLines(doc);
+      final plan = checklistCheckedSectionPlan(lines, 0, 2, prefer: 1);
+      expect(plan, isNotNull);
+      expect(plan!.order, [2, 0, 1]);
+      expect(plan.indents, [0, 0, 1]);
+    });
+
+    test('a checked child under an unchecked parent always re-indents', () {
       final doc = nestedDoc([
         ('p', 'unchecked', 0),
         ('c1', 'unchecked', 1),
@@ -387,8 +354,15 @@ void main() {
         ('q', 'checked', 0),
       ]);
       final lines = parseDocumentLines(doc);
-      expect(checklistSortOrder(lines, 0, 3, 2), isNull);
-      expect(checklistSortOrder(lines, 0, 3, 3), isNull);
+      final plan = checklistCheckedSectionPlan(lines, 0, 3);
+      expect(plan, isNotNull);
+      expect(plan!.order, [0, 1, 2, 3]);
+      expect(plan.indents, [0, 1, 0, 0]);
+      // With the toggled line last in its section, q leaves c2 behind.
+      final sorted = checklistCheckedSectionPlan(lines, 0, 3, prefer: 2);
+      expect(sorted!.order, [0, 1, 3, 2]);
+      expect(sorted.indents, [0, 1, 0, 0]);
+      expect(checklistCheckedSectionPlan(lines, 0, 3, prefer: 3), isNotNull);
     });
 
     test('drop gaps: flat groups allow every gap', () {
@@ -803,6 +777,225 @@ void main() {
         ('note', null, 1),
         ('a1', 'checked', 1),
       ]);
+    });
+  });
+
+  group('checklistCheckedSectionPlan', () {
+    test('a checked item moves to the bottom', () {
+      final plan = planOf(
+        nestedDoc([
+          ('a', 'unchecked', 0),
+          ('b', 'checked', 0),
+          ('c', 'unchecked', 0),
+        ]),
+      );
+      expect(plan, isNotNull);
+      expect(plan!.order, [0, 2, 1]);
+      expect(plan.indents, [0, 0, 0]);
+    });
+
+    test('a checked block drops below an unchecked block', () {
+      final plan = planOf(
+        nestedDoc([
+          ('a', 'unchecked', 0),
+          ('a1', 'unchecked', 1),
+          ('b', 'checked', 0),
+          ('b1', 'checked', 1),
+        ]),
+      );
+      expect(plan, isNull);
+    });
+
+    test('a checked block ahead of an unchecked one drops below it', () {
+      final plan = planOf(
+        nestedDoc([
+          ('a', 'checked', 0),
+          ('a1', 'checked', 1),
+          ('b', 'unchecked', 0),
+          ('b1', 'unchecked', 1),
+        ]),
+      );
+      expect(plan!.order, [2, 3, 0, 1]);
+      expect(plan.indents, [0, 1, 0, 1]);
+    });
+
+    test('a checked child leaves an unchecked parent', () {
+      final plan = planOf(
+        nestedDoc([
+          ('p', 'unchecked', 0),
+          ('c1', 'checked', 1),
+          ('c2', 'unchecked', 1),
+          ('q', 'unchecked', 0),
+        ]),
+      );
+      expect(plan!.order, [0, 2, 3, 1]);
+      expect(plan.indents, [0, 1, 0, 0]);
+    });
+
+    test('a checked grandchild leaves to the checked section', () {
+      final plan = planOf(
+        nestedDoc([
+          ('p', 'unchecked', 0),
+          ('c', 'unchecked', 1),
+          ('g', 'checked', 2),
+          ('q', 'unchecked', 0),
+        ]),
+      );
+      expect(plan!.order, [0, 1, 3, 2]);
+      expect(plan.indents, [0, 1, 0, 0]);
+    });
+
+    test('indents are absolute when the group starts indented', () {
+      final plan = planOf(
+        nestedDoc([
+          ('p', 'unchecked', 1),
+          ('c', 'checked', 2),
+          ('q', 'unchecked', 1),
+        ]),
+      );
+      expect(plan!.order, [0, 2, 1]);
+      expect(plan.indents, [1, 1, 0]);
+    });
+
+    test('an already ordered group has no plan', () {
+      final plan = planOf(
+        nestedDoc([
+          ('a', 'unchecked', 0),
+          ('b', 'checked', 0),
+          ('c', 'checked', 0),
+        ]),
+      );
+      expect(plan, isNull);
+    });
+
+    test('a non-checklist group has no plan', () {
+      final plan = planOf(
+        nestedDoc([('a', 'bullet', 0), ('b', 'bullet', 0), ('c', 'bullet', 0)]),
+      );
+      expect(plan, isNull);
+    });
+  });
+
+  group('buildCheckedSectionDelta', () {
+    Document appliedPlan(Document doc, CheckedSectionPlan plan) {
+      final lines = parseDocumentLines(doc);
+      final delta = buildCheckedSectionDelta(doc, lines, 0, plan);
+      doc.compose(delta, ChangeSource.local);
+      return doc;
+    }
+
+    test('the delta writes the checked section order and indents', () {
+      final doc = nestedDoc([
+        ('p', 'unchecked', 0),
+        ('c1', 'checked', 1),
+        ('c2', 'unchecked', 1),
+        ('q', 'unchecked', 0),
+      ]);
+      final plan = planOf(doc)!;
+      expect(nestedLinesOf(appliedPlan(doc, plan)), [
+        ('p', 'unchecked', 0),
+        ('c2', 'unchecked', 1),
+        ('q', 'unchecked', 0),
+        ('c1', 'checked', 0),
+      ]);
+    });
+
+    test('the delta undoes in one step', () {
+      final doc = nestedDoc([
+        ('a', 'checked', 0),
+        ('a1', 'checked', 1),
+        ('b', 'unchecked', 0),
+      ]);
+      final before = doc.toDelta();
+      final plan = planOf(doc)!;
+      final delta = buildCheckedSectionDelta(
+        doc,
+        parseDocumentLines(doc),
+        0,
+        plan,
+      );
+      doc.compose(delta, ChangeSource.local);
+      doc.compose(delta.invert(before), ChangeSource.local);
+      expect(doc.toDelta(), before);
+    });
+
+    test('a checked parent block sinks whole with its subtree', () {
+      final doc = nestedDoc([
+        ('a', 'checked', 0),
+        ('a1', 'checked', 1),
+        ('b', 'unchecked', 0),
+        ('b1', 'unchecked', 1),
+      ]);
+      final plan = planOf(doc)!;
+      expect(nestedLinesOf(appliedPlan(doc, plan)), [
+        ('b', 'unchecked', 0),
+        ('b1', 'unchecked', 1),
+        ('a', 'checked', 0),
+        ('a1', 'checked', 1),
+      ]);
+    });
+
+    test('a checked block leaves an indented group at the checked root', () {
+      final doc = nestedDoc([
+        ('p', 'unchecked', 1),
+        ('c', 'checked', 2),
+        ('q', 'unchecked', 1),
+      ]);
+      final plan = planOf(doc)!;
+      expect(nestedLinesOf(appliedPlan(doc, plan)), [
+        ('p', 'unchecked', 1),
+        ('q', 'unchecked', 1),
+        ('c', 'checked', 0),
+      ]);
+    });
+
+    test('a plan that only changes indents applies', () {
+      final doc = nestedDoc([
+        ('p', 'unchecked', 0),
+        ('c', 'checked', 1),
+      ]);
+      final plan = planOf(doc)!;
+      expect(plan.order, [0, 1]);
+      expect(plan.indents, [0, 0]);
+      expect(nestedLinesOf(appliedPlan(doc, plan)), [
+        ('p', 'unchecked', 0),
+        ('c', 'checked', 0),
+      ]);
+    });
+
+    test('the delta keeps inline formatting', () {
+      final doc = nestedDoc([
+        ('p', 'unchecked', 0),
+        ('c1', 'checked', 1),
+        ('q', 'unchecked', 0),
+      ]);
+      final lines = parseDocumentLines(doc);
+      final c1Start = lines[1].startOffset;
+      doc.compose(
+        Delta()
+          ..retain(c1Start + 1)
+          ..retain(1, {'bold': true}),
+        ChangeSource.local,
+      );
+      final plan = planOf(doc)!;
+      appliedPlan(doc, plan);
+
+      final moved = parseDocumentLines(doc);
+      final c1 = moved.firstWhere(
+        (line) =>
+            doc.toPlainText().substring(
+                  line.startOffset,
+                  line.startOffset + line.length - 1,
+                ) ==
+            'c1',
+      );
+      final boldOffset = c1.startOffset + 1;
+      final bold = doc
+          .toDelta()
+          .slice(boldOffset, boldOffset + 1)
+          .first;
+      expect(bold.data, '1');
+      expect(bold.attributes, containsPair('bold', true));
     });
   });
 }
