@@ -7,6 +7,7 @@ import 'package:anchor/core/theme/note_typography.dart';
 import 'package:anchor/core/theme/tokens/anchor_tokens.dart';
 import 'package:anchor/features/notes/presentation/checked_folds_controller.dart';
 import 'package:anchor/features/notes/presentation/editor/checklist_fold.dart';
+import 'package:anchor/features/notes/presentation/editor/document_lines.dart';
 import 'package:anchor/features/notes/presentation/editor/editor_palette.dart';
 import 'package:anchor/features/notes/presentation/editor/list_markers.dart';
 import 'package:anchor/features/notes/presentation/editor/rich_text_editor.dart';
@@ -147,6 +148,91 @@ void main() {
     ('Butter', 'checked', 0),
     ('After the list', null, 0),
   ];
+
+  testWidgets('checking a parent checks its sub-items', (tester) async {
+    final state = await pumpNote(tester, const [
+      ('A', 'unchecked', 0),
+      ('A1', 'unchecked', 1),
+      ('B', 'unchecked', 0),
+    ]);
+
+    await tester.tap(checkboxOf('A'));
+    await tester.pump(AnchorTokens.motionDurationSinkDelay);
+
+    final lines = parseDocumentLines(state.controller.document);
+    expect(lines[0].isChecked, isTrue);
+    expect(lines[1].isChecked, isTrue);
+    expect(lines[2].isChecked, isFalse);
+  });
+
+  testWidgets('unchecking a parent unchecks its sub-items', (tester) async {
+    final state = await pumpNote(tester, const [
+      ('A', 'checked', 0),
+      ('A1', 'checked', 1),
+      ('B', 'unchecked', 0),
+    ]);
+
+    await tester.tap(checkboxOf('A'));
+    await tester.pump(AnchorTokens.motionDurationSinkDelay);
+
+    final lines = parseDocumentLines(state.controller.document);
+    expect(lines[0].isChecked, isFalse);
+    expect(lines[1].isChecked, isFalse);
+    expect(lines[2].isChecked, isFalse);
+  });
+
+  testWidgets('checking a parent keeps a hidden checked item hidden', (
+    tester,
+  ) async {
+    final state = await pumpNote(tester, const [
+      ('A', 'unchecked', 0),
+      ('A1', 'unchecked', 1),
+      ('B', 'unchecked', 0),
+      ('B1', 'checked', 1),
+    ], folded: true);
+
+    await tester.tap(checkboxOf('A'));
+    await tester.pump(AnchorTokens.motionDurationSinkDelay);
+
+    expect(checkboxOf('B1'), findsNothing);
+    expect(checkboxOf('A'), findsOneWidget);
+    expect(checkboxOf('A1'), findsOneWidget);
+    expect(state.getPlainText(), startsWith('A\nA1\nB\nB1'));
+  });
+
+  testWidgets('a flat item still moves to the bottom when checked', (
+    tester,
+  ) async {
+    final state = await pumpNote(tester, const [
+      ('A', 'unchecked', 0),
+      ('B', 'unchecked', 0),
+      ('C', 'unchecked', 0),
+    ]);
+
+    await tester.tap(checkboxOf('A'));
+    await tester.pump(AnchorTokens.motionDurationSinkDelay);
+
+    expect(state.getPlainText(), startsWith('B\nC\nA'));
+  });
+
+  testWidgets('a child tap then a parent tap keeps the parent in place', (
+    tester,
+  ) async {
+    final state = await pumpNote(tester, const [
+      ('A', 'unchecked', 0),
+      ('A1', 'unchecked', 1),
+      ('B', 'unchecked', 0),
+      ('B1', 'checked', 1),
+    ], folded: true);
+
+    await tester.tap(checkboxOf('A1'));
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.tap(checkboxOf('A'));
+    await tester.pump(AnchorTokens.motionDurationSinkDelay);
+
+    expect(state.getPlainText(), startsWith('A\nA1\nB\nB1'));
+    expect(checkboxOf('B1'), findsNothing);
+  });
 
   testWidgets('list lines keep one rhythm across indents, ticks and kinds', (
     tester,

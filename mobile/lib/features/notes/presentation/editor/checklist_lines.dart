@@ -365,6 +365,29 @@ Delta buildGroupReorderDelta(
   return total!;
 }
 
+/// Toggles [index] and every checklist line in its block.
+Delta buildChecklistToggleDelta(
+  List<ParsedLine> lines,
+  int index,
+  bool checked,
+) {
+  final end = checklistBlockEnd(lines, index, lines.length - 1);
+  final value = checked
+      ? Attribute.checked.value
+      : Attribute.unchecked.value;
+  final delta = Delta();
+  var cursor = 0;
+  for (var i = index; i <= end; i++) {
+    final line = lines[i];
+    if (!line.isChecklist) continue;
+    final newlineOffset = line.startOffset + line.length - 1;
+    if (newlineOffset > cursor) delta.retain(newlineOffset - cursor);
+    delta.retain(1, {Attribute.list.key: value});
+    cursor = newlineOffset + 1;
+  }
+  return delta;
+}
+
 Delta? buildUncheckAllDelta(List<ParsedLine> lines) {
   final delta = Delta();
   var cursor = 0;

@@ -748,5 +748,61 @@ void main() {
         ]);
       },
     );
+
+    test('checking a parent block checks every checklist descendant', () {
+      final doc = nestedDoc([
+        ('a', 'unchecked', 0),
+        ('a1', 'unchecked', 1),
+        ('a2', 'unchecked', 2),
+        ('b', 'unchecked', 0),
+      ]);
+      final lines = parseDocumentLines(doc);
+      doc.compose(
+        buildChecklistToggleDelta(lines, 0, true),
+        ChangeSource.local,
+      );
+      expect(nestedLinesOf(doc), [
+        ('a', 'checked', 0),
+        ('a1', 'checked', 1),
+        ('a2', 'checked', 2),
+        ('b', 'unchecked', 0),
+      ]);
+    });
+
+    test('unchecking a parent block unchecks every checklist descendant', () {
+      final doc = nestedDoc([
+        ('a', 'checked', 0),
+        ('a1', 'checked', 1),
+        ('b', 'unchecked', 0),
+      ]);
+      final lines = parseDocumentLines(doc);
+      doc.compose(
+        buildChecklistToggleDelta(lines, 0, false),
+        ChangeSource.local,
+      );
+      expect(nestedLinesOf(doc), [
+        ('a', 'unchecked', 0),
+        ('a1', 'unchecked', 1),
+        ('b', 'unchecked', 0),
+      ]);
+    });
+
+    test('a non-checklist child under a parent keeps its list state', () {
+      final doc = nestedDoc([
+        ('a', 'unchecked', 0),
+        ('note', null, 1),
+        ('a1', 'unchecked', 1),
+      ]);
+      final lines = parseDocumentLines(doc);
+      doc.compose(
+        buildChecklistToggleDelta(lines, 0, true),
+        ChangeSource.local,
+      );
+      expect(nestedLinesOf(doc), [
+        ('a', 'checked', 0),
+        ('note', null, 1),
+        ('a1', 'checked', 1),
+      ]);
+    });
   });
 }

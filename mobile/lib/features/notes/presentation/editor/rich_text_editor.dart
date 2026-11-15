@@ -839,6 +839,7 @@ class RichTextEditorState extends State<RichTextEditor>
   }
 
   void _toggleCheckbox(Line line, bool checked) {
+    _sorter.cancelAll();
     Haptics.selection();
     if (checked) {
       _justCheckedTimers[line]?.cancel();
@@ -848,11 +849,15 @@ class RichTextEditorState extends State<RichTextEditor>
       );
     }
     _consumeNextEditorTap();
+    final lines = parseDocumentLines(_controller.document);
+    final index = lineIndexAt(lines, line.documentOffset);
+    if (index == -1) return;
+    final delta = buildChecklistToggleDelta(lines, index, checked);
     _editWithoutFocus(
-      () => _controller.formatText(
-        line.documentOffset,
-        0,
-        checked ? Attribute.checked : Attribute.unchecked,
+      () => _controller.compose(
+        delta,
+        _controller.selection,
+        ChangeSource.local,
       ),
     );
   }
