@@ -340,17 +340,14 @@ CheckedSectionPlan? checklistCheckedSectionPlan(
   final blocks = _checklistBlocks(lines, groupStart, groupEnd);
   final late = prefer == null ? null : _blockStartingAt(blocks, prefer);
   // A checked block with an unchecked descendant is frozen as a whole. It does
-  // not move, and neither does a child toggled inside it.
-  final parent = late == null ? null : _blockParent(blocks, late);
-  final parentFrozen =
-      parent != null &&
-      lines[parent.start].isChecked &&
-      !_blockFullyChecked(lines, parent);
+  // not move, and neither does a child toggled inside it, however deep.
+  final parentFrozen = late != null && _hasFrozenAncestor(lines, blocks, late);
   final lateMoves =
       late != null &&
       !parentFrozen &&
       (!lines[late.start].isChecked || _blockFullyChecked(lines, late));
   final effectiveLate = lateMoves ? late : null;
+  final frozen = late != null && !lateMoves ? late : null;
   _planSiblings(
     lines,
     blocks,
@@ -359,6 +356,7 @@ CheckedSectionPlan? checklistCheckedSectionPlan(
     done,
     doneIndents,
     late: effectiveLate,
+    frozen: frozen,
   );
   // The toggled block was skipped everywhere above, so it is appended once,
   // here. A checked block with only checked descendants leaves its parent and
@@ -397,11 +395,21 @@ void _planSiblings(
   List<int> done,
   List<int> doneIndents, {
   required _ChecklistBlock? late,
+  _ChecklistBlock? frozen,
 }) {
   for (final block in blocks) {
     // The toggled block waits for the caller to append it last.
     if (block == late) continue;
-    _appendBlock(lines, block, open, openIndents, done, doneIndents, late);
+    _appendBlock(
+      lines,
+      block,
+      open,
+      openIndents,
+      done,
+      doneIndents,
+      late,
+      frozen,
+    );
   }
 }
 
@@ -413,7 +421,19 @@ void _appendBlock(
   List<int> done,
   List<int> doneIndents,
   _ChecklistBlock? late,
+  _ChecklistBlock? frozen,
 ) {
+  if (block == frozen) {
+    // A frozen block keeps its whole subtree where it is.
+    _appendWholeBlock(
+      block,
+      lines[block.start].indent,
+      open,
+      openIndents,
+      late: null,
+    );
+    return;
+  }
   if (lines[block.start].isChecked && _blockFullyChecked(lines, block)) {
     // A checked block leaves its parent and starts the checked section at
     // the absolute root indent. A parent with an unchecked descendant stays
@@ -422,7 +442,16 @@ void _appendBlock(
     return;
   }
   _appendLine(block.start, lines[block.start].indent, open, openIndents);
-  _appendChildren(lines, block, open, openIndents, done, doneIndents, late);
+  _appendChildren(
+    lines,
+    block,
+    open,
+    openIndents,
+    done,
+    doneIndents,
+    late,
+    frozen,
+  );
 }
 
 void _appendChildren(
@@ -433,11 +462,21 @@ void _appendChildren(
   List<int> done,
   List<int> doneIndents,
   _ChecklistBlock? late,
+  _ChecklistBlock? frozen,
 ) {
   for (final child in block.children) {
     // The toggled block waits its turn in _planSiblings.
     if (child == late) continue;
-    _appendBlock(lines, child, open, openIndents, done, doneIndents, late);
+    _appendBlock(
+      lines,
+      child,
+      open,
+      openIndents,
+      done,
+      doneIndents,
+      late,
+      frozen,
+    );
   }
 }
 
@@ -462,6 +501,23 @@ _ChecklistBlock? _blockParent(
     if (inner != null) return inner;
   }
   return null;
+}
+
+/// True when any ancestor of [target] is checked but not fully checked. Such
+/// an ancestor is frozen, so its descendants must stay in place too.
+bool _hasFrozenAncestor(
+  List<ParsedLine> lines,
+  List<_ChecklistBlock> blocks,
+  _ChecklistBlock target,
+) {
+  var parent = _blockParent(blocks, target);
+  while (parent != null) {
+    if (lines[parent.start].isChecked && !_blockFullyChecked(lines, parent)) {
+      return true;
+    }
+    parent = _blockParent(blocks, parent);
+  }
+  return false;
 }
 
 /// True when every line in the block is checked. A block with any unchecked

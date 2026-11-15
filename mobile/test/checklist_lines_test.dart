@@ -262,6 +262,26 @@ void main() {
       expect(planOf(doc, prefer: 1), isNull);
     });
 
+    test('a checked descendant stays under a frozen ancestor', () {
+      final doc = nestedDoc([
+        ('p', 'checked', 0),
+        ('c', 'unchecked', 1),
+        ('g', 'checked', 2),
+        ('q', 'unchecked', 0),
+      ]);
+      expect(planOf(doc, prefer: 2), isNull);
+    });
+
+    test('an unchecked descendant stays under a frozen ancestor', () {
+      final doc = nestedDoc([
+        ('p', 'checked', 0),
+        ('c', 'unchecked', 1),
+        ('g', 'unchecked', 2),
+        ('q', 'unchecked', 0),
+      ]);
+      expect(planOf(doc, prefer: 2), isNull);
+    });
+
     test('a fully checked parent sinks its whole subtree', () {
       final doc = nestedDoc([
         ('a', 'unchecked', 0),
