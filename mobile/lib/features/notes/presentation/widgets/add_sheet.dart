@@ -4,6 +4,7 @@ import 'dart:math' as math;
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -24,6 +25,7 @@ import '../../../../core/widgets/grouped_list.dart';
 import '../../../../core/widgets/play_button.dart';
 import '../../../../core/widgets/pressable.dart';
 import '../../../../l10n/l10n.dart';
+import '../../data/image_compressor.dart';
 import '../../data/photo_files.dart';
 import '../../domain/note_attachment.dart';
 import '../../domain/note_dates.dart';
@@ -53,14 +55,14 @@ const _waveformBarCount = 36;
 
 const _recordingLimit = maxAttachmentBytes - 2 * 1024 * 1024;
 
-class _AddSheet extends StatefulWidget {
+class _AddSheet extends ConsumerStatefulWidget {
   const _AddSheet();
 
   @override
-  State<_AddSheet> createState() => _AddSheetState();
+  _AddSheetState createState() => _AddSheetState();
 }
 
-class _AddSheetState extends State<_AddSheet> {
+class _AddSheetState extends ConsumerState<_AddSheet> {
   final _recorder = AudioRecorder();
   final _player = AudioPlayer();
   _Stage _stage = _Stage.pick;
@@ -109,10 +111,25 @@ class _AddSheetState extends State<_AddSheet> {
       );
       return;
     }
+
+    // Compress before returning. Fallback to original on failure.
+    String finalPath = photo.path;
+    String finalMime = photo.mime;
+    try {
+      final result = await ref.read(imageCompressorProvider).compress(
+        SourceImage(path: photo.path, mime: photo.mime),
+      );
+      finalPath = result.path;
+      finalMime = result.mime;
+    } catch (_) {
+      // Keep original if compression fails
+    }
+
+    if (!mounted) return;
     Navigator.of(context).pop<AddedFile>((
-      path: photo.path,
-      mime: photo.mime,
-      name: path.basename(photo.path),
+      path: finalPath,
+      mime: finalMime,
+      name: path.basename(finalPath),
     ));
   }
 

@@ -1,10 +1,12 @@
 import 'dart:io';
 
 import 'package:anchor/core/theme/app_theme.dart';
+import 'package:anchor/features/notes/data/image_compressor.dart';
 import 'package:anchor/features/notes/domain/note_attachment.dart';
 import 'package:anchor/features/notes/presentation/widgets/add_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:record/record.dart';
 
@@ -52,6 +54,17 @@ class _FakeRecorder extends Fake implements RecordPlatform {
   Future<void> dispose(String recorderId) async {}
 }
 
+class _FakeCompressor implements ImageCompressor {
+  @override
+  Future<CompressedImage> compress(SourceImage image) async =>
+      CompressedImage(
+        path: image.path,
+        mime: image.mime,
+        originalSize: 1024,
+        compressedSize: 512,
+      );
+}
+
 void main() {
   Future<void> waitFor(WidgetTester tester, bool Function() isDone) async {
     for (var i = 0; i < 40 && !isDone(); i++) {
@@ -85,12 +98,17 @@ void main() {
     addTearDown(tester.view.reset);
     AddedFile? added;
     await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.light(),
-        home: Builder(
-          builder: (context) => TextButton(
-            onPressed: () async => added = await showAddSheet(context),
-            child: const Text('Add'),
+      ProviderScope(
+        overrides: [
+          imageCompressorProvider.overrideWithValue(_FakeCompressor()),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.light(),
+          home: Builder(
+            builder: (context) => TextButton(
+              onPressed: () async => added = await showAddSheet(context),
+              child: const Text('Add'),
+            ),
           ),
         ),
       ),

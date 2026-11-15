@@ -1,30 +1,24 @@
 /// Defines the interface for image compression on the local device.
 ///
 /// Implementations should run compression work off the UI thread.
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'image_compressor_worker.dart'
+    show CompressedImage, SourceImage, compressImageIsolate;
+
 abstract interface class ImageCompressor {
   /// Compresses [image] and returns the result.
   Future<CompressedImage> compress(SourceImage image);
 }
 
-/// A source image to be compressed.
-class SourceImage {
-  const SourceImage({required this.path, required this.mime});
+/// Compresses using a background isolate. Override in tests.
+final imageCompressorProvider = Provider<ImageCompressor>(
+  (ref) => _ComputeImageCompressor(),
+);
 
-  final String path;
-  final String mime;
-}
-
-/// The result of compressing an image.
-class CompressedImage {
-  const CompressedImage({
-    required this.path,
-    required this.mime,
-    required this.originalSize,
-    required this.compressedSize,
-  });
-
-  final String path;
-  final String mime;
-  final int originalSize;
-  final int compressedSize;
+class _ComputeImageCompressor implements ImageCompressor {
+  @override
+  Future<CompressedImage> compress(SourceImage image) =>
+      compute(compressImageIsolate, image);
 }
