@@ -62,6 +62,25 @@ enum AttachmentSyncStatus {
   }
 }
 
+/// Tracks local image compression state before upload.
+enum AttachmentCompressionStatus {
+  none('none'),
+  queued('queued'),
+  compressing('compressing'),
+  ready('ready'),
+  failed('failed');
+
+  const AttachmentCompressionStatus(this.dbValue);
+  final String dbValue;
+
+  static AttachmentCompressionStatus fromString(String value) {
+    return AttachmentCompressionStatus.values.firstWhere(
+      (e) => e.dbValue == value,
+      orElse: () => AttachmentCompressionStatus.none,
+    );
+  }
+}
+
 @freezed
 abstract class NoteAttachment with _$NoteAttachment {
   const NoteAttachment._();
@@ -76,6 +95,10 @@ abstract class NoteAttachment with _$NoteAttachment {
     @Default(0) int position,
     String? uploadedByUserId,
     @JsonKey(includeFromJson: false, includeToJson: false) String? localPath,
+    @JsonKey(includeFromJson: false, includeToJson: false) String? compressedPath,
+    @JsonKey(includeFromJson: false, includeToJson: false)
+    @Default(AttachmentCompressionStatus.none)
+    AttachmentCompressionStatus compressionStatus,
     @JsonKey(includeFromJson: false, includeToJson: false)
     @Default(false)
     bool isPendingUpload,

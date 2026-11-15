@@ -2348,6 +2348,30 @@ class $NoteAttachmentsTable extends NoteAttachments
     requiredDuringInsert: false,
     defaultValue: const Constant('synced'),
   );
+  static const VerificationMeta _compressionStatusMeta = const VerificationMeta(
+    'compressionStatus',
+  );
+  @override
+  late final GeneratedColumn<String> compressionStatus =
+      GeneratedColumn<String>(
+        'compression_status',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('none'),
+      );
+  static const VerificationMeta _compressedPathMeta = const VerificationMeta(
+    'compressedPath',
+  );
+  @override
+  late final GeneratedColumn<String> compressedPath = GeneratedColumn<String>(
+    'compressed_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _serverAttachmentIdMeta =
       const VerificationMeta('serverAttachmentId');
   @override
@@ -2393,6 +2417,8 @@ class $NoteAttachmentsTable extends NoteAttachments
     position,
     localPath,
     syncStatus,
+    compressionStatus,
+    compressedPath,
     serverAttachmentId,
     uploadedByUserId,
     createdAt,
@@ -2475,6 +2501,24 @@ class $NoteAttachmentsTable extends NoteAttachments
         syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
       );
     }
+    if (data.containsKey('compression_status')) {
+      context.handle(
+        _compressionStatusMeta,
+        compressionStatus.isAcceptableOrUnknown(
+          data['compression_status']!,
+          _compressionStatusMeta,
+        ),
+      );
+    }
+    if (data.containsKey('compressed_path')) {
+      context.handle(
+        _compressedPathMeta,
+        compressedPath.isAcceptableOrUnknown(
+          data['compressed_path']!,
+          _compressedPathMeta,
+        ),
+      );
+    }
     if (data.containsKey('server_attachment_id')) {
       context.handle(
         _serverAttachmentIdMeta,
@@ -2544,6 +2588,14 @@ class $NoteAttachmentsTable extends NoteAttachments
         DriftSqlType.string,
         data['${effectivePrefix}sync_status'],
       )!,
+      compressionStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}compression_status'],
+      )!,
+      compressedPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}compressed_path'],
+      ),
       serverAttachmentId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}server_attachment_id'],
@@ -2575,6 +2627,8 @@ class AttachmentRow extends DataClass implements Insertable<AttachmentRow> {
   final int position;
   final String? localPath;
   final String syncStatus;
+  final String compressionStatus;
+  final String? compressedPath;
   final String? serverAttachmentId;
   final String? uploadedByUserId;
   final DateTime createdAt;
@@ -2588,6 +2642,8 @@ class AttachmentRow extends DataClass implements Insertable<AttachmentRow> {
     required this.position,
     this.localPath,
     required this.syncStatus,
+    required this.compressionStatus,
+    this.compressedPath,
     this.serverAttachmentId,
     this.uploadedByUserId,
     required this.createdAt,
@@ -2606,6 +2662,10 @@ class AttachmentRow extends DataClass implements Insertable<AttachmentRow> {
       map['local_path'] = Variable<String>(localPath);
     }
     map['sync_status'] = Variable<String>(syncStatus);
+    map['compression_status'] = Variable<String>(compressionStatus);
+    if (!nullToAbsent || compressedPath != null) {
+      map['compressed_path'] = Variable<String>(compressedPath);
+    }
     if (!nullToAbsent || serverAttachmentId != null) {
       map['server_attachment_id'] = Variable<String>(serverAttachmentId);
     }
@@ -2629,6 +2689,10 @@ class AttachmentRow extends DataClass implements Insertable<AttachmentRow> {
           ? const Value.absent()
           : Value(localPath),
       syncStatus: Value(syncStatus),
+      compressionStatus: Value(compressionStatus),
+      compressedPath: compressedPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(compressedPath),
       serverAttachmentId: serverAttachmentId == null && nullToAbsent
           ? const Value.absent()
           : Value(serverAttachmentId),
@@ -2654,6 +2718,8 @@ class AttachmentRow extends DataClass implements Insertable<AttachmentRow> {
       position: serializer.fromJson<int>(json['position']),
       localPath: serializer.fromJson<String?>(json['localPath']),
       syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      compressionStatus: serializer.fromJson<String>(json['compressionStatus']),
+      compressedPath: serializer.fromJson<String?>(json['compressedPath']),
       serverAttachmentId: serializer.fromJson<String?>(
         json['serverAttachmentId'],
       ),
@@ -2674,6 +2740,8 @@ class AttachmentRow extends DataClass implements Insertable<AttachmentRow> {
       'position': serializer.toJson<int>(position),
       'localPath': serializer.toJson<String?>(localPath),
       'syncStatus': serializer.toJson<String>(syncStatus),
+      'compressionStatus': serializer.toJson<String>(compressionStatus),
+      'compressedPath': serializer.toJson<String?>(compressedPath),
       'serverAttachmentId': serializer.toJson<String?>(serverAttachmentId),
       'uploadedByUserId': serializer.toJson<String?>(uploadedByUserId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
@@ -2690,6 +2758,8 @@ class AttachmentRow extends DataClass implements Insertable<AttachmentRow> {
     int? position,
     Value<String?> localPath = const Value.absent(),
     String? syncStatus,
+    String? compressionStatus,
+    Value<String?> compressedPath = const Value.absent(),
     Value<String?> serverAttachmentId = const Value.absent(),
     Value<String?> uploadedByUserId = const Value.absent(),
     DateTime? createdAt,
@@ -2703,6 +2773,10 @@ class AttachmentRow extends DataClass implements Insertable<AttachmentRow> {
     position: position ?? this.position,
     localPath: localPath.present ? localPath.value : this.localPath,
     syncStatus: syncStatus ?? this.syncStatus,
+    compressionStatus: compressionStatus ?? this.compressionStatus,
+    compressedPath: compressedPath.present
+        ? compressedPath.value
+        : this.compressedPath,
     serverAttachmentId: serverAttachmentId.present
         ? serverAttachmentId.value
         : this.serverAttachmentId,
@@ -2726,6 +2800,12 @@ class AttachmentRow extends DataClass implements Insertable<AttachmentRow> {
       syncStatus: data.syncStatus.present
           ? data.syncStatus.value
           : this.syncStatus,
+      compressionStatus: data.compressionStatus.present
+          ? data.compressionStatus.value
+          : this.compressionStatus,
+      compressedPath: data.compressedPath.present
+          ? data.compressedPath.value
+          : this.compressedPath,
       serverAttachmentId: data.serverAttachmentId.present
           ? data.serverAttachmentId.value
           : this.serverAttachmentId,
@@ -2748,6 +2828,8 @@ class AttachmentRow extends DataClass implements Insertable<AttachmentRow> {
           ..write('position: $position, ')
           ..write('localPath: $localPath, ')
           ..write('syncStatus: $syncStatus, ')
+          ..write('compressionStatus: $compressionStatus, ')
+          ..write('compressedPath: $compressedPath, ')
           ..write('serverAttachmentId: $serverAttachmentId, ')
           ..write('uploadedByUserId: $uploadedByUserId, ')
           ..write('createdAt: $createdAt')
@@ -2766,6 +2848,8 @@ class AttachmentRow extends DataClass implements Insertable<AttachmentRow> {
     position,
     localPath,
     syncStatus,
+    compressionStatus,
+    compressedPath,
     serverAttachmentId,
     uploadedByUserId,
     createdAt,
@@ -2783,6 +2867,8 @@ class AttachmentRow extends DataClass implements Insertable<AttachmentRow> {
           other.position == this.position &&
           other.localPath == this.localPath &&
           other.syncStatus == this.syncStatus &&
+          other.compressionStatus == this.compressionStatus &&
+          other.compressedPath == this.compressedPath &&
           other.serverAttachmentId == this.serverAttachmentId &&
           other.uploadedByUserId == this.uploadedByUserId &&
           other.createdAt == this.createdAt);
@@ -2798,6 +2884,8 @@ class NoteAttachmentsCompanion extends UpdateCompanion<AttachmentRow> {
   final Value<int> position;
   final Value<String?> localPath;
   final Value<String> syncStatus;
+  final Value<String> compressionStatus;
+  final Value<String?> compressedPath;
   final Value<String?> serverAttachmentId;
   final Value<String?> uploadedByUserId;
   final Value<DateTime> createdAt;
@@ -2812,6 +2900,8 @@ class NoteAttachmentsCompanion extends UpdateCompanion<AttachmentRow> {
     this.position = const Value.absent(),
     this.localPath = const Value.absent(),
     this.syncStatus = const Value.absent(),
+    this.compressionStatus = const Value.absent(),
+    this.compressedPath = const Value.absent(),
     this.serverAttachmentId = const Value.absent(),
     this.uploadedByUserId = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -2827,6 +2917,8 @@ class NoteAttachmentsCompanion extends UpdateCompanion<AttachmentRow> {
     this.position = const Value.absent(),
     this.localPath = const Value.absent(),
     this.syncStatus = const Value.absent(),
+    this.compressionStatus = const Value.absent(),
+    this.compressedPath = const Value.absent(),
     this.serverAttachmentId = const Value.absent(),
     this.uploadedByUserId = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -2847,6 +2939,8 @@ class NoteAttachmentsCompanion extends UpdateCompanion<AttachmentRow> {
     Expression<int>? position,
     Expression<String>? localPath,
     Expression<String>? syncStatus,
+    Expression<String>? compressionStatus,
+    Expression<String>? compressedPath,
     Expression<String>? serverAttachmentId,
     Expression<String>? uploadedByUserId,
     Expression<DateTime>? createdAt,
@@ -2862,6 +2956,8 @@ class NoteAttachmentsCompanion extends UpdateCompanion<AttachmentRow> {
       if (position != null) 'position': position,
       if (localPath != null) 'local_path': localPath,
       if (syncStatus != null) 'sync_status': syncStatus,
+      if (compressionStatus != null) 'compression_status': compressionStatus,
+      if (compressedPath != null) 'compressed_path': compressedPath,
       if (serverAttachmentId != null)
         'server_attachment_id': serverAttachmentId,
       if (uploadedByUserId != null) 'uploaded_by_user_id': uploadedByUserId,
@@ -2880,6 +2976,8 @@ class NoteAttachmentsCompanion extends UpdateCompanion<AttachmentRow> {
     Value<int>? position,
     Value<String?>? localPath,
     Value<String>? syncStatus,
+    Value<String>? compressionStatus,
+    Value<String?>? compressedPath,
     Value<String?>? serverAttachmentId,
     Value<String?>? uploadedByUserId,
     Value<DateTime>? createdAt,
@@ -2895,6 +2993,8 @@ class NoteAttachmentsCompanion extends UpdateCompanion<AttachmentRow> {
       position: position ?? this.position,
       localPath: localPath ?? this.localPath,
       syncStatus: syncStatus ?? this.syncStatus,
+      compressionStatus: compressionStatus ?? this.compressionStatus,
+      compressedPath: compressedPath ?? this.compressedPath,
       serverAttachmentId: serverAttachmentId ?? this.serverAttachmentId,
       uploadedByUserId: uploadedByUserId ?? this.uploadedByUserId,
       createdAt: createdAt ?? this.createdAt,
@@ -2932,6 +3032,12 @@ class NoteAttachmentsCompanion extends UpdateCompanion<AttachmentRow> {
     if (syncStatus.present) {
       map['sync_status'] = Variable<String>(syncStatus.value);
     }
+    if (compressionStatus.present) {
+      map['compression_status'] = Variable<String>(compressionStatus.value);
+    }
+    if (compressedPath.present) {
+      map['compressed_path'] = Variable<String>(compressedPath.value);
+    }
     if (serverAttachmentId.present) {
       map['server_attachment_id'] = Variable<String>(serverAttachmentId.value);
     }
@@ -2959,6 +3065,8 @@ class NoteAttachmentsCompanion extends UpdateCompanion<AttachmentRow> {
           ..write('position: $position, ')
           ..write('localPath: $localPath, ')
           ..write('syncStatus: $syncStatus, ')
+          ..write('compressionStatus: $compressionStatus, ')
+          ..write('compressedPath: $compressedPath, ')
           ..write('serverAttachmentId: $serverAttachmentId, ')
           ..write('uploadedByUserId: $uploadedByUserId, ')
           ..write('createdAt: $createdAt, ')
@@ -5479,6 +5587,8 @@ typedef $$NoteAttachmentsTableCreateCompanionBuilder =
       Value<int> position,
       Value<String?> localPath,
       Value<String> syncStatus,
+      Value<String> compressionStatus,
+      Value<String?> compressedPath,
       Value<String?> serverAttachmentId,
       Value<String?> uploadedByUserId,
       Value<DateTime> createdAt,
@@ -5495,6 +5605,8 @@ typedef $$NoteAttachmentsTableUpdateCompanionBuilder =
       Value<int> position,
       Value<String?> localPath,
       Value<String> syncStatus,
+      Value<String> compressionStatus,
+      Value<String?> compressedPath,
       Value<String?> serverAttachmentId,
       Value<String?> uploadedByUserId,
       Value<DateTime> createdAt,
@@ -5552,6 +5664,16 @@ class $$NoteAttachmentsTableFilterComposer
 
   ColumnFilters<String> get syncStatus => $composableBuilder(
     column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get compressionStatus => $composableBuilder(
+    column: $table.compressionStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get compressedPath => $composableBuilder(
+    column: $table.compressedPath,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5625,6 +5747,16 @@ class $$NoteAttachmentsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get compressionStatus => $composableBuilder(
+    column: $table.compressionStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get compressedPath => $composableBuilder(
+    column: $table.compressedPath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get serverAttachmentId => $composableBuilder(
     column: $table.serverAttachmentId,
     builder: (column) => ColumnOrderings(column),
@@ -5678,6 +5810,16 @@ class $$NoteAttachmentsTableAnnotationComposer
 
   GeneratedColumn<String> get syncStatus => $composableBuilder(
     column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get compressionStatus => $composableBuilder(
+    column: $table.compressionStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get compressedPath => $composableBuilder(
+    column: $table.compressedPath,
     builder: (column) => column,
   );
 
@@ -5737,6 +5879,8 @@ class $$NoteAttachmentsTableTableManager
                 Value<int> position = const Value.absent(),
                 Value<String?> localPath = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
+                Value<String> compressionStatus = const Value.absent(),
+                Value<String?> compressedPath = const Value.absent(),
                 Value<String?> serverAttachmentId = const Value.absent(),
                 Value<String?> uploadedByUserId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -5751,6 +5895,8 @@ class $$NoteAttachmentsTableTableManager
                 position: position,
                 localPath: localPath,
                 syncStatus: syncStatus,
+                compressionStatus: compressionStatus,
+                compressedPath: compressedPath,
                 serverAttachmentId: serverAttachmentId,
                 uploadedByUserId: uploadedByUserId,
                 createdAt: createdAt,
@@ -5767,6 +5913,8 @@ class $$NoteAttachmentsTableTableManager
                 Value<int> position = const Value.absent(),
                 Value<String?> localPath = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
+                Value<String> compressionStatus = const Value.absent(),
+                Value<String?> compressedPath = const Value.absent(),
                 Value<String?> serverAttachmentId = const Value.absent(),
                 Value<String?> uploadedByUserId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -5781,6 +5929,8 @@ class $$NoteAttachmentsTableTableManager
                 position: position,
                 localPath: localPath,
                 syncStatus: syncStatus,
+                compressionStatus: compressionStatus,
+                compressedPath: compressedPath,
                 serverAttachmentId: serverAttachmentId,
                 uploadedByUserId: uploadedByUserId,
                 createdAt: createdAt,

@@ -195,6 +195,47 @@ void main() {
       expect(state.cursor, isNull);
     });
   });
+
+  test(
+    'a database from before image compression gains the compression columns',
+    () async {
+      await withDatabase((db) async {
+        await db.customStatement(
+          'ALTER TABLE note_attachments '
+          'DROP COLUMN compression_status',
+        );
+        await db.customStatement(
+          'ALTER TABLE note_attachments '
+          'DROP COLUMN compressed_path',
+        );
+        await db
+            .into(db.noteAttachments)
+            .insert(
+              NoteAttachmentsCompanion.insert(
+                id: 'a1',
+                noteId: 'n1',
+                type: 'image',
+                originalFilename: 'photo.jpg',
+                mimeType: 'image/jpeg',
+                fileSize: 1024,
+              ),
+            );
+        await db.customStatement('PRAGMA user_version = 11');
+      });
+
+      await withDatabase((db) async {
+        final columns = await db
+            .customSelect('PRAGMA table_info(note_attachments)')
+            .get();
+        final names = columns.map((row) => row.read<String>('name')).toSet();
+        expect(names, containsAll(['compression_status', 'compressed_path']));
+
+        final row = (await db.select(db.noteAttachments).get()).single;
+        expect(row.compressionStatus, 'none');
+        expect(row.compressedPath, isNull);
+      });
+    },
+  );
 }
 
 const _syncedCopyColumns = [

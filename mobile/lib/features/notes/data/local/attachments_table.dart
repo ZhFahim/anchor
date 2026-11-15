@@ -12,8 +12,13 @@ class NoteAttachments extends Table {
   IntColumn get position => integer().withDefault(const Constant(0))();
   // Local file path (null if not cached)
   TextColumn get localPath => text().nullable()();
-  // AttachmentSyncStatus.dbValue: 'synced' | 'pending_upload' | 'pending_delete'
+  // AttachmentSyncStatus.dbValue: 'synced' | 'pending_upload' | 'upload_failed' | 'pending_delete'
   TextColumn get syncStatus => text().withDefault(const Constant('synced'))();
+  // AttachmentCompressionStatus.dbValue: 'none' | 'queued' | 'compressing' | 'ready' | 'failed'
+  TextColumn get compressionStatus =>
+      text().withDefault(const Constant('none'))();
+  // Local file path of the compressed result (null if not yet compressed or failed)
+  TextColumn get compressedPath => text().nullable()();
   // Server assigned ID (null before first upload)
   TextColumn get serverAttachmentId => text().nullable()();
   // Null for local uploads not yet sent.

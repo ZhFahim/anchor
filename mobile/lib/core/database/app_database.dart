@@ -34,7 +34,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -108,6 +108,20 @@ class AppDatabase extends _$AppDatabase {
         await (update(syncState)..where((tbl) => tbl.cursor.isNotNull())).write(
           const SyncStateCompanion(cursor: Value(null)),
         );
+      }
+      if (from < 12) {
+        final cols = await customSelect('PRAGMA table_info(note_attachments)').get();
+        final names = cols.map((r) => r.read<String>('name')).toSet();
+        if (!names.contains('compression_status')) {
+          await customStatement(
+            "ALTER TABLE note_attachments ADD COLUMN compression_status TEXT NOT NULL DEFAULT 'none'",
+          );
+        }
+        if (!names.contains('compressed_path')) {
+          await customStatement(
+            'ALTER TABLE note_attachments ADD COLUMN compressed_path TEXT',
+          );
+        }
       }
     },
   );
