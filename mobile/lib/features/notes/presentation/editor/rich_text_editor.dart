@@ -398,6 +398,14 @@ class RichTextEditorState extends State<RichTextEditor>
   /// Quill sends typing here one character at a time, a paste all at once,
   /// and a word the keyboard corrects as the part that changed.
   bool _noteTyping(int index, int length, Object? data) {
+    if (data == '' && length == 1 && _isBackspaceAtLineStart(index)) {
+      if (!_controller.handleBackspaceAtLineStart(index + 1)) return true;
+      _controller.updateSelection(
+        TextSelection.collapsed(offset: index + 1),
+        ChangeSource.local,
+      );
+      return false;
+    }
     if (_isApplying || data is! String || data.isEmpty) return true;
     if (data == '/') _typedSlashOffset = index;
     if (_typedBreak.hasMatch(data)) {
@@ -406,6 +414,15 @@ class RichTextEditorState extends State<RichTextEditor>
       scheduleMicrotask(() => _afterTyping(caret, isTyped: isTyped));
     }
     return true;
+  }
+
+  bool _isBackspaceAtLineStart(int index) {
+    final selection = _controller.selection;
+    return !_isApplying &&
+        widget.canEdit &&
+        selection.end == index + 1 &&
+        (selection.isCollapsed || selection.start == index) &&
+        _controller.document.getPlainText(index, 1) == '\n';
   }
 
   /// Runs once Quill has moved the caret past what was typed.
@@ -477,16 +494,21 @@ class RichTextEditorState extends State<RichTextEditor>
   /// Stops before checked items folded at the end.
   void focusEnd() {
     widget.focusNode.requestFocus();
-    var offset = _controller.document.length - 1;
+    _controller.updateSelection(
+      TextSelection.collapsed(
+        offset: _nearestVisibleOffset(_controller.document.length - 1),
+      ),
+      ChangeSource.local,
+    );
+  }
+
+  int _nearestVisibleOffset(int offset) {
     for (final range in _lists.folded.reversed) {
       if (range.start > 0 && offset >= range.start && offset <= range.end) {
         offset = range.start - 1;
       }
     }
-    _controller.updateSelection(
-      TextSelection.collapsed(offset: offset),
-      ChangeSource.local,
-    );
+    return offset;
   }
 
   /// In global coordinates; null until the caret's line is laid out.
@@ -680,13 +702,18 @@ class RichTextEditorState extends State<RichTextEditor>
   }
 
   KeyEventResult? _onKeyPressed(KeyEvent event, Node? node) {
-    final onBackspaceAtStart = widget.onBackspaceAtStart;
-    if (onBackspaceAtStart == null ||
-        event is! KeyDownEvent ||
+    final selection = _controller.selection;
+    if (event is! KeyDownEvent ||
         event.logicalKey != LogicalKeyboardKey.backspace ||
-        _controller.selection != const TextSelection.collapsed(offset: 0)) {
+        !widget.canEdit ||
+        !selection.isCollapsed) {
       return null;
     }
+    if (_controller.handleBackspaceAtLineStart(selection.baseOffset)) {
+      return KeyEventResult.handled;
+    }
+    final onBackspaceAtStart = widget.onBackspaceAtStart;
+    if (onBackspaceAtStart == null || selection.baseOffset != 0) return null;
     String? text;
     _editWithoutFocus(() => text = _controller.removeFirstLine());
     if (text == null) return null;
@@ -824,6 +851,67 @@ class RichTextEditorState extends State<RichTextEditor>
     return false;
   }
 
+  bool _onLongPressStart(
+    LongPressStartDetails details,
+    TextPosition Function(Offset offset) getPosition,
+  ) {
+    if (widget.canEdit && !widget.focusNode.hasFocus) {
+      widget.focusNode.requestFocus();
+    }
+    return false;
+  }
+
+  bool _onLongPressMove(
+    LongPressMoveUpdateDetails details,
+    TextPosition Function(Offset offset) getPosition,
+  ) {
+    final editor = _renderEditor;
+    if (editor == null || context.isCupertino) return false;
+    final pressed = editor.selectWordAtPosition(
+      getPosition(details.globalPosition - details.offsetFromOrigin),
+    );
+    final underFinger = editor.selectWordAtPosition(
+      getPosition(details.globalPosition),
+    );
+    final selection = underFinger.start < pressed.start
+        ? TextSelection(
+            baseOffset: pressed.end,
+            extentOffset: underFinger.start,
+          )
+        : TextSelection(
+            baseOffset: pressed.start,
+            extentOffset: underFinger.end,
+          );
+    if (selection != _controller.selection) {
+      editor.onSelectionChanged(selection, SelectionChangedCause.longPress);
+    }
+    return true;
+  }
+
+  void tapBeside(Offset globalPosition) {
+    final editor = _renderEditor;
+    if (editor == null || !editor.attached || !editor.hasSize) return;
+    if (!widget.canEdit) return widget.onReadOnlyTap?.call();
+    final local = editor.globalToLocal(globalPosition);
+    if (local.dy >= editor.size.height) return focusEnd();
+    final besideLine = Offset(
+      local.dx < 0 ? 0 : editor.size.width - 1,
+      math.max(0, local.dy),
+    );
+    final position = editor.getPositionForOffset(
+      editor.localToGlobal(besideLine),
+    );
+    final offset = _nearestVisibleOffset(position.offset);
+    _editorKey.currentState?.hideToolbar();
+    _controller.updateSelection(
+      offset == position.offset
+          ? TextSelection.fromPosition(position)
+          : TextSelection.collapsed(offset: offset),
+      ChangeSource.local,
+    );
+    _editorKey.currentState?.requestKeyboard();
+  }
+
   /// With this recognizer, Quill neither shows its link menu nor opens links.
   GestureRecognizer? _buildLinkRecognizer(Attribute attribute, Leaf leaf) {
     if (attribute.key != Attribute.link.key || attribute.value == null) {
@@ -906,7 +994,7 @@ class RichTextEditorState extends State<RichTextEditor>
               expands: false,
               scrollable: false,
               scrollBottomInset: math.max(0, widget.bottomInset - _caretMargin),
-              showCursor: _isEditing && widget.canEdit,
+              showCursor: widget.canEdit,
               enableInteractiveSelection: true,
               customStyles: styles,
               customStyleBuilder: (attribute) =>
@@ -918,6 +1006,8 @@ class RichTextEditorState extends State<RichTextEditor>
               onKeyPressed: _onKeyPressed,
               editorKey: _editorKey,
               onTapUp: _onEditorTapUp,
+              onSingleLongTapStart: _onLongPressStart,
+              onSingleLongTapMoveUpdate: _onLongPressMove,
               customRecognizerBuilder: _buildLinkRecognizer,
             ),
           ),
@@ -950,7 +1040,25 @@ class UndoableEdit {
   bool _hasSeenOwnChange = false;
   Delta? _closedAs;
 
-  Delta get _inverse => _since.transform(_change.invert(_before), false);
+  Delta get _inverse {
+    final after = _before.compose(_change);
+    final text = _textOf(_before);
+    final hasTypedInEmptiedNote =
+        _textOf(after) == '\n' &&
+        text != '\n' &&
+        _textOf(after.compose(_since)) != '\n';
+    if (hasTypedInEmptiedNote) {
+      final item = after.toList().last.attributes ?? const {};
+      final restore = Delta()..insert('\n', item.isEmpty ? null : item);
+      _before.slice(0, text.length - 1).toList().forEach(restore.push);
+      restore.retain(1, {
+        for (final key in item.keys) key: null,
+        ...?_before.toList().last.attributes,
+      });
+      return _transformLines(_since, restore);
+    }
+    return _transformLines(_since, _change.invert(_before));
+  }
 
   /// False once the note is closed or the edit was undone in the text.
   bool undo() => _editor._undo(this);
@@ -967,6 +1075,44 @@ class UndoableEdit {
     }
     return jsonEncode({'ops': closedAs.compose(_inverse).toJson()});
   }
+}
+
+String _textOf(Delta document) => [
+  for (final op in document.toList())
+    if (op.data case final String text) text else '\ufffc',
+].join();
+
+/// Moves each insert of [change] past [since]; one starting with a line
+/// break goes after what was typed at its place.
+Delta _transformLines(Delta since, Delta change) {
+  var result = Delta();
+  var position = 0;
+  final ops = change.toList();
+  for (var i = 0; i < ops.length;) {
+    final op = ops[i];
+    if (op.isRetain && op.isPlain) {
+      position += op.length!;
+      i++;
+      continue;
+    }
+    final part = Delta();
+    if (position > 0) part.retain(position);
+    var isTypedFirst = false;
+    if (op.isInsert) {
+      isTypedFirst = op.data is String && (op.data! as String).startsWith('\n');
+      for (; i < ops.length && ops[i].isInsert; i++) {
+        part.push(ops[i]);
+        position += ops[i].length!;
+      }
+    } else {
+      part.push(op);
+      if (op.isRetain) position += op.length!;
+      i++;
+    }
+    result = result.compose(since.transform(part, isTypedFirst));
+    since = part.transform(since, !isTypedFirst);
+  }
+  return result;
 }
 
 final _typedBreak = RegExp(r'^\S*[ \u00a0\n]$');

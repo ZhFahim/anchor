@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:anchor/core/theme/tokens/anchor_tokens.dart';
+import 'package:anchor/features/notes/presentation/editor/document_lines.dart';
 import 'package:anchor/features/notes/presentation/editor/editor_format.dart';
 import 'package:anchor/features/notes/presentation/editor/editor_link.dart';
 import 'package:anchor/features/notes/presentation/editor/editor_palette.dart';
@@ -66,9 +67,12 @@ class _ScrollerState extends State<_Scroller> {
   );
 }
 
-bool showsCaret(WidgetTester tester) =>
-    tester.widget<QuillEditor>(find.byType(QuillEditor)).config.showCursor ??
-    false;
+bool showsCaret(WidgetTester tester) => tester.allRenderObjects
+    .whereType<RenderEditableTextLine>()
+    .first
+    .cursorCont
+    .blink
+    .value;
 
 Finder checkboxSlot(int index) => find
     .byWidgetPredicate((w) => w is Semantics && w.properties.checked != null)
@@ -87,6 +91,8 @@ void main() {
     bool hasSlashHint = false,
     ValueChanged<bool>? onBlankChanged,
     ValueChanged<String>? onBackspaceAtStart,
+    bool isCheckedFolded = false,
+    ValueChanged<bool>? onCheckedFoldChanged,
   }) async {
     final focusNode = FocusNode();
     addTearDown(focusNode.dispose);
@@ -104,6 +110,8 @@ void main() {
           hasSlashHint: hasSlashHint,
           onBlankChanged: onBlankChanged,
           onBackspaceAtStart: onBackspaceAtStart,
+          isCheckedFolded: isCheckedFolded,
+          onCheckedFoldChanged: onCheckedFoldChanged,
           scrollController: scroll,
           palette: palette,
         ),
@@ -131,6 +139,50 @@ void main() {
       state.controller.selection,
       TextSelection.collapsed(offset: state.controller.document.length - 1),
     );
+  });
+
+  testWidgets('the caret blinks when a tap brings focus back from the title '
+      'to where it was', (tester) async {
+    final focusNode = FocusNode();
+    final titleFocus = FocusNode();
+    addTearDown(focusNode.dispose);
+    addTearDown(titleFocus.dispose);
+    await tester.pumpWidget(
+      wrap(
+        (scroll) => Column(
+          children: [
+            TextField(focusNode: titleFocus),
+            RichTextEditor(
+              initialContent: _shortNote,
+              focusNode: focusNode,
+              scrollController: scroll,
+              palette: palette,
+            ),
+          ],
+        ),
+      ),
+    );
+    await tester.pump();
+    final state = tester.state<RichTextEditorState>(
+      find.byType(RichTextEditor),
+    );
+    Offset pastTheEnd() {
+      final editor = tester.allRenderObjects.whereType<RenderEditor>().first;
+      final end = editor.getLocalRectForCaret(const TextPosition(offset: 2));
+      return editor.localToGlobal(end.centerRight) + const Offset(40, 0);
+    }
+
+    await tester.tapAt(pastTheEnd());
+    await tester.pumpAndSettle();
+    titleFocus.requestFocus();
+    await tester.pumpAndSettle();
+    expect(titleFocus.hasFocus, isTrue);
+    await tester.tapAt(pastTheEnd());
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(focusNode.hasFocus, isTrue);
+    expect(state.selection.baseOffset, 2);
+    expect(showsCaret(tester), isTrue);
   });
 
   testWidgets('a read-only editor never counts as editing', (tester) async {
@@ -1501,34 +1553,320 @@ void main() {
         expect(state.controller.document.toPlainText(), '\n');
       });
 
-      testWidgets('leaves a list or a heading, and the middle of a line, to '
-          'the usual Backspace', (tester) async {
-        for (final (content, caret) in [
-          (
-            '{"ops":[{"insert":"milk"},'
-                '{"insert":"\\n","attributes":{"list":"bullet"}}]}',
-            0,
-          ),
-          (
-            '{"ops":[{"insert":"Plan"},'
-                '{"insert":"\\n","attributes":{"header":1}}]}',
-            0,
-          ),
-          ('{"ops":[{"insert":"plan\\n"}]}', 2),
+      testWidgets('takes the style off a styled first line before handing '
+          'it over', (tester) async {
+        for (final style in [
+          '{"list":"bullet"}',
+          '{"list":"unchecked"}',
+          '{"header":1}',
+          '{"blockquote":true}',
+          '{"code-block":true}',
         ]) {
           final (state, joined) = await pressBackspace(
             tester,
-            content,
-            caret: caret,
+            '{"ops":[{"insert":"milk"},'
+            '{"insert":"\\n","attributes":$style},{"insert":"more\\n"}]}',
           );
 
-          expect(joined, isEmpty, reason: content);
-          expect(
-            state.controller.document.toPlainText(),
-            isNot(startsWith('\n')),
-          );
+          expect(joined, isEmpty, reason: style);
+          expect(state.controller.document.toDelta().toJson(), [
+            {'insert': 'milk\nmore\n'},
+          ], reason: style);
+
+          await tester.sendKeyEvent(LogicalKeyboardKey.backspace);
+          await tester.pump();
+          expect(joined, ['milk'], reason: style);
         }
       });
+
+      testWidgets('leaves the middle of a line to the usual Backspace', (
+        tester,
+      ) async {
+        final (state, joined) = await pressBackspace(
+          tester,
+          '{"ops":[{"insert":"plan\\n"}]}',
+          caret: 2,
+        );
+
+        expect(joined, isEmpty);
+        expect(state.controller.document.toPlainText(), 'pan\n');
+      });
+    });
+  });
+
+  testWidgets('a tap in the margin below the words or beside folded checked '
+      'items goes where a tap below the note goes', (tester) async {
+    final folds = <bool>[];
+    final (state, _) = await pumpEditor(
+      tester,
+      content:
+          '{"ops":[{"insert":"Eggs"},{"insert":"\\n","attributes":{"list":"unchecked"}},'
+          '{"insert":"Milk"},{"insert":"\\n","attributes":{"list":"checked"}},'
+          '{"insert":"Bread"},{"insert":"\\n","attributes":{"list":"checked"}}]}',
+      isCheckedFolded: true,
+      onCheckedFoldChanged: folds.add,
+    );
+    final editor = tester.allRenderObjects.whereType<RenderEditor>().first;
+
+    for (final y in [editor.size.height + 10, editor.size.height - 1]) {
+      state.tapBeside(editor.localToGlobal(Offset(-1, y)));
+      await tester.pumpAndSettle();
+
+      expect(state.selection, const TextSelection.collapsed(offset: 4));
+      expect(folds, isEmpty, reason: 'the checked items stay folded');
+    }
+  });
+
+  group('dragging after a long-press', () {
+    const words = 'The Quick Brown Fox Jumps';
+
+    Offset charAt(WidgetTester tester, int offset) {
+      final editor = tester.allRenderObjects.whereType<RenderEditor>().first;
+      final left = editor.getLocalRectForCaret(TextPosition(offset: offset));
+      final right = editor.getLocalRectForCaret(
+        TextPosition(offset: offset + 1),
+      );
+      return editor.localToGlobal(
+        Offset((left.left + right.left) / 2, left.center.dy),
+      );
+    }
+
+    Future<String> dragFromFox(
+      WidgetTester tester,
+      Offset Function() to,
+    ) async {
+      final (state, focusNode) = await pumpEditor(
+        tester,
+        content: jsonEncode({
+          'ops': [
+            {'insert': '$words\n'},
+          ],
+        }),
+      );
+      focusNode.requestFocus();
+      await tester.pump();
+      final gesture = await tester.startGesture(
+        charAt(tester, words.indexOf('Fox') + 1),
+      );
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+      expect(state.textIn(state.selection), 'Fox');
+      await gesture.moveTo(to());
+      await tester.pump();
+      final selected = state.textIn(state.selection);
+      await gesture.up();
+      await tester.pump();
+      return selected;
+    }
+
+    testWidgets('to the left keeps the pressed word and takes in the one '
+        'under the finger', (tester) async {
+      expect(
+        await dragFromFox(
+          tester,
+          () => charAt(tester, words.indexOf('Brown') + 2),
+        ),
+        'Brown Fox',
+      );
+    });
+
+    testWidgets('past the start of the line takes in its first word', (
+      tester,
+    ) async {
+      expect(
+        await dragFromFox(
+          tester,
+          () => charAt(tester, 0) - const Offset(40, 0),
+        ),
+        'The Quick Brown Fox',
+      );
+    });
+
+    testWidgets('to the right still selects whole words', (tester) async {
+      expect(
+        await dragFromFox(
+          tester,
+          () => charAt(tester, words.indexOf('Jumps') + 1),
+        ),
+        'Fox Jumps',
+      );
+    });
+  });
+
+  group('Backspace at the start of a later line', () {
+    const bullet = {'list': 'bullet'};
+
+    Future<RichTextEditorState> pumpWithCaretAt(
+      WidgetTester tester,
+      List<(String, Map<String, dynamic>?)> lines,
+      int caret,
+    ) async {
+      final (state, focusNode) = await pumpEditor(
+        tester,
+        content: jsonEncode({
+          'ops': [
+            for (final (text, attributes) in lines) ...[
+              {'insert': text},
+              {'insert': '\n', 'attributes': ?attributes},
+            ],
+          ],
+        }),
+      );
+      focusNode.requestFocus();
+      await tester.pump();
+      state.controller.updateSelection(
+        TextSelection.collapsed(offset: caret),
+        ChangeSource.local,
+      );
+      await tester.pump();
+      return state;
+    }
+
+    Future<void> backspace(
+      WidgetTester tester, {
+      bool selectsFirst = false,
+    }) async {
+      final state = tester.state<RichTextEditorState>(
+        find.byType(RichTextEditor),
+      );
+      final value = state.controller.plainTextEditingValue;
+      final at = value.selection.start;
+      if (selectsFirst) {
+        tester.testTextInput.updateEditingValue(
+          value.copyWith(
+            selection: TextSelection(baseOffset: at - 1, extentOffset: at),
+          ),
+        );
+        await tester.pump();
+      }
+      tester.testTextInput.updateEditingValue(
+        TextEditingValue(
+          text: value.text.replaceRange(at - 1, at, ''),
+          selection: TextSelection.collapsed(offset: at - 1),
+        ),
+      );
+      await tester.pump();
+    }
+
+    List<(String, Object?, Object?)> linesOf(RichTextEditorState state) {
+      final document = state.controller.document;
+      final text = document.toPlainText();
+      return [
+        for (final line in parseDocumentLines(document))
+          (
+            text.substring(
+              line.startOffset,
+              line.startOffset + line.length - 1,
+            ),
+            line.newlineAttributes?['list'],
+            line.newlineAttributes?['indent'],
+          ),
+      ];
+    }
+
+    testWidgets('takes the bullet off first, then joins the line to the one '
+        'above', (tester) async {
+      final state = await pumpWithCaretAt(tester, [
+        ('Milk', bullet),
+        ('Bread', bullet),
+      ], 5);
+
+      await backspace(tester);
+      expect(linesOf(state), [('Milk', 'bullet', null), ('Bread', null, null)]);
+      expect(state.selection, const TextSelection.collapsed(offset: 5));
+      expect(
+        tester.testTextInput.editingState?['text'],
+        state.controller.plainTextEditingValue.text,
+        reason: 'the keyboard is told the line break is still there',
+      );
+
+      await backspace(tester);
+      expect(linesOf(state), [('MilkBread', 'bullet', null)]);
+    });
+
+    testWidgets('moves an indented item out a level at a time, as the web '
+        'does', (tester) async {
+      final state = await pumpWithCaretAt(tester, [
+        ('Trip', {'list': 'unchecked'}),
+        ('Tickets', {'list': 'unchecked'}),
+        ('Seats', {'list': 'checked', 'indent': 2}),
+      ], 13);
+
+      await backspace(tester);
+      expect(linesOf(state).last, ('Seats', 'checked', 1));
+      await backspace(tester);
+      expect(linesOf(state).last, ('Seats', 'checked', null));
+      await backspace(tester);
+      expect(linesOf(state).last, ('Seats', null, null));
+      await backspace(tester);
+      expect(linesOf(state).last, ('TicketsSeats', 'unchecked', null));
+    });
+
+    testWidgets('joins lines inside a code block, and takes the code off its '
+        'first line', (tester) async {
+      const code = {'code-block': true};
+      final state = await pumpWithCaretAt(tester, [
+        ('note', null),
+        ('a = 1', code),
+        ('b = 2', code),
+      ], 11);
+
+      await backspace(tester);
+      expect(state.controller.document.toPlainText(), 'note\na = 1b = 2\n');
+
+      state.controller.updateSelection(
+        const TextSelection.collapsed(offset: 5),
+        ChangeSource.local,
+      );
+      await tester.pump();
+      await backspace(tester);
+      expect(state.controller.document.toDelta().toJson().first, {
+        'insert': 'note\na = 1b = 2\n',
+      });
+    });
+
+    testWidgets('the iPhone keyboard, which selects the line break before '
+        'taking it out, does the same', (tester) async {
+      final state = await pumpWithCaretAt(tester, [
+        ('Milk', bullet),
+        ('Bread', bullet),
+      ], 5);
+
+      await backspace(tester, selectsFirst: true);
+      expect(linesOf(state), [('Milk', 'bullet', null), ('Bread', null, null)]);
+      expect(state.selection, const TextSelection.collapsed(offset: 5));
+
+      await backspace(tester, selectsFirst: true);
+      expect(linesOf(state), [('MilkBread', 'bullet', null)]);
+    });
+
+    testWidgets('a hardware keyboard\'s Backspace does the same', (
+      tester,
+    ) async {
+      final state = await pumpWithCaretAt(tester, [
+        ('Milk', bullet),
+        ('Bread', bullet),
+      ], 5);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.backspace);
+      await tester.pump();
+
+      expect(linesOf(state), [('Milk', 'bullet', null), ('Bread', null, null)]);
+    });
+
+    testWidgets('one Undo gives the bullet back', (tester) async {
+      final state = await pumpWithCaretAt(tester, [
+        ('Milk', bullet),
+        ('Bread', bullet),
+      ], 5);
+
+      await backspace(tester);
+      state.controller.undo();
+      await tester.pump();
+
+      expect(linesOf(state), [
+        ('Milk', 'bullet', null),
+        ('Bread', 'bullet', null),
+      ]);
     });
   });
 

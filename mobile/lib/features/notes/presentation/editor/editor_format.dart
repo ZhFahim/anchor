@@ -30,6 +30,14 @@ LineKind lineKindOf(Map<String, dynamic>? attributes) {
 
 LineKind lineKindOfLine(Line line) => lineKindOf(line.style.toJson());
 
+Map<String, dynamic> lineAttributesChange(
+  LineKind kind,
+  Map<String, dynamic>? current,
+) => {
+  for (final MapEntry(:key, :value) in lineAttributesOf(kind).entries)
+    if (value != null || (current?.containsKey(key) ?? false)) key: value,
+};
+
 Map<String, dynamic> lineAttributesOf(LineKind kind) => {
   Attribute.header.key: switch (kind) {
     LineKind.h1 => 1,
@@ -68,15 +76,18 @@ extension EditorFormat on QuillController {
     final isAll = touched.every(
       (line) => lineKindOf(line.newlineAttributes) == kind,
     );
-    final attributes = lineAttributesOf(isAll ? LineKind.text : kind);
+    final target = isAll ? LineKind.text : kind;
     final change = Delta();
     var cursor = 0;
     for (final line in touched) {
+      final attributes = lineAttributesChange(target, line.newlineAttributes);
+      if (attributes.isEmpty) continue;
       final newline = line.startOffset + line.length - 1;
       if (newline > cursor) change.retain(newline - cursor);
       change.retain(1, attributes);
       cursor = newline + 1;
     }
+    if (change.isEmpty) return;
     compose(change, selection, ChangeSource.local);
   }
 
@@ -127,6 +138,35 @@ extension EditorFormat on QuillController {
     final length = first.isLast ? first.length - 1 : first.length;
     compose(Delta()..delete(length), selection, ChangeSource.local);
     return text.substring(0, text.length - 1);
+  }
+
+  /// False when Backspace should join the line to the one above.
+  bool handleBackspaceAtLineStart(int offset) {
+    final query = document.queryChild(offset);
+    if (query.node is! Line || query.offset != 0) return false;
+    final lines = parseDocumentLines(document);
+    final index = lineIndexAt(lines, offset);
+    if (index < 0 || lines[index].startOffset != offset) return false;
+    final line = lines[index];
+    final kind = lineKindOf(line.newlineAttributes);
+    if (kind == LineKind.text) return false;
+    final Delta change;
+    if (kind.isList && line.indent > 0) {
+      change = buildListIndentDelta(lines, offset, offset, increase: false)!;
+    } else if (kind == LineKind.code &&
+        index > 0 &&
+        lineKindOf(lines[index - 1].newlineAttributes) == LineKind.code) {
+      return false;
+    } else {
+      change = Delta()
+        ..retain(line.startOffset + line.length - 1)
+        ..retain(
+          1,
+          lineAttributesChange(LineKind.text, line.newlineAttributes),
+        );
+    }
+    compose(change, selection, ChangeSource.local);
+    return true;
   }
 
   bool isOn(Attribute attribute) => _style.isOn(attribute);

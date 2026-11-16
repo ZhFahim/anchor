@@ -166,6 +166,51 @@ void main() {
       expect(controller.lineKind, LineKind.numbered);
       expect(lineAttributes(controller, 0), {'list': 'ordered'});
     });
+
+    List<String> shapeOf(Document document) => [
+      for (final node in document.root.children)
+        if (node is Block)
+          'block ${node.style.toJson()}: ${node.children.length} lines'
+        else
+          'line ${node.style.toJson()}',
+    ];
+
+    test('leaves the note shaped as it is when it opens again, from any '
+        'kind to any kind', () {
+      for (final from in LineKind.values) {
+        final style = lineAttributesChange(from, null);
+        for (final to in LineKind.values) {
+          final controller = controllerAt(2, [
+            {'insert': 'top'},
+            {'insert': '\n', if (style.isNotEmpty) 'attributes': style},
+            {'insert': 'end\n'},
+          ]);
+
+          controller.setLineKind(to);
+
+          final reopened = Document.fromJson(
+            controller.document.toDelta().toJson(),
+          );
+          expect(
+            shapeOf(controller.document),
+            shapeOf(reopened),
+            reason: '$from to $to',
+          );
+        }
+      }
+    });
+
+    test('a quote or code line turned to text can join the title again', () {
+      for (final from in [LineKind.quote, LineKind.code]) {
+        final controller = controllerAt(2, [
+          {'insert': 'top'},
+          {'insert': '\n', 'attributes': lineAttributesChange(from, null)},
+          {'insert': 'end\n'},
+        ])..setLineKind(from);
+
+        expect(controller.removeFirstLine(), 'top', reason: '$from');
+      }
+    });
   });
 
   group('toggleInline', () {

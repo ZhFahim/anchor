@@ -911,6 +911,86 @@ void main() {
       await drainSnackbar(tester);
     });
 
+    testWidgets('Undo keeps words typed at the end of the last item on that '
+        'item', (tester) async {
+      await open(tester, groceries);
+
+      await choose(tester, 'Delete checked items');
+      editorController(tester).replaceText(4, 0, ' today', null);
+      await tester.pump();
+      await tester.tap(find.text('Undo'));
+      await tester.pumpAndSettle();
+
+      expect(itemsOf(tester), [
+        ('Eggs today', 'unchecked'),
+        ('Milk', 'checked'),
+        ('Bread', 'checked'),
+      ]);
+      await drainSnackbar(tester);
+    });
+
+    testWidgets('Undo keeps words typed at the start of the line after a '
+        'deleted item on that line', (tester) async {
+      await open(
+        tester,
+        Note(
+          id: 'n1',
+          title: 'Groceries',
+          content: checklist([
+            ('Eggs', 'unchecked'),
+            ('Milk', 'checked'),
+            ('Bread', 'unchecked'),
+          ]),
+        ),
+      );
+
+      await choose(tester, 'Delete checked items');
+      editorController(tester).replaceText(5, 0, 'Rye ', null);
+      await tester.pump();
+      await tester.tap(find.text('Undo'));
+      await tester.pumpAndSettle();
+
+      expect(itemsOf(tester), [
+        ('Eggs', 'unchecked'),
+        ('Milk', 'checked'),
+        ('Rye Bread', 'unchecked'),
+      ]);
+      await drainSnackbar(tester);
+    });
+
+    testWidgets('when every item was checked, Undo keeps what was typed in '
+        'the empty item left as an item of its own, above them', (
+      tester,
+    ) async {
+      final allChecked = Note(
+        id: 'n1',
+        title: 'Groceries',
+        content: checklist([('Milk', 'checked'), ('Bread', 'checked')]),
+      );
+      await open(tester, allChecked);
+      final before = editorController(tester).document.toDelta();
+
+      await choose(tester, 'Delete checked items');
+      expect(itemsOf(tester), [('', 'unchecked')]);
+      await tester.tap(find.text('Undo'));
+      await tester.pumpAndSettle();
+      expect(editorController(tester).document.toDelta(), before);
+      await drainSnackbar(tester);
+
+      await choose(tester, 'Delete checked items');
+      editorController(tester).replaceText(0, 0, 'Eggs', null);
+      await tester.pump();
+      await tester.tap(find.text('Undo'));
+      await tester.pumpAndSettle();
+
+      expect(itemsOf(tester), [
+        ('Eggs', 'unchecked'),
+        ('Milk', 'checked'),
+        ('Bread', 'checked'),
+      ]);
+      await drainSnackbar(tester);
+    });
+
     testWidgets('Undo after leaving the note puts the items back in it', (
       tester,
     ) async {
@@ -935,6 +1015,81 @@ void main() {
 
       expect(deltaOf(saved?.content), deltaOf(groceries.content));
       await drainSnackbar(tester);
+    });
+  });
+
+  group('a tap in the margin beside the words', () {
+    const trip = Note(
+      id: 'n1',
+      title: 'Lisbon trip',
+      content: '{"ops":[{"insert":"Tram 28\\nCastle at 10\\n"}]}',
+    );
+
+    Offset besideLine(WidgetTester tester, int offset, {required bool left}) {
+      final editor = tester.allRenderObjects.whereType<RenderEditor>().first;
+      final caret = editor.getLocalRectForCaret(TextPosition(offset: offset));
+      final y = editor.localToGlobal(caret.center).dy;
+      final width = tester.getSize(find.byType(NoteEditScreen)).width;
+      return Offset(left ? 4 : width - 4, y);
+    }
+
+    testWidgets('puts the caret at the start or the end of that line', (
+      tester,
+    ) async {
+      await pumpScreen(tester, note: trip);
+      await tester.pumpAndSettle();
+      final controller = editorController(tester);
+
+      await tester.tapAt(besideLine(tester, 8, left: true));
+      await tester.pump();
+      expect(controller.selection, const TextSelection.collapsed(offset: 8));
+      expect(
+        tester.state<RichTextEditorState>(find.byType(RichTextEditor)).hasFocus,
+        isTrue,
+      );
+
+      await tester.tapAt(besideLine(tester, 0, left: false));
+      await tester.pump();
+      expect(controller.selection.isCollapsed, isTrue);
+      expect(controller.selection.baseOffset, 7);
+    });
+
+    testWidgets('beside the title puts the caret in the title', (tester) async {
+      await pumpScreen(tester, note: trip);
+      await tester.pumpAndSettle();
+
+      await tester.tapAt(Offset(4, tester.getCenter(titleField).dy));
+      await tester.pump();
+
+      final title = tester.widget<TextField>(titleField);
+      expect(title.focusNode!.hasFocus, isTrue);
+      expect(
+        title.controller!.selection,
+        const TextSelection.collapsed(offset: 0),
+      );
+    });
+
+    testWidgets('on a note you can only view, shows it can\'t be changed', (
+      tester,
+    ) async {
+      final calls = PlatformCalls()..listen(tester);
+      await pumpScreen(
+        tester,
+        note: trip.copyWith(permission: NotePermission.viewer),
+      );
+      await tester.pumpAndSettle();
+      final controller = editorController(tester);
+
+      await tester.tapAt(besideLine(tester, 8, left: true));
+      await tester.pump();
+
+      expect(
+        tester.state<RichTextEditorState>(find.byType(RichTextEditor)).hasFocus,
+        isFalse,
+      );
+      expect(controller.selection, const TextSelection.collapsed(offset: 0));
+      expect(calls.haptics, ['HapticFeedbackType.warningNotification']);
+      await tester.pumpAndSettle();
     });
   });
 
