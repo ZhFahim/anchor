@@ -16,6 +16,11 @@ import {
   useRegistrationMode,
 } from "@/features/auth";
 import {
+  EnrollmentGate,
+  PasskeySignInButton,
+  TwoFactorStep,
+} from "@/features/auth/components";
+import {
   AuthHeading,
   AuthMessage,
   AuthStatusScreen,
@@ -23,11 +28,19 @@ import {
   OrDivider,
   PendingApprovalScreen,
 } from "@/features/auth/components/auth-parts";
+import { useCapabilities } from "@/features/auth/hooks/use-auth";
+import type { EnrollMethods } from "@/features/auth/types";
 import { getSafeRedirectUrl } from "@/features/auth/utils/redirect";
 import {
   serverSignInError,
   signInError,
 } from "@/features/auth/utils/sign-in-error";
+
+/** After the password: a code to enter, a second step to set up, or neither. */
+type Step =
+  | { kind: "password" }
+  | { kind: "code"; challenge: string }
+  | { kind: "setup"; challenge: string; methods: EnrollMethods };
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
@@ -38,6 +51,10 @@ export default function LoginPage() {
   const registrationMode = useRegistrationMode();
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
+  const [step, setStep] = React.useState<Step>({ kind: "password" });
+  const [notice, setNotice] = React.useState<string | null>(null);
+  const [passkeyRequired, setPasskeyRequired] = React.useState(false);
+  const capabilities = useCapabilities();
   const passwordRef = React.useRef<HTMLInputElement>(null);
 
   const providerName = oidc.data?.providerName || "your provider";
@@ -51,6 +68,42 @@ export default function LoginPage() {
     const returnTo = getSafeRedirectUrl(searchParams.get("returnTo") || "/");
     initiate(returnTo !== "/" ? returnTo : undefined);
   };
+
+  const backToPassword = (message: string | null = null) => {
+    setStep({ kind: "password" });
+    setNotice(message);
+    setPasskeyRequired(false);
+    setPassword("");
+    login.reset();
+  };
+
+  if (step.kind === "code")
+    return (
+      <TwoFactorStep
+        email={email.trim()}
+        challenge={step.challenge}
+        onBack={() => backToPassword()}
+        onExpired={() =>
+          backToPassword(
+            "That sign-in took too long. Enter your password again.",
+          )
+        }
+      />
+    );
+
+  if (step.kind === "setup")
+    return (
+      <EnrollmentGate
+        challenge={step.challenge}
+        methods={step.methods}
+        onLeave={() => backToPassword()}
+        onExpired={() =>
+          backToPassword(
+            "That sign-in took too long. Enter your password again.",
+          )
+        }
+      />
+    );
 
   if (oidcCallback.isProcessing)
     return (
@@ -126,7 +179,13 @@ export default function LoginPage() {
             <KeyRound aria-hidden />
             Continue with {providerName}
           </Button>
-          {!isProviderOnly && <OrDivider />}
+          {!isProviderOnly && !capabilities.data?.passkeys && <OrDivider />}
+        </>
+      )}
+      {!isProviderOnly && (
+        <>
+          <PasskeySignInButton highlight={passkeyRequired} />
+          {capabilities.data?.passkeys && <OrDivider />}
         </>
       )}
       {oidc.isError && (
@@ -145,6 +204,7 @@ export default function LoginPage() {
           email.
         </AuthMessage>
       )}
+      {notice && !errorMessage && <AuthMessage>{notice}</AuthMessage>}
       {errorMessage && <AuthMessage>{errorMessage}</AuthMessage>}
       {!isProviderOnly && (
         <form
@@ -152,9 +212,31 @@ export default function LoginPage() {
           onSubmit={(e) => {
             e.preventDefault();
             if (login.isPending) return;
+            setNotice(null);
+            setPasskeyRequired(false);
             login.mutate(
               { email: email.trim(), password },
               {
+                onSuccess: (outcome) => {
+                  if (outcome.kind === "signedIn") return;
+                  if (outcome.kind === "passkeyRequired") {
+                    setPassword("");
+                    setNotice(outcome.message);
+                    setPasskeyRequired(true);
+                    return;
+                  }
+                  // The password is done with; the next step has its own.
+                  setPassword("");
+                  setStep(
+                    outcome.kind === "codeRequired"
+                      ? { kind: "code", challenge: outcome.challenge }
+                      : {
+                          kind: "setup",
+                          challenge: outcome.challenge,
+                          methods: outcome.methods,
+                        },
+                  );
+                },
                 onError: (error) => {
                   if (!(error instanceof HTTPError)) return;
                   if (error.response.status === 401) {

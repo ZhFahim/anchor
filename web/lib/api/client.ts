@@ -68,6 +68,34 @@ export function refreshAccessToken(): Promise<boolean> {
   return refreshPromise;
 }
 
+/**
+ * Calls made without a session. A 401 or 403 here is an answer to the call
+ * (wrong password, a code to enter, setup to finish), not an expired session,
+ * and the body carries a challenge the caller needs.
+ */
+const SESSIONLESS_PATH =
+  /^\/api\/auth\/(login|register|enroll|passkeys\/login)(\/|$)/;
+
+export function isSessionless(url: string): boolean {
+  try {
+    return SESSIONLESS_PATH.test(new URL(url, "http://anchor.local").pathname);
+  } catch {
+    return false;
+  }
+}
+
+/** The server turned a one-time code down; sending it again would only count against the lockout. */
+async function isCodeRefusal(response: Response): Promise<boolean> {
+  try {
+    const body = (await response.clone().json()) as { message?: unknown };
+    return (
+      typeof body.message === "string" && /invalid code/i.test(body.message)
+    );
+  } catch {
+    return false;
+  }
+}
+
 export const api = ky.create({
   prefix: "/",
   timeout: 30000,
@@ -75,7 +103,7 @@ export const api = ky.create({
     beforeRequest: [
       ({ request, options }) => {
         const token = getAccessToken();
-        if (token) {
+        if (token && !isSessionless(request.url)) {
           request.headers.set("Authorization", `Bearer ${token}`);
         }
         // keepalive: the page is closing.
@@ -104,6 +132,9 @@ export const api = ky.create({
         if (response.status !== 401 || retryCount > 0) {
           return response;
         }
+
+        if (isSessionless(request.url)) return response;
+        if (await isCodeRefusal(response)) return response;
 
         // A failed sign-in, or a session that ended in another tab.
         if (!request.headers.has("Authorization")) {

@@ -5,3 +5,12 @@ export { DAY_MS, PNG_1PX } from './fixtures';
 export { entriesOf, entryFor, idsOf, shapeOf } from './feed';
 export type { SharePermission } from './api/shares.api';
 export * from './wire';
+export {
+  addPasskey,
+  Authenticator,
+  enableTotp,
+  passkeyLogin,
+  passwordLogin,
+  VirtualPasskey,
+  type Tokens,
+} from './two-factor';

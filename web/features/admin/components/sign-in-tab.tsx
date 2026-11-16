@@ -17,6 +17,7 @@ import { adminKeys } from "../queries";
 import type { RegistrationMode } from "../types";
 import { LockNote } from "./admin-parts";
 import { SingleSignOn } from "./single-sign-on";
+import { TwoFactorSection } from "./two-factor-section";
 
 export function SignInTab({ hidden }: { hidden?: boolean }) {
   const queryClient = useQueryClient();
@@ -107,6 +108,7 @@ export function SignInTab({ hidden }: { hidden?: boolean }) {
           />
         )}
       </section>
+      <TwoFactorSection />
       <SingleSignOn isHidden={hidden} />
     </div>
   );

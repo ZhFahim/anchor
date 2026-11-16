@@ -19,9 +19,14 @@ const _ada = {
 };
 
 class _FakeAuthService extends AuthService {
-  _FakeAuthService({this.isReviewing = false}) : super(Dio());
+  _FakeAuthService({this.isReviewing = false, this.wantsSetup = false})
+    : super(Dio());
 
   final bool isReviewing;
+
+  /// The server asks for two-factor, to be set up on the web first.
+  final bool wantsSetup;
+  final twoFactorLogins = <Map<String, String?>>[];
   int profileReads = 0;
 
   @override
@@ -29,9 +34,34 @@ class _FakeAuthService extends AuthService {
     String email,
     String password,
     String name,
-  ) async => isReviewing
+  ) async => wantsSetup
+      ? {
+          'user': _ada,
+          'twoFactorSetupRequired': true,
+          'challenge': 'enroll-1',
+          'methods': {'totp': true, 'passkey': false},
+        }
+      : isReviewing
       ? {'user': _ada, 'message': 'Your account is pending approval.'}
       : {'access_token': 'access', 'refresh_token': 'refresh', 'user': _ada};
+
+  @override
+  Future<Map<String, dynamic>> loginWithTwoFactor(
+    String challenge, {
+    String? code,
+    String? recoveryCode,
+  }) async {
+    twoFactorLogins.add({
+      'challenge': challenge,
+      'code': code,
+      'recoveryCode': recoveryCode,
+    });
+    return {
+      'access_token': 'access-2fa',
+      'refresh_token': 'refresh-2fa',
+      'user': _ada,
+    };
+  }
 
   @override
   Future<Map<String, dynamic>> login(String email, String password) async =>
@@ -108,6 +138,45 @@ void main() {
       expect(isSignedIn, isFalse);
       expect(container.read(authControllerProvider).value, isNull);
       expect(container.read(activeUserIdProvider), isNull);
+    });
+
+    test('signing up where two-factor is required gets no session', () async {
+      final container = _container(_FakeAuthService(wantsSetup: true));
+      await container.read(authControllerProvider.future);
+
+      await expectLater(
+        container
+            .read(authControllerProvider.notifier)
+            .register('ada@example.com', 'long enough', 'Ada'),
+        throwsA(isA<TwoFactorSetupRequiredFailure>()),
+      );
+
+      expect(container.read(authControllerProvider).value, isNull);
+      expect(container.read(activeUserIdProvider), isNull);
+      expect(
+        await const FlutterSecureStorage().read(key: 'access_token'),
+        null,
+      );
+    });
+
+    test('a code finishes signing in and the tokens are kept', () async {
+      final service = _FakeAuthService();
+      final container = _container(service);
+      await container.read(authControllerProvider.future);
+
+      await container
+          .read(authControllerProvider.notifier)
+          .loginWithTwoFactor('challenge-1', code: '123456');
+
+      expect(service.twoFactorLogins, [
+        {'challenge': 'challenge-1', 'code': '123456', 'recoveryCode': null},
+      ]);
+      expect(container.read(authControllerProvider).value?.id, 'user-1');
+      expect(container.read(activeUserIdProvider), 'user-1');
+      const storage = FlutterSecureStorage();
+      expect(await storage.read(key: 'access_token'), 'access-2fa');
+      expect(await storage.read(key: 'refresh_token'), 'refresh-2fa');
+      expect(await storage.read(key: 'challenge'), isNull);
     });
 
     test('a wrong password leaves the app’s sign-in state alone', () async {

@@ -6,6 +6,8 @@ import type {
   OidcSettings,
   RegistrationSettings,
   ResetPasswordResponse,
+  TwoFactorPolicy,
+  TwoFactorSettings,
   UpdateOidcSettingsDto,
   UpdateRegistrationModeDto,
   UpdateUserDto,
@@ -95,4 +97,22 @@ export async function updateOidcSettings(
   return api
     .patch("api/admin/settings/oidc", { json: data })
     .json<OidcSettings>();
+}
+
+export async function getTwoFactorSettings(): Promise<TwoFactorSettings> {
+  return api.get("api/admin/settings/two-factor").json<TwoFactorSettings>();
+}
+
+export async function updateTwoFactorPolicy(
+  policy: TwoFactorPolicy,
+): Promise<TwoFactorSettings> {
+  return api
+    .patch("api/admin/settings/two-factor", { json: { policy } })
+    .json<TwoFactorSettings>();
+}
+
+export async function resetTwoFactor(id: string): Promise<{ message: string }> {
+  return api
+    .post(`api/admin/users/${id}/reset-2fa`)
+    .json<{ message: string }>();
 }

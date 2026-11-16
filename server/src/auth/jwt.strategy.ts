@@ -4,6 +4,7 @@ import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { AuthConfig } from '../config/configuration';
+import { isSessionRevoked } from './utils/session-revocation';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -19,8 +20,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: { sub: string }) {
-    const user = await this.prisma.user.findUnique({
+  async validate(payload: { sub: string; iat?: number }) {
+    const row = await this.prisma.user.findUnique({
       where: { id: payload.sub },
       select: {
         id: true,
@@ -31,11 +32,17 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         status: true,
         createdAt: true,
         updatedAt: true,
+        sessionsRevokedAt: true,
       },
     });
 
-    if (!user) {
+    if (!row) {
       throw new UnauthorizedException('User not found');
+    }
+    const { sessionsRevokedAt, ...user } = row;
+
+    if (isSessionRevoked(payload.iat, sessionsRevokedAt)) {
+      throw new UnauthorizedException('Session ended');
     }
 
     // Reject pending users

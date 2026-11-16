@@ -27,8 +27,24 @@ class AuthService {
     ),
   );
 
+  /// Signs in with the code of the challenge a login answered with.
+  Future<Map<String, dynamic>> loginWithTwoFactor(
+    String challenge, {
+    String? code,
+    String? recoveryCode,
+  }) => _send(
+    () => _dio.post(
+      '/api/auth/login/2fa',
+      data: {
+        'challenge': challenge,
+        'code': ?code,
+        'recoveryCode': ?recoveryCode,
+      },
+    ),
+  );
+
   /// The answer has tokens, or only the user while an admin still has to
-  /// approve the account.
+  /// approve the account, or while the account has to set up two-factor.
   Future<Map<String, dynamic>> register(
     String email,
     String password,
@@ -134,5 +150,6 @@ AuthFailure authFailureOf(DioException exception) {
     exception.response?.statusCode,
     data is Map ? data['message'] : null,
     error: apiError,
+    body: data is Map ? data : null,
   );
 }

@@ -440,7 +440,119 @@
   },
   "authBackToSignIn": "Back to sign in",
   "@authBackToSignIn": {
-    "description": "Button on the waiting for approval page that returns to the sign-in page."
+    "description": "Button on the waiting for approval page and on the set up two-factor on the web page that returns to the sign-in page."
+  },
+  "authTwoFactorTitle": "Check your authenticator app",
+  "@authTwoFactorTitle": {
+    "description": "Title of the page that asks for the 6-digit code from the person’s authenticator app after the password was accepted."
+  },
+  "authTwoFactorSubtitle": "Enter the 6-digit code for {email}.",
+  "@authTwoFactorSubtitle": {
+    "description": "Under the title of the authenticator code page. {email} is the account’s email address.",
+    "placeholders": {
+      "email": {
+        "type": "String",
+        "example": "ada@example.com"
+      }
+    }
+  },
+  "authTwoFactorCodeLabel": "Authenticator code",
+  "@authTwoFactorCodeLabel": {
+    "description": "Name of the 6-digit code input for screen readers."
+  },
+  "authVerify": "Verify",
+  "@authVerify": {
+    "description": "Button that checks the two-factor code."
+  },
+  "authVerifying": "Verifying…",
+  "@authVerifying": {
+    "description": "Text on the Verify button while the two-factor code is checked."
+  },
+  "authUseRecoveryCode": "Use a recovery code instead",
+  "@authUseRecoveryCode": {
+    "description": "Link on the authenticator code page that switches to entering a recovery code."
+  },
+  "authUseAuthenticatorCode": "Use an authenticator code instead",
+  "@authUseAuthenticatorCode": {
+    "description": "Link on the recovery code page that switches back to entering the 6-digit authenticator code."
+  },
+  "authRecoveryTitle": "Use a recovery code",
+  "@authRecoveryTitle": {
+    "description": "Title of the page where the person enters a recovery code in place of the authenticator code."
+  },
+  "authRecoverySubtitle": "Enter one of the codes you saved when you turned on two-factor. Each code works once.",
+  "@authRecoverySubtitle": {
+    "description": "Under the title of the recovery code page."
+  },
+  "fieldRecoveryCode": "Recovery code",
+  "@fieldRecoveryCode": {
+    "description": "Label of the recovery code field."
+  },
+  "authEnterCode": "Enter the 6-digit code.",
+  "@authEnterCode": {
+    "description": "Error on the authenticator code page when Verify is tapped before all 6 digits are entered."
+  },
+  "authEnterRecoveryCode": "Enter a recovery code.",
+  "@authEnterRecoveryCode": {
+    "description": "Error on the recovery code page when Verify is tapped with an empty field."
+  },
+  "authCodeIncorrect": "That code didn’t work. Check it and try again.",
+  "@authCodeIncorrect": {
+    "description": "Error under the code fields when the server turned down a two-factor code."
+  },
+  "authCodeExpired": "Your sign-in timed out. Enter your email and password again.",
+  "@authCodeExpired": {
+    "description": "Error on the sign-in page after the two-factor step took too long or had too many tries, so sign-in starts over."
+  },
+  "authCodeLocked": "{minutes, plural, =1{Too many wrong codes. Try again in 1 minute.} other{Too many wrong codes. Try again in {minutes} minutes.}}",
+  "@authCodeLocked": {
+    "description": "Error when too many wrong two-factor codes were entered in a row and the next try has to wait. {minutes} is how long.",
+    "placeholders": {
+      "minutes": {
+        "type": "int",
+        "example": "10"
+      }
+    }
+  },
+  "authCodeLockedUseRecovery": "{minutes, plural, =1{Too many wrong codes. Try again in 1 minute.} other{Too many wrong codes. Try again in {minutes} minutes.}}",
+  "@authCodeLockedUseRecovery": {
+    "description": "Error on the authenticator code page when too many wrong codes were entered in a row and the next try has to wait. {minutes} is how long.",
+    "placeholders": {
+      "minutes": {
+        "type": "int",
+        "example": "10"
+      }
+    }
+  },
+  "authCodeOffline": "You’re offline. Connect to the internet to verify your code.",
+  "@authCodeOffline": {
+    "description": "Notice at the top of the two-factor pages while the phone is offline."
+  },
+  "authSetupTitle": "Set up two-factor on the web",
+  "@authSetupTitle": {
+    "description": "Title of the page that tells the person their account needs two-factor, which is set up in a browser."
+  },
+  "authSetupMessage": "Your admin requires a second step. Open Anchor in a browser, sign in and add it under Settings → Security. Then come back here and sign in again.",
+  "@authSetupMessage": {
+    "description": "Under the title of the page that sends the person to the web to set up two-factor."
+  },
+  "authPasskeyTitle": "Use your passkey on the web",
+  "@authPasskeyTitle": {
+    "description": "Title of the page shown when the account can only sign in with a passkey, which needs a browser."
+  },
+  "authPasskeyMessage": "Sign in with your passkey on the web, or add an authenticator app there.",
+  "@authPasskeyMessage": {
+    "description": "Under the title of the page that sends a person with only passkeys to the web."
+  },
+  "authSetupOpen": "Open {server}",
+  "@authSetupOpen": {
+    "description": "Button on the set up two-factor on the web page that opens the server in a browser. {server} is the server’s address.",
+    "placeholders": {
+      "server": {
+        "type": "String",
+        "example": "notes.example.com"
+      }
+    }
   },
   "passwordTitle": "Password",
   "@passwordTitle": {

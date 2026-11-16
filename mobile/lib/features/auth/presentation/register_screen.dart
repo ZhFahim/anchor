@@ -17,6 +17,7 @@ import '../../../core/widgets/page_heading.dart';
 import '../../../l10n/l10n.dart';
 import '../../notes/domain/note_dates.dart';
 import '../domain/account_rules.dart';
+import '../domain/auth_failure.dart';
 import '../domain/registration_mode.dart';
 import 'auth_controller.dart';
 import 'auth_error_message.dart';
@@ -77,6 +78,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
           .read(authControllerProvider.notifier)
           .register(_email.text.trim(), _password.text, name),
       onFailure: (error) {
+        if (error is TwoFactorSetupRequiredFailure) {
+          // The account exists; two-factor is set up on the web.
+          context.push(AppRoutes.twoFactorSetup);
+          return;
+        }
         final errorMessage = authErrorMessageOf(error, context.l10n);
         showError(errorMessage.text, field: errorMessage.field);
         _focusOf(errorMessage.field)?.requestFocus();

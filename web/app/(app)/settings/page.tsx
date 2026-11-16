@@ -11,6 +11,7 @@ import {
   ProfileSection,
   Row,
   Section,
+  SecuritySection,
   SettingsNav,
 } from "@/features/settings";
 
@@ -26,6 +27,7 @@ export default function SettingsPage() {
           <ApiTokenSection />
           <ImportExportSection />
           <PasswordSection />
+          <SecuritySection />
           <Section id="about" title="About">
             <Row>
               <div className="flex items-center gap-3">

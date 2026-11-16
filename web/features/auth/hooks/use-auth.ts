@@ -6,14 +6,22 @@ import { useCallback } from "react";
 import { toast } from "@/components/ui/toast";
 import { firstName } from "@/lib/utils";
 import {
+  getCapabilities,
   getMe,
   getRegistrationMode,
   login as loginApi,
+  loginWithTwoFactor,
   register as registerApi,
   revokeRefreshToken,
 } from "../api";
+import { signInWithPasskey } from "../passkey";
 import { getRefreshToken, hasAccessToken, useAuthStore } from "../store";
-import type { LoginCredentials, RegisterCredentials } from "../types";
+import type {
+  LoginCredentials,
+  RegisterCredentials,
+  Session,
+  TwoFactorLoginDto,
+} from "../types";
 
 async function initialize() {
   const { isInitialized, setUser, setInitialized, setUnreachable, logout } =
@@ -76,29 +84,61 @@ export function useRegistrationMode() {
   });
 }
 
-export function useLogin() {
+/** Signs in with a session the server just issued. */
+function useStartSession() {
   const setAuth = useAuthStore((state) => state.setAuth);
+  return (session: Session, greeting = "Welcome back") => {
+    setAuth(session.user, session.access_token, session.refresh_token);
+    toast.success(`${greeting}, ${firstName(session.user.name)}`);
+  };
+}
+
+export function useCapabilities() {
+  return useQuery({
+    queryKey: ["auth-capabilities"],
+    queryFn: getCapabilities,
+    retry: false,
+    retryOnMount: false,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** Resolves to a session, or to a challenge the page has to answer. */
+export function useLogin() {
+  const startSession = useStartSession();
   return useMutation({
     mutationFn: (credentials: LoginCredentials) => loginApi(credentials),
-    onSuccess: (data) => {
-      if (data.access_token && data.refresh_token) {
-        setAuth(data.user, data.access_token, data.refresh_token);
-        toast.success(`Welcome back, ${firstName(data.user.name)}`);
-      }
+    onSuccess: (outcome) => {
+      if (outcome.kind === "signedIn") startSession(outcome.session);
     },
   });
 }
 
+export function useTwoFactorLogin() {
+  const startSession = useStartSession();
+  return useMutation({
+    mutationFn: (dto: TwoFactorLoginDto) => loginWithTwoFactor(dto),
+    onSuccess: (session) => startSession(session),
+  });
+}
+
+export function usePasskeyLogin() {
+  const startSession = useStartSession();
+  return useMutation({
+    mutationFn: signInWithPasskey,
+    onSuccess: (session) => startSession(session),
+  });
+}
+
 export function useRegister() {
-  const setAuth = useAuthStore((state) => state.setAuth);
+  const startSession = useStartSession();
   return useMutation({
     mutationFn: (credentials: RegisterCredentials) => registerApi(credentials),
-    onSuccess: (data) => {
-      // A pending account gets no tokens.
-      if (data.access_token && data.refresh_token) {
-        setAuth(data.user, data.access_token, data.refresh_token);
-        toast.success(`Welcome to Anchor, ${firstName(data.user.name)}`);
-      }
+    onSuccess: (outcome) => {
+      // A pending account gets no tokens, and a person who has to set up
+      // two-factor gets them once they have.
+      if (outcome.kind === "signedIn")
+        startSession(outcome.session, "Welcome to Anchor");
     },
   });
 }

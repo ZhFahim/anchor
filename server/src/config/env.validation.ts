@@ -1,4 +1,4 @@
-import { plainToInstance, Type } from 'class-transformer';
+import { plainToInstance, Transform, Type } from 'class-transformer';
 import {
   IsEnum,
   IsIn,
@@ -6,6 +6,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  Matches,
   Max,
   Min,
   MinLength,
@@ -44,6 +45,18 @@ export class EnvironmentVariables {
   @IsOptional()
   @IsString()
   APP_URL?: string;
+
+  // Docker passes an unset variable on as an empty string.
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' && value.trim() === '' ? undefined : value,
+  )
+  @IsOptional()
+  @IsString()
+  @Matches(/^[A-Za-z0-9+/_-]{43}={0,1}$/, {
+    message:
+      'TOTP_ENCRYPTION_KEY must be 32 random bytes, base64 encoded (openssl rand -base64 32).',
+  })
+  TOTP_ENCRYPTION_KEY?: string;
 
   @IsOptional()
   @IsString()

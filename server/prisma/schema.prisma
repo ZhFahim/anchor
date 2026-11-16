@@ -50,6 +50,13 @@ enum SyncOp {
   remove
 }
 
+enum ChallengeKind {
+  login_2fa
+  enroll
+  webauthn_login
+  webauthn_register
+}
+
 enum RevisionCause {
   edit
   conflict
@@ -80,6 +87,66 @@ model User {
   changeLog            ChangeLog[]
   noteRevisions        NoteRevision[]
   noteReminders        NoteReminder[]
+
+  // Two-factor. The secret is AES-256-GCM encrypted (see TwoFactorCrypto).
+  totpSecretEnc           String?
+  totpPendingSecretEnc    String?
+  totpEnabledAt           DateTime?
+  totpLastStep            Int?
+  totpLastUsedAt          DateTime?
+  twoFactorFailedAttempts Int            @default(0)
+  twoFactorLockedUntil    DateTime?
+  // Access tokens issued before this moment are refused (sign out everywhere).
+  sessionsRevokedAt       DateTime?
+  recoveryCodes           RecoveryCode[]
+  passkeys                Passkey[]
+  loginChallenges         LoginChallenge[]
+}
+
+model RecoveryCode {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  codeHash  String
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@unique([userId, codeHash])
+  @@index([userId])
+}
+
+model Passkey {
+  id           String    @id @default(uuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credentialId String    @unique
+  publicKey    Bytes
+  counter      BigInt    @default(0)
+  transports   String[]
+  name         String
+  deviceType   String
+  backedUp     Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  lastUsedAt   DateTime?
+
+  @@index([userId])
+}
+
+// One-time tokens for the steps between "password ok" and "signed in".
+model LoginChallenge {
+  id        String        @id @default(uuid())
+  tokenHash String        @unique
+  kind      ChallengeKind
+  userId    String?
+  user      User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // WebAuthn challenge for the webauthn_* kinds.
+  data      String?
+  attempts  Int           @default(0)
+  expiresAt DateTime
+  createdAt DateTime      @default(now())
+
+  @@index([expiresAt])
+  @@index([userId])
 }
 
 model Settings {

@@ -3,6 +3,7 @@
 import { HTTPError } from "ky";
 import { ArrowLeft, KeyRound } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
@@ -18,6 +19,7 @@ import {
   NAME_MAX_LENGTH,
   refusedField,
 } from "@/features/auth/account-fields";
+import { EnrollmentGate } from "@/features/auth/components";
 import {
   AuthHeading,
   AuthMessage,
@@ -35,6 +37,7 @@ type Errors = {
 };
 
 export default function RegisterPage() {
+  const router = useRouter();
   const register = useRegister();
   const oidc = useOidcConfig();
   const { initiate } = useOidcLogin();
@@ -104,8 +107,18 @@ export default function RegisterPage() {
       </AuthStatusScreen>
     );
 
-  if (register.isSuccess && !register.data?.access_token)
-    return <PendingApprovalScreen />;
+  if (register.data?.kind === "pending") return <PendingApprovalScreen />;
+
+  if (register.data?.kind === "setupRequired")
+    return (
+      <EnrollmentGate
+        challenge={register.data.challenge}
+        methods={register.data.methods}
+        // The account exists now, so the way back is signing in.
+        onLeave={() => router.push("/login")}
+        onExpired={() => router.push("/login")}
+      />
+    );
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();

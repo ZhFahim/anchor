@@ -20,6 +20,11 @@ export const DatabaseConfig = registerAs('database', () => ({
 
 export const AuthConfig = registerAs('auth', () => ({
   jwtSecret: process.env.JWT_SECRET as string,
+  // 32 random bytes, base64. Without it TOTP is switched off.
+  totpEncryptionKey: process.env.TOTP_ENCRYPTION_KEY?.trim() || undefined,
+  // Passkeys bind to the public URL, so production needs it set explicitly.
+  passkeysConfigured:
+    !!process.env.APP_URL?.trim() || process.env.NODE_ENV !== 'production',
 }));
 
 export const StorageConfig = registerAs('storage', () => {

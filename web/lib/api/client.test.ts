@@ -10,7 +10,8 @@ vi.mock("@/features/auth/store", () => ({
 }));
 
 import * as auth from "@/features/auth/store";
-import { api, refreshAccessToken } from "./client";
+import { api, isSessionless, refreshAccessToken } from "./client";
+import { errorBody } from "./error-body";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -200,12 +201,121 @@ describe("a request whose token has expired", () => {
     vi.stubGlobal("window", { dispatchEvent: sessionEnded });
     const client = serverWith(() => Promise.resolve(Response.json({ ok: 1 })));
 
-    expect(await errorMessageOf(client.post("api/auth/login"))).toBe(
-      "Unauthorized",
-    );
+    expect(await errorMessageOf(client.post("api/notes"))).toBe("Unauthorized");
     expect(refresh).not.toHaveBeenCalled();
     expect(auth.clearAccessToken).not.toHaveBeenCalled();
     expect(sent).toEqual([{ authorization: null, body: "" }]);
     expect(sessionEnded).toHaveBeenCalled();
+  });
+
+  it("isn't refreshed when a code is turned down, so it isn't counted twice", async () => {
+    const failing = api.extend({
+      baseUrl: "http://anchor.test",
+      fetch: async (input) => {
+        sent.push({
+          authorization: (input as Request).headers.get("Authorization"),
+          body: "",
+        });
+        return Response.json({ message: "Invalid code" }, { status: 401 });
+      },
+    });
+
+    expect(await errorMessageOf(failing.post("api/auth/2fa/enable"))).toBe(
+      "Invalid code",
+    );
+    expect(refresh).not.toHaveBeenCalled();
+    expect(sent).toHaveLength(1);
+  });
+});
+
+describe("calls made without a session", () => {
+  beforeEach(() => {
+    // A leftover token from an earlier session must not be sent along.
+    vi.mocked(auth.getAccessToken).mockReturnValue("stale");
+    vi.mocked(auth.getRefreshToken).mockReturnValue("stale-refresh");
+  });
+
+  it("recognises the sign-in and enrolment paths", () => {
+    for (const path of [
+      "/api/auth/login",
+      "/api/auth/login/2fa",
+      "/api/auth/register",
+      "/api/auth/enroll/totp/setup",
+      "/api/auth/enroll/passkey/verify",
+      "/api/auth/passkeys/login/options",
+      "http://anchor.test/api/auth/login/2fa?x=1",
+    ])
+      expect(isSessionless(path), path).toBe(true);
+    for (const path of [
+      "/api/auth/me",
+      "/api/auth/2fa",
+      "/api/auth/passkeys/register/options",
+      "/api/auth/passkeys/abc",
+      "/api/notes",
+      "/api/auth/loginx",
+    ])
+      expect(isSessionless(path), path).toBe(false);
+  });
+
+  it("hands the challenge in a 401 to the caller, without a refresh", async () => {
+    const seen: (string | null)[] = [];
+    const client = api.extend({
+      baseUrl: "http://anchor.test",
+      fetch: (input) => {
+        seen.push((input as Request).headers.get("Authorization"));
+        return Promise.resolve(
+          Response.json(
+            {
+              statusCode: 401,
+              message: "Two-factor code required",
+              twoFactorRequired: true,
+              challenge: "abc",
+            },
+            { status: 401 },
+          ),
+        );
+      },
+    });
+    vi.stubGlobal("fetch", vi.fn());
+    const sessionEnded = vi.fn();
+    vi.stubGlobal("window", { dispatchEvent: sessionEnded });
+
+    const error = await errorOf(client.post("api/auth/login"));
+
+    expect(errorBody(error)).toMatchObject({
+      twoFactorRequired: true,
+      challenge: "abc",
+    });
+    expect(seen).toEqual([null]);
+    expect(fetch).not.toHaveBeenCalled();
+    expect(sessionEnded).not.toHaveBeenCalled();
+    expect(auth.clearAccessToken).not.toHaveBeenCalled();
+  });
+
+  it("hands the challenge in a 403 to the caller", async () => {
+    const client = replyWith(
+      403,
+      JSON.stringify({
+        twoFactorSetupRequired: true,
+        challenge: "enroll",
+        methods: { totp: true, passkey: false },
+      }),
+      "application/json",
+    );
+
+    const error = await errorOf(client.post("api/auth/login"));
+
+    expect(errorBody(error)).toMatchObject({
+      twoFactorSetupRequired: true,
+      methods: { totp: true, passkey: false },
+    });
+  });
+});
+
+describe("errorBody", () => {
+  it("is empty for anything but a JSON object from the server", async () => {
+    expect(errorBody(new TypeError("Failed to fetch"))).toBeNull();
+    const text = replyWith(502, "Bad Gateway", "text/plain");
+    expect(errorBody(await errorOf(text.post("api/notes")))).toBeNull();
   });
 });

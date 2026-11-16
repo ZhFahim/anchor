@@ -68,9 +68,26 @@ class AuthRepository {
   Future<User> login(String email, String password) async =>
       _saveSession(await _authService.login(email, password));
 
-  /// Returns null when an admin has to approve the account first.
+  Future<User> loginWithTwoFactor(
+    String challenge, {
+    String? code,
+    String? recoveryCode,
+  }) async => _saveSession(
+    await _authService.loginWithTwoFactor(
+      challenge,
+      code: code,
+      recoveryCode: recoveryCode,
+    ),
+  );
+
+  /// Returns null when an admin has to approve the account first. Throws
+  /// [TwoFactorSetupRequiredFailure] when the account has to set up
+  /// two-factor before it gets tokens.
   Future<User?> register(String email, String password, String name) async {
     final data = await _authService.register(email, password, name);
+    if (data['twoFactorSetupRequired'] == true) {
+      throw const TwoFactorSetupRequiredFailure();
+    }
     if (data['access_token'] == null) return null;
     return _saveSession(data);
   }

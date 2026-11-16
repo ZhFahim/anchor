@@ -44,6 +44,16 @@ AuthErrorMessage authErrorMessageOf(
     field: AuthField.newPassword,
   ),
   InvalidInputFailure(:final fields) => _invalidInput(fields.firstOrNull, l10n),
+  InvalidTwoFactorCodeFailure() => (text: l10n.authCodeIncorrect, field: null),
+  ChallengeExpiredFailure() => (text: l10n.authCodeExpired, field: null),
+  TwoFactorLockedFailure(:final retryAfter) => (
+    text: l10n.authCodeLocked(lockMinutes(retryAfter)),
+    field: null,
+  ),
+  // The screens take these to the next step. Nothing to say if one gets here.
+  TwoFactorRequiredFailure() ||
+  TwoFactorSetupRequiredFailure() ||
+  PasskeyRequiredFailure() => (text: l10n.errorGeneric, field: null),
   UnreachableFailure() => (text: l10n.authUnreachable, field: null),
   ProviderNotSetUpFailure() => (text: l10n.authProviderNotSetUp, field: null),
   ProviderSignInFailure(:final detail) => (
@@ -58,6 +68,10 @@ AuthErrorMessage authErrorMessageOf(
   ),
   _ => _unexpected(error, l10n),
 };
+
+/// Whole minutes to wait, rounded up and never below one.
+int lockMinutes(Duration retryAfter) =>
+    (retryAfter.inSeconds / 60).ceil().clamp(1, 1 << 30);
 
 String? nameError(String name, AppLocalizations l10n) =>
     isNameValid(name) ? null : l10n.authEnterName;

@@ -7,6 +7,8 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
 import { OidcConfigService } from '../auth/oidc/oidc-config.service';
+import { TwoFactorService } from '../auth/two-factor/two-factor.service';
+import type { TwoFactorPolicy } from '../auth/two-factor/two-factor.constants';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { NoteState } from 'src/generated/prisma/enums';
@@ -22,6 +24,7 @@ export class AdminService {
     private prisma: PrismaService,
     private settingsService: SettingsService,
     private oidcConfigService: OidcConfigService,
+    private twoFactorService: TwoFactorService,
   ) {}
 
   async getStats() {
@@ -85,10 +88,13 @@ export class AdminService {
           isAdmin: true,
           status: true,
           oidcSubject: true,
+          password: true,
+          totpEnabledAt: true,
           createdAt: true,
           updatedAt: true,
           _count: {
             select: {
+              passkeys: true,
               notes: {
                 where: {
                   state: { not: NoteState.deleted },
@@ -102,10 +108,25 @@ export class AdminService {
       this.prisma.user.count({ where }),
     ]);
 
-    const usersWithAuthMethod = users.map(({ oidcSubject, ...rest }) => ({
-      ...rest,
-      authMethod: oidcSubject ? ('oidc' as const) : ('local' as const),
-    }));
+    const usersWithAuthMethod = users.map(
+      ({ oidcSubject, password, totpEnabledAt, _count, ...rest }) => {
+        const { passkeys, ...counts } = _count;
+        const totp = !!totpEnabledAt;
+        return {
+          ...rest,
+          _count: counts,
+          authMethod: oidcSubject ? ('oidc' as const) : ('local' as const),
+          hasPassword: !!password,
+          twoFactor: totp
+            ? passkeys > 0
+              ? 'both'
+              : 'totp'
+            : passkeys > 0
+              ? 'passkey'
+              : 'none',
+        };
+      },
+    );
 
     return {
       users: usersWithAuthMethod,
@@ -113,6 +134,23 @@ export class AdminService {
       skip,
       take,
     };
+  }
+
+  getTwoFactorSettings() {
+    return this.twoFactorService.getAdminSettings();
+  }
+
+  updateTwoFactorPolicy(policy: TwoFactorPolicy, actingUserId: string) {
+    return this.twoFactorService.setPolicy(policy, actingUserId);
+  }
+
+  async resetTwoFactor(id: string) {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    await this.twoFactorService.resetUser(id);
+    return { message: 'Two-factor reset' };
   }
 
   async getPendingUsers() {

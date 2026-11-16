@@ -79,6 +79,24 @@ class AuthController extends _$AuthController {
     _signedIn(await ref.read(authRepositoryProvider).login(email, password));
   }
 
+  /// Finishes a sign-in that answered with [TwoFactorRequiredFailure]. Pass
+  /// one of [code] and [recoveryCode]. Throws an [AuthFailure] like [login].
+  Future<void> loginWithTwoFactor(
+    String challenge, {
+    String? code,
+    String? recoveryCode,
+  }) async {
+    _signedIn(
+      await ref
+          .read(authRepositoryProvider)
+          .loginWithTwoFactor(
+            challenge,
+            code: code,
+            recoveryCode: recoveryCode,
+          ),
+    );
+  }
+
   /// Returns false when an admin has to approve the account first.
   Future<bool> register(String email, String password, String name) async {
     final user = await ref
