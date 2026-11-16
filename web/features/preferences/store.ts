@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export type ViewMode = "masonry" | "grid" | "list";
+export type ViewMode = "masonry" | "grid" | "list" | "columns";
 export type SortBy = "updatedAt" | "createdAt" | "title" | "custom";
 export type TagOrder = "name" | "custom";
 export type SortOrder = "asc" | "desc";

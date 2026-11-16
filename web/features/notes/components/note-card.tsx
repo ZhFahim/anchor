@@ -47,6 +47,9 @@ interface NoteCardProps {
   renderActions?: (note: Note) => React.ReactNode;
   dateLabel?: string;
   drag?: CardDrag;
+  href?: string;
+  /** Open beside the list, in columns. */
+  isOpen?: boolean;
 }
 
 const ROW_LIMIT: Record<CardLayout, number> = { list: 2, grid: 4, masonry: 6 };
@@ -96,6 +99,8 @@ export const NoteCard = React.memo(function NoteCard({
   renderActions,
   dateLabel,
   drag,
+  href = `/notes/${note.id}`,
+  isOpen,
 }: NoteCardProps) {
   const blocks = cardBlocks(note);
   const hasHighlights = blocks.some((block) =>
@@ -214,6 +219,7 @@ export const NoteCard = React.memo(function NoteCard({
       className={cn(
         "nc",
         picked && "picked",
+        isOpen && "open",
         drag?.listeners && "nc-draggable",
         drag?.isPlaceholder && "nc-placeholder",
         drag?.isLifted && "nc-lifted",
@@ -221,8 +227,9 @@ export const NoteCard = React.memo(function NoteCard({
       {...drag?.listeners}
     >
       <Link
-        href={`/notes/${note.id}`}
+        href={href}
         aria-label={label}
+        aria-current={isOpen ? "page" : undefined}
         draggable={false}
         aria-keyshortcuts={
           drag?.onMoveByKey ? "Alt+ArrowUp Alt+ArrowDown" : undefined

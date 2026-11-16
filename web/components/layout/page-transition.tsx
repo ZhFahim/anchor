@@ -33,6 +33,15 @@ class PageSwap extends React.Component<PageSwapProps> {
       (previous.pathname === pathname && previous.tagId === tagId)
     )
       return null;
+    // In columns the list stays put and only the note beside it changes.
+    const isNotes = (path: string) => path.startsWith("/notes");
+    if (
+      container.querySelector("[data-columns]") &&
+      previous.tagId === tagId &&
+      isNotes(previous.pathname) &&
+      isNotes(pathname)
+    )
+      return null;
     return capturePage(container, previous.pathname, pathname);
   }
 

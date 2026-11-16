@@ -4,6 +4,7 @@ import {
   ALargeSmall,
   CalendarPlus,
   Check,
+  Columns3,
   GripVertical,
   Hand,
   LayoutDashboard,
@@ -92,6 +93,11 @@ export function ViewOptions({
                 icon: <LayoutGrid aria-hidden />,
               },
               { value: "list", label: "List", icon: <Rows3 aria-hidden /> },
+              {
+                value: "columns",
+                label: "Columns",
+                icon: <Columns3 aria-hidden />,
+              },
             ]}
           />
         </div>

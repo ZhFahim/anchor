@@ -9,6 +9,7 @@ import { useTagMap } from "@/features/tags/hooks";
 import { useDelayedFlag } from "@/lib/hooks/use-delayed-flag";
 import { useHoldRing } from "@/lib/use-hold-ring";
 import { cn } from "@/lib/utils";
+import type { DropTarget } from "../columns";
 import { useCardColumns } from "../hooks/use-card-columns";
 import type { Note } from "../types";
 import { type BoardReorder, groupDropId, useBoardDrag } from "./board-drag";
@@ -38,6 +39,11 @@ interface NotesBoardProps {
   dateLabel?: (note: Note) => string;
   /** Lets cards be dragged into a new order. */
   reorder?: BoardReorder;
+  /** Columns: where a card opens, and which note is open beside the list. */
+  noteHref?: (noteId: string) => string;
+  openId?: string | null;
+  /** Columns: cards, or all picked ones, can be dropped on the sidebar. */
+  onDropOut?: (noteIds: string[], target: DropTarget) => void;
   onMoveByKey?: CardDrag["onMoveByKey"];
 }
 
@@ -58,6 +64,9 @@ export const NotesBoard = React.forwardRef<HTMLDivElement, NotesBoardProps>(
       dateLabel,
       reorder,
       onMoveByKey,
+      noteHref,
+      openId,
+      onDropOut,
     },
     ref,
   ) => {
@@ -68,8 +77,22 @@ export const NotesBoard = React.forwardRef<HTMLDivElement, NotesBoardProps>(
     const boardId = React.useId();
     React.useImperativeHandle(ref, () => boardRef.current as HTMLDivElement);
     useCardColumns(boardRef, rulerRef);
-    const { drag, hasZones, activeNote, notesOf, contextProps, dropAnimation } =
-      useBoardDrag(groups, reorder);
+    const {
+      drag,
+      hasZones,
+      activeNote,
+      draggedCount,
+      notesOf,
+      contextProps,
+      dropAnimation,
+    } = useBoardDrag(
+      groups,
+      reorder,
+      React.useMemo(
+        () => (onDropOut ? { picked, onDrop: onDropOut } : undefined),
+        [onDropOut, picked],
+      ),
+    );
     useHoldRing(".nc-draggable", !!reorder);
     const board = (
       <div
@@ -133,8 +156,15 @@ export const NotesBoard = React.forwardRef<HTMLDivElement, NotesBoardProps>(
               {isShown && !group.fallback && (
                 <SortableGroup
                   id={group.key}
-                  ids={isSortable ? notes.map((note) => note.id) : NO_IDS}
-                  disabled={!isSortable}
+                  ids={
+                    isSortable || onDropOut
+                      ? notes.map((note) => note.id)
+                      : NO_IDS
+                  }
+                  disabled={{
+                    draggable: !isSortable && !onDropOut,
+                    droppable: !isSortable,
+                  }}
                 >
                   <CardsBox
                     id={cardsId}
@@ -159,6 +189,8 @@ export const NotesBoard = React.forwardRef<HTMLDivElement, NotesBoardProps>(
                         onShare,
                         renderActions,
                         dateLabel: dateLabel?.(note),
+                        href: noteHref?.(note.id),
+                        isOpen: note.id === openId,
                       };
                       // One card type throughout, so searching or picking
                       // doesn't remount every card.
@@ -167,6 +199,7 @@ export const NotesBoard = React.forwardRef<HTMLDivElement, NotesBoardProps>(
                           key={note.id}
                           {...card}
                           isSortable={isSortable}
+                          canLeave={!!onDropOut}
                           onMoveByKey={isSortable ? onMoveByKey : undefined}
                         />
                       );
@@ -191,6 +224,9 @@ export const NotesBoard = React.forwardRef<HTMLDivElement, NotesBoardProps>(
                 layout={layout}
                 drag={LIFTED}
               />
+              {draggedCount > 1 && (
+                <span className="drag-count">{draggedCount}</span>
+              )}
             </div>
           )}
         </DragOverlay>
@@ -211,7 +247,7 @@ function SortableGroup({
 }: {
   id: string;
   ids: string[];
-  disabled: boolean;
+  disabled: { draggable: boolean; droppable: boolean };
   children: React.ReactNode;
 }) {
   const stable = React.useRef(ids);
@@ -255,16 +291,20 @@ function CardsBox({
 
 function SortableNoteCard({
   isSortable,
+  canLeave,
   onMoveByKey,
   ...props
 }: React.ComponentProps<typeof NoteCard> & {
   isSortable: boolean;
+  /** Can be dropped outside the board, even while picking. */
+  canLeave: boolean;
   onMoveByKey?: CardDrag["onMoveByKey"];
 }) {
-  const isOn = isSortable && !props.picking;
+  const canSort = isSortable && !props.picking;
+  const isOn = canSort || canLeave;
   const { setNodeRef, listeners, isDragging } = useSortable({
     id: props.note.id,
-    disabled: !isOn,
+    disabled: { draggable: !isOn, droppable: !canSort },
   });
   const drag = React.useMemo<CardDrag | undefined>(
     () =>

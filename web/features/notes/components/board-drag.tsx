@@ -19,6 +19,12 @@ import {
 import * as React from "react";
 import { prefersReducedMotion } from "@/lib/motion";
 import { suppressNextClick } from "@/lib/suppress-click";
+import {
+  DROP_ATTRIBUTE,
+  type DropTarget,
+  draggedNoteIds,
+  parseDropTarget,
+} from "../columns";
 import type { Note } from "../types";
 
 /** A drop the page turns into a pin change and a new position. */
@@ -39,6 +45,12 @@ export interface BoardReorder {
   onHold?: (noteId: string) => void;
   /** Called just before the cards change place, so they glide. */
   prepareMotion: () => void;
+}
+
+/** Columns: cards can also be dropped on a tag, Archive or Trash in the sidebar. */
+export interface BoardDropOut {
+  picked: ReadonlySet<string>;
+  onDrop: (noteIds: string[], target: DropTarget) => void;
 }
 
 interface DragState {
@@ -84,6 +96,7 @@ export const BOARD_MEASURING = {
 export function useBoardDrag(
   groups: { key: string; notes: Note[] }[],
   reorder: BoardReorder | undefined,
+  dropOut?: BoardDropOut,
 ) {
   const [drag, setDrag] = React.useState<DragState | null>(null);
   const [held, setHeld] = React.useState<Record<string, string[]> | null>(null);
@@ -96,6 +109,24 @@ export function useBoardDrag(
   } | null>(null);
   const startPoint = React.useRef<{ x: number; y: number } | null>(null);
   const lastDelta = React.useRef({ x: 0, y: 0 });
+  // The sidebar row under the pointer; it is outside the board, so it is
+  // found by position rather than as a dnd-kit droppable.
+  const overRow = React.useRef<Element | null>(null);
+  const setTarget = (element: Element | null) => {
+    if (overRow.current === element) return;
+    overRow.current?.removeAttribute("data-drop-over");
+    element?.setAttribute("data-drop-over", "");
+    overRow.current = element;
+  };
+  const findTarget = (delta: { x: number; y: number }) => {
+    const start = startPoint.current;
+    if (!dropOut || !start) return;
+    const hit = document
+      .elementsFromPoint(start.x + delta.x, start.y + delta.y)
+      .map((element) => element.closest(`[${DROP_ATTRIBUTE}]`))
+      .find(Boolean);
+    setTarget(hit ?? null);
+  };
   // The lifted card is placed from where its note sat when the drag began, so
   // drop zones that push the notes around wait until that is measured.
   const [hasZones, setHasZones] = React.useState(false);
@@ -132,6 +163,12 @@ export function useBoardDrag(
     return map;
   }, [groups]);
 
+  // Picked notes travel together when the drag can leave the board.
+  const dragIds = (activeId: string) =>
+    dropOut
+      ? draggedNoteIds(activeId, dropOut.picked, [...noteById.keys()])
+      : [activeId];
+
   const groupOf = (state: DragState, id: string) =>
     Object.keys(state.order).find((key) => state.order[key].includes(id));
 
@@ -142,14 +179,16 @@ export function useBoardDrag(
   };
 
   const onDragStart = ({ active, activatorEvent }: DragStartEvent) => {
-    if (!reorder) return;
+    if (!reorder && !dropOut) return;
     const id = String(active.id);
     const order: Record<string, string[]> = {};
     for (const group of groups)
-      if (reorder.groups.includes(group.key))
+      if (reorder?.groups.includes(group.key))
         order[group.key] = group.notes.map((note) => note.id);
-    const fromGroup = Object.keys(order).find((key) => order[key].includes(id));
-    if (!fromGroup) return;
+    // Empty when the card can only leave the board.
+    const fromGroup =
+      Object.keys(order).find((key) => order[key].includes(id)) ?? "";
+    if (!fromGroup && !dropOut) return;
     touchedRef.current =
       typeof TouchEvent !== "undefined" && activatorEvent instanceof TouchEvent;
     const point =
@@ -159,6 +198,13 @@ export function useBoardDrag(
           ? (activatorEvent as TouchEvent).touches[0]
           : null;
     startPoint.current = point ? { x: point.clientX, y: point.clientY } : null;
+    // The lifted card shrinks around the point it was grabbed at.
+    const rect = active.rect.current.initial;
+    if (point && rect)
+      document.documentElement.style.setProperty(
+        "--grab-point",
+        `${point.clientX - rect.left}px ${point.clientY - rect.top}px`,
+      );
     navigator.vibrate?.(10);
     lastMove.current = null;
     lastDelta.current = { x: 0, y: 0 };
@@ -171,8 +217,10 @@ export function useBoardDrag(
     delta,
   }: DragOverEvent | DragMoveEvent) => {
     lastDelta.current = delta;
+    findTarget(delta);
     const state = dragRef.current;
-    if (!state || !over || !reorder) return;
+    if (!state || !over || !reorder || !state.fromGroup || overRow.current)
+      return;
     const activeId = String(active.id);
     const overId = String(over.id);
     if (overId === activeId) return;
@@ -217,6 +265,17 @@ export function useBoardDrag(
 
   const finish = (event: DragEndEvent | null) => {
     const state = dragRef.current;
+    const dropTarget = parseDropTarget(
+      overRow.current?.getAttribute(DROP_ATTRIBUTE) ?? null,
+    );
+    setTarget(null);
+    if (state && dropOut && (dropTarget || !state.fromGroup)) {
+      if (event && dropTarget)
+        dropOut.onDrop(dragIds(state.activeId), dropTarget);
+      reorder?.prepareMotion();
+      suppressNextClick();
+      return setDrag(null);
+    }
     if (!state || !reorder) return setDrag(null);
     const to = groupOf(state, state.activeId);
     const original = groups.find((g) => g.key === state.fromGroup)?.notes ?? [];
@@ -247,6 +306,7 @@ export function useBoardDrag(
     drag,
     hasZones: !!drag && hasZones,
     activeNote: drag ? noteById.get(drag.activeId) : undefined,
+    draggedCount: drag ? dragIds(drag.activeId).length : 0,
     notesOf,
     contextProps: {
       sensors,
