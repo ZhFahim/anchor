@@ -26,6 +26,21 @@ describe('validate (environment)', () => {
     ).not.toThrow();
   });
 
+  it('treats an empty TOTP_ENCRYPTION_KEY as not set, but rejects a malformed one', () => {
+    expect(
+      validate({ ...base, TOTP_ENCRYPTION_KEY: '' }).TOTP_ENCRYPTION_KEY,
+    ).toBeUndefined();
+    expect(() =>
+      validate({ ...base, TOTP_ENCRYPTION_KEY: 'too-short' }),
+    ).toThrow(/TOTP_ENCRYPTION_KEY/);
+    expect(
+      validate({
+        ...base,
+        TOTP_ENCRYPTION_KEY: 'MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=',
+      }).TOTP_ENCRYPTION_KEY,
+    ).toBeDefined();
+  });
+
   it('throws when DATABASE_URL is missing', () => {
     expect(() => validate({ JWT_SECRET: base.JWT_SECRET })).toThrow(
       /DATABASE_URL/,

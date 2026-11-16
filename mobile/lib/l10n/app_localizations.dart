@@ -634,11 +634,143 @@ abstract class AppLocalizations {
   /// **'An admin needs to approve your account before you can sign in.'**
   String get authWaitingMessage;
 
-  /// Button on the waiting for approval page that returns to the sign-in page.
+  /// Button on the waiting for approval page and on the set up two-factor on the web page that returns to the sign-in page.
   ///
   /// In en, this message translates to:
   /// **'Back to sign in'**
   String get authBackToSignIn;
+
+  /// Title of the page that asks for the 6-digit code from the person’s authenticator app after the password was accepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your authenticator app'**
+  String get authTwoFactorTitle;
+
+  /// Under the title of the authenticator code page. {email} is the account’s email address.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the 6-digit code for {email}.'**
+  String authTwoFactorSubtitle(String email);
+
+  /// Name of the 6-digit code input for screen readers.
+  ///
+  /// In en, this message translates to:
+  /// **'Authenticator code'**
+  String get authTwoFactorCodeLabel;
+
+  /// Button that checks the two-factor code.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify'**
+  String get authVerify;
+
+  /// Text on the Verify button while the two-factor code is checked.
+  ///
+  /// In en, this message translates to:
+  /// **'Verifying…'**
+  String get authVerifying;
+
+  /// Link on the authenticator code page that switches to entering a recovery code.
+  ///
+  /// In en, this message translates to:
+  /// **'Use a recovery code instead'**
+  String get authUseRecoveryCode;
+
+  /// Link on the recovery code page that switches back to entering the 6-digit authenticator code.
+  ///
+  /// In en, this message translates to:
+  /// **'Use an authenticator code instead'**
+  String get authUseAuthenticatorCode;
+
+  /// Title of the page where the person enters a recovery code in place of the authenticator code.
+  ///
+  /// In en, this message translates to:
+  /// **'Use a recovery code'**
+  String get authRecoveryTitle;
+
+  /// Under the title of the recovery code page.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter one of the codes you saved when you turned on two-factor. Each code works once.'**
+  String get authRecoverySubtitle;
+
+  /// Label of the recovery code field.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovery code'**
+  String get fieldRecoveryCode;
+
+  /// Error on the authenticator code page when Verify is tapped before all 6 digits are entered.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the 6-digit code.'**
+  String get authEnterCode;
+
+  /// Error on the recovery code page when Verify is tapped with an empty field.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a recovery code.'**
+  String get authEnterRecoveryCode;
+
+  /// Error under the code fields when the server turned down a two-factor code.
+  ///
+  /// In en, this message translates to:
+  /// **'That code didn’t work. Check it and try again.'**
+  String get authCodeIncorrect;
+
+  /// Error on the sign-in page after the two-factor step took too long or had too many tries, so sign-in starts over.
+  ///
+  /// In en, this message translates to:
+  /// **'Your sign-in timed out. Enter your email and password again.'**
+  String get authCodeExpired;
+
+  /// Error when too many wrong two-factor codes were entered in a row and the next try has to wait. {minutes} is how long.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes, plural, =1{Too many wrong codes. Try again in 1 minute.} other{Too many wrong codes. Try again in {minutes} minutes.}}'**
+  String authCodeLocked(int minutes);
+
+  /// Error on the authenticator code page when too many wrong codes were entered in a row and the next try has to wait. {minutes} is how long.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes, plural, =1{Too many wrong codes. Try again in 1 minute.} other{Too many wrong codes. Try again in {minutes} minutes.}}'**
+  String authCodeLockedUseRecovery(int minutes);
+
+  /// Notice at the top of the two-factor pages while the phone is offline.
+  ///
+  /// In en, this message translates to:
+  /// **'You’re offline. Connect to the internet to verify your code.'**
+  String get authCodeOffline;
+
+  /// Title of the page that tells the person their account needs two-factor, which is set up in a browser.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up two-factor on the web'**
+  String get authSetupTitle;
+
+  /// Under the title of the page that sends the person to the web to set up two-factor.
+  ///
+  /// In en, this message translates to:
+  /// **'Your admin requires a second step. Open Anchor in a browser, sign in and add it under Settings → Security. Then come back here and sign in again.'**
+  String get authSetupMessage;
+
+  /// Title of the page shown when the account can only sign in with a passkey, which needs a browser.
+  ///
+  /// In en, this message translates to:
+  /// **'Use your passkey on the web'**
+  String get authPasskeyTitle;
+
+  /// Under the title of the page that sends a person with only passkeys to the web.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with your passkey on the web, or add an authenticator app there.'**
+  String get authPasskeyMessage;
+
+  /// Button on the set up two-factor on the web page that opens the server in a browser. {server} is the server’s address.
+  ///
+  /// In en, this message translates to:
+  /// **'Open {server}'**
+  String authSetupOpen(String server);
 
   /// Title of the change password page.
   ///

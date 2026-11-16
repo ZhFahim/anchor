@@ -6,6 +6,23 @@ class AppRoutes {
   static const serverConfig = '/server-config';
   static const login = '/login';
   static const register = '/register';
+
+  // Steps of signing in. The code step needs the challenge as `extra`.
+  static const twoFactor = '/login/two-factor';
+  static const twoFactorSetup = '/login/two-factor-setup';
+
+  /// [twoFactorSetup] for an account that has only passkeys.
+  static const passkeyOnWeb = '/login/passkey-on-web';
+
+  /// Pages for someone who isn't signed in.
+  static const signedOutPages = {
+    login,
+    register,
+    twoFactor,
+    twoFactorSetup,
+    passkeyOnWeb,
+    serverConfig,
+  };
   static const trash = '/trash';
   static const archive = '/archive';
 

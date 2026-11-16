@@ -12,6 +12,7 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
 import { OidcConfigService } from './oidc/oidc-config.service';
+import { TwoFactorService } from './two-factor/two-factor.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -42,6 +43,7 @@ export class AuthService {
     private jwtService: JwtService,
     private settingsService: SettingsService,
     private oidcConfigService: OidcConfigService,
+    private twoFactor: TwoFactorService,
     @Inject(StorageConfig.KEY)
     private storageConfig: ConfigType<typeof StorageConfig>,
   ) {}
@@ -110,6 +112,17 @@ export class AuthService {
 
     // Only return token if user is active (not pending)
     if (user.status === UserStatus.active) {
+      if (
+        await this.twoFactor.mustEnrollNewUser({
+          isAdmin: user.isAdmin,
+          password: true,
+        })
+      ) {
+        const { challenge, methods } = await this.twoFactor.enrollmentGate(
+          user.id,
+        );
+        return { user, twoFactorSetupRequired: true, challenge, methods };
+      }
       const tokens = await this.createTokenPair(user.id, user.email);
       return {
         ...tokens,
@@ -174,13 +187,41 @@ export class AuthService {
       );
     }
 
-    // Remove password from user object
-    const { password, ...userWithoutPassword } = user;
+    // Throws when the person still has a second step to take.
+    await this.twoFactor.gateForPasswordLogin(user.id);
 
+    return this.issueSession(user.id);
+  }
+
+  /** Tokens plus the user, the answer to every completed sign-in. */
+  async issueSession(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        password: true,
+        name: true,
+        profileImage: true,
+        isAdmin: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+    if (user.status === UserStatus.pending) {
+      throw new ForbiddenException(
+        'Account pending approval. Please wait for an administrator to approve your account.',
+      );
+    }
+    const { password, ...userWithoutPassword } = user;
     const tokens = await this.createTokenPair(user.id, user.email);
     return {
       ...tokens,
-      user: { ...userWithoutPassword, hasPassword: true },
+      user: { ...userWithoutPassword, hasPassword: !!password },
     };
   }
 

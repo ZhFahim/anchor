@@ -1,6 +1,8 @@
 import {
   Controller,
   Get,
+  HttpCode,
+  HttpStatus,
   Post,
   Patch,
   Delete,
@@ -18,6 +20,7 @@ import { UserStatus } from 'src/generated/prisma/enums';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { UpdateRegistrationModeDto } from './dto/update-registration-mode.dto';
 import { UpdateOidcSettingsDto } from './dto/update-oidc-settings.dto';
+import { UpdateTwoFactorPolicyDto } from '../auth/two-factor/dto/two-factor.dto';
 
 @Controller('api/admin')
 @UseGuards(AdminGuard)
@@ -37,6 +40,19 @@ export class AdminController {
   @Patch('settings/registration')
   updateRegistrationMode(@Body() dto: UpdateRegistrationModeDto) {
     return this.adminService.updateRegistrationMode(dto.mode);
+  }
+
+  @Get('settings/two-factor')
+  getTwoFactorSettings() {
+    return this.adminService.getTwoFactorSettings();
+  }
+
+  @Patch('settings/two-factor')
+  updateTwoFactorPolicy(
+    @Body() dto: UpdateTwoFactorPolicyDto,
+    @CurrentUser('id') currentUserId: string,
+  ) {
+    return this.adminService.updateTwoFactorPolicy(dto.policy, currentUserId);
   }
 
   @Get('users')
@@ -89,6 +105,12 @@ export class AdminController {
     @Body() resetPasswordDto: ResetPasswordDto,
   ) {
     return this.adminService.resetPassword(id, resetPasswordDto.newPassword);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('users/:id/reset-2fa')
+  resetTwoFactor(@Param('id') id: string) {
+    return this.adminService.resetTwoFactor(id);
   }
 
   @Post('users/:id/approve')

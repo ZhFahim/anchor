@@ -29,6 +29,7 @@
     "@nestjs/schedule": "^12.0.2",
     "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "^7.10.1",
+    "@simplewebauthn/server": "^14.1.0",
     "archiver": "^8.0.0",
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",

@@ -6,4 +6,5 @@ export const adminKeys = {
     ["admin", "users", "active", search, limit] as const,
   registration: ["admin", "settings", "registration"] as const,
   oidc: ["admin", "settings", "oidc"] as const,
+  twoFactor: ["admin", "settings", "two-factor"] as const,
 };

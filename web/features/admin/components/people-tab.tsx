@@ -18,6 +18,7 @@ import {
   Search,
   ShieldAlert,
   ShieldCheck,
+  ShieldOff,
   Trash2,
   UserPlus,
   UserRound,
@@ -59,9 +60,10 @@ import {
   getUsers,
   rejectUser,
   resetPassword,
+  resetTwoFactor,
 } from "../api";
 import { adminKeys } from "../queries";
-import type { AdminUser } from "../types";
+import type { AdminUser, TwoFactorKind } from "../types";
 import { cardClass } from "./admin-parts";
 import {
   AddPersonDialog,
@@ -78,6 +80,30 @@ function requested(iso: string) {
   if (Date.now() - date.getTime() < 24 * 3600 * 1000)
     return `Requested ${formatDistanceToNowStrict(date)} ago`;
   return `Requested ${format(date, "MMM d")}`;
+}
+
+/** What a person has for a second step, as badges. */
+function TwoFactorBadges({
+  kind,
+  hasPassword,
+  providerName,
+}: {
+  kind?: TwoFactorKind;
+  hasPassword?: boolean;
+  providerName: string;
+}) {
+  // Their provider handles it.
+  if (hasPassword === false) return <Badge>{providerName}</Badge>;
+  if (!kind) return null;
+  if (kind === "none") return <Badge tone="warn">No 2FA</Badge>;
+  return (
+    <>
+      {(kind === "totp" || kind === "both") && <Badge tone="ok">2FA</Badge>}
+      {(kind === "passkey" || kind === "both") && (
+        <Badge tone="ok">Passkey</Badge>
+      )}
+    </>
+  );
 }
 
 function Person({
@@ -115,9 +141,15 @@ export function PeopleTab({ hidden }: { hidden?: boolean }) {
     user: AdminUser;
     password: string;
   } | null>(null);
+  const [resettingTwoFactor, setResettingTwoFactor] =
+    React.useState<AdminUser | null>(null);
   const [deleting, setDeleting] = React.useState<AdminUser | null>(null);
   const [declining, setDeclining] = React.useState<AdminUser | null>(null);
   const shownResetting = useLastShown(resetting, !!resetting);
+  const shownResettingTwoFactor = useLastShown(
+    resettingTwoFactor,
+    !!resettingTwoFactor,
+  );
   const shownDeleting = useLastShown(deleting, !!deleting);
   const shownDeclining = useLastShown(declining, !!declining);
 
@@ -196,6 +228,17 @@ export function PeopleTab({ hidden }: { hidden?: boolean }) {
     },
     onError: (_, user) =>
       toast.error(`Couldn’t reset ${firstName(user.name)}’s password`),
+  });
+
+  const resetSecondStep = useMutation({
+    mutationFn: (user: AdminUser) => resetTwoFactor(user.id),
+    onSuccess: async (_, user) => {
+      await refresh();
+      setResettingTwoFactor(null);
+      toast.success(`${firstName(user.name)}’s two-factor was reset`);
+    },
+    onError: (_, user) =>
+      toast.error(`Couldn’t reset ${firstName(user.name)}’s two-factor`),
   });
 
   const rows = users.data?.users ?? [];
@@ -304,14 +347,21 @@ export function PeopleTab({ hidden }: { hidden?: boolean }) {
                       <Person user={user} you={you} />
                     </TableCell>
                     <TableCell>
-                      {user.isAdmin ? (
-                        <Badge tone="ink">
-                          <ShieldCheck aria-hidden />
-                          Admin
-                        </Badge>
-                      ) : (
-                        <span className="text-muted-foreground">Member</span>
-                      )}
+                      <span className="flex flex-wrap items-center gap-1.5">
+                        {user.isAdmin ? (
+                          <Badge tone="ink">
+                            <ShieldCheck aria-hidden />
+                            Admin
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground">Member</span>
+                        )}
+                        <TwoFactorBadges
+                          kind={user.twoFactor}
+                          hasPassword={user.hasPassword}
+                          providerName={providerName}
+                        />
+                      </span>
                     </TableCell>
                     <TableCell dim>
                       {user.authMethod === "oidc" ? providerName : "Password"}
@@ -343,6 +393,15 @@ export function PeopleTab({ hidden }: { hidden?: boolean }) {
                             >
                               <KeyRound />
                               Reset password
+                            </DropdownMenuItem>
+                          )}
+                          {user.hasPassword !== false && (
+                            <DropdownMenuItem
+                              disabled={user.twoFactor === "none"}
+                              onSelect={() => setResettingTwoFactor(user)}
+                            >
+                              <ShieldOff />
+                              Reset two-factor
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuSeparator />
@@ -415,6 +474,31 @@ export function PeopleTab({ hidden }: { hidden?: boolean }) {
         variant="primary"
         isPending={reset.isPending}
         onConfirm={() => resetting && reset.mutate(resetting)}
+      />
+      <ConfirmationDialog
+        open={!!resettingTwoFactor}
+        onOpenChange={(open) => !open && setResettingTwoFactor(null)}
+        title={`Reset ${firstName(shownResettingTwoFactor?.name ?? "")}’s two-factor?`}
+        description={
+          <>
+            This removes their authenticator app, recovery codes and passkeys,
+            and signs them out everywhere. They can sign in with their password,
+            and have to set up two-factor again if you require it.
+            {shownResettingTwoFactor?.id === me?.id && (
+              <span className="mt-3 flex items-center gap-2 rounded-lg bg-warn px-3 py-2.5 text-meta text-warn-foreground [&_svg]:size-4">
+                <ShieldAlert aria-hidden />
+                That’s you. You’ll be signed out within minutes.
+              </span>
+            )}
+          </>
+        }
+        confirmLabel="Reset two-factor"
+        busyLabel="Resetting…"
+        variant="primary"
+        isPending={resetSecondStep.isPending}
+        onConfirm={() =>
+          resettingTwoFactor && resetSecondStep.mutate(resettingTwoFactor)
+        }
       />
       <NewPasswordDialog
         value={newPassword}

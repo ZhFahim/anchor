@@ -4,5 +4,6 @@ export { EditorSection } from "./components/editor-section";
 export { ImportExportSection } from "./components/import-export-section";
 export { PasswordSection } from "./components/password-section";
 export { ProfileSection } from "./components/profile-section";
+export { SecuritySection } from "./components/security-section";
 export { Row, Section } from "./components/settings-blocks";
 export { SettingsNav } from "./components/settings-nav";

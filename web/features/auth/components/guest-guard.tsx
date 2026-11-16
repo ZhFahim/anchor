@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { type ReactNode, useEffect } from "react";
-import { useRegistrationMode } from "../hooks/use-auth";
+import { useCapabilities, useRegistrationMode } from "../hooks/use-auth";
 import { useOidcConfig } from "../hooks/use-oidc";
 import { useAuthStore } from "../store";
 import { getSafeRedirectUrl } from "../utils/redirect";
@@ -28,6 +28,7 @@ export function GuestGuard({ children }: GuestGuardProps) {
   const isInitialized = useAuthStore((state) => state.isInitialized);
   const oidc = useOidcConfig();
   const registrationMode = useRegistrationMode();
+  const capabilities = useCapabilities();
 
   useEffect(() => {
     if (isInitialized && isAuthenticated) {
@@ -36,7 +37,13 @@ export function GuestGuard({ children }: GuestGuardProps) {
   }, [isInitialized, isAuthenticated, router]);
 
   return (
-    <SessionCheck isWaiting={!oidc.isFetched || !registrationMode.isFetched}>
+    <SessionCheck
+      isWaiting={
+        !oidc.isFetched ||
+        !registrationMode.isFetched ||
+        !capabilities.isFetched
+      }
+    >
       {isAuthenticated ? null : children}
     </SessionCheck>
   );

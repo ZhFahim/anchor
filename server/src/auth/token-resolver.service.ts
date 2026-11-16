@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
+import { isSessionRevoked } from './utils/session-revocation';
 
 const AUTH_USER_SELECT = {
   id: true,
@@ -40,17 +41,21 @@ export class TokenResolverService {
 
   private async resolveUserFromJwt(token: string): Promise<AuthUser | null> {
     try {
-      const payload = this.jwtService.verify<{ sub?: string }>(token);
+      const payload = this.jwtService.verify<{ sub?: string; iat?: number }>(
+        token,
+      );
 
       if (typeof payload?.sub !== 'string' || !payload.sub) {
         return null;
       }
 
-      const user = await this.prisma.user.findUnique({
+      const row = await this.prisma.user.findUnique({
         where: { id: payload.sub },
-        select: AUTH_USER_SELECT,
+        select: { ...AUTH_USER_SELECT, sessionsRevokedAt: true },
       });
-      return user;
+      if (!row) return null;
+      const { sessionsRevokedAt, ...user } = row;
+      return isSessionRevoked(payload.iat, sessionsRevokedAt) ? null : user;
     } catch {
       return null;
     }

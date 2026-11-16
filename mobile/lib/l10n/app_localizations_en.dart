@@ -334,6 +334,98 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authBackToSignIn => 'Back to sign in';
 
   @override
+  String get authTwoFactorTitle => 'Check your authenticator app';
+
+  @override
+  String authTwoFactorSubtitle(String email) {
+    return 'Enter the 6-digit code for $email.';
+  }
+
+  @override
+  String get authTwoFactorCodeLabel => 'Authenticator code';
+
+  @override
+  String get authVerify => 'Verify';
+
+  @override
+  String get authVerifying => 'Verifying…';
+
+  @override
+  String get authUseRecoveryCode => 'Use a recovery code instead';
+
+  @override
+  String get authUseAuthenticatorCode => 'Use an authenticator code instead';
+
+  @override
+  String get authRecoveryTitle => 'Use a recovery code';
+
+  @override
+  String get authRecoverySubtitle =>
+      'Enter one of the codes you saved when you turned on two-factor. Each code works once.';
+
+  @override
+  String get fieldRecoveryCode => 'Recovery code';
+
+  @override
+  String get authEnterCode => 'Enter the 6-digit code.';
+
+  @override
+  String get authEnterRecoveryCode => 'Enter a recovery code.';
+
+  @override
+  String get authCodeIncorrect =>
+      'That code didn’t work. Check it and try again.';
+
+  @override
+  String get authCodeExpired =>
+      'Your sign-in timed out. Enter your email and password again.';
+
+  @override
+  String authCodeLocked(int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: 'Too many wrong codes. Try again in $minutes minutes.',
+      one: 'Too many wrong codes. Try again in 1 minute.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String authCodeLockedUseRecovery(int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: 'Too many wrong codes. Try again in $minutes minutes.',
+      one: 'Too many wrong codes. Try again in 1 minute.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get authCodeOffline =>
+      'You’re offline. Connect to the internet to verify your code.';
+
+  @override
+  String get authSetupTitle => 'Set up two-factor on the web';
+
+  @override
+  String get authSetupMessage =>
+      'Your admin requires a second step. Open Anchor in a browser, sign in and add it under Settings → Security. Then come back here and sign in again.';
+
+  @override
+  String get authPasskeyTitle => 'Use your passkey on the web';
+
+  @override
+  String get authPasskeyMessage =>
+      'Sign in with your passkey on the web, or add an authenticator app there.';
+
+  @override
+  String authSetupOpen(String server) {
+    return 'Open $server';
+  }
+
+  @override
   String get passwordTitle => 'Password';
 
   @override

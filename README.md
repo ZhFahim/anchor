@@ -40,6 +40,7 @@ Anchor focuses on speed, privacy, simplicity, and reliability across mobile and 
 - **Home Screen Widget** - Quick access to your notes from the Android home screen
 - **Admin Panel** - User management, registration control, and system statistics
 - **OIDC Authentication** - Sign in with OpenID Connect providers (Pocket ID, Authelia, Keycloak, etc.)
+- **Two-Factor Sign-In** - Protect accounts with an authenticator app and passkeys, and let admins require it
 
 ## Screenshots
 
@@ -86,6 +87,7 @@ Anchor focuses on speed, privacy, simplicity, and reliability across mobile and 
    |----------|----------|---------|-------------|
    | `APP_URL` | No | `http://localhost:3000` | Base URL where Anchor is served |
    | `JWT_SECRET` | No | (auto-generated) | Auth token secret. Min 16 characters when set |
+   | `TOTP_ENCRYPTION_KEY` | No | (not set) | Turns on authenticator apps. 32 random bytes, base64 (`openssl rand -base64 32`). See [Two-factor sign-in](#two-factor-sign-in) |
    | `DATA_DIR` | No | `/data` | Root directory for persisted uploads |
    | `CORS_ORIGINS` | No | (allow all) | Comma-separated allowlist of CORS origins |
    | `PG_HOST` | No | (empty) | External Postgres host (leave empty for embedded) |
@@ -226,6 +228,24 @@ services:
 #### Admin UI Configuration
 
 Alternatively, configure OIDC in the admin panel (Admin → Sign-in → Single sign-on) when the three env vars are not all set.
+
+## Two-factor sign-in
+
+People who sign in with a password can add a second step, and admins can require it for everyone or for admins only (Admin → Sign-in → Two-factor).
+
+- **Authenticator app (TOTP)** - needs `TOTP_ENCRYPTION_KEY`. Generate it once with `openssl rand -base64 32` and keep it with your other secrets. Secrets are stored encrypted with it, so **if you lose or change the key, authenticator apps stop working** and an admin has to reset two-factor for those people (Admin → People). Without the key the option is hidden.
+- **Passkeys** - need `APP_URL` to be set to the exact address people open in the browser (for example `https://notes.example.com`). A passkey is tied to that host name, so changing it makes existing passkeys unusable. A passkey replaces both password and code.
+- **Recovery codes** - ten single-use codes are shown once when the authenticator is turned on.
+- **Too many wrong codes** - five wrong codes lock the account's code checks for 10 minutes.
+
+What it does not cover:
+
+- The policy is checked **when someone signs in**. Sessions that are already open keep working until they expire.
+- Turning on an authenticator or an admin reset signs the person out everywhere. Access tokens issued in that same second, and event streams that were already open, can last a little longer (at most one hour for the streams, which carry no note content).
+- **API tokens** and accounts that only sign in through OIDC are not asked for a code. OIDC accounts rely on their provider's own two-factor.
+- The mobile app asks for the code at sign-in, but setting up an authenticator or passkey is done on the web.
+- If the admin policy locks everyone out (for example the key was lost), set it back in the database:
+  `UPDATE "Settings" SET value = 'optional' WHERE key = 'two_factor_policy';`
 
 ## Backup and Restore
 

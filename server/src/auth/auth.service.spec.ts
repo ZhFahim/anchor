@@ -11,6 +11,7 @@ import { AuthService } from './auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
 import { OidcConfigService } from './oidc/oidc-config.service';
+import { TwoFactorService } from './two-factor/two-factor.service';
 import { REFRESH_TOKEN_REUSE_WINDOW_MS } from './constants/auth.constants';
 
 /**
@@ -194,6 +195,11 @@ describe('AuthService', () => {
     ),
   } as unknown as OidcConfigService;
 
+  const twoFactor = {
+    gateForPasswordLogin: vi.fn().mockResolvedValue(undefined),
+    mustEnrollNewUser: vi.fn().mockResolvedValue(false),
+  } as unknown as TwoFactorService;
+
   const storageConfig = {
     root: '/data',
     uploadsDir: '/data/uploads',
@@ -211,6 +217,7 @@ describe('AuthService', () => {
       jwtService,
       settingsService,
       oidcConfigService,
+      twoFactor,
       storageConfig,
     );
     vi.clearAllMocks();

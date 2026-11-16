@@ -9,6 +9,8 @@ import '../../features/auth/presentation/change_password_screen.dart';
 import '../../features/auth/presentation/edit_profile_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
+import '../../features/auth/presentation/two_factor_screen.dart';
+import '../../features/auth/presentation/two_factor_setup_screen.dart';
 import '../../features/notes/domain/note.dart';
 import '../../features/notes/presentation/note_edit_screen.dart';
 import '../../features/notes/presentation/note_folder.dart';
@@ -158,6 +160,23 @@ GoRouter goRouter(Ref ref) {
         builder: (context, state) => const RegisterScreen(),
       ),
       GoRoute(
+        path: AppRoutes.twoFactor,
+        // The challenge lives in memory only; after a restart there is none.
+        redirect: (_, state) =>
+            state.extra is TwoFactorChallenge ? null : AppRoutes.login,
+        builder: (context, state) =>
+            TwoFactorScreen(challenge: state.extra! as TwoFactorChallenge),
+      ),
+      GoRoute(
+        path: AppRoutes.twoFactorSetup,
+        builder: (context, state) => const TwoFactorSetupScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.passkeyOnWeb,
+        builder: (context, state) =>
+            const TwoFactorSetupScreen(needsPasskey: true),
+      ),
+      GoRoute(
         path: AppRoutes.widgetNewNote,
         pageBuilder: (context, state) {
           return MaterialPage(
@@ -192,21 +211,19 @@ GoRouter goRouter(Ref ref) {
       final isLoggedIn = authState.value != null;
 
       final isServerConfig = state.matchedLocation == AppRoutes.serverConfig;
-      final isLogin = state.matchedLocation == AppRoutes.login;
-      final isRegister = state.matchedLocation == AppRoutes.register;
+      final isSignedOutPage = AppRoutes.signedOutPages.contains(
+        state.matchedLocation,
+      );
 
       if (!hasServerUrl) {
         return isServerConfig ? null : AppRoutes.serverConfig;
       }
 
       if (!isLoggedIn) {
-        if (isLogin || isRegister || isServerConfig) {
-          return null;
-        }
-        return AppRoutes.login;
+        return isSignedOutPage ? null : AppRoutes.login;
       }
 
-      if (isLogin || isRegister) {
+      if (isSignedOutPage && !isServerConfig) {
         return AppRoutes.home;
       }
 

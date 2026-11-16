@@ -1,4 +1,8 @@
-import type { RegistrationMode } from "@/features/auth/types";
+import type {
+  Capabilities,
+  RegistrationMode,
+  TwoFactorPolicy,
+} from "@/features/auth/types";
 
 export interface AdminStats {
   totalUsers: number;
@@ -14,6 +18,10 @@ export interface AdminUser {
   isAdmin: boolean;
   status: "active" | "pending";
   authMethod?: "oidc" | "local";
+  /** Which second steps this person has. Older servers leave it out. */
+  twoFactor?: TwoFactorKind;
+  /** False for someone who only signs in with a provider. */
+  hasPassword?: boolean;
   createdAt: string;
   updatedAt: string;
   _count?: {
@@ -21,6 +29,8 @@ export interface AdminUser {
     tags: number;
   };
 }
+
+export type TwoFactorKind = "none" | "totp" | "passkey" | "both";
 
 export interface UsersListResponse {
   users: AdminUser[];
@@ -78,4 +88,14 @@ export interface UpdateOidcSettingsDto {
   clientSecret?: string;
   clearClientSecret?: boolean;
   disableInternalAuth?: boolean;
+}
+
+export type { TwoFactorPolicy };
+
+export interface TwoFactorSettings {
+  policy: TwoFactorPolicy;
+  isLocked: boolean;
+  available: Capabilities;
+  /** Active people with a password: those with a second step, and all. */
+  coverage: { covered: number; total: number };
 }

@@ -20,6 +20,7 @@ import 'auth_controller.dart';
 import 'auth_error_message.dart';
 import 'oidc_config_provider.dart';
 import 'registration_mode_provider.dart';
+import 'two_factor_screen.dart';
 import 'widgets/auth_widgets.dart';
 
 enum _SignInMethod { password, provider }
@@ -47,12 +48,37 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with FormSubmit {
   }
 
   void _failed(Object error) {
+    switch (error) {
+      case TwoFactorRequiredFailure(:final challenge):
+        _continueWithCode(challenge);
+        return;
+      case TwoFactorSetupRequiredFailure():
+        _password.clear();
+        context.push(AppRoutes.twoFactorSetup);
+        return;
+      case PasskeyRequiredFailure():
+        _password.clear();
+        context.push(AppRoutes.passkeyOnWeb);
+        return;
+    }
     final errorMessage = authErrorMessageOf(error, context.l10n);
     showError(errorMessage.text, field: errorMessage.field);
     if (error is InvalidCredentialsFailure) {
       _password.clear();
       _passwordFocus.requestFocus();
     }
+  }
+
+  /// The password was right and the account has a second step. When that
+  /// can't finish the sign-in starts over here, with the reason.
+  Future<void> _continueWithCode(String challenge) async {
+    final email = _email.text.trim();
+    _password.clear();
+    final ended = await context.push<AuthFailure>(
+      AppRoutes.twoFactor,
+      extra: TwoFactorChallenge(email: email, challenge: challenge),
+    );
+    if (ended != null && mounted) _failed(ended);
   }
 
   Future<void> _signIn() async {

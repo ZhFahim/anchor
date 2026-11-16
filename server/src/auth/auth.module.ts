@@ -17,6 +17,11 @@ import { OidcConfigService } from './oidc/oidc-config.service';
 import { OidcClientService } from './oidc/oidc-client.service';
 import { OidcStateService } from './oidc/oidc-state.service';
 import { OidcUserService } from './oidc/oidc-user.service';
+import { ChallengeService } from './two-factor/challenge.service';
+import { PasskeyService } from './two-factor/passkey.service';
+import { TwoFactorController } from './two-factor/two-factor.controller';
+import { TwoFactorCryptoService } from './two-factor/two-factor-crypto.service';
+import { TwoFactorService } from './two-factor/two-factor.service';
 
 @Module({
   imports: [
@@ -32,7 +37,7 @@ import { OidcUserService } from './oidc/oidc-user.service';
     SettingsModule,
     PrismaModule,
   ],
-  controllers: [AuthController, OidcController],
+  controllers: [AuthController, OidcController, TwoFactorController],
   providers: [
     AuthService,
     JwtStrategy,
@@ -43,6 +48,10 @@ import { OidcUserService } from './oidc/oidc-user.service';
     OidcClientService,
     OidcStateService,
     OidcUserService,
+    ChallengeService,
+    TwoFactorCryptoService,
+    TwoFactorService,
+    PasskeyService,
   ],
   exports: [
     AuthService,
@@ -50,6 +59,7 @@ import { OidcUserService } from './oidc/oidc-user.service';
     JwtModule,
     TokenResolverService,
     AuthGuard,
+    TwoFactorService,
   ],
 })
 export class AuthModule {}
