@@ -26,6 +26,7 @@ import 'package:anchor/features/reminders/data/notification_gateway.dart';
 import 'package:anchor/features/reminders/domain/reminder_schedule.dart';
 import 'package:anchor/features/tags/data/repository/tags_repository.dart';
 import 'package:anchor/features/tags/domain/tag.dart';
+import 'package:anchor/features/tags/presentation/tags_controller.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dart_quill_delta/dart_quill_delta.dart';
 import 'package:flutter/material.dart';
@@ -47,6 +48,15 @@ class MockAttachmentsRepository extends Mock
     implements NoteAttachmentsRepository {}
 
 class MockPreferencesRepository extends Mock implements PreferencesRepository {}
+
+class _TagFilter extends SelectedTagFilter {
+  _TagFilter(this.tagId);
+
+  final String? tagId;
+
+  @override
+  String? build() => tagId;
+}
 
 class FakeActiveUserId extends ActiveUserId {
   @override
@@ -96,6 +106,7 @@ void main() {
     Note? note,
     bool isOnlyPage = false,
     bool opensFromList = false,
+    String? tagFilter,
   }) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -110,6 +121,7 @@ void main() {
           ),
           activeUserIdProvider.overrideWith(FakeActiveUserId.new),
           notificationGatewayProvider.overrideWithValue(gateway),
+          selectedTagFilterProvider.overrideWith(() => _TagFilter(tagFilter)),
         ],
         child: MaterialApp.router(
           localizationsDelegates: const [
@@ -288,6 +300,50 @@ void main() {
 
     verifyNever(() => notesRepo.createNote(any()));
     verifyNever(() => notesRepo.updateNote(any()));
+  });
+
+  group('a new note opened in a tag', () {
+    setUp(() {
+      when(
+        () => tagsRepo.watchTags(),
+      ).thenAnswer((_) => Stream.value(const [Tag(id: 't1', name: 'ideas')]));
+    });
+
+    testWidgets('shows the tag and its edited line at once, and nothing '
+        'moves when it is first saved', (tester) async {
+      await pumpScreen(tester, tagFilter: 't1');
+      await tester.pump();
+      expect(find.text('ideas'), findsOneWidget);
+      expect(find.text('Edited today'), findsOneWidget);
+      final bodyTop = tester.getTopLeft(find.byType(RichTextEditor)).dy;
+
+      editorController(tester).replaceText(0, 0, 'hello', null);
+      await tester.pump(const Duration(seconds: 3));
+
+      final created =
+          verify(() => notesRepo.createNote(captureAny())).captured.single
+              as Note;
+      expect(created.tagIds, ['t1']);
+      expect(find.text('ideas'), findsOneWidget);
+      expect(find.text('Edited today'), findsOneWidget);
+      expect(tester.getTopLeft(find.byType(RichTextEditor)).dy, bodyTop);
+    });
+
+    testWidgets('lets the tag come off before it is saved', (tester) async {
+      await pumpScreen(tester, tagFilter: 't1');
+      await tester.pump();
+
+      await tester.tap(find.bySemanticsLabel('Remove ideas'));
+      await tester.pump();
+      expect(find.text('ideas'), findsNothing);
+
+      editorController(tester).replaceText(0, 0, 'hello', null);
+      await tester.pump(const Duration(seconds: 3));
+      final created =
+          verify(() => notesRepo.createNote(captureAny())).captured.single
+              as Note;
+      expect(created.tagIds, isEmpty);
+    });
   });
 
   testWidgets('typing a title autosaves a new note with that title', (

@@ -49,7 +49,7 @@ void main() {
     notes: repo,
     sharesOf: (_) async => const [],
     editor: editor,
-    newNoteTagId: () => tagId,
+    newNoteTagIds: [?tagId],
     onNoteDeleted: onNoteDeleted ?? () {},
     note: note,
   );
@@ -98,6 +98,76 @@ void main() {
     expect(titled.isNew, isFalse);
     empty.dispose();
     titled.dispose();
+  });
+
+  testWidgets('a new note shows its tag before it is saved, and can drop it', (
+    tester,
+  ) async {
+    final draft = open(FakeEditor(''), tagId: 't1');
+    expect(draft.tagIds, ['t1']);
+
+    draft.removeNewNoteTag('t1');
+    expect(draft.tagIds, isEmpty);
+    draft.title.text = 'Ideas';
+    draft.flushOnLeave();
+    await tester.pump();
+
+    final created =
+        verify(() => repo.createNote(captureAny())).captured.single as Note;
+    expect(created.tagIds, isEmpty);
+    draft.dispose();
+  });
+
+  testWidgets('a note opened by id shows no new-note tag while it loads', (
+    tester,
+  ) async {
+    when(() => repo.getNote(any())).thenAnswer((_) async => null);
+    final draft = NoteEditorController(
+      notes: repo,
+      sharesOf: (_) async => const [],
+      editor: FakeEditor(''),
+      newNoteTagIds: const ['t1'],
+      onNoteDeleted: () {},
+      noteId: 'n1',
+    );
+    expect(draft.tagIds, isEmpty);
+    await tester.pump();
+    draft.dispose();
+  });
+
+  group('a blank new note after the tag picker', () {
+    Future<NoteEditorController> pick(List<String> picked) async {
+      when(() => repo.deleteForever(any())).thenAnswer((_) async {});
+      final draft = open(FakeEditor(''), tagId: 't1');
+      final id = await draft.createNote();
+      when(
+        () => repo.getNote(id),
+      ).thenAnswer((_) async => Note(id: id, title: '', tagIds: picked));
+      await draft.discardIfBlank();
+      return draft;
+    }
+
+    test('is let go with only the tag it opened with', () async {
+      final draft = await pick(['t1']);
+      verify(() => repo.deleteForever(any())).called(1);
+      expect(draft.isNew, isTrue);
+      expect(draft.tagIds, ['t1']);
+      draft.dispose();
+    });
+
+    test('is let go with that tag taken off, and shows none', () async {
+      final draft = await pick([]);
+      verify(() => repo.deleteForever(any())).called(1);
+      expect(draft.tagIds, isEmpty);
+      draft.dispose();
+    });
+
+    test('is kept once a tag was added', () async {
+      final draft = await pick(['t1', 't2']);
+      verifyNever(() => repo.deleteForever(any()));
+      expect(draft.isNew, isFalse);
+      draft.dispose();
+    });
   });
 
   testWidgets('a change from elsewhere replaces the draft unless edited', (

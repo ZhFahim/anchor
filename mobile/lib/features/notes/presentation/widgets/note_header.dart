@@ -27,20 +27,24 @@ class NoteMetaLine extends StatelessWidget {
     required this.sharedWith,
   });
 
-  final Note note;
+  /// Null for a new note not saved yet.
+  final Note? note;
   final NoteAppearance appearance;
   final ValueNotifier<int> words;
   final List<UserSummary>? sharedWith;
 
   @override
   Widget build(BuildContext context) {
+    final note = this.note;
     final style = AppTypography.secondary.copyWith(
       color: appearance.colors.muted,
     );
     final dot = Text('·', style: style);
-    final edited = note.updatedAt == null
+    final updatedAt = note == null ? DateTime.now() : note.updatedAt;
+    final edited = updatedAt == null
         ? null
-        : editedDayLabel(note.updatedAt!, context.l10n);
+        : editedDayLabel(updatedAt, context.l10n);
+    final sharedBy = note?.sharedBy;
     return ValueListenableBuilder<int>(
       valueListenable: words,
       builder: (context, count, _) => Wrap(
@@ -48,7 +52,7 @@ class NoteMetaLine extends StatelessWidget {
         spacing: AnchorTokens.space8,
         runSpacing: AnchorTokens.space4,
         children: [
-          if (note.isArchived) ...[
+          if (note?.isArchived ?? false) ...[
             Row(
               mainAxisSize: MainAxisSize.min,
               spacing: AnchorTokens.space4,
@@ -70,29 +74,27 @@ class NoteMetaLine extends StatelessWidget {
           ],
           if (edited != null) ...[Text(edited, style: style), dot],
           Text(context.l10n.wordsCount(count), style: style),
-          if (note.sharedBy != null) ...[
+          if (sharedBy != null) ...[
             dot,
             Row(
               mainAxisSize: MainAxisSize.min,
               spacing: 8,
               children: [
                 PersonAvatar(
-                  name: note.sharedBy!.name,
-                  imageUrl: note.sharedBy!.profileImage,
+                  name: sharedBy.name,
+                  imageUrl: sharedBy.profileImage,
                   size: PersonAvatar.inline,
                   ring: appearance.colors.bg,
                 ),
                 Flexible(
                   child: Text(
-                    context.l10n.shareSharedBy(
-                      firstNameOf(note.sharedBy!.name),
-                    ),
+                    context.l10n.shareSharedBy(firstNameOf(sharedBy.name)),
                     style: style,
                   ),
                 ),
               ],
             ),
-          ] else if (note.isOwner && note.hasShares) ...[
+          ] else if (note != null && note.isOwner && note.hasShares) ...[
             dot,
             Row(
               mainAxisSize: MainAxisSize.min,
@@ -141,7 +143,8 @@ class NoteMetaLine extends StatelessWidget {
 class NoteTagRow extends ConsumerWidget {
   const NoteTagRow({
     super.key,
-    required this.note,
+    required this.tagIds,
+    required this.reminder,
     required this.appearance,
     required this.readOnly,
     required this.onAdd,
@@ -149,7 +152,8 @@ class NoteTagRow extends ConsumerWidget {
     required this.onReminder,
   });
 
-  final Note? note;
+  final List<String> tagIds;
+  final NoteReminder? reminder;
   final NoteAppearance appearance;
   final bool readOnly;
   final VoidCallback onAdd;
@@ -159,10 +163,8 @@ class NoteTagRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final all = ref.watch(tagsControllerProvider).value ?? const <Tag>[];
-    final tags = tagsByName(note?.tagIds ?? const <String>[], {
-      for (final tag in all) tag.id: tag,
-    });
-    final reminder = note?.reminder;
+    final tags = tagsByName(tagIds, {for (final tag in all) tag.id: tag});
+    final reminder = this.reminder;
     if (tags.isEmpty && readOnly) return const SizedBox.shrink();
     return Wrap(
       spacing: 8,

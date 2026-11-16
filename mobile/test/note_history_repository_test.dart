@@ -32,7 +32,7 @@ void main() {
     'version': 1,
     'title': 'Groceries',
     'cause': 'edit',
-    'createdAt': '2026-08-18T10:00:00.000Z',
+    'createdAt': DateTime.now().toUtc().toIso8601String(),
     'content': null,
     'author': null,
   };

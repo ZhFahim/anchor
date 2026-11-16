@@ -86,7 +86,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
     sharesOf: (noteId) =>
         ref.read(noteSharesRepositoryProvider).getNoteShares(noteId),
     editor: _EditorContent(_editorKey),
-    newNoteTagId: () => ref.read(selectedTagFilterProvider),
+    newNoteTagIds: [?ref.read(selectedTagFilterProvider)],
     onNoteDeleted: _handleNoteDeleted,
     note: widget.note,
     noteId: widget.noteId,
@@ -411,9 +411,9 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
   }
 
   Future<void> _removeTag(Tag tag) async {
-    final note = _draft.note;
-    if (note == null) return;
     Haptics.selection();
+    final note = _draft.note;
+    if (note == null) return _draft.removeNewNoteTag(tag.id);
     await ref.read(notesRepositoryProvider).removeTags([note.id], [tag.id]);
   }
 
@@ -593,7 +593,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
                   contentPadding: titlePadding,
                 ),
               ),
-        if (note != null)
+        if (note != null || _draft.isNew)
           Padding(
             padding: EdgeInsets.fromLTRB(
               AnchorTokens.spaceGutterPhone,
@@ -616,7 +616,8 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
             density.space16,
           ),
           child: NoteTagRow(
-            note: note,
+            tagIds: _draft.tagIds,
+            reminder: note?.reminder,
             appearance: appearance,
             readOnly: isTrashed,
             onAdd: _addTags,

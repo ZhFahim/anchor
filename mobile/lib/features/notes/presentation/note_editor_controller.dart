@@ -27,8 +27,8 @@ class NoteEditorController extends ChangeNotifier {
     required NotesRepository notes,
     required this.sharesOf,
     required this.editor,
-    required this.newNoteTagId,
     required this.onNoteDeleted,
+    List<String> newNoteTagIds = const [],
     Note? note,
     String? noteId,
   }) : _notes = notes,
@@ -43,6 +43,7 @@ class NoteEditorController extends ChangeNotifier {
       _isNew = false;
       unawaited(_load(noteId));
     } else {
+      _newNoteTagIds = [...newNoteTagIds];
       _isLoaded = true;
     }
   }
@@ -52,8 +53,6 @@ class NoteEditorController extends ChangeNotifier {
   final Future<List<NoteShare>> Function(String noteId) sharesOf;
 
   final NoteEditorContent editor;
-
-  final String? Function() newNoteTagId;
 
   /// Called once the note is permanently deleted elsewhere, or a share to it
   /// is taken away.
@@ -75,6 +74,7 @@ class NoteEditorController extends ChangeNotifier {
   String? _savedContent;
   String? _savedBackground;
   String? _contentBeforeReload;
+  List<String> _newNoteTagIds = const [];
   List<UserSummary>? _sharedWith;
   bool _isNew = true;
   bool _isLoaded = false;
@@ -97,6 +97,8 @@ class NoteEditorController extends ChangeNotifier {
   int get contentVersion => _contentVersion;
 
   String? get background => _background;
+
+  List<String> get tagIds => _note?.tagIds ?? _newNoteTagIds;
 
   /// The people the note is shared with, once read from the server.
   List<UserSummary>? get sharedWith => _sharedWith;
@@ -295,13 +297,21 @@ class NoteEditorController extends ChangeNotifier {
 
   void reopen() => _hasFlushed = false;
 
+  void removeNewNoteTag(String tagId) {
+    _newNoteTagIds = [
+      for (final id in _newNoteTagIds)
+        if (id != tagId) id,
+    ];
+    _notify();
+  }
+
   Future<void> discardIfBlank() async {
     final note = _note;
     if (_isNew || note == null || _hasUnsavedChanges) return;
     final stored = await _notes.getNote(note.id);
     final isBlank =
         stored != null &&
-        stored.tagIds.isEmpty &&
+        stored.tagIds.every(_newNoteTagIds.contains) &&
         storedTitleOf(title.text).isEmpty &&
         (editor.plainText ?? '').isEmpty &&
         _background == null;
@@ -309,6 +319,7 @@ class NoteEditorController extends ChangeNotifier {
     await _noteWatch?.cancel();
     _noteWatch = null;
     await _notes.deleteForever([note.id]);
+    _newNoteTagIds = [...stored.tagIds];
     _note = null;
     _isNew = true;
     _notify();
@@ -319,8 +330,9 @@ class NoteEditorController extends ChangeNotifier {
       id: newId(),
       title: storedTitleOf(title.text),
       content: editor.content ?? '',
-      tagIds: [?newNoteTagId()],
+      tagIds: _newNoteTagIds,
       background: _background,
+      updatedAt: DateTime.now().toUtc(),
       isSynced: false,
     );
     AppLogger.instance.info(
