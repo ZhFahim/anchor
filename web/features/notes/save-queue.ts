@@ -91,6 +91,30 @@ export function noteDraftsEqual(a: NoteDraft, b: NoteDraft): boolean {
 }
 
 /** Moves a draft onto a newer server copy, keeping the fields changed since [base]. */
+type PersonalFields = Pick<NoteDraft, "tagIds" | "isPinned">;
+
+const sameTags = (a: string[], b: string[]) =>
+  a.length === b.length && a.every((id) => b.includes(id));
+
+// Tags and the pin belong to each person and don't move the note version, so
+// a change made elsewhere never arrives as a newer note. Take it unless the
+// same field was changed here too.
+export function personalChanges(
+  incoming: PersonalFields,
+  seen: PersonalFields,
+  local: PersonalFields,
+): Partial<PersonalFields> {
+  const changes: Partial<PersonalFields> = {};
+  if (
+    !sameTags(incoming.tagIds, seen.tagIds) &&
+    sameTags(local.tagIds, seen.tagIds)
+  )
+    changes.tagIds = incoming.tagIds;
+  if (incoming.isPinned !== seen.isPinned && local.isPinned === seen.isPinned)
+    changes.isPinned = incoming.isPinned;
+  return changes;
+}
+
 export function rebaseDraft(
   draft: NoteDraft,
   base: NoteDraft,
