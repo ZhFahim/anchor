@@ -68,7 +68,7 @@ export const NotesBoard = React.forwardRef<HTMLDivElement, NotesBoardProps>(
     const boardId = React.useId();
     React.useImperativeHandle(ref, () => boardRef.current as HTMLDivElement);
     useCardColumns(boardRef, rulerRef);
-    const { drag, activeNote, notesOf, contextProps, dropAnimation } =
+    const { drag, hasZones, activeNote, notesOf, contextProps, dropAnimation } =
       useBoardDrag(groups, reorder);
     useHoldRing(".nc-draggable", !!reorder);
     const board = (
@@ -83,7 +83,7 @@ export const NotesBoard = React.forwardRef<HTMLDivElement, NotesBoardProps>(
           className="pointer-events-none absolute inset-x-0 top-0 h-0"
         />
         {groups.map((group) => {
-          if (group.isDropOnly && !drag) return null;
+          if (group.isDropOnly && !hasZones) return null;
           const notes = notesOf(group);
           const isSortable = !!reorder?.groups.includes(group.key);
           const heading = (

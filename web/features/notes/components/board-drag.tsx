@@ -5,6 +5,7 @@ import {
   type CollisionDetection,
   closestCenter,
   type DragEndEvent,
+  type DragMoveEvent,
   type DragOverEvent,
   type DragStartEvent,
   MeasuringStrategy,
@@ -94,6 +95,28 @@ export function useBoardDrag(
     before: string;
   } | null>(null);
   const startPoint = React.useRef<{ x: number; y: number } | null>(null);
+  const lastDelta = React.useRef({ x: 0, y: 0 });
+  // The lifted card is placed from where its note sat when the drag began, so
+  // drop zones that push the notes around wait until that is measured.
+  const [hasZones, setHasZones] = React.useState(false);
+  const isDragging = !!drag;
+  React.useEffect(() => {
+    if (!isDragging) return setHasZones(false);
+    let frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(() => {
+        // The zones move the notes under a still pointer: only a real move
+        // may change the order from here.
+        const state = dragRef.current;
+        if (state)
+          lastMove.current = {
+            delta: { ...lastDelta.current },
+            before: orderKey(state.order),
+          };
+        setHasZones(true);
+      });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [isDragging]);
 
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
@@ -138,10 +161,16 @@ export function useBoardDrag(
     startPoint.current = point ? { x: point.clientX, y: point.clientY } : null;
     navigator.vibrate?.(10);
     lastMove.current = null;
+    lastDelta.current = { x: 0, y: 0 };
     setDrag({ activeId: id, fromGroup, order });
   };
 
-  const onDragOver = ({ active, over, delta }: DragOverEvent) => {
+  const onDragOver = ({
+    active,
+    over,
+    delta,
+  }: DragOverEvent | DragMoveEvent) => {
+    lastDelta.current = delta;
     const state = dragRef.current;
     if (!state || !over || !reorder) return;
     const activeId = String(active.id);
@@ -216,6 +245,7 @@ export function useBoardDrag(
 
   return {
     drag,
+    hasZones: !!drag && hasZones,
     activeNote: drag ? noteById.get(drag.activeId) : undefined,
     notesOf,
     contextProps: {
@@ -225,6 +255,9 @@ export function useBoardDrag(
       autoScroll: AUTO_SCROLL,
       onDragStart,
       onDragOver,
+      // dnd-kit reports "over" only when it changes; a move the settle
+      // distance held back is retried as the pointer keeps moving.
+      onDragMove: onDragOver,
       onDragEnd: (event: DragEndEvent) => finish(event),
       onDragCancel: () => finish(null),
       accessibility: { announcements: noAnnouncements },
