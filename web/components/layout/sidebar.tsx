@@ -42,12 +42,13 @@ import { useAuth } from "@/features/auth";
 import { useSyncStatus, useUnsavedCount } from "@/features/sync";
 import {
   deleteTag,
-  sortTagsByName,
+  sortTags,
   type Tag,
   TagDialog,
   tagColorName,
   tagColorStyle,
   updateTag,
+  useTagOrder,
   useTags,
 } from "@/features/tags";
 import { TAG_COLORS } from "@/lib/design/tokens";
@@ -58,6 +59,7 @@ import { isMac } from "@/lib/platform";
 import { switchTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 import { Brand } from "./brand";
+import { SortableTagRow, SortableTags, TagOrderMenu } from "./sidebar-tags";
 import { useSidebarPeek } from "./use-sidebar-peek";
 
 interface SidebarProps {
@@ -163,7 +165,11 @@ export function Sidebar({
   const tagsLoaded = tagsQuery.data !== undefined;
   // isError clears while Try again runs.
   const tagsFailed = !tagsLoaded && tagsQuery.errorUpdatedAt > 0;
-  const sortedTags = React.useMemo(() => sortTagsByName(tags), [tags]);
+  const tagOrder = useTagOrder();
+  const sortedTags = React.useMemo(
+    () => sortTags(tags, tagOrder),
+    [tags, tagOrder],
+  );
 
   const [tagDialog, setTagDialog] = React.useState<{ tag: Tag | null } | null>(
     null,
@@ -366,7 +372,10 @@ export function Sidebar({
         <span aria-hidden className={cn("flex-1", hideClass)}>
           Tags
         </span>
-        <span className={hideClass}>
+        <span className={cn("flex items-center gap-0.5", hideClass)}>
+          {sortedTags.length > 1 && (
+            <TagOrderMenu onOpenChange={(open) => !open && onMenuClose()} />
+          )}
           <Tip label="New tag">
             <IconButton
               size="sm"
@@ -413,121 +422,140 @@ export function Sidebar({
             No tags yet
           </p>
         )}
-        {sortedTags.map((tag) => {
-          const key = `tag:${tag.id}`;
-          const isCurrent = currentRow === key;
-          const noteCount = countNotes(tag);
-          return (
-            <div
-              key={tag.id}
-              data-row={key}
-              aria-current={isCurrent ? "page" : undefined}
-              data-menu={menuTagId === tag.id || undefined}
-              style={tagColorStyle(tag.color)}
-              className={cn(
-                rowClass,
-                "tag-color group/tag h-8 p-0 text-control",
-              )}
-            >
-              <Tip
-                label={`#${tag.name} · ${noteCount} ${noteCount === 1 ? "note" : "notes"}`}
-                side="right"
-                isDisabled={!isNarrow}
-                isFocusOnly
-              >
-                <Link
-                  href={`/notes?tagId=${tag.id}`}
-                  onClick={onNavigate}
-                  aria-current={isCurrent ? "page" : undefined}
-                  className="flex h-full min-w-0 flex-1 items-center gap-3 pl-[11.5px] text-inherit no-underline"
-                >
-                  <span
-                    aria-hidden
-                    className="inline-grid w-4.25 shrink-0 place-items-center text-(--hash) [&>svg]:size-3.75 [&>svg]:stroke-[2.75]"
+        <SortableTags tags={sortedTags}>
+          {sortedTags.map((tag) => {
+            const key = `tag:${tag.id}`;
+            const isCurrent = currentRow === key;
+            const noteCount = countNotes(tag);
+            return (
+              <SortableTagRow key={tag.id} id={tag.id} disabled={isNarrow}>
+                {(sortable) => (
+                  <div
+                    ref={sortable.ref}
+                    {...sortable.listeners}
+                    data-row={key}
+                    aria-current={isCurrent ? "page" : undefined}
+                    data-menu={menuTagId === tag.id || undefined}
+                    data-dragging={sortable.isDragging || undefined}
+                    style={{ ...tagColorStyle(tag.color), ...sortable.style }}
+                    className={cn(
+                      rowClass,
+                      "tag-color group/tag h-8 p-0 text-control touch-manipulation [-webkit-touch-callout:none]",
+                      sortable.isDragging &&
+                        "z-10 scale-[1.03] cursor-grabbing bg-card text-foreground shadow-[0_16px_32px_-10px_rgb(45_49_66/0.35),0_2px_6px_rgb(45_49_66/0.1),0_0_0_1px_var(--border)]",
+                    )}
                   >
-                    <Hash />
-                  </span>
-                  <span className={labelClass}>{tag.name}</span>
-                </Link>
-              </Tip>
-              <span
-                className={cn(
-                  "flex items-center group-data-narrow/sb:absolute group-data-narrow/sb:inset-y-0 group-data-narrow/sb:right-0",
-                  hideClass,
-                )}
-              >
-                <span className="mr-1 min-w-6 text-center font-medium text-muted-foreground text-small tabular-nums group-focus-within/tag:hidden group-hover/tag:hidden group-data-menu/tag:hidden">
-                  {noteCount}
-                </span>
-                <DropdownMenu
-                  onOpenChange={(open) => {
-                    setMenuTagId(open ? tag.id : null);
-                    if (!open) onMenuClose();
-                  }}
-                >
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      type="button"
-                      aria-label={`Options for ${tag.name}`}
-                      className={tagMenuButtonClass}
+                    <Tip
+                      label={`#${tag.name} · ${noteCount} ${noteCount === 1 ? "note" : "notes"}`}
+                      side="right"
+                      isDisabled={!isNarrow}
+                      isFocusOnly
                     >
-                      <Ellipsis />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent
-                    className="w-57"
-                    aria-label={`Tag ${tag.name}`}
-                    onCloseAutoFocus={() => {
-                      const openDialog = afterTagMenu.current;
-                      afterTagMenu.current = null;
-                      openDialog?.();
-                    }}
-                  >
-                    <DropdownMenuItem
-                      onSelect={() => {
-                        afterTagMenu.current = () => setTagDialog({ tag });
-                      }}
-                    >
-                      <Pencil />
-                      Rename
-                    </DropdownMenuItem>
-                    <DropdownMenuLabel aria-hidden>Color</DropdownMenuLabel>
-                    <MenuPrimitive.RadioGroup
-                      value={tag.color?.toUpperCase()}
-                      onValueChange={(color) =>
-                        colorMutation.mutate({ tag, color })
-                      }
-                      className="grid grid-cols-[repeat(6,24px)] gap-2 px-2.5 pt-1.5 pb-2"
-                    >
-                      {TAG_COLORS.map((color) => (
-                        <MenuPrimitive.RadioItem
-                          key={color.stored}
-                          value={color.stored}
-                          onSelect={(e) => e.preventDefault()}
-                          aria-label={tagColorName(color.stored)}
-                          style={tagColorStyle(color.stored)}
-                          className="tag-color grid size-6 cursor-pointer place-items-center rounded-full bg-(--tint) text-(--hash) shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--hash)_30%,transparent)] transition-transform duration-(--duration-hover) ease-standard hover:scale-110 data-highlighted:scale-110 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2 data-[state=checked]:shadow-[0_0_0_2px_var(--card),0_0_0_3.5px_var(--accent-strong)] [&>svg]:size-3.25 [&>svg]:stroke-3"
+                      <Link
+                        ref={sortable.handle.ref}
+                        aria-roledescription={
+                          sortable.handle["aria-roledescription"]
+                        }
+                        aria-describedby={sortable.handle["aria-describedby"]}
+                        draggable={false}
+                        href={`/notes?tagId=${tag.id}`}
+                        onClick={onNavigate}
+                        aria-current={isCurrent ? "page" : undefined}
+                        className="flex h-full min-w-0 flex-1 items-center gap-3 pl-[11.5px] text-inherit no-underline"
+                      >
+                        <span
+                          aria-hidden
+                          className="inline-grid w-4.25 shrink-0 place-items-center text-(--hash) [&>svg]:size-3.75 [&>svg]:stroke-[2.75]"
                         >
-                          <Hash aria-hidden />
-                        </MenuPrimitive.RadioItem>
-                      ))}
-                    </MenuPrimitive.RadioGroup>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      tone="danger"
-                      onSelect={() => {
-                        afterTagMenu.current = () => setTagToDelete(tag);
-                      }}
+                          <Hash />
+                        </span>
+                        <span className={labelClass}>{tag.name}</span>
+                      </Link>
+                    </Tip>
+                    <span
+                      className={cn(
+                        "flex items-center group-data-narrow/sb:absolute group-data-narrow/sb:inset-y-0 group-data-narrow/sb:right-0",
+                        hideClass,
+                      )}
                     >
-                      <Trash2 />
-                      Delete tag
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </span>
-            </div>
-          );
-        })}
+                      <span className="mr-1 min-w-6 text-center font-medium text-muted-foreground text-small tabular-nums group-focus-within/tag:hidden group-hover/tag:hidden group-data-menu/tag:hidden">
+                        {noteCount}
+                      </span>
+                      <DropdownMenu
+                        onOpenChange={(open) => {
+                          setMenuTagId(open ? tag.id : null);
+                          if (!open) onMenuClose();
+                        }}
+                      >
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            type="button"
+                            aria-label={`Options for ${tag.name}`}
+                            className={tagMenuButtonClass}
+                          >
+                            <Ellipsis />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          className="w-57"
+                          aria-label={`Tag ${tag.name}`}
+                          onCloseAutoFocus={() => {
+                            const openDialog = afterTagMenu.current;
+                            afterTagMenu.current = null;
+                            openDialog?.();
+                          }}
+                        >
+                          <DropdownMenuItem
+                            onSelect={() => {
+                              afterTagMenu.current = () =>
+                                setTagDialog({ tag });
+                            }}
+                          >
+                            <Pencil />
+                            Rename
+                          </DropdownMenuItem>
+                          <DropdownMenuLabel aria-hidden>
+                            Color
+                          </DropdownMenuLabel>
+                          <MenuPrimitive.RadioGroup
+                            value={tag.color?.toUpperCase()}
+                            onValueChange={(color) =>
+                              colorMutation.mutate({ tag, color })
+                            }
+                            className="grid grid-cols-[repeat(6,24px)] gap-2 px-2.5 pt-1.5 pb-2"
+                          >
+                            {TAG_COLORS.map((color) => (
+                              <MenuPrimitive.RadioItem
+                                key={color.stored}
+                                value={color.stored}
+                                onSelect={(e) => e.preventDefault()}
+                                aria-label={tagColorName(color.stored)}
+                                style={tagColorStyle(color.stored)}
+                                className="tag-color grid size-6 cursor-pointer place-items-center rounded-full bg-(--tint) text-(--hash) shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--hash)_30%,transparent)] transition-transform duration-(--duration-hover) ease-standard hover:scale-110 data-highlighted:scale-110 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2 data-[state=checked]:shadow-[0_0_0_2px_var(--card),0_0_0_3.5px_var(--accent-strong)] [&>svg]:size-3.25 [&>svg]:stroke-3"
+                              >
+                                <Hash aria-hidden />
+                              </MenuPrimitive.RadioItem>
+                            ))}
+                          </MenuPrimitive.RadioGroup>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            tone="danger"
+                            onSelect={() => {
+                              afterTagMenu.current = () => setTagToDelete(tag);
+                            }}
+                          >
+                            <Trash2 />
+                            Delete tag
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </span>
+                  </div>
+                )}
+              </SortableTagRow>
+            );
+          })}
+        </SortableTags>
       </nav>
 
       <div className="mt-auto grid gap-1.5 pt-2">

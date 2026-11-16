@@ -4,6 +4,7 @@ import {
   Post,
   Body,
   Patch,
+  Put,
   Param,
   Delete,
   UseGuards,
@@ -15,13 +16,18 @@ import { UpdateNoteDto } from '../dto/update-note.dto';
 import { BulkActionDto } from '../dto/bulk-action.dto';
 import { BulkPinDto } from '../dto/bulk-pin.dto';
 import { BulkTagsDto } from '../dto/bulk-tags.dto';
+import { SetNotePositionsDto } from '../dto/set-note-positions.dto';
+import { NotePositionsService } from '../services/note-positions.service';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { AuthGuard } from '../../auth/auth.guard';
 
 @Controller('api/notes')
 @UseGuards(AuthGuard)
 export class NotesController {
-  constructor(private readonly notesService: NotesService) {}
+  constructor(
+    private readonly notesService: NotesService,
+    private readonly notePositionsService: NotePositionsService,
+  ) {}
 
   @Post()
   create(
@@ -98,6 +104,15 @@ export class NotesController {
     @Body() bulkActionDto: BulkActionDto,
   ) {
     return this.notesService.bulkArchive(userId, bulkActionDto.noteIds);
+  }
+
+  // Places notes in the caller's own order.
+  @Put('positions')
+  setPositions(
+    @CurrentUser('id') userId: string,
+    @Body() dto: SetNotePositionsDto,
+  ) {
+    return this.notePositionsService.setPositions(userId, dto.positions);
   }
 
   @Post('bulk/pin')

@@ -158,6 +158,18 @@ export async function bulkArchiveNotes(
   );
 }
 
+const POSITIONS_PER_REQUEST = 500;
+
+/** Places notes in the person's own order; null takes one out. */
+export async function setNotePositions(
+  positions: { noteId: string; position: string | null }[],
+): Promise<void> {
+  for (let i = 0; i < positions.length; i += POSITIONS_PER_REQUEST)
+    await api.put("api/notes/positions", {
+      json: { positions: positions.slice(i, i + POSITIONS_PER_REQUEST) },
+    });
+}
+
 export async function bulkPinNotes(
   noteIds: string[],
   isPinned: boolean,

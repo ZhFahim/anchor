@@ -109,3 +109,23 @@ describe("compareNotes by title", () => {
     expect(ids("desc").slice(2).sort()).toEqual(["2", "4"]);
   });
 });
+
+describe("compareNotes in custom order", () => {
+  const placed = (id: string, position: string | null, createdAt: string) => ({
+    ...note(id, "2026-01-01T00:00:00.000Z", id, createdAt),
+    position,
+  });
+
+  it("shows new notes on top, newest first, then the placed ones by key", () => {
+    const notes = [
+      placed("b", "a1", "2026-01-03T00:00:00.000Z"),
+      placed("old", null, "2026-01-01T00:00:00.000Z"),
+      placed("a", "a0", "2026-01-04T00:00:00.000Z"),
+      placed("new", null, "2026-01-05T00:00:00.000Z"),
+    ];
+
+    expect(
+      [...notes].sort(compareNotes("custom", "asc")).map((n) => n.id),
+    ).toEqual(["new", "old", "a", "b"]);
+  });
+});

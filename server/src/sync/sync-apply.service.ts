@@ -23,6 +23,7 @@ import {
   NOTE_INCLUDE_ATTACHMENT_COUNT,
   noteArchiveInclude,
   notePinInclude,
+  notePositionInclude,
 } from '../notes/constants/notes.constants';
 import {
   SyncEmitterService,
@@ -349,6 +350,7 @@ export class SyncApplyService {
         ...NOTE_INCLUDE_SHARES,
         ...NOTE_INCLUDE_ATTACHMENT_COUNT,
         ...notePinInclude(userId),
+        ...notePositionInclude(userId),
         ...noteArchiveInclude(userId),
       },
     });

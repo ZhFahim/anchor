@@ -9,6 +9,8 @@ export interface SyncTagPayload {
   id: string;
   name: string;
   color: string | null;
+  // The owner's order key; null until they place the tag.
+  position: string | null;
   version: number;
   createdAt: string;
   updatedAt: string;
@@ -18,6 +20,7 @@ export const toSyncTagPayload = (tag: Tag): SyncTagPayload => ({
   id: tag.id,
   name: tag.name,
   color: tag.color,
+  position: tag.position,
   version: tag.version,
   createdAt: tag.createdAt.toISOString(),
   updatedAt: tag.updatedAt.toISOString(),

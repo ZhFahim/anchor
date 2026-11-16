@@ -90,4 +90,14 @@ export class NotesApi {
       .expect(201);
     return bodyOf<{ results: ImportResultOnWire[] }>(res);
   }
+
+  async setPositions(
+    positions: { noteId: string; position: string | null }[],
+  ): Promise<{ updated: string[] }> {
+    const res = await this.http
+      .put('/api/notes/positions')
+      .send({ positions })
+      .expect(200);
+    return bodyOf<{ updated: string[] }>(res);
+  }
 }

@@ -48,6 +48,8 @@ export interface Note {
   content?: string | null;
   isPinned: boolean;
   isArchived: boolean;
+  /** This person's place for the note in Custom order (a fractional key). */
+  position?: string | null;
   background?: string | null;
   state: NoteState;
   version: number;

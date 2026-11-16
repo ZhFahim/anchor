@@ -4,6 +4,8 @@ import {
   ALargeSmall,
   CalendarPlus,
   Check,
+  GripVertical,
+  Hand,
   LayoutDashboard,
   LayoutGrid,
   PencilLine,
@@ -42,6 +44,7 @@ const ORDER_OPTIONS: Record<SortBy, [SortOrder, string][]> = {
     ["asc", "A to Z"],
     ["desc", "Z to A"],
   ],
+  custom: [],
 };
 
 const headingClass = "m-0 mb-2 text-label text-muted-foreground uppercase";
@@ -58,6 +61,11 @@ export function ViewOptions({
       <PopoverTrigger asChild>
         <TopBarButton icon={<SlidersHorizontal aria-hidden />}>
           View
+          {sortBy === "custom" && (
+            <span className="ml-1.5 rounded-pill bg-accent/15 px-1.75 py-0.25 font-semibold text-accent-ink text-caption dark:text-accent">
+              Custom
+            </span>
+          )}
         </TopBarButton>
       </PopoverTrigger>
       <PopoverContent
@@ -93,16 +101,23 @@ export function ViewOptions({
           </h2>
           <SortChoices sortBy={sortBy} onSort={onSort} />
         </div>
-        <SegmentedControl
-          full
-          aria-label="Order"
-          value={sortOrder}
-          onValueChange={(order) => onSort(sortBy, order)}
-          options={ORDER_OPTIONS[sortBy].map(([value, label]) => ({
-            value,
-            label,
-          }))}
-        />
+        {sortBy === "custom" ? (
+          <p className="m-0 flex gap-2.5 rounded-md bg-muted px-3 py-2.5 text-muted-foreground text-small [&>svg]:mt-0.5 [&>svg]:size-4 [&>svg]:flex-none">
+            <Hand aria-hidden />
+            Drag notes to arrange them. New notes appear at the top.
+          </p>
+        ) : (
+          <SegmentedControl
+            full
+            aria-label="Order"
+            value={sortOrder}
+            onValueChange={(order) => onSort(sortBy, order)}
+            options={ORDER_OPTIONS[sortBy].map(([value, label]) => ({
+              value,
+              label,
+            }))}
+          />
+        )}
       </PopoverContent>
     </Popover>
   );
@@ -112,6 +127,7 @@ const SORT_CHOICES = [
   ["updatedAt", "Last edited", PencilLine],
   ["createdAt", "Date created", CalendarPlus],
   ["title", "Title", ALargeSmall],
+  ["custom", "Custom order", GripVertical],
 ] as const;
 
 function SortChoices({
