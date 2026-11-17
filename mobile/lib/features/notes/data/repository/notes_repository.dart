@@ -205,6 +205,7 @@ class NotesRepository {
   }
 
   Future<void> createNote(Note note) async {
+    final now = DateTime.now().toUtc();
     await _db.transaction(() async {
       await _db
           .into(_db.notes)
@@ -217,7 +218,8 @@ class NotesRepository {
               isArchived: drift.Value(note.isArchived),
               background: drift.Value(note.background),
               state: drift.Value(NoteState.active.name),
-              updatedAt: drift.Value(DateTime.now().toUtc()),
+              createdAt: drift.Value(now),
+              updatedAt: drift.Value(now),
               isSynced: const drift.Value(false),
               localRev: const drift.Value(1),
               // The server creates notes unpinned.
@@ -518,6 +520,7 @@ class NotesRepository {
       isArchived: row.isArchived,
       background: row.background,
       state: NoteState.fromString(row.state),
+      createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       tagIds: tagIds,
       permission: NotePermission.fromString(row.permission),

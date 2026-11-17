@@ -2531,6 +2531,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get viewDateEdited => 'Date edited';
 
   @override
+  String get viewDateCreated => 'Date created';
+
+  @override
   String get viewTitle => 'Title';
 
   @override

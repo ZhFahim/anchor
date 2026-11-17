@@ -38,7 +38,11 @@ void main() {
       await withDatabase((db) async {
         await db.customStatement('DROP TABLE note_revisions');
         await db.customStatement('DROP TABLE note_history_state');
-        await dropColumns(db, [..._reminderColumns, ..._syncedCopyColumns]);
+        await dropColumns(db, [
+          ..._reminderColumns,
+          ..._syncedCopyColumns,
+          ..._createdAtColumns,
+        ]);
         await db.customStatement('PRAGMA user_version = 8');
       });
 
@@ -87,7 +91,11 @@ void main() {
               localRev: const Value(4),
             ),
           );
-      await dropColumns(db, [..._reminderColumns, ..._syncedCopyColumns]);
+      await dropColumns(db, [
+        ..._reminderColumns,
+        ..._syncedCopyColumns,
+        ..._createdAtColumns,
+      ]);
       await db.customStatement('PRAGMA user_version = 9');
     });
 
@@ -113,7 +121,7 @@ void main() {
         await db
             .into(db.syncState)
             .insert(const SyncStateCompanion(cursor: Value('cursor-42')));
-        await dropColumns(db, _syncedCopyColumns);
+        await dropColumns(db, [..._syncedCopyColumns, ..._createdAtColumns]);
         await db.customStatement('PRAGMA user_version = 10');
       });
 
@@ -160,7 +168,7 @@ void main() {
                 isSynced: const Value(true),
               ),
             );
-        await dropColumns(db, _syncedCopyColumns);
+        await dropColumns(db, [..._syncedCopyColumns, ..._createdAtColumns]);
         await db.customStatement('PRAGMA user_version = 10');
       });
 
@@ -186,7 +194,11 @@ void main() {
       await db
           .into(db.syncState)
           .insert(const SyncStateCompanion(cursor: Value('cursor-42')));
-      await dropColumns(db, [..._reminderColumns, ..._syncedCopyColumns]);
+      await dropColumns(db, [
+        ..._reminderColumns,
+        ..._syncedCopyColumns,
+        ..._createdAtColumns,
+      ]);
       await db.customStatement('PRAGMA user_version = 9');
     });
 
@@ -195,7 +207,35 @@ void main() {
       expect(state.cursor, isNull);
     });
   });
+
+  test('a database from before created dates dates its notes by their last '
+      'edit and downloads the feed again', () async {
+    await withDatabase((db) async {
+      await db
+          .into(db.notes)
+          .insert(
+            NotesCompanion.insert(
+              id: 'n1',
+              title: 'Groceries',
+              updatedAt: Value(DateTime.utc(2026, 9, 3, 8, 30)),
+            ),
+          );
+      await db
+          .into(db.syncState)
+          .insert(const SyncStateCompanion(cursor: Value('cursor-42')));
+      await dropColumns(db, _createdAtColumns);
+      await db.customStatement('PRAGMA user_version = 11');
+    });
+
+    await withDatabase((db) async {
+      final note = await db.select(db.notes).getSingle();
+      expect(note.createdAt?.toUtc(), DateTime.utc(2026, 9, 3, 8, 30));
+      expect((await db.select(db.syncState).getSingle()).cursor, isNull);
+    });
+  });
 }
+
+const _createdAtColumns = ['created_at'];
 
 const _syncedCopyColumns = [
   'synced_title',

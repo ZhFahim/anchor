@@ -3397,6 +3397,10 @@
   "@viewDateEdited": {
     "description": "Sort option: orders notes by when they last changed."
   },
+  "viewDateCreated": "Date created",
+  "@viewDateCreated": {
+    "description": "Sort option: orders notes by when they were made."
+  },
   "viewTitle": "Title",
   "@viewTitle": {
     "description": "Sort option: orders notes alphabetically by their title."

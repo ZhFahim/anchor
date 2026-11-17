@@ -53,10 +53,12 @@ describe('SyncApplyService', () => {
     },
   );
   let createdNote: { state: NoteState; version: number };
-  const noteCreate = vi.fn((args: { data: { title: string } }) => {
-    void args;
-    return Promise.resolve(createdNote);
-  });
+  const noteCreate = vi.fn(
+    (args: { data: { title: string; createdAt: Date } }) => {
+      void args;
+      return Promise.resolve(createdNote);
+    },
+  );
   const noteUpdateMany = vi.fn(
     (args: { where: unknown; data: Record<string, unknown> }) => {
       void args;
@@ -247,6 +249,18 @@ describe('SyncApplyService', () => {
           op: 'upsert',
         }),
       ]);
+    });
+
+    it('a new note keeps the time the device made it', async () => {
+      createdNote = { state: NoteState.active, version: 1 };
+
+      await service.apply(USER, [
+        noteChange({ createdAt: '2026-07-30T08:15:00.000Z' }),
+      ]);
+
+      expect(noteCreate.mock.calls[0][0].data.createdAt).toEqual(
+        new Date('2026-07-30T08:15:00.000Z'),
+      );
     });
 
     it('turns away a new note whose id is not a UUID', async () => {

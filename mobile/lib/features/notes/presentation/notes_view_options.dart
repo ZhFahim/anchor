@@ -10,7 +10,7 @@ import '../domain/note.dart';
 /// Saved as 'grid' (masonry) and 'uniform' (grid); stored options use these.
 enum ViewType { masonry, grid, list }
 
-enum SortOption { dateModified, title }
+enum SortOption { dateModified, dateCreated, title }
 
 class NotesViewOptions {
   final ViewType viewType;
@@ -46,6 +46,9 @@ int Function(Note, Note) noteComparator(NotesViewOptions options) {
       SortOption.dateModified => (a.updatedAt ?? DateTime(0)).compareTo(
         b.updatedAt ?? DateTime(0),
       ),
+      SortOption.dateCreated => (a.createdAt ?? DateTime(0)).compareTo(
+        b.createdAt ?? DateTime(0),
+      ),
       SortOption.title => a.title.trim().toLowerCase().compareTo(
         b.title.trim().toLowerCase(),
       ),
@@ -75,9 +78,11 @@ class NotesViewOptionsNotifier extends AsyncNotifier<NotesViewOptions> {
         _ => ViewType.masonry,
       };
 
-      final sortOption = sortOptionStr == 'title'
-          ? SortOption.title
-          : SortOption.dateModified;
+      final sortOption = switch (sortOptionStr) {
+        'title' => SortOption.title,
+        'dateCreated' => SortOption.dateCreated,
+        _ => SortOption.dateModified,
+      };
 
       return NotesViewOptions(
         viewType: viewType,
@@ -102,9 +107,11 @@ class NotesViewOptionsNotifier extends AsyncNotifier<NotesViewOptions> {
         ViewType.grid => 'uniform',
         ViewType.masonry => 'grid',
       });
-      await preferences.setNotesSortOption(
-        options.sortOption == SortOption.title ? 'title' : 'dateModified',
-      );
+      await preferences.setNotesSortOption(switch (options.sortOption) {
+        SortOption.dateModified => 'dateModified',
+        SortOption.dateCreated => 'dateCreated',
+        SortOption.title => 'title',
+      });
       await preferences.setNotesSortAscending(options.isAscending);
     } catch (error) {
       AppLogger.instance.warn(

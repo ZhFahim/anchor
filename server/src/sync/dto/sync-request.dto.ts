@@ -104,6 +104,10 @@ export class SyncNoteChangeDto extends SyncChangeBaseDto {
   @IsOptional()
   tagIds?: string[];
 
+  @IsDateString()
+  @IsOptional()
+  createdAt?: string;
+
   @IsArray()
   @ArrayMaxSize(MAX_SYNC_NOTE_REVISIONS)
   @ValidateNested({ each: true })

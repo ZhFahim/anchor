@@ -3874,6 +3874,12 @@ abstract class AppLocalizations {
   /// **'Date edited'**
   String get viewDateEdited;
 
+  /// Sort option: orders notes by when they were made.
+  ///
+  /// In en, this message translates to:
+  /// **'Date created'**
+  String get viewDateCreated;
+
   /// Sort option: orders notes alphabetically by their title.
   ///
   /// In en, this message translates to:

@@ -24,6 +24,16 @@ class _ViewOptionsSheet extends ConsumerWidget {
     final notifier = ref.read(notesViewOptionsProvider.notifier);
     final byTitle = options.sortOption == SortOption.title;
     final l10n = context.l10n;
+    Widget sortTile(SortOption option, IconData icon, String label) =>
+        GroupedListTile(
+          icon: icon,
+          label: label,
+          checked: options.sortOption == option,
+          onTap: () {
+            if (options.sortOption == option) return;
+            notifier.setSort(option, isAscending: option == SortOption.title);
+          },
+        );
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -65,26 +75,20 @@ class _ViewOptionsSheet extends ConsumerWidget {
                 child: GroupedList(
                   semanticLabel: l10n.viewSortBy,
                   children: [
-                    GroupedListTile(
-                      icon: LucideIcons.pencilLine,
-                      label: l10n.viewDateEdited,
-                      checked: !byTitle,
-                      onTap: () {
-                        if (!byTitle) return;
-                        notifier.setSort(
-                          SortOption.dateModified,
-                          isAscending: false,
-                        );
-                      },
+                    sortTile(
+                      SortOption.dateModified,
+                      LucideIcons.pencilLine,
+                      l10n.viewDateEdited,
                     ),
-                    GroupedListTile(
-                      icon: LucideIcons.aLargeSmall,
-                      label: l10n.viewTitle,
-                      checked: byTitle,
-                      onTap: () {
-                        if (byTitle) return;
-                        notifier.setSort(SortOption.title, isAscending: true);
-                      },
+                    sortTile(
+                      SortOption.dateCreated,
+                      LucideIcons.calendarPlus,
+                      l10n.viewDateCreated,
+                    ),
+                    sortTile(
+                      SortOption.title,
+                      LucideIcons.aLargeSmall,
+                      l10n.viewTitle,
                     ),
                   ],
                 ),

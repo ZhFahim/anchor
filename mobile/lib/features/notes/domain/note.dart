@@ -112,6 +112,7 @@ abstract class Note with _$Note {
     @Default(false) bool isArchived,
     String? background,
     @Default(NoteState.active) NoteState state,
+    DateTime? createdAt,
     DateTime? updatedAt,
     @Default([]) List<String> tagIds,
     @Default(NotePermission.owner) NotePermission permission,

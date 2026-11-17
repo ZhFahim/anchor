@@ -32,6 +32,7 @@ import {
   reminderEmission,
   tagEmission,
 } from './sync-emitter.service';
+import { deviceTime } from './device-time.util';
 import { NoteRevisionsService, revisionsCover } from './note-revisions.service';
 import type {
   SyncChange,
@@ -311,6 +312,7 @@ export class SyncApplyService {
           content: change.content,
           background: change.background,
           state: (change.state as NoteState | undefined) ?? NoteState.active,
+          createdAt: deviceTime(change.createdAt),
           userId,
           tags: validTagIds.length
             ? { connect: validTagIds.map((id) => ({ id })) }

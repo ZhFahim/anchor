@@ -10,6 +10,7 @@ class Notes extends Table {
   TextColumn get background => text().nullable()();
   // State: 'active', 'trashed', 'deleted'
   TextColumn get state => text().withDefault(const Constant('active'))();
+  DateTimeColumn get createdAt => dateTime().nullable()();
   DateTimeColumn get updatedAt => dateTime().nullable()();
   BoolColumn get isSynced => boolean().withDefault(const Constant(false))();
   // The server version this note was written against; null until it exists there.

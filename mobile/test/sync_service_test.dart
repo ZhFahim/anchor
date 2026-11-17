@@ -188,6 +188,7 @@ void main() {
     String? syncedContent,
     String? syncedBackground,
     String? syncedState,
+    DateTime? createdAt,
   }) {
     return db
         .into(db.notes)
@@ -195,6 +196,7 @@ void main() {
           NotesCompanion.insert(
             id: id,
             title: title,
+            createdAt: Value(createdAt),
             content: Value(content),
             background: Value(background),
             isArchived: Value(isArchived),
@@ -508,8 +510,13 @@ void main() {
     expect(position.isComplete, isFalse);
   });
 
-  test('a note created offline goes up without a base version', () async {
-    await insertNote(id: 'n1', title: 'Brand new');
+  test('a note created offline goes up without a base version, with the '
+      'time it was made', () async {
+    await insertNote(
+      id: 'n1',
+      title: 'Brand new',
+      createdAt: DateTime.utc(2026, 9, 3, 8, 30),
+    );
     stub([
       response(
         results: [
@@ -521,7 +528,27 @@ void main() {
     await service.run();
 
     expect(changesOf(0).single.containsKey('baseVersion'), isFalse);
+    expect(changesOf(0).single['createdAt'], '2026-09-03T08:30:00.000Z');
     expect((await note('n1'))!.version, 1);
+  });
+
+  test('an edit to a note the server has sends no created date', () async {
+    await insertNote(
+      id: 'n1',
+      version: 3,
+      createdAt: DateTime.utc(2026, 9, 3, 8, 30),
+    );
+    stub([
+      response(
+        results: [
+          {'type': 'note', 'id': 'n1', 'status': 'applied', 'version': 4},
+        ],
+      ),
+    ]);
+
+    await service.run();
+
+    expect(changesOf(0).single.containsKey('createdAt'), isFalse);
   });
 
   test('a rejected push keeps the local text and goes again on the server '
@@ -981,14 +1008,21 @@ void main() {
     expect(fresh!.title, 'From server');
     expect(fresh.isSynced, isTrue);
     expect(fresh.version, 2);
+    expect(fresh.createdAt?.toUtc(), DateTime.utc(2026, 8, 15, 9));
 
     final dirty = await note('dirty');
     expect(dirty!.title, 'Mine');
     expect(dirty.version, 3);
   });
 
-  test('a locally edited note still takes who it is shared with', () async {
-    await insertNote(id: 'n1', title: 'Mine', version: 3);
+  test('a locally edited note still takes who it is shared with and when it '
+      'was made', () async {
+    await insertNote(
+      id: 'n1',
+      title: 'Mine',
+      version: 3,
+      createdAt: DateTime.utc(2026, 9, 3),
+    );
     stub([
       response(
         results: [
@@ -1015,6 +1049,7 @@ void main() {
     expect(row.version, 3);
     expect(row.isSynced, isFalse);
     expect(row.shareIds, '["user-2"]');
+    expect(row.createdAt?.toUtc(), DateTime.utc(2026, 8, 15, 9));
   });
 
   test(

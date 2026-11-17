@@ -285,7 +285,7 @@ as int,
 /// @nodoc
 mixin _$Note {
 
- String get id; String get title; String? get content; bool get isPinned; bool get isArchived; String? get background; NoteState get state; DateTime? get updatedAt; List<String> get tagIds; NotePermission get permission; List<String>? get shareIds; UserSummary? get sharedBy; NoteReminder? get reminder; bool get isSynced; int? get reminderSlot; List<NoteImagePreview> get imagePreviewData; int get attachmentCount;
+ String get id; String get title; String? get content; bool get isPinned; bool get isArchived; String? get background; NoteState get state; DateTime? get createdAt; DateTime? get updatedAt; List<String> get tagIds; NotePermission get permission; List<String>? get shareIds; UserSummary? get sharedBy; NoteReminder? get reminder; bool get isSynced; int? get reminderSlot; List<NoteImagePreview> get imagePreviewData; int get attachmentCount;
 /// Create a copy of Note
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -297,20 +297,20 @@ $NoteCopyWith<Note> get copyWith => _$NoteCopyWithImpl<Note>(this as Note, _$ide
 @override
 bool operator ==(Object other) {
   final _this = this as Note;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Note&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.title, _this.title) || other.title == _this.title)&&(identical(other.content, _this.content) || other.content == _this.content)&&(identical(other.isPinned, _this.isPinned) || other.isPinned == _this.isPinned)&&(identical(other.isArchived, _this.isArchived) || other.isArchived == _this.isArchived)&&(identical(other.background, _this.background) || other.background == _this.background)&&(identical(other.state, _this.state) || other.state == _this.state)&&(identical(other.updatedAt, _this.updatedAt) || other.updatedAt == _this.updatedAt)&&const DeepCollectionEquality().equals(other.tagIds, _this.tagIds)&&(identical(other.permission, _this.permission) || other.permission == _this.permission)&&const DeepCollectionEquality().equals(other.shareIds, _this.shareIds)&&(identical(other.sharedBy, _this.sharedBy) || other.sharedBy == _this.sharedBy)&&(identical(other.reminder, _this.reminder) || other.reminder == _this.reminder)&&(identical(other.isSynced, _this.isSynced) || other.isSynced == _this.isSynced)&&(identical(other.reminderSlot, _this.reminderSlot) || other.reminderSlot == _this.reminderSlot)&&const DeepCollectionEquality().equals(other.imagePreviewData, _this.imagePreviewData)&&(identical(other.attachmentCount, _this.attachmentCount) || other.attachmentCount == _this.attachmentCount));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Note&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.title, _this.title) || other.title == _this.title)&&(identical(other.content, _this.content) || other.content == _this.content)&&(identical(other.isPinned, _this.isPinned) || other.isPinned == _this.isPinned)&&(identical(other.isArchived, _this.isArchived) || other.isArchived == _this.isArchived)&&(identical(other.background, _this.background) || other.background == _this.background)&&(identical(other.state, _this.state) || other.state == _this.state)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.updatedAt, _this.updatedAt) || other.updatedAt == _this.updatedAt)&&const DeepCollectionEquality().equals(other.tagIds, _this.tagIds)&&(identical(other.permission, _this.permission) || other.permission == _this.permission)&&const DeepCollectionEquality().equals(other.shareIds, _this.shareIds)&&(identical(other.sharedBy, _this.sharedBy) || other.sharedBy == _this.sharedBy)&&(identical(other.reminder, _this.reminder) || other.reminder == _this.reminder)&&(identical(other.isSynced, _this.isSynced) || other.isSynced == _this.isSynced)&&(identical(other.reminderSlot, _this.reminderSlot) || other.reminderSlot == _this.reminderSlot)&&const DeepCollectionEquality().equals(other.imagePreviewData, _this.imagePreviewData)&&(identical(other.attachmentCount, _this.attachmentCount) || other.attachmentCount == _this.attachmentCount));
 }
 
 
 @override
 int get hashCode {
   final _this = this as Note;
-  return Object.hash(runtimeType,_this.id,_this.title,_this.content,_this.isPinned,_this.isArchived,_this.background,_this.state,_this.updatedAt,const DeepCollectionEquality().hash(_this.tagIds),_this.permission,const DeepCollectionEquality().hash(_this.shareIds),_this.sharedBy,_this.reminder,_this.isSynced,_this.reminderSlot,const DeepCollectionEquality().hash(_this.imagePreviewData),_this.attachmentCount);
+  return Object.hash(runtimeType,_this.id,_this.title,_this.content,_this.isPinned,_this.isArchived,_this.background,_this.state,_this.createdAt,_this.updatedAt,const DeepCollectionEquality().hash(_this.tagIds),_this.permission,const DeepCollectionEquality().hash(_this.shareIds),_this.sharedBy,_this.reminder,_this.isSynced,_this.reminderSlot,const DeepCollectionEquality().hash(_this.imagePreviewData),_this.attachmentCount);
 }
 
 @override
 String toString() {
   final _this = this as Note;
-  return 'Note(id: ${_this.id}, title: ${_this.title}, content: ${_this.content}, isPinned: ${_this.isPinned}, isArchived: ${_this.isArchived}, background: ${_this.background}, state: ${_this.state}, updatedAt: ${_this.updatedAt}, tagIds: ${_this.tagIds}, permission: ${_this.permission}, shareIds: ${_this.shareIds}, sharedBy: ${_this.sharedBy}, reminder: ${_this.reminder}, isSynced: ${_this.isSynced}, reminderSlot: ${_this.reminderSlot}, imagePreviewData: ${_this.imagePreviewData}, attachmentCount: ${_this.attachmentCount})';
+  return 'Note(id: ${_this.id}, title: ${_this.title}, content: ${_this.content}, isPinned: ${_this.isPinned}, isArchived: ${_this.isArchived}, background: ${_this.background}, state: ${_this.state}, createdAt: ${_this.createdAt}, updatedAt: ${_this.updatedAt}, tagIds: ${_this.tagIds}, permission: ${_this.permission}, shareIds: ${_this.shareIds}, sharedBy: ${_this.sharedBy}, reminder: ${_this.reminder}, isSynced: ${_this.isSynced}, reminderSlot: ${_this.reminderSlot}, imagePreviewData: ${_this.imagePreviewData}, attachmentCount: ${_this.attachmentCount})';
 }
 
 
@@ -321,7 +321,7 @@ abstract mixin class $NoteCopyWith<$Res>  {
   factory $NoteCopyWith(Note value, $Res Function(Note) _then) = _$NoteCopyWithImpl;
 @useResult
 $Res call({
- String id, String title, String? content, bool isPinned, bool isArchived, String? background, NoteState state, DateTime? updatedAt, List<String> tagIds, NotePermission permission, List<String>? shareIds, UserSummary? sharedBy, NoteReminder? reminder, bool isSynced, int? reminderSlot, List<NoteImagePreview> imagePreviewData, int attachmentCount
+ String id, String title, String? content, bool isPinned, bool isArchived, String? background, NoteState state, DateTime? createdAt, DateTime? updatedAt, List<String> tagIds, NotePermission permission, List<String>? shareIds, UserSummary? sharedBy, NoteReminder? reminder, bool isSynced, int? reminderSlot, List<NoteImagePreview> imagePreviewData, int attachmentCount
 });
 
 
@@ -338,7 +338,7 @@ class _$NoteCopyWithImpl<$Res>
 
 /// Create a copy of Note
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? title = null,Object? content = freezed,Object? isPinned = null,Object? isArchived = null,Object? background = freezed,Object? state = null,Object? updatedAt = freezed,Object? tagIds = null,Object? permission = null,Object? shareIds = freezed,Object? sharedBy = freezed,Object? reminder = freezed,Object? isSynced = null,Object? reminderSlot = freezed,Object? imagePreviewData = null,Object? attachmentCount = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? title = null,Object? content = freezed,Object? isPinned = null,Object? isArchived = null,Object? background = freezed,Object? state = null,Object? createdAt = freezed,Object? updatedAt = freezed,Object? tagIds = null,Object? permission = null,Object? shareIds = freezed,Object? sharedBy = freezed,Object? reminder = freezed,Object? isSynced = null,Object? reminderSlot = freezed,Object? imagePreviewData = null,Object? attachmentCount = null,}) {
   return _then(Note(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
@@ -347,7 +347,8 @@ as String?,isPinned: null == isPinned ? _self.isPinned : isPinned // ignore: cas
 as bool,isArchived: null == isArchived ? _self.isArchived : isArchived // ignore: cast_nullable_to_non_nullable
 as bool,background: freezed == background ? _self.background : background // ignore: cast_nullable_to_non_nullable
 as String?,state: null == state ? _self.state : state // ignore: cast_nullable_to_non_nullable
-as NoteState,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
+as NoteState,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,tagIds: null == tagIds ? _self.tagIds : tagIds // ignore: cast_nullable_to_non_nullable
 as List<String>,permission: null == permission ? _self.permission : permission // ignore: cast_nullable_to_non_nullable
 as NotePermission,shareIds: freezed == shareIds ? _self.shareIds : shareIds // ignore: cast_nullable_to_non_nullable
@@ -466,10 +467,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String title,  String? content,  bool isPinned,  bool isArchived,  String? background,  NoteState state,  DateTime? updatedAt,  List<String> tagIds,  NotePermission permission,  List<String>? shareIds,  UserSummary? sharedBy,  NoteReminder? reminder,  bool isSynced,  int? reminderSlot,  List<NoteImagePreview> imagePreviewData,  int attachmentCount)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String title,  String? content,  bool isPinned,  bool isArchived,  String? background,  NoteState state,  DateTime? createdAt,  DateTime? updatedAt,  List<String> tagIds,  NotePermission permission,  List<String>? shareIds,  UserSummary? sharedBy,  NoteReminder? reminder,  bool isSynced,  int? reminderSlot,  List<NoteImagePreview> imagePreviewData,  int attachmentCount)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Note() when $default != null:
-return $default(_that.id,_that.title,_that.content,_that.isPinned,_that.isArchived,_that.background,_that.state,_that.updatedAt,_that.tagIds,_that.permission,_that.shareIds,_that.sharedBy,_that.reminder,_that.isSynced,_that.reminderSlot,_that.imagePreviewData,_that.attachmentCount);case _:
+return $default(_that.id,_that.title,_that.content,_that.isPinned,_that.isArchived,_that.background,_that.state,_that.createdAt,_that.updatedAt,_that.tagIds,_that.permission,_that.shareIds,_that.sharedBy,_that.reminder,_that.isSynced,_that.reminderSlot,_that.imagePreviewData,_that.attachmentCount);case _:
   return orElse();
 
 }
@@ -487,10 +488,10 @@ return $default(_that.id,_that.title,_that.content,_that.isPinned,_that.isArchiv
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String title,  String? content,  bool isPinned,  bool isArchived,  String? background,  NoteState state,  DateTime? updatedAt,  List<String> tagIds,  NotePermission permission,  List<String>? shareIds,  UserSummary? sharedBy,  NoteReminder? reminder,  bool isSynced,  int? reminderSlot,  List<NoteImagePreview> imagePreviewData,  int attachmentCount)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String title,  String? content,  bool isPinned,  bool isArchived,  String? background,  NoteState state,  DateTime? createdAt,  DateTime? updatedAt,  List<String> tagIds,  NotePermission permission,  List<String>? shareIds,  UserSummary? sharedBy,  NoteReminder? reminder,  bool isSynced,  int? reminderSlot,  List<NoteImagePreview> imagePreviewData,  int attachmentCount)  $default,) {final _that = this;
 switch (_that) {
 case _Note():
-return $default(_that.id,_that.title,_that.content,_that.isPinned,_that.isArchived,_that.background,_that.state,_that.updatedAt,_that.tagIds,_that.permission,_that.shareIds,_that.sharedBy,_that.reminder,_that.isSynced,_that.reminderSlot,_that.imagePreviewData,_that.attachmentCount);case _:
+return $default(_that.id,_that.title,_that.content,_that.isPinned,_that.isArchived,_that.background,_that.state,_that.createdAt,_that.updatedAt,_that.tagIds,_that.permission,_that.shareIds,_that.sharedBy,_that.reminder,_that.isSynced,_that.reminderSlot,_that.imagePreviewData,_that.attachmentCount);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -507,10 +508,10 @@ return $default(_that.id,_that.title,_that.content,_that.isPinned,_that.isArchiv
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String title,  String? content,  bool isPinned,  bool isArchived,  String? background,  NoteState state,  DateTime? updatedAt,  List<String> tagIds,  NotePermission permission,  List<String>? shareIds,  UserSummary? sharedBy,  NoteReminder? reminder,  bool isSynced,  int? reminderSlot,  List<NoteImagePreview> imagePreviewData,  int attachmentCount)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String title,  String? content,  bool isPinned,  bool isArchived,  String? background,  NoteState state,  DateTime? createdAt,  DateTime? updatedAt,  List<String> tagIds,  NotePermission permission,  List<String>? shareIds,  UserSummary? sharedBy,  NoteReminder? reminder,  bool isSynced,  int? reminderSlot,  List<NoteImagePreview> imagePreviewData,  int attachmentCount)?  $default,) {final _that = this;
 switch (_that) {
 case _Note() when $default != null:
-return $default(_that.id,_that.title,_that.content,_that.isPinned,_that.isArchived,_that.background,_that.state,_that.updatedAt,_that.tagIds,_that.permission,_that.shareIds,_that.sharedBy,_that.reminder,_that.isSynced,_that.reminderSlot,_that.imagePreviewData,_that.attachmentCount);case _:
+return $default(_that.id,_that.title,_that.content,_that.isPinned,_that.isArchived,_that.background,_that.state,_that.createdAt,_that.updatedAt,_that.tagIds,_that.permission,_that.shareIds,_that.sharedBy,_that.reminder,_that.isSynced,_that.reminderSlot,_that.imagePreviewData,_that.attachmentCount);case _:
   return null;
 
 }
@@ -522,7 +523,7 @@ return $default(_that.id,_that.title,_that.content,_that.isPinned,_that.isArchiv
 
 
 class _Note extends Note {
-  const _Note({required this.id, required this.title, this.content, this.isPinned = false, this.isArchived = false, this.background, this.state = NoteState.active, this.updatedAt,  List<String> tagIds = const [], this.permission = NotePermission.owner,  List<String>? shareIds, this.sharedBy, this.reminder, this.isSynced = true, this.reminderSlot,  List<NoteImagePreview> imagePreviewData = const [], this.attachmentCount = 0}): _tagIds = tagIds,_shareIds = shareIds,_imagePreviewData = imagePreviewData,super._();
+  const _Note({required this.id, required this.title, this.content, this.isPinned = false, this.isArchived = false, this.background, this.state = NoteState.active, this.createdAt, this.updatedAt,  List<String> tagIds = const [], this.permission = NotePermission.owner,  List<String>? shareIds, this.sharedBy, this.reminder, this.isSynced = true, this.reminderSlot,  List<NoteImagePreview> imagePreviewData = const [], this.attachmentCount = 0}): _tagIds = tagIds,_shareIds = shareIds,_imagePreviewData = imagePreviewData,super._();
   
 
 @override final  String id;
@@ -532,6 +533,7 @@ class _Note extends Note {
 @override@JsonKey() final  bool isArchived;
 @override final  String? background;
 @override@JsonKey() final  NoteState state;
+@override final  DateTime? createdAt;
 @override final  DateTime? updatedAt;
  final  List<String> _tagIds;
 @override@JsonKey() List<String> get tagIds {
@@ -573,18 +575,18 @@ _$NoteCopyWith<_Note> get copyWith => __$NoteCopyWithImpl<_Note>(this, _$identit
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Note&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.content, content) || other.content == content)&&(identical(other.isPinned, isPinned) || other.isPinned == isPinned)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived)&&(identical(other.background, background) || other.background == background)&&(identical(other.state, state) || other.state == state)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&const DeepCollectionEquality().equals(other.tagIds, _tagIds)&&(identical(other.permission, permission) || other.permission == permission)&&const DeepCollectionEquality().equals(other.shareIds, _shareIds)&&(identical(other.sharedBy, sharedBy) || other.sharedBy == sharedBy)&&(identical(other.reminder, reminder) || other.reminder == reminder)&&(identical(other.isSynced, isSynced) || other.isSynced == isSynced)&&(identical(other.reminderSlot, reminderSlot) || other.reminderSlot == reminderSlot)&&const DeepCollectionEquality().equals(other.imagePreviewData, _imagePreviewData)&&(identical(other.attachmentCount, attachmentCount) || other.attachmentCount == attachmentCount));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Note&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.content, content) || other.content == content)&&(identical(other.isPinned, isPinned) || other.isPinned == isPinned)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived)&&(identical(other.background, background) || other.background == background)&&(identical(other.state, state) || other.state == state)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&const DeepCollectionEquality().equals(other.tagIds, _tagIds)&&(identical(other.permission, permission) || other.permission == permission)&&const DeepCollectionEquality().equals(other.shareIds, _shareIds)&&(identical(other.sharedBy, sharedBy) || other.sharedBy == sharedBy)&&(identical(other.reminder, reminder) || other.reminder == reminder)&&(identical(other.isSynced, isSynced) || other.isSynced == isSynced)&&(identical(other.reminderSlot, reminderSlot) || other.reminderSlot == reminderSlot)&&const DeepCollectionEquality().equals(other.imagePreviewData, _imagePreviewData)&&(identical(other.attachmentCount, attachmentCount) || other.attachmentCount == attachmentCount));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,title,content,isPinned,isArchived,background,state,updatedAt,const DeepCollectionEquality().hash(_tagIds),permission,const DeepCollectionEquality().hash(_shareIds),sharedBy,reminder,isSynced,reminderSlot,const DeepCollectionEquality().hash(_imagePreviewData),attachmentCount);
+    return Object.hash(runtimeType,id,title,content,isPinned,isArchived,background,state,createdAt,updatedAt,const DeepCollectionEquality().hash(_tagIds),permission,const DeepCollectionEquality().hash(_shareIds),sharedBy,reminder,isSynced,reminderSlot,const DeepCollectionEquality().hash(_imagePreviewData),attachmentCount);
 }
 
 @override
 String toString() {
-    return 'Note(id: $id, title: $title, content: $content, isPinned: $isPinned, isArchived: $isArchived, background: $background, state: $state, updatedAt: $updatedAt, tagIds: $tagIds, permission: $permission, shareIds: $shareIds, sharedBy: $sharedBy, reminder: $reminder, isSynced: $isSynced, reminderSlot: $reminderSlot, imagePreviewData: $imagePreviewData, attachmentCount: $attachmentCount)';
+    return 'Note(id: $id, title: $title, content: $content, isPinned: $isPinned, isArchived: $isArchived, background: $background, state: $state, createdAt: $createdAt, updatedAt: $updatedAt, tagIds: $tagIds, permission: $permission, shareIds: $shareIds, sharedBy: $sharedBy, reminder: $reminder, isSynced: $isSynced, reminderSlot: $reminderSlot, imagePreviewData: $imagePreviewData, attachmentCount: $attachmentCount)';
 }
 
 
@@ -595,7 +597,7 @@ abstract mixin class _$NoteCopyWith<$Res> implements $NoteCopyWith<$Res> {
   factory _$NoteCopyWith(_Note value, $Res Function(_Note) _then) = __$NoteCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String title, String? content, bool isPinned, bool isArchived, String? background, NoteState state, DateTime? updatedAt, List<String> tagIds, NotePermission permission, List<String>? shareIds, UserSummary? sharedBy, NoteReminder? reminder, bool isSynced, int? reminderSlot, List<NoteImagePreview> imagePreviewData, int attachmentCount
+ String id, String title, String? content, bool isPinned, bool isArchived, String? background, NoteState state, DateTime? createdAt, DateTime? updatedAt, List<String> tagIds, NotePermission permission, List<String>? shareIds, UserSummary? sharedBy, NoteReminder? reminder, bool isSynced, int? reminderSlot, List<NoteImagePreview> imagePreviewData, int attachmentCount
 });
 
 
@@ -612,7 +614,7 @@ class __$NoteCopyWithImpl<$Res>
 
 /// Create a copy of Note
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? title = null,Object? content = freezed,Object? isPinned = null,Object? isArchived = null,Object? background = freezed,Object? state = null,Object? updatedAt = freezed,Object? tagIds = null,Object? permission = null,Object? shareIds = freezed,Object? sharedBy = freezed,Object? reminder = freezed,Object? isSynced = null,Object? reminderSlot = freezed,Object? imagePreviewData = null,Object? attachmentCount = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? title = null,Object? content = freezed,Object? isPinned = null,Object? isArchived = null,Object? background = freezed,Object? state = null,Object? createdAt = freezed,Object? updatedAt = freezed,Object? tagIds = null,Object? permission = null,Object? shareIds = freezed,Object? sharedBy = freezed,Object? reminder = freezed,Object? isSynced = null,Object? reminderSlot = freezed,Object? imagePreviewData = null,Object? attachmentCount = null,}) {
   return _then(_Note(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
@@ -621,7 +623,8 @@ as String?,isPinned: null == isPinned ? _self.isPinned : isPinned // ignore: cas
 as bool,isArchived: null == isArchived ? _self.isArchived : isArchived // ignore: cast_nullable_to_non_nullable
 as bool,background: freezed == background ? _self.background : background // ignore: cast_nullable_to_non_nullable
 as String?,state: null == state ? _self.state : state // ignore: cast_nullable_to_non_nullable
-as NoteState,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
+as NoteState,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,tagIds: null == tagIds ? _self._tagIds : tagIds // ignore: cast_nullable_to_non_nullable
 as List<String>,permission: null == permission ? _self.permission : permission // ignore: cast_nullable_to_non_nullable
 as NotePermission,shareIds: freezed == shareIds ? _self._shareIds : shareIds // ignore: cast_nullable_to_non_nullable

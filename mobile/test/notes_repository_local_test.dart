@@ -445,6 +445,18 @@ void main() {
     });
   });
 
+  test('a new note is made and edited at the same moment, and edits keep '
+      'when it was made', () async {
+    await repo.createNote(const Note(id: 'n1', title: 'Groceries'));
+    final created = (await repo.getNote('n1'))!;
+    expect(created.createdAt, isNotNull);
+    expect(created.createdAt, created.updatedAt);
+
+    await repo.updateNote(created.copyWith(content: 'milk'));
+
+    expect((await repo.getNote('n1'))!.createdAt, created.createdAt);
+  });
+
   group('tags for note', () {
     test('setNoteTags queues the tags and leaves the note alone', () async {
       final edited = DateTime.utc(2026, 7, 1);

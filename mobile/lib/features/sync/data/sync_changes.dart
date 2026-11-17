@@ -80,6 +80,7 @@ class SyncNoteChange extends SyncChange {
     required this.background,
     required this.state,
     required this.tagIds,
+    this.createdAt,
     this.revisions = const [],
     this.isRevisionsOnly = false,
   });
@@ -94,6 +95,7 @@ class SyncNoteChange extends SyncChange {
   /// Sent for a shared note only when it is being removed.
   final String? state;
   final List<String> tagIds;
+  final DateTime? createdAt;
   final List<SyncNoteRevision> revisions;
 
   /// True when the row itself is already synced and this change only carries
@@ -123,6 +125,8 @@ class SyncNoteChange extends SyncChange {
     'background': background,
     if (state != null) 'state': state,
     'tagIds': tagIds,
+    if (baseVersion == null && createdAt != null)
+      'createdAt': createdAt!.toUtc().toIso8601String(),
     if (revisions.isNotEmpty)
       'revisions': [for (final revision in revisions) revision.toJson()],
     if (isRevisionsOnly) 'revisionsOnly': true,

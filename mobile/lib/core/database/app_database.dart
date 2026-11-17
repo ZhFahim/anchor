@@ -40,7 +40,7 @@ class AppDatabase extends _$AppDatabase {
   Future<void> close() => _closing ??= super.close();
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -111,6 +111,15 @@ class AppDatabase extends _$AppDatabase {
 
         // The server sends each feed entry once; only a sync with no cursor
         // repeats them.
+        await (update(syncState)..where((tbl) => tbl.cursor.isNotNull())).write(
+          const SyncStateCompanion(cursor: Value(null)),
+        );
+      }
+      if (from < 12) {
+        await migrator.addColumn(notes, notes.createdAt);
+        await update(
+          notes,
+        ).write(NotesCompanion.custom(createdAt: notes.updatedAt));
         await (update(syncState)..where((tbl) => tbl.cursor.isNotNull())).write(
           const SyncStateCompanion(cursor: Value(null)),
         );

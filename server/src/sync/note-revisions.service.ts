@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { Prisma } from 'src/generated/prisma/client';
 import { RevisionCause } from 'src/generated/prisma/enums';
+import { deviceTime } from './device-time.util';
 import { REVISION_COLLAPSE_WINDOW_MS } from './sync.constants';
 
 export interface PriorNoteContent {
@@ -58,24 +59,19 @@ export class NoteRevisionsService {
     const now = Date.now();
 
     await tx.noteRevision.createMany({
-      data: revisions.map((revision) => {
-        const recordedAt = Date.parse(revision.createdAt);
-        return {
-          id: revision.id,
-          noteId,
-          version: revision.version ?? 0,
-          title: revision.title,
-          content: revision.content ?? null,
-          authorUserId,
-          cause:
-            revision.cause === 'restore'
-              ? RevisionCause.restore
-              : RevisionCause.edit,
-          createdAt: new Date(
-            Number.isNaN(recordedAt) ? now : Math.min(recordedAt, now),
-          ),
-        };
-      }),
+      data: revisions.map((revision) => ({
+        id: revision.id,
+        noteId,
+        version: revision.version ?? 0,
+        title: revision.title,
+        content: revision.content ?? null,
+        authorUserId,
+        cause:
+          revision.cause === 'restore'
+            ? RevisionCause.restore
+            : RevisionCause.edit,
+        createdAt: deviceTime(revision.createdAt, now),
+      })),
       skipDuplicates: true,
     });
   }

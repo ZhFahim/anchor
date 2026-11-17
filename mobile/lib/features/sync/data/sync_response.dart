@@ -110,6 +110,7 @@ class SyncServerNote {
     required this.isArchived,
     required this.background,
     required this.state,
+    required this.createdAt,
     required this.updatedAt,
     required this.tagIds,
     required this.permission,
@@ -130,6 +131,7 @@ class SyncServerNote {
       isArchived: json['isArchived'] as bool? ?? false,
       background: json['background'] as String?,
       state: json['state'] as String? ?? NoteState.active.name,
+      createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '')?.toUtc(),
       updatedAt: DateTime.tryParse(json['updatedAt'] as String? ?? '')?.toUtc(),
       tagIds: (json['tagIds'] as List?)?.cast<String>() ?? const [],
       permission: json['permission'] as String? ?? NotePermission.owner.name,
@@ -151,6 +153,7 @@ class SyncServerNote {
   final bool isArchived;
   final String? background;
   final String state;
+  final DateTime? createdAt;
   final DateTime? updatedAt;
   final List<String> tagIds;
   final String permission;
