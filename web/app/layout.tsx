@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { DM_Sans, JetBrains_Mono, Playfair_Display } from "next/font/google";
+import { themeColorScript } from "@/lib/theme";
 import { Providers } from "./providers";
 import "./globals.css";
 
@@ -45,6 +46,10 @@ export default function RootLayout({
       className={`${dmSans.variable} ${playfair.variable} ${jetBrainsMono.variable}`}
     >
       <body>
+        <script
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: a fixed script
+          dangerouslySetInnerHTML={{ __html: themeColorScript }}
+        />
         <Providers>{children}</Providers>
       </body>
     </html>

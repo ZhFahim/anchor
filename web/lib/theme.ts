@@ -22,3 +22,15 @@ export function switchTheme(theme: string, setTheme: (theme: string) => void) {
     doc.startViewTransition(apply);
   else apply();
 }
+
+export const themeColorScript = `(() => {
+  const html = document.documentElement;
+  const meta = document.createElement("meta");
+  meta.name = "theme-color";
+  document.head.append(meta);
+  const sync = () => {
+    meta.content = getComputedStyle(html).getPropertyValue("--background").trim();
+  };
+  sync();
+  new MutationObserver(sync).observe(html, { attributeFilter: ["class"] });
+})();`;

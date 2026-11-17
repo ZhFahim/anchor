@@ -523,6 +523,7 @@
   align-self: stretch;
   min-width: 0;
   display: grid;
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
   place-items: center;
   position: relative;
 }
