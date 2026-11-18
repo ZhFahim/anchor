@@ -404,21 +404,21 @@
     animation: none;
   }
 }
+/* Sits in the card's left padding, so it takes no width from the text. */
 .nc-grip {
+  position: absolute;
+  top: 50%;
+  left: 1px;
+  translate: 0 -50%;
   display: flex;
-  align-items: center;
-  padding-left: --spacing(2);
   color: var(--note-muted);
   opacity: 0;
   cursor: grab;
   transition: opacity var(--duration-hover);
 }
 .nc-grip svg {
-  width: 16px;
-  height: 16px;
-}
-.nc-grip + .nc-in {
-  padding-left: --spacing(1.5);
+  width: 14px;
+  height: 14px;
 }
 .nc:hover .nc-grip,
 .nc:focus-within .nc-grip {
@@ -586,6 +586,10 @@
   font-size: var(--text-chip);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+}
+/* The narrow pane fits less per line, so a single paragraph gets two. */
+.notes-pane .cards.list .doc.is-card > :is(p, blockquote):only-child {
+  -webkit-line-clamp: 2;
 }
 /* Small enough to show the sidebar row it is about to land on. */
 .notes-pane .drag-overlay {
