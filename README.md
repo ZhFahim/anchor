@@ -16,6 +16,7 @@
 Anchor focuses on speed, privacy, simplicity, and reliability across mobile and web. Notes are stored locally, editable offline, and synced across devices when online.
 
 <a href="https://play.google.com/store/apps/details?id=com.zhfahim.anchor"><img src="https://img.shields.io/badge/Get_it_on_Google_Play-000000?style=for-the-badge&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTYgMjgzIj48cGF0aCBmaWxsPSIjZWE0MzM1IiBkPSJNMTE5LjU1MyAxMzQuOTE2TDEuMDYgMjU5LjA2MWEzMi4xNCAzMi4xNCAwIDAgMCA0Ny4wNjIgMTkuMDcxbDEzMy4zMjctNzUuOTM0eiIvPjxwYXRoIGZpbGw9IiNmYmJjMDQiIGQ9Ik0yMzkuMzcgMTEzLjgxNEwxODEuNzE1IDgwLjc5bC02NC44OTggNTYuOTVsNjUuMTYyIDY0LjI4bDU3LjIxNi0zMi42N2EzMS4zNDUgMzEuMzQ1IDAgMCAwIDAtNTUuNTM3eiIvPjxwYXRoIGZpbGw9IiM0Mjg1ZjQiIGQ9Ik0xLjA2IDIzLjQ4N0EzMC42IDMwLjYgMCAwIDAgMCAzMS42MXYyMTkuMzI3YTMyLjMgMzIuMyAwIDAgMCAxLjA2IDguMTI0bDEyMi41NTUtMTIwLjk2NnoiLz48cGF0aCBmaWxsPSIjMzRhODUzIiBkPSJtMTIwLjQzNiAxNDEuMjc0bDYxLjI3OC02MC40ODNMNDguNTY0IDQuNTAzQTMyLjg1IDMyLjg1IDAgMCAwIDMyLjA1MSAwQzE3LjY0NC0uMDI4IDQuOTc4IDkuNTM0IDEuMDYgMjMuMzk5eiIvPjwvc3ZnPg%3D%3D" alt="Get it on Google Play"></a>
+<a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%7B%22id%22:%22com%2Ezhfahim%2Eanchor%22,%22url%22:%22https://github%2Ecom/ZhFahim/anchor%22,%22author%22:%22ZhFahim%22,%22name%22:%22Anchor%20Notes%22,%22additionalSettings%22:%22%7B%5C%22about%5C%22:%5C%22Offline%20first,%20self%20hostable%20note%20taking%20application%2E%5C%22%7D%22%7D"><img src="https://img.shields.io/badge/Get_it_on_Obtainium-483479?style=for-the-badge&logo=obtainium&logoColor=white" alt="Get it on Obtainium"></a>
 <a href="https://testflight.apple.com/join/5982frnz"><img src="https://img.shields.io/badge/Join_the_beta_on_TestFlight-0D96F6?style=for-the-badge&logo=apple&logoColor=white" alt="Join the beta on TestFlight"></a>
 
 </div>
@@ -158,6 +159,7 @@ The mobile app works with your Anchor server. Set up the server first, then sign
 
 <a href="https://play.google.com/store/apps/details?id=com.zhfahim.anchor"><img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="80"></a>
 <a href="https://github.com/zhfahim/anchor/releases/latest"><img src="https://raw.githubusercontent.com/Kunzisoft/Github-badge/main/get-it-on-github.png" alt="Get it on GitHub" height="80"></a>
+<a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%7B%22id%22:%22com%2Ezhfahim%2Eanchor%22,%22url%22:%22https://github%2Ecom/ZhFahim/anchor%22,%22author%22:%22ZhFahim%22,%22name%22:%22Anchor%20Notes%22,%22additionalSettings%22:%22%7B%5C%22about%5C%22:%5C%22Offline%20first,%20self%20hostable%20note%20taking%20application%2E%5C%22%7D%22%7D"><img src="/.github/assets/badge_obtainium.png" alt="Get it on Obtainium" height="80"></a>
 
 Each GitHub release has these APK files:
 
