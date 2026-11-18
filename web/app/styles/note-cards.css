@@ -311,6 +311,144 @@
   color: var(--color-media-text);
 }
 
+/* Drag and drop */
+.nc-draggable {
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+}
+.cards.dragging .nc {
+  user-select: none;
+}
+@media (hover: hover) {
+  .cards.dragging .nc:hover {
+    transform: none;
+    box-shadow: var(--sh-xs);
+  }
+}
+.nc.nc-placeholder {
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+  background-image: none;
+  box-shadow: none;
+}
+.nc.nc-placeholder::after {
+  box-shadow: none;
+  border: 2px dashed color-mix(in srgb, var(--accent) 55%, transparent);
+}
+.nc.nc-placeholder > * {
+  visibility: hidden;
+}
+.nc.nc-lifted {
+  cursor: grabbing;
+  transform: rotate(-2deg) scale(1.03);
+  box-shadow:
+    0 24px 48px -12px rgb(45 49 66 / 0.35),
+    0 4px 10px rgb(45 49 66 / 0.1);
+  animation: nc-lift var(--duration-fade) var(--ease-standard);
+}
+@keyframes nc-lift {
+  from {
+    transform: none;
+    box-shadow: var(--sh-xs);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nc.nc-lifted {
+    transform: none;
+    animation: none;
+  }
+}
+.cards.drop-only {
+  min-height: 96px;
+  border-radius: var(--radius-card);
+  border: 2px dashed color-mix(in srgb, var(--accent) 45%, transparent);
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+}
+.cards-drop-hint {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: var(--text-small);
+  pointer-events: none;
+}
+.cards.drop-only {
+  position: relative;
+}
+.hold-ring {
+  position: fixed;
+  z-index: 70;
+  width: 64px;
+  height: 64px;
+  margin: -32px 0 0 -32px;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  pointer-events: none;
+  /* A quick tap ends before the ring shows. */
+  animation: hold-ring 200ms var(--ease-standard) 60ms both;
+  transition: opacity var(--duration-exit);
+}
+.hold-ring.is-leaving {
+  opacity: 0;
+}
+@keyframes hold-ring {
+  from {
+    transform: scale(0.35);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hold-ring {
+    animation: none;
+  }
+}
+/* Sits in the card's left padding, so it takes no width from the text. */
+.nc-grip {
+  position: absolute;
+  top: 50%;
+  left: 1px;
+  translate: 0 -50%;
+  display: flex;
+  color: var(--note-muted);
+  opacity: 0;
+  cursor: grab;
+  transition: opacity var(--duration-hover);
+}
+.nc-grip svg {
+  width: 14px;
+  height: 14px;
+}
+.nc:hover .nc-grip,
+.nc:focus-within .nc-grip {
+  opacity: 0.75;
+}
+@media (hover: none) {
+  .nc-grip {
+    opacity: 0.6;
+  }
+}
+.cards.picking .nc-grip {
+  display: none;
+}
+.nc-draggable {
+  cursor: default;
+}
+.cards.dragging,
+.cards.dragging * {
+  cursor: grabbing;
+}
+.cards.drag-overlay {
+  display: block;
+  height: auto;
+  max-width: none;
+}
+.cards.drag-overlay > * {
+  position: static;
+  width: 100%;
+}
+
 @media (width < 768px) {
   .cards {
     --gap: 10px;
@@ -404,4 +542,57 @@
   .cards.list .nc-acts {
     padding: --spacing(2);
   }
+}
+
+/* Columns: the list beside the open note. */
+.notes-pane header {
+  flex-wrap: wrap;
+  row-gap: --spacing(2);
+}
+.notes-pane header > div:last-child {
+  display: contents;
+}
+.notes-pane [data-search-field] {
+  order: 1;
+  flex: 1 0 100%;
+}
+.notes-pane [data-search-field] + * {
+  margin-left: auto;
+}
+.nc.open:not(.picked) {
+  box-shadow:
+    0 0 0 2px var(--background),
+    0 0 0 3.5px var(--muted-foreground);
+}
+/* A sidebar row a note is dragged over. */
+[data-drop-over] {
+  background: var(--sidebar-accent);
+  color: var(--foreground);
+  box-shadow: inset 0 0 0 1.5px var(--accent-strong);
+}
+.drag-overlay .drag-count {
+  position: absolute;
+  inset: -9px -9px auto auto;
+  width: max-content;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-strong);
+  color: var(--note);
+  font-size: var(--text-chip);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+/* The narrow pane fits less per line, so a single paragraph gets two. */
+.notes-pane .cards.list .doc.is-card > :is(p, blockquote):only-child {
+  -webkit-line-clamp: 2;
+}
+/* Small enough to show the sidebar row it is about to land on. */
+.notes-pane .drag-overlay {
+  scale: 0.6;
+  transform-origin: var(--grab-point, 50% 50%);
 }

@@ -27,6 +27,9 @@ export interface TransformedNote {
   version: number;
   isPinned: boolean;
   isArchived: boolean;
+  // This user's order key (fractional index). Absent means "not loaded";
+  // null means the user hasn't placed the note yet.
+  position?: string | null;
   background: string | null;
   state: string;
   updatedAt: string;
@@ -56,6 +59,7 @@ interface NoteWithIncludes {
   stateChangedAt?: Date;
   userId: string;
   pins?: Array<{ userId: string }>;
+  positions?: Array<{ position: string }>;
   archives: Array<{ userId: string }>;
   reminders?: Array<{
     remindAt: string;
@@ -90,6 +94,7 @@ export function transformNote(
     _count,
     attachments,
     pins,
+    positions,
     archives,
     reminders,
     stateChangedAt,
@@ -142,6 +147,10 @@ export function transformNote(
   // Add sharedBy for shared notes
   if (sharedBy) {
     transformed.sharedBy = sharedBy;
+  }
+
+  if (positions) {
+    transformed.position = positions[0]?.position ?? null;
   }
 
   if (reminders) {

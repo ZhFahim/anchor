@@ -7,6 +7,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateTagDto } from './dto/create-tag.dto';
 import { UpdateTagDto } from './dto/update-tag.dto';
 import { SyncEmitterService, tagEmission } from '../sync/sync-emitter.service';
+import { Prisma } from '../generated/prisma/client';
 import { NoteState, SyncOp } from 'src/generated/prisma/enums';
 import { RETENTION_CHUNK_SIZE } from '../common/retention.constants';
 import {
@@ -46,6 +47,41 @@ export class TagsService {
       orderBy: { name: 'asc' },
       include: TAG_INCLUDE_NOTE_COUNT,
     });
+  }
+
+  // Places tags in the owner's order. Neither version nor updatedAt moves, so
+  // a rename made elsewhere at the same time still applies cleanly.
+  async setPositions(
+    userId: string,
+    changes: { id: string; position: string | null }[],
+  ) {
+    const byTag = new Map(changes.map((c) => [c.id, c.position]));
+    if (byTag.size === 0) return { updated: [] as string[] };
+
+    const tags = await this.prisma.tag.findMany({
+      where: { id: { in: [...byTag.keys()] }, userId, isDeleted: false },
+      select: { id: true, position: true },
+    });
+    const changed = tags.filter(
+      (tag) => tag.position !== (byTag.get(tag.id) ?? null),
+    );
+    if (changed.length === 0) return { updated: [] as string[] };
+
+    const ids = changed.map((tag) => tag.id);
+    const positions = ids.map((id) => byTag.get(id) ?? null);
+    await this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw(Prisma.sql`
+        UPDATE "Tag" SET "position" = t."position"
+        FROM unnest(${ids}::text[], ${positions}::text[]) AS t("id", "position")
+        WHERE "Tag"."id" = t."id" AND "Tag"."userId" = ${userId}
+      `);
+      await this.syncEmitter.emit(
+        tx,
+        ids.map((id) => tagEmission(userId, id)),
+      );
+    });
+
+    return { updated: ids };
   }
 
   async findOne(userId: string, id: string) {

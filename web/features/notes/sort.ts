@@ -1,15 +1,22 @@
+import { compareByPosition } from "@/features/ordering";
 import type { SortBy, SortOrder } from "@/features/preferences";
 import { hasTitle } from "./title";
 import type { Note } from "./types";
 
 export type SortableNote = Pick<
   Note,
-  "id" | "title" | "createdAt" | "updatedAt"
+  "id" | "title" | "createdAt" | "updatedAt" | "position"
 >;
+
+/** Custom order: new notes stay on top until they are placed. */
+const compareCustom = compareByPosition<SortableNote>("first", (a, b) =>
+  compareNotes("createdAt", "desc")(a, b),
+);
 
 export const compareNotes =
   (sortBy: SortBy, sortOrder: SortOrder) =>
-  (a: SortableNote, b: SortableNote) => {
+  (a: SortableNote, b: SortableNote): number => {
+    if (sortBy === "custom") return compareCustom(a, b);
     let comparison = 0;
     if (sortBy === "title") {
       // Untitled notes come last whichever way titles are ordered.

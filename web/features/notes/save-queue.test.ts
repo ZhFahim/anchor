@@ -7,6 +7,7 @@ import {
   type NoteSaveQueueHandlers,
   noteDraftsEqual,
   noteToDraft,
+  personalChanges,
   rebaseDraft,
   reminderUpdate,
   replacesText,
@@ -141,6 +142,40 @@ describe("noteDraftsEqual", () => {
     };
     const b = { ...a, reminder: { ...a.reminder, version: 9 } };
     expect(noteDraftsEqual(a, b)).toBe(true);
+  });
+});
+
+describe("personalChanges", () => {
+  const seen = { tagIds: ["a"], isPinned: false };
+
+  it("takes tags and the pin changed elsewhere when they are unchanged here", () => {
+    expect(
+      personalChanges({ tagIds: ["a", "b"], isPinned: true }, seen, seen),
+    ).toEqual({ tagIds: ["a", "b"], isPinned: true });
+  });
+
+  it("keeps what was changed here", () => {
+    const local = { tagIds: ["c"], isPinned: true };
+    expect(
+      personalChanges({ tagIds: ["a", "b"], isPinned: false }, seen, local),
+    ).toEqual({});
+  });
+
+  it("takes only the field that was left alone here", () => {
+    const local = { tagIds: ["a"], isPinned: true };
+    expect(
+      personalChanges({ tagIds: ["b", "a"], isPinned: false }, seen, local),
+    ).toEqual({ tagIds: ["b", "a"] });
+  });
+
+  it("sees no change when only the tag order differs", () => {
+    expect(
+      personalChanges(
+        { tagIds: ["b", "a"], isPinned: false },
+        { tagIds: ["a", "b"], isPinned: false },
+        { tagIds: ["a", "b"], isPinned: false },
+      ),
+    ).toEqual({});
   });
 });
 

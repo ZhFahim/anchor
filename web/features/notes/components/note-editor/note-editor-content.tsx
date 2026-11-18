@@ -21,7 +21,13 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Tip } from "@/components/ui/tooltip";
-import { sortTagsByName, type Tag, TagChip, TagPicker } from "@/features/tags";
+import {
+  sortTags,
+  type Tag,
+  TagChip,
+  TagPicker,
+  useTagOrder,
+} from "@/features/tags";
 import { useRovingFocus } from "@/lib/hooks/use-roving-focus";
 import { useFlip } from "@/lib/use-flip";
 import { cn } from "@/lib/utils";
@@ -398,8 +404,10 @@ function TagRow(props: NoteEditorContentProps) {
   const row = roving.ref;
   const flip = useFlip(row, { pop: true });
   const [reminderOpen, setReminderOpen] = React.useState(false);
-  const tags = sortTagsByName(
+  const tagOrder = useTagOrder();
+  const tags = sortTags(
     props.tagIds.flatMap((id) => props.allTags.find((t) => t.id === id) ?? []),
+    tagOrder,
   );
   const late = !!props.reminder && isReminderPast(props.reminder);
   const ringBell = useRingOnce(

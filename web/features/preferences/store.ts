@@ -1,8 +1,9 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export type ViewMode = "masonry" | "grid" | "list";
-export type SortBy = "updatedAt" | "createdAt" | "title";
+export type ViewMode = "masonry" | "grid" | "list" | "columns";
+export type SortBy = "updatedAt" | "createdAt" | "title" | "custom";
+export type TagOrder = "name" | "custom";
 export type SortOrder = "asc" | "desc";
 
 interface UIPreferences {
@@ -16,6 +17,11 @@ interface NotesPreferences {
   openArchivedTagIds: string[];
 }
 
+interface TagsPreferences {
+  /** null follows the tags: Custom once any tag has a place, else by name. */
+  order: TagOrder | null;
+}
+
 interface EditorPreferences {
   sortChecklistItems: boolean;
   foldedChecklistNoteIds: string[];
@@ -24,7 +30,9 @@ interface EditorPreferences {
 interface PreferencesState {
   ui: UIPreferences;
   notes: NotesPreferences;
+  tags: TagsPreferences;
   editor: EditorPreferences;
+  setTagOrder: (order: TagOrder) => void;
   setUIPreference: <K extends keyof UIPreferences>(
     key: K,
     value: UIPreferences[K],
@@ -52,6 +60,10 @@ const defaultNotesPreferences: NotesPreferences = {
   openArchivedTagIds: [],
 };
 
+const defaultTagsPreferences: TagsPreferences = {
+  order: null,
+};
+
 const defaultEditorPreferences: EditorPreferences = {
   sortChecklistItems: true,
   foldedChecklistNoteIds: [],
@@ -73,6 +85,7 @@ const updateIdList = (
 const initialState = {
   ui: defaultUIPreferences,
   notes: defaultNotesPreferences,
+  tags: defaultTagsPreferences,
   editor: defaultEditorPreferences,
 };
 
@@ -80,6 +93,7 @@ export const usePreferencesStore = create<PreferencesState>()(
   persist(
     (set) => ({
       ...initialState,
+      setTagOrder: (order) => set({ tags: { order } }),
       setUIPreference: (key, value) =>
         set((state) => ({
           ui: { ...state.ui, [key]: value },
@@ -126,6 +140,7 @@ export const usePreferencesStore = create<PreferencesState>()(
           ...current,
           ui: { ...current.ui, ...saved.ui },
           notes: { ...current.notes, ...saved.notes },
+          tags: { ...current.tags, ...saved.tags },
           editor: { ...current.editor, ...saved.editor },
         };
       },

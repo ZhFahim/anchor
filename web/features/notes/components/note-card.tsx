@@ -1,14 +1,16 @@
 "use client";
 
-import { Check, ImageOff, Paperclip, Users } from "lucide-react";
+import type { SyntheticListenerMap } from "@dnd-kit/core/dist/hooks/utilities";
+import { Check, GripVertical, ImageOff, Paperclip, Users } from "lucide-react";
 import Link from "next/link";
 import * as React from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tip } from "@/components/ui/tooltip";
 import { MoreChip, TagChip } from "@/features/tags/components/tag-chip";
+import { useTagOrder } from "@/features/tags/hooks";
 import type { TagLabel } from "@/features/tags/types";
-import { sortTagsByName } from "@/features/tags/utils";
+import { sortTags } from "@/features/tags/utils";
 import { useHighlightPaint } from "@/lib/highlight-paint";
 import { useNearScreen } from "@/lib/hooks/use-near-screen";
 import { rememberCard } from "@/lib/morph";
@@ -22,6 +24,18 @@ import { ReminderChip } from "./reminder-chip";
 
 export type CardLayout = "masonry" | "grid" | "list";
 
+/** How a card takes part in drag and drop on the board. */
+export interface CardDrag {
+  ref?: (element: HTMLElement | null) => void;
+  listeners?: SyntheticListenerMap;
+  /** The card's place while it is being dragged. */
+  isPlaceholder?: boolean;
+  /** The copy that follows the pointer. */
+  isLifted?: boolean;
+  /** Alt+Up and Alt+Down move the card one place. */
+  onMoveByKey?: (noteId: string, step: -1 | 1) => void;
+}
+
 interface NoteCardProps {
   note: Note;
   tagMap: Map<string, TagLabel>;
@@ -32,6 +46,10 @@ interface NoteCardProps {
   onShare?: (note: Note) => void;
   renderActions?: (note: Note) => React.ReactNode;
   dateLabel?: string;
+  drag?: CardDrag;
+  href?: string;
+  /** Open beside the list, in columns. */
+  isOpen?: boolean;
 }
 
 const ROW_LIMIT: Record<CardLayout, number> = { list: 2, grid: 4, masonry: 6 };
@@ -80,12 +98,24 @@ export const NoteCard = React.memo(function NoteCard({
   onShare,
   renderActions,
   dateLabel,
+  drag,
+  href = `/notes/${note.id}`,
+  isOpen,
 }: NoteCardProps) {
   const blocks = cardBlocks(note);
   const hasHighlights = blocks.some((block) =>
     block.runs.some((run) => run.highlight),
   );
   const cardRef = React.useRef<HTMLElement>(null);
+  const dragRef = drag?.ref;
+  // A new ref callback each render would detach and re-attach the card.
+  const setCardRef = React.useCallback(
+    (element: HTMLElement | null) => {
+      cardRef.current = element;
+      dragRef?.(element);
+    },
+    [dragRef],
+  );
   const bodyRef = React.useRef<HTMLDivElement>(null);
   useHighlightPaint(
     cardRef,
@@ -99,8 +129,10 @@ export const NoteCard = React.memo(function NoteCard({
   const pictureIds = note.imagePreviewIds ?? [];
   const attachmentCount = note.attachmentCount ?? 0;
   const loadPictures = useNearScreen(cardRef, pictureIds.length > 0);
-  const tags = sortTagsByName(
+  const tagOrder = useTagOrder();
+  const tags = sortTags(
     (note.tagIds ?? []).flatMap((id) => tagMap.get(id) ?? []),
+    tagOrder,
   );
   const actions = renderActions?.(note);
 
@@ -180,15 +212,28 @@ export const NoteCard = React.memo(function NoteCard({
 
   return (
     <article
-      ref={cardRef}
+      ref={setCardRef}
       data-note={note.background ?? ""}
-      data-flip={note.id}
+      data-flip={drag?.isLifted ? undefined : note.id}
       aria-label={label}
-      className={cn("nc", picked && "picked")}
+      className={cn(
+        "nc",
+        picked && "picked",
+        isOpen && "open",
+        drag?.listeners && "nc-draggable",
+        drag?.isPlaceholder && "nc-placeholder",
+        drag?.isLifted && "nc-lifted",
+      )}
+      {...drag?.listeners}
     >
       <Link
-        href={`/notes/${note.id}`}
+        href={href}
         aria-label={label}
+        aria-current={isOpen ? "page" : undefined}
+        draggable={false}
+        aria-keyshortcuts={
+          drag?.onMoveByKey ? "Alt+ArrowUp Alt+ArrowDown" : undefined
+        }
         className="nc-link absolute inset-0 z-1 rounded-[inherit] outline-none"
         onClick={(e) => {
           if (picking || e.metaKey || e.ctrlKey || e.shiftKey) {
@@ -201,6 +246,15 @@ export const NoteCard = React.memo(function NoteCard({
           if (cardRef.current) rememberCard(note.id, cardRef.current);
         }}
         onKeyDown={(e) => {
+          if (
+            drag?.onMoveByKey &&
+            e.altKey &&
+            (e.key === "ArrowUp" || e.key === "ArrowDown")
+          ) {
+            e.preventDefault();
+            drag.onMoveByKey(note.id, e.key === "ArrowUp" ? -1 : 1);
+            return;
+          }
           if (e.key === " " && onPick) {
             e.preventDefault();
             onPick(note.id, e.shiftKey);
@@ -236,6 +290,11 @@ export const NoteCard = React.memo(function NoteCard({
             </div>
           ))}
         </div>
+      )}
+      {isList && drag?.listeners && (
+        <span className="nc-grip" aria-hidden>
+          <GripVertical />
+        </span>
       )}
       <div className="nc-in">
         {title && <div className="nc-title">{title}</div>}

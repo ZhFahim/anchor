@@ -17,6 +17,7 @@ export interface NoteOnWire {
   userId: string;
   createdAt: string;
   updatedAt: string;
+  position?: string | null;
   reminder?: ReminderOnWire | null;
   shareIds?: string[];
   sharedBy?: {
@@ -31,6 +32,7 @@ export interface TagOnWire {
   id: string;
   name: string;
   color: string | null;
+  position: string | null;
   isDeleted: boolean;
   userId: string;
   createdAt: string;
@@ -96,6 +98,7 @@ export interface SyncTagOnWire {
   id: string;
   name: string;
   color: string | null;
+  position: string | null;
   version: number;
   createdAt: string;
   updatedAt: string;

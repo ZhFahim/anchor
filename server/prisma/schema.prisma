@@ -76,6 +76,7 @@ model User {
   uploadedAttachments  NoteAttachment[]
   notePins             NotePin[]
   noteArchives         NoteArchive[]
+  notePositions        NotePosition[]
   syncState            SyncState?
   changeLog            ChangeLog[]
   noteRevisions        NoteRevision[]
@@ -107,6 +108,7 @@ model Note {
   attachments NoteAttachment[]
   pins        NotePin[]
   archives    NoteArchive[]
+  positions   NotePosition[]
   reminders   NoteReminder[]
   revisions   NoteRevision[]
 
@@ -141,6 +143,20 @@ model NotePin {
   @@index([noteId])
 }
 
+// Each person's own order for the notes they see (drag and drop). Keys are
+// fractional indexes compared byte-wise: the column uses COLLATE "C" in SQL.
+model NotePosition {
+  userId    String
+  noteId    String
+  position  String
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  note      Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@id([userId, noteId])
+  @@index([noteId])
+}
+
 model NoteArchive {
   userId    String
   noteId    String
@@ -156,6 +172,8 @@ model Tag {
   id        String    @id @default(uuid())
   name      String
   color     String?
+  // The owner's order key (fractional index, COLLATE "C"); null until placed.
+  position  String?
   isDeleted Boolean   @default(false)
   version   Int       @default(1)
   createdAt DateTime  @default(now())

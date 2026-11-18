@@ -9,11 +9,12 @@ import { ShortcutHints } from "@/components/ui/shortcut-hints";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { useDelayedFlag } from "@/lib/hooks/use-delayed-flag";
 import { cn } from "@/lib/utils";
+import { useTagOrder } from "../hooks";
 import type { Tag } from "../types";
 import {
   compareTagNames,
   nextTagColor,
-  sortTagsByName,
+  sortTags,
   tagColorStyle,
 } from "../utils";
 
@@ -50,7 +51,11 @@ export function TagPicker({
   const listId = React.useId();
   const term = query.trim();
   const lowerTerm = term.toLowerCase();
-  const sorted = React.useMemo(() => sortTagsByName(tags), [tags]);
+  const tagOrder = useTagOrder();
+  const sorted = React.useMemo(
+    () => sortTags(tags, tagOrder),
+    [tags, tagOrder],
+  );
   const matches = sorted.filter((t) =>
     t.name.toLowerCase().includes(lowerTerm),
   );
@@ -70,9 +75,11 @@ export function TagPicker({
     setCreating(false);
     setQuery("");
     if (created) {
-      const at = sorted.findIndex(
-        (t) => compareTagNames(t.name, created.name) >= 0,
-      );
+      // A new tag has no place yet: Custom order shows it last.
+      const at =
+        tagOrder === "custom"
+          ? -1
+          : sorted.findIndex((t) => compareTagNames(t.name, created.name) >= 0);
       setActive(at < 0 ? sorted.length : at);
     }
   };

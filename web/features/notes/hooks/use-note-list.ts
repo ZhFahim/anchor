@@ -199,7 +199,9 @@ export function useNoteList(
       );
     },
     flushQueryToUrl: () => writeQueryToUrl(query),
-    layout: viewMode,
+    viewMode,
+    // Columns shows its list as list cards; narrow screens fall back to it.
+    layout: viewMode === "columns" ? "list" : viewMode,
     setLayout: (layout: ViewMode) => {
       flip.prepare();
       setNotesPreference("viewMode", layout);
