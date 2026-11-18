@@ -1,0 +1,130 @@
+name: Bug report
+description: Something in Anchor does not work as it should.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. A clear report with steps and logs is the fastest way to get it fixed. Reports without steps to reproduce may be closed.
+
+        For setup help or questions, ask on [Discord](https://discord.gg/sAfqjy8EYK) instead.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you start
+      options:
+        - label: I searched the [existing issues](https://github.com/ZhFahim/anchor/issues?q=is%3Aissue) and this bug is not reported yet.
+          required: true
+        - label: I am on the latest release of the app and the server.
+          required: true
+        - label: This report is about one bug. I will open a separate issue for each bug.
+          required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Where does it happen?
+      multiple: true
+      options:
+        - Web app
+        - Android app
+        - iPhone or iPad app
+        - Server or Docker setup
+    validations:
+      required: true
+
+  - type: input
+    id: app-version
+    attributes:
+      label: App version
+      description: "Web: Settings, About. Phone: the bottom of Settings."
+      placeholder: "0.18.1"
+    validations:
+      required: true
+
+  - type: input
+    id: server-version
+    attributes:
+      label: Server version
+      description: "Shown at the bottom of Settings in the phone app. On the web it is the same as the app version."
+      placeholder: "0.18.1"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install
+    attributes:
+      label: How did you install it?
+      multiple: true
+      options:
+        - Docker image (latest)
+        - Docker image (next)
+        - Built from source
+        - Google Play
+        - TestFlight
+        - APK from GitHub or Obtainium
+    validations:
+      required: true
+
+  - type: input
+    id: device
+    attributes:
+      label: Device, system and browser
+      placeholder: "Pixel 8, Android 16 / Firefox 140 on Windows 11"
+    validations:
+      required: true
+
+  - type: textarea
+    id: setup
+    attributes:
+      label: Server setup
+      description: Anything that differs from the default setup, for example a reverse proxy, an OIDC provider or an external Postgres. Leave out passwords and secrets.
+      placeholder: "Behind Caddy, OIDC with Authentik, embedded Postgres"
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe what you saw, in your own words.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The exact steps that make the bug happen, starting from a fresh screen. If it only happens sometimes, say how often.
+      placeholder: |
+        1. Open a note with a checklist
+        2. Tap the first item
+        3. Press Backspace
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: |
+        Logs help a lot, and crash reports need them.
+        - **Phone app:** open Settings, Logs, tap **•••**, choose **Save to a file**, then attach the file here.
+        - **Server:** run `docker logs anchor --tail 200` right after the bug happens and paste the output.
+        - **Web app:** open the browser console (F12) and paste any red errors.
+
+        Check the output for anything private before you post it.
+      render: text
+
+  - type: textarea
+    id: media
+    attributes:
+      label: Screenshots or video
+      description: Drag files here. A short screen recording helps for anything in the editor or with gestures.

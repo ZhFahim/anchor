@@ -1,0 +1,66 @@
+name: Feature request
+description: Suggest a new feature or a change to how Anchor works.
+title: "[Feature Request] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the idea. Please describe the problem you want solved, not only the solution. That makes it easier to find a design that fits Anchor.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you start
+      options:
+        - label: I searched the [existing issues](https://github.com/ZhFahim/anchor/issues?q=is%3Aissue), including closed ones, and this is not requested yet.
+          required: true
+        - label: This request is about one feature. I will open a separate issue for each idea.
+          required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: What are you trying to do, and what gets in the way today?
+      placeholder: "I use the same packing checklist for every trip. Each time I have to create a new note and type the whole list again."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: What would you like to happen?
+      description: Describe how it would work for you. Mockups or examples from other apps are welcome.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Which parts of Anchor?
+      multiple: true
+      options:
+        - Web app
+        - Android app
+        - iPhone or iPad app
+        - Server or Docker setup
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Other options you considered
+      description: Workarounds you use today, or other ways this could be solved.
+
+  - type: dropdown
+    id: contribute
+    attributes:
+      label: Would you like to build it?
+      description: Please wait for the maintainer to agree on the design before you start. See the [contributing guide](https://github.com/ZhFahim/anchor/blob/main/.github/CONTRIBUTING.md).
+      options:
+        - "No"
+        - Yes, once the design is agreed
+    validations:
+      required: true

@@ -268,53 +268,11 @@ Future planned features:
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch:
-   ```bash
-   git checkout -b feature/your-feature
-   ```
-3. Make your changes
-4. Ensure builds pass and code is linted:
-   - Web: `cd web && pnpm build && pnpm check`
-   - Server: `cd server && pnpm build && pnpm check`
-   - Mobile: `cd mobile && flutter analyze && flutter test`
-5. Commit changes:
-   ```bash
-   git commit -m "Describe your change"
-   ```
-6. Push and create a Pull Request
-
-### Code style
-
-Linting and formatting are enforced in CI and by a pre-commit hook
-(`.githooks/pre-commit`) that checks staged files.
-Running `pnpm install` in either `web` or `server`
-enables the hook automatically (via the `prepare` script). To enable it manually:
-
-```bash
-git config core.hooksPath .githooks
-```
-
-Before committing, fix issues with `pnpm check:fix` in the relevant project.
-
-### Design tokens
-
-The web app's colors, text sizes, spacing, corners, shadows and motion live in
-`design/tokens/` (W3C Design Tokens format). `web/app/styles/tokens.css`,
-`web/app/styles/notes.css` and `web/lib/design/tokens.ts` are built from them,
-so change the tokens rather than those files. After changing a token, run this
-from the repository root (it reads icons from `web/node_modules`, so run
-`pnpm install` in `web` first):
-
-```bash
-node design/build/build.mjs
-```
-
-CI runs it with `--check` and fails if the built files are out of date.
+Contributions are welcome. Please read the [contributing guide](.github/CONTRIBUTING.md) before you open an issue or a pull request. New features and large changes need an agreed issue first.
 
 ## Community
 
-Questions, bugs or ideas? Join us on [Discord](https://discord.gg/sAfqjy8EYK) or [open an issue](https://github.com/zhfahim/anchor/issues).
+Questions? Join us on [Discord](https://discord.gg/sAfqjy8EYK). Found a bug or have an idea? [Open an issue](https://github.com/zhfahim/anchor/issues/new/choose).
 
 ## Support
 
