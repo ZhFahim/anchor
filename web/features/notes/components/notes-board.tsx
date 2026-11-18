@@ -1,14 +1,18 @@
 "use client";
 
+import { DndContext, DragOverlay, useDroppable } from "@dnd-kit/core";
+import { SortableContext, useSortable } from "@dnd-kit/sortable";
 import { ChevronRight } from "lucide-react";
 import * as React from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTagMap } from "@/features/tags/hooks";
 import { useDelayedFlag } from "@/lib/hooks/use-delayed-flag";
+import { useHoldRing } from "@/lib/use-hold-ring";
 import { cn } from "@/lib/utils";
 import { useCardColumns } from "../hooks/use-card-columns";
 import type { Note } from "../types";
-import { type CardLayout, NoteCard } from "./note-card";
+import { type BoardReorder, groupDropId, useBoardDrag } from "./board-drag";
+import { type CardDrag, type CardLayout, NoteCard } from "./note-card";
 
 interface NotesBoardGroup {
   key: string;
@@ -17,6 +21,9 @@ interface NotesBoardGroup {
   notes: Note[];
   fold?: { isOpen: boolean; onToggle: () => void };
   fallback?: React.ReactNode;
+  /** Shown only while a card is dragged, as a place to drop it. */
+  isDropOnly?: boolean;
+  dropHint?: string;
 }
 
 interface NotesBoardProps {
@@ -29,7 +36,14 @@ interface NotesBoardProps {
   /** Keep it stable, or every card redraws. */
   renderActions?: (note: Note) => React.ReactNode;
   dateLabel?: (note: Note) => string;
+  /** Lets cards be dragged into a new order. */
+  reorder?: BoardReorder;
+  onMoveByKey?: CardDrag["onMoveByKey"];
 }
+
+// Sortable's own shifting is unused: cards change places in the list itself.
+const noShift = () => null;
+const LIFTED: CardDrag = { isLifted: true };
 
 export const NotesBoard = React.forwardRef<HTMLDivElement, NotesBoardProps>(
   (
@@ -42,6 +56,8 @@ export const NotesBoard = React.forwardRef<HTMLDivElement, NotesBoardProps>(
       onShare,
       renderActions,
       dateLabel,
+      reorder,
+      onMoveByKey,
     },
     ref,
   ) => {
@@ -52,7 +68,10 @@ export const NotesBoard = React.forwardRef<HTMLDivElement, NotesBoardProps>(
     const boardId = React.useId();
     React.useImperativeHandle(ref, () => boardRef.current as HTMLDivElement);
     useCardColumns(boardRef, rulerRef);
-    return (
+    const { drag, hasZones, activeNote, notesOf, contextProps, dropAnimation } =
+      useBoardDrag(groups, reorder);
+    useHoldRing(".nc-draggable", !!reorder);
+    const board = (
       <div
         ref={boardRef}
         data-hold-width
@@ -64,12 +83,15 @@ export const NotesBoard = React.forwardRef<HTMLDivElement, NotesBoardProps>(
           className="pointer-events-none absolute inset-x-0 top-0 h-0"
         />
         {groups.map((group) => {
+          if (group.isDropOnly && !hasZones) return null;
+          const notes = notesOf(group);
+          const isSortable = !!reorder?.groups.includes(group.key);
           const heading = (
             <>
               {group.icon}
               {group.label}
               <span className="ml-0.5 font-medium tracking-normal tabular-nums">
-                {group.notes.length}
+                {notes.length}
               </span>
             </>
           );
@@ -109,34 +131,155 @@ export const NotesBoard = React.forwardRef<HTMLDivElement, NotesBoardProps>(
               )}
               {isShown && group.fallback}
               {isShown && !group.fallback && (
-                <div
-                  id={cardsId}
-                  className={cn("cards", layout, picking && "picking")}
+                <SortableGroup
+                  id={group.key}
+                  ids={isSortable ? notes.map((note) => note.id) : NO_IDS}
+                  disabled={!isSortable}
                 >
-                  {group.notes.map((note) => (
-                    <NoteCard
-                      key={note.id}
-                      note={note}
-                      tagMap={tagMap}
-                      layout={layout}
-                      picking={picking}
-                      picked={picked.has(note.id)}
-                      onPick={onPick}
-                      onShare={onShare}
-                      renderActions={renderActions}
-                      dateLabel={dateLabel?.(note)}
-                    />
-                  ))}
-                </div>
+                  <CardsBox
+                    id={cardsId}
+                    groupKey={isSortable ? group.key : null}
+                    className={cn(
+                      "cards",
+                      layout,
+                      picking && "picking",
+                      drag && "dragging",
+                      group.isDropOnly && "drop-only",
+                    )}
+                    dropHint={notes.length ? undefined : group.dropHint}
+                  >
+                    {notes.map((note) => {
+                      const card = {
+                        note,
+                        tagMap,
+                        layout,
+                        picking,
+                        picked: picked.has(note.id),
+                        onPick,
+                        onShare,
+                        renderActions,
+                        dateLabel: dateLabel?.(note),
+                      };
+                      // One card type throughout, so searching or picking
+                      // doesn't remount every card.
+                      return (
+                        <SortableNoteCard
+                          key={note.id}
+                          {...card}
+                          isSortable={isSortable}
+                          onMoveByKey={isSortable ? onMoveByKey : undefined}
+                        />
+                      );
+                    })}
+                  </CardsBox>
+                </SortableGroup>
               )}
             </React.Fragment>
           );
         })}
       </div>
     );
+    return (
+      <DndContext id={boardId} {...contextProps}>
+        {board}
+        <DragOverlay dropAnimation={dropAnimation} zIndex={60}>
+          {activeNote && (
+            <div className={cn("cards drag-overlay", layout)}>
+              <NoteCard
+                note={activeNote}
+                tagMap={tagMap}
+                layout={layout}
+                drag={LIFTED}
+              />
+            </div>
+          )}
+        </DragOverlay>
+      </DndContext>
+    );
   },
 );
 NotesBoard.displayName = "NotesBoard";
+
+const NO_IDS: string[] = [];
+
+/** Sortable re-measures whenever its item list is a new array, even an equal one. */
+function SortableGroup({
+  id,
+  ids,
+  disabled,
+  children,
+}: {
+  id: string;
+  ids: string[];
+  disabled: boolean;
+  children: React.ReactNode;
+}) {
+  const stable = React.useRef(ids);
+  if (
+    stable.current.length !== ids.length ||
+    stable.current.some((value, i) => value !== ids[i])
+  )
+    stable.current = ids;
+  return (
+    <SortableContext
+      id={id}
+      items={stable.current}
+      strategy={noShift}
+      disabled={disabled}
+    >
+      {children}
+    </SortableContext>
+  );
+}
+
+function CardsBox({
+  groupKey,
+  dropHint,
+  children,
+  ...props
+}: React.ComponentProps<"div"> & {
+  groupKey: string | null;
+  dropHint?: string;
+}) {
+  const { setNodeRef } = useDroppable({
+    id: groupDropId(groupKey ?? ""),
+    disabled: !groupKey,
+  });
+  return (
+    <div ref={groupKey ? setNodeRef : undefined} {...props}>
+      {children}
+      {dropHint && <p className="cards-drop-hint">{dropHint}</p>}
+    </div>
+  );
+}
+
+function SortableNoteCard({
+  isSortable,
+  onMoveByKey,
+  ...props
+}: React.ComponentProps<typeof NoteCard> & {
+  isSortable: boolean;
+  onMoveByKey?: CardDrag["onMoveByKey"];
+}) {
+  const isOn = isSortable && !props.picking;
+  const { setNodeRef, listeners, isDragging } = useSortable({
+    id: props.note.id,
+    disabled: !isOn,
+  });
+  const drag = React.useMemo<CardDrag | undefined>(
+    () =>
+      isOn
+        ? {
+            ref: setNodeRef,
+            listeners,
+            isPlaceholder: isDragging,
+            onMoveByKey,
+          }
+        : undefined,
+    [isOn, setNodeRef, listeners, isDragging, onMoveByKey],
+  );
+  return <NoteCard {...props} drag={drag} />;
+}
 
 export function NotesBoardSkeleton({ loading }: { loading: boolean }) {
   const shown = useDelayedFlag(loading);

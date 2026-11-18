@@ -47,6 +47,7 @@ import {
 import { ShareDialog } from "@/features/notes/components/share-dialog";
 import { useArchivedNotes } from "@/features/notes/hooks/use-archived-notes";
 import { useNoteList } from "@/features/notes/hooks/use-note-list";
+import { useNoteReorder } from "@/features/notes/hooks/use-note-reorder";
 import { useRefreshNotes } from "@/features/notes/hooks/use-refresh-notes";
 import { deletedNotesText, deleteNotesWarning } from "@/features/notes/trash";
 import type { Note } from "@/features/notes/types";
@@ -124,6 +125,7 @@ function NotesView({ tagId }: { tagId: string | null }) {
     archived: archived.listOptions,
   });
   const { visible, pinned, others, chosen } = list;
+  const ordering = useNoteReorder({ list, notes, tagId });
   const isArchiveLoading = list.hasArchived && archived.query.isLoading;
   const archiveFailed =
     list.hasArchived && archived.query.isError && !archived.query.data;
@@ -323,14 +325,18 @@ function NotesView({ tagId }: { tagId: string | null }) {
             picked={list.picked}
             onPick={list.onPick}
             onShare={setSharingNote}
+            reorder={ordering.reorder}
+            onMoveByKey={ordering.onMoveByKey}
             groups={[
-              ...(pinned.length
+              ...(pinned.length || ordering.reorder
                 ? [
                     {
                       key: "pinned",
                       label: "Pinned",
                       icon: <Pin aria-hidden />,
                       notes: pinned,
+                      isDropOnly: !pinned.length,
+                      dropHint: "Drop here to pin",
                     },
                   ]
                 : []),
@@ -372,6 +378,9 @@ function NotesView({ tagId }: { tagId: string | null }) {
             ]}
           />
         )}
+        <div className="sr-only" aria-live="polite">
+          {ordering.announcement}
+        </div>
       </AppPage>
 
       {!list.picking && (

@@ -14,6 +14,11 @@ const syncedQueryKeys = [
   ["note-revisions"],
 ];
 
+const reorderedQueryKeys = new Set(["notes", "tags"]);
+
+/** Note and tag orders share it; see useNoteReorder and the sidebar. */
+export const REORDER_MUTATION_KEY = ["reorder"];
+
 const pushDebounceMs = 300;
 
 // For servers and proxies that never deliver the push channel.
@@ -27,7 +32,11 @@ export function useSync(): void {
     if (!isAuthenticated) return;
 
     const pull = () => {
+      // A reorder on its way would snap back; its last save pulls instead.
+      const isReordering =
+        queryClient.isMutating({ mutationKey: REORDER_MUTATION_KEY }) > 0;
       for (const queryKey of syncedQueryKeys) {
+        if (isReordering && reorderedQueryKeys.has(queryKey[0])) continue;
         void queryClient.invalidateQueries({ queryKey });
       }
     };

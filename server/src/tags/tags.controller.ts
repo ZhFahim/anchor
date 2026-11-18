@@ -4,6 +4,7 @@ import {
   Post,
   Body,
   Patch,
+  Put,
   Param,
   Delete,
   UseGuards,
@@ -11,6 +12,7 @@ import {
 import { TagsService } from './tags.service';
 import { CreateTagDto } from './dto/create-tag.dto';
 import { UpdateTagDto } from './dto/update-tag.dto';
+import { SetTagPositionsDto } from './dto/set-tag-positions.dto';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
@@ -30,6 +32,15 @@ export class TagsController {
   @Get()
   findAll(@CurrentUser('id') userId: string) {
     return this.tagsService.findAll(userId);
+  }
+
+  // Places tags in the owner's order.
+  @Put('positions')
+  setPositions(
+    @CurrentUser('id') userId: string,
+    @Body() dto: SetTagPositionsDto,
+  ) {
+    return this.tagsService.setPositions(userId, dto.positions);
   }
 
   @Get(':id')

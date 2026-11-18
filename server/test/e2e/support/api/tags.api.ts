@@ -20,4 +20,19 @@ export class TagsApi {
   async remove(id: string): Promise<void> {
     await this.http.delete(`/api/tags/${id}`).expect(200);
   }
+
+  async list(): Promise<TagOnWire[]> {
+    const res = await this.http.get('/api/tags').expect(200);
+    return bodyOf<TagOnWire[]>(res);
+  }
+
+  async setPositions(
+    positions: { id: string; position: string | null }[],
+  ): Promise<{ updated: string[] }> {
+    const res = await this.http
+      .put('/api/tags/positions')
+      .send({ positions })
+      .expect(200);
+    return bodyOf<{ updated: string[] }>(res);
+  }
 }

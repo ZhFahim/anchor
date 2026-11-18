@@ -18,6 +18,7 @@ import {
   NOTE_INCLUDE_ATTACHMENT_COUNT,
   noteArchiveInclude,
   notePinInclude,
+  notePositionInclude,
   noteReminderInclude,
 } from '../notes/constants/notes.constants';
 import type { Tag } from 'src/generated/prisma/client';
@@ -180,6 +181,7 @@ export class SyncHydratorService {
         ...NOTE_INCLUDE_SHARES,
         ...NOTE_INCLUDE_ATTACHMENT_COUNT,
         ...notePinInclude(userId),
+        ...notePositionInclude(userId),
         ...noteArchiveInclude(userId),
         ...noteReminderInclude(userId),
       },

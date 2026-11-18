@@ -1,4 +1,6 @@
 import type * as React from "react";
+import { compareByPosition } from "@/features/ordering";
+import type { TagOrder } from "@/features/preferences";
 import { TAG_COLORS } from "@/lib/design/tokens";
 
 type TagColor = (typeof TAG_COLORS)[number];
@@ -39,6 +41,21 @@ export function sortTagsByName<T extends { name: string }>(
   tags: readonly T[],
 ): T[] {
   return [...tags].sort((a, b) => compareTagNames(a.name, b.name));
+}
+
+/** Custom order keeps new tags at the end, by name. */
+const compareTagPositions = compareByPosition<{
+  id: string;
+  name: string;
+  position?: string | null;
+}>("last", (a, b) => compareTagNames(a.name, b.name));
+
+export function sortTags<
+  T extends { id: string; name: string; position?: string | null },
+>(tags: readonly T[], order: TagOrder): T[] {
+  return order === "custom"
+    ? [...tags].sort(compareTagPositions)
+    : sortTagsByName(tags);
 }
 
 export function nextTagColor(tagCount: number): string {

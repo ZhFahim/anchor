@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sortTagsByName } from "./utils";
+import { sortTags, sortTagsByName } from "./utils";
 
 const tag = (name: string) => ({ id: name, name });
 const names = (tags: { name: string }[]) => tags.map((t) => t.name);
@@ -57,5 +57,35 @@ describe("sortTagsByName", () => {
     sortTagsByName(tags);
 
     expect(names(tags)).toEqual(["b", "a"]);
+  });
+});
+
+describe("sortTags", () => {
+  const placed = (name: string, position: string | null) => ({
+    id: name,
+    name,
+    position,
+  });
+
+  it("keeps placed tags in their order and adds new ones last, by name", () => {
+    const tags = [
+      placed("zebra", null),
+      placed("work", "a1"),
+      placed("apple", null),
+      placed("ideas", "a0"),
+    ];
+
+    expect(names(sortTags(tags, "custom"))).toEqual([
+      "ideas",
+      "work",
+      "apple",
+      "zebra",
+    ]);
+    expect(names(sortTags(tags, "name"))).toEqual([
+      "apple",
+      "ideas",
+      "work",
+      "zebra",
+    ]);
   });
 });
