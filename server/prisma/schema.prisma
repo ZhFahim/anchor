@@ -71,6 +71,7 @@ model User {
   notes                Note[]
   tags                 Tag[]
   sharedNotes          NoteShare[]      @relation("SharedBy")
+  noteLinks            NoteLink[]
   notesSharedWithMe    NoteShare[]      @relation("SharedWith")
   refreshTokens        RefreshToken[]
   uploadedAttachments  NoteAttachment[]
@@ -104,6 +105,7 @@ model Note {
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   tags        Tag[]
   sharedWith  NoteShare[]
+  link        NoteLink?
   attachments NoteAttachment[]
   pins        NotePin[]
   archives    NoteArchive[]
@@ -183,6 +185,18 @@ model NoteShare {
   @@unique([noteId, sharedWithUserId])
   @@index([noteId])
   @@index([sharedWithUserId])
+}
+
+// A read-only link anyone can open without an account. One per note: turning
+// it off deletes the row, so a new link never reuses the old token.
+model NoteLink {
+  id              String   @id @default(uuid())
+  noteId          String   @unique
+  note            Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  token           String   @unique
+  createdByUserId String
+  createdByUser   User     @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
 }
 
 model RefreshToken {

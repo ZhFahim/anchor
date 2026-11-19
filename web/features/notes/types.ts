@@ -29,6 +29,25 @@ export interface NoteShare {
   updatedAt: string;
 }
 
+export interface NoteLink {
+  token: string;
+  createdAt: string;
+}
+
+/** A note as its public link shows it: no owner, no ids beyond attachments. */
+export interface PublicNote {
+  title: string;
+  content: string | null;
+  background: string | null;
+  updatedAt: string;
+  attachments: {
+    id: string;
+    type: AttachmentType;
+    mimeType: string;
+    originalFilename: string;
+  }[];
+}
+
 export type ReminderRecurrence =
   | "none"
   | "daily"

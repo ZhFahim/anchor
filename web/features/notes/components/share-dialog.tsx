@@ -5,7 +5,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Check,
   ChevronDown,
+  Copy,
   Eye,
+  Globe,
+  Link2,
   LoaderCircle,
   Lock,
   Pencil,
@@ -36,19 +39,26 @@ import {
 import { LoadFailedRow } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { SkeletonRows } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "@/components/ui/toast";
 import { useAuthStore } from "@/features/auth";
+import { copyText } from "@/lib/clipboard";
 import { useDelayedFlag } from "@/lib/hooks/use-delayed-flag";
 import { cn } from "@/lib/utils";
 import {
+  createNoteLink,
+  deleteNoteLink,
+  getNoteLink,
   getNoteShares,
   getRecentContacts,
+  publicNoteUrl,
   revokeShare,
   searchUsers,
   shareNote,
   updateNoteSharePermission,
 } from "../api";
 import type {
+  NoteLink,
   NoteShare,
   NoteSharePermission,
   UserSearchResult,
@@ -119,6 +129,11 @@ export function ShareDialog({
     enabled: open && !!noteId,
   });
   const showLoadingShapes = useDelayedFlag(isLoading);
+  const { data: link } = useQuery({
+    queryKey: ["note-link", noteId],
+    queryFn: () => getNoteLink(noteId),
+    enabled: open && !!noteId,
+  });
   const visibleShares = shares.filter((s) => !pending.has(s.id));
 
   const refresh = () => {
@@ -271,16 +286,121 @@ export function ShareDialog({
               ))
             )}
           </div>
+          <PublicLink noteId={noteId} />
         </DialogBody>
         <DialogFooter className="justify-between">
           <span className="flex items-center gap-2 text-meta text-muted-foreground [&_svg]:size-3.75">
-            <Lock aria-hidden />
-            Only people you add can open it.
+            {link ? (
+              <>
+                <Globe aria-hidden />
+                Anyone with the link can view it.
+              </>
+            ) : (
+              <>
+                <Lock aria-hidden />
+                Only people you add can open it.
+              </>
+            )}
           </span>
           <Button onClick={() => onOpenChange(false)}>Done</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function PublicLink({ noteId }: { noteId: string }) {
+  const queryClient = useQueryClient();
+  const linkKey = ["note-link", noteId];
+  const {
+    data: link,
+    isLoading,
+    isLoadingError,
+    isFetching,
+    refetch,
+  } = useQuery({
+    queryKey: linkKey,
+    queryFn: () => getNoteLink(noteId),
+  });
+
+  const copy = (current: NoteLink) =>
+    copyText(publicNoteUrl(current.token)).then(
+      () => toast.success("Link copied"),
+      () => toast.error("Couldn’t copy the link"),
+    );
+
+  const toggle = useMutation({
+    mutationFn: async (on: boolean): Promise<NoteLink | null> => {
+      if (on) return createNoteLink(noteId);
+      await deleteNoteLink(noteId);
+      return null;
+    },
+    onSuccess: (next) => {
+      queryClient.setQueryData(linkKey, next);
+      toast.success(
+        next
+          ? "Anyone with the link can view this note"
+          : "The link no longer works",
+      );
+    },
+    onError: (_e, on) =>
+      toast.error(
+        on ? "Couldn’t create the link" : "Couldn’t turn the link off",
+      ),
+  });
+
+  if (isLoadingError)
+    return (
+      <LoadFailedRow
+        message="Couldn’t load the public link."
+        onRetry={() => void refetch()}
+        isRetrying={isFetching}
+        className="mt-1"
+      />
+    );
+
+  const shown = toggle.isPending ? toggle.variables : !!link;
+
+  return (
+    <>
+      <div className="mt-1.5 -mb-0.5 text-label text-muted-foreground uppercase">
+        Public link
+      </div>
+      <div className="-mx-2 flex min-h-13 items-center gap-3 rounded-lg px-2 py-1.5">
+        <span className="grid size-9 flex-none place-items-center rounded-full bg-muted text-muted-foreground [&_svg]:size-4.5">
+          <Globe aria-hidden />
+        </span>
+        <span className="grid min-w-0 flex-1 leading-[1.3]">
+          <b className="font-semibold text-ui">Anyone with the link</b>
+          <small className="text-muted-foreground text-small">
+            Can view it without an account
+          </small>
+        </span>
+        <Switch
+          aria-label="Anyone with the link can view"
+          checked={shown}
+          disabled={isLoading || toggle.isPending}
+          onCheckedChange={(on) => toggle.mutate(on)}
+        />
+      </div>
+      {link && !toggle.isPending && (
+        <div className="flex gap-2">
+          <Input
+            readOnly
+            mono
+            aria-label="Public link"
+            icon={<Link2 aria-hidden />}
+            value={publicNoteUrl(link.token)}
+            boxClassName="min-w-0 flex-1"
+            onFocus={(e) => e.currentTarget.select()}
+          />
+          <Button variant="secondary" onClick={() => void copy(link)}>
+            <Copy aria-hidden />
+            Copy
+          </Button>
+        </div>
+      )}
+    </>
   );
 }
 
