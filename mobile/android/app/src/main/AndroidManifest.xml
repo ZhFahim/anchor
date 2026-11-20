@@ -16,6 +16,7 @@
         android:label="@string/app_name"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon"
+        android:localeConfig="@xml/locales_config"
         android:allowBackup="false"
         android:enableOnBackInvokedCallback="true"
         android:requestLegacyExternalStorage="true">
