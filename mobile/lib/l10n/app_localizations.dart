@@ -6,6 +6,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
 import 'app_localizations_en.dart';
+import 'app_localizations_zh.dart';
 
 // ignore_for_file: type=lint
 
@@ -92,7 +93,11 @@ abstract class AppLocalizations {
       ];
 
   /// A list of this localizations delegate's supported locales.
-  static const List<Locale> supportedLocales = <Locale>[Locale('en')];
+  static const List<Locale> supportedLocales = <Locale>[
+    Locale('en'),
+    Locale('zh'),
+    Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant'),
+  ];
 
   /// The app's name in Android's recent apps, the same as its launcher name.
   ///
@@ -4132,17 +4137,31 @@ class _AppLocalizationsDelegate
 
   @override
   bool isSupported(Locale locale) =>
-      <String>['en'].contains(locale.languageCode);
+      <String>['en', 'zh'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
 }
 
 AppLocalizations lookupAppLocalizations(Locale locale) {
+  // Lookup logic when language+script codes are specified.
+  switch (locale.languageCode) {
+    case 'zh':
+      {
+        switch (locale.scriptCode) {
+          case 'Hant':
+            return AppLocalizationsZhHant();
+        }
+        break;
+      }
+  }
+
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
     case 'en':
       return AppLocalizationsEn();
+    case 'zh':
+      return AppLocalizationsZh();
   }
 
   throw FlutterError(

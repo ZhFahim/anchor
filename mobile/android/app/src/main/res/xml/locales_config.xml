@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Languages the app ships translations for, so Android 13 and later can
+     offer them under Settings > Apps > Anchor > Language. -->
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <locale android:name="en"/>
+    <locale android:name="zh-Hans"/>
+    <locale android:name="zh-Hant"/>
+</locale-config>
