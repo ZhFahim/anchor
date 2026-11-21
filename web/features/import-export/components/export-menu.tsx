@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronDown, Download, FileText, FolderArchive } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -9,42 +10,44 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "@/components/ui/toast";
+import type { Translate } from "@/i18n/translate";
 import { downloadExport } from "../api";
 import type { ExportFormat } from "../types";
 
 const CHOICES = [
   {
     format: "anchor",
-    label: "Anchor backup (.zip)",
-    hint: "Everything, to restore later: notes, tags and attachments",
+    label: "exportAnchorLabel",
+    hint: "exportAnchorHint",
     icon: FolderArchive,
   },
   {
     format: "markdown",
-    label: "Markdown files (.zip)",
-    hint: "Plain .md files for Obsidian, Nextcloud Notes and others",
+    label: "exportMarkdownLabel",
+    hint: "exportMarkdownHint",
     icon: FileText,
   },
 ] as const;
 
-function startExport(format: ExportFormat) {
+function startExport(format: ExportFormat, t: Translate) {
   void toast
     .promise(downloadExport(format), {
-      loading: "Preparing your export…",
-      success: "Export downloaded",
-      error: "Couldn’t export your notes",
-      retry: () => startExport(format),
+      loading: t("exportPreparing"),
+      success: t("exportDownloaded"),
+      error: t("exportFailed"),
+      retry: () => startExport(format, t),
     })
     .catch(() => {});
 }
 
 export function ExportMenu() {
+  const t = useTranslations();
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="secondary">
           <Download aria-hidden />
-          Export
+          {t("exportButton")}
           <ChevronDown aria-hidden className="-mr-1 text-muted-foreground" />
         </Button>
       </DropdownMenuTrigger>
@@ -53,13 +56,13 @@ export function ExportMenu() {
           <DropdownMenuItem
             key={choice.format}
             className="items-start py-2 [&>svg]:mt-0.5"
-            onSelect={() => startExport(choice.format)}
+            onSelect={() => startExport(choice.format, t)}
           >
             <choice.icon />
             <span className="grid gap-0.5 whitespace-normal leading-[1.35]">
-              {choice.label}
+              {t(choice.label)}
               <small className="text-muted-foreground text-small">
-                {choice.hint}
+                {t(choice.hint)}
               </small>
             </span>
           </DropdownMenuItem>

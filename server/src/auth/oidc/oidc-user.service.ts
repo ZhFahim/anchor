@@ -10,6 +10,8 @@ import type { OidcUserClaims } from './oidc.types';
 import { OIDC_USER_SELECT, CONTENT_TYPE_EXT_MAP } from './oidc.constants';
 import { StorageConfig } from '../../config/configuration';
 import { PUBLIC_PROFILES_PREFIX } from '../../config/storage.constants';
+import { coded } from '../../common/errors/coded';
+import { ErrorCode } from '../../common/errors/error-code';
 
 @Injectable()
 export class OidcUserService {
@@ -64,8 +66,11 @@ export class OidcUserService {
               existingByEmail.oidcSubject != null &&
               existingByEmail.oidcSubject !== claims.subject
             ) {
-              throw new ConflictException(
-                'This email is already linked to a different sign-in account.',
+              throw coded(
+                new ConflictException(
+                  'This email is already linked to a different sign-in account.',
+                ),
+                ErrorCode.EMAIL_LINKED_ELSEWHERE,
               );
             }
             const updateData: {

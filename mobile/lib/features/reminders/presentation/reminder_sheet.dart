@@ -158,7 +158,10 @@ class _ReminderSheetState extends State<_ReminderSheet> {
               children: [
                 Semantics(
                   liveRegion: true,
-                  label: '${summary.headline}. ${summary.caption}',
+                  label: context.l10n.joinSentences([
+                    summary.headline,
+                    summary.caption,
+                  ]),
                   child: ExcludeSemantics(
                     child: Container(
                       padding: EdgeInsets.symmetric(

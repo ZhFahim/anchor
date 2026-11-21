@@ -10,6 +10,7 @@ import {
   Plus,
   Repeat,
 } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import type { RefObject } from "react";
 import * as React from "react";
 import { createPortal } from "react-dom";
@@ -22,15 +23,16 @@ import {
 } from "@/components/ui/popover";
 import { Tip } from "@/components/ui/tooltip";
 import { sortTagsByName, type Tag, TagChip, TagPicker } from "@/features/tags";
+import type { Translate } from "@/i18n/translate";
 import { useRovingFocus } from "@/lib/hooks/use-roving-focus";
 import { useFlip } from "@/lib/use-flip";
 import { cn } from "@/lib/utils";
 import { deltaToFullPlainText, isContentBlank } from "../../quill";
 import { isReminderPast, reminderLabel } from "../../reminder";
 import type { NoteReminder, ReminderRecurrence } from "../../types";
+import { countWords } from "../../word-count";
 import { AttachmentStrip, type AttachmentStripHandle } from "../attachments";
 import { RichTextEditor, type RichTextEditorHandle } from "../editor";
-import { formatCardDate } from "../note-card";
 import { useRingOnce } from "../reminder-chip";
 import { ReminderPopoverContent } from "../reminder-picker";
 import { NoteOutline } from "./note-outline";
@@ -77,28 +79,52 @@ interface NoteEditorContentProps {
   onReadOnlyAttempt?: () => void;
 }
 
-/** “Sam”, “Sam and Maya”, “Sam, Maya and 2 others”. */
-function sharedLine(people: Person[]) {
-  const firstNames = people.map((person) => person.name.split(" ")[0]);
-  if (firstNames.length <= 2) return firstNames.join(" and ");
-  if (firstNames.length === 3)
-    return `${firstNames[0]}, ${firstNames[1]} and ${firstNames[2]}`;
-  return `${firstNames[0]}, ${firstNames[1]} and ${firstNames.length - 2} others`;
+function sharedLine(t: Translate, people: Person[]) {
+  const [first, second, third] = people.map(
+    (person) => person.name.split(" ")[0],
+  );
+  if (people.length === 1) return t("noteSharedWithOne", { first });
+  if (people.length === 2) return t("noteSharedWithTwo", { first, second });
+  if (people.length === 3)
+    return t("noteSharedWithThree", { first, second, third });
+  return t("noteSharedWithMore", {
+    first,
+    second,
+    count: people.length - 2,
+  });
+}
+
+function editedLine(t: Translate, locale: string, iso: string) {
+  const date = new Date(iso);
+  const now = new Date();
+  const startOfDay = (d: Date) =>
+    new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const daysAgo = Math.round((startOfDay(now) - startOfDay(date)) / 86400000);
+  if (daysAgo === 0) return t("noteEditedToday");
+  if (daysAgo === 1) return t("noteEditedYesterday");
+  const day = new Intl.DateTimeFormat(locale, {
+    month: "short",
+    day: "numeric",
+    year: date.getFullYear() === now.getFullYear() ? undefined : "numeric",
+  }).format(date);
+  return t("noteEditedOn", { date: day });
 }
 
 export function NoteEditorContent(props: NoteEditorContentProps) {
+  const t = useTranslations();
+  const locale = useLocale();
   const root = React.useRef<HTMLDivElement>(null);
   const strip = React.useRef<AttachmentStripHandle>(null);
   const dropping = useFileDrop(root, props.canUpload, (files) =>
     strip.current?.add(files),
   );
   const words = React.useMemo(
-    () =>
-      deltaToFullPlainText(props.content).trim().split(/\s+/).filter(Boolean)
-        .length,
+    () => countWords(deltaToFullPlainText(props.content)),
     [props.content],
   );
-  const edited = props.updatedAt ? formatCardDate(props.updatedAt) : null;
+  const edited = props.updatedAt
+    ? editedLine(t, locale, props.updatedAt)
+    : null;
   const people = props.sharedBy ? [] : props.sharedWith;
   const [hasFiles, setHasFiles] = React.useState(false);
   const startersRoving = useRovingFocus<HTMLDivElement>();
@@ -115,7 +141,7 @@ export function NoteEditorContent(props: NoteEditorContentProps) {
         ref={startersRoving.ref}
         className="em-start"
         role="toolbar"
-        aria-label="Start with"
+        aria-label={t("noteStartWith")}
         onFocus={startersRoving.onFocus}
         onKeyDown={startersRoving.onKeyDown}
       >
@@ -126,23 +152,25 @@ export function NoteEditorContent(props: NoteEditorContentProps) {
           }
         >
           <ListChecks aria-hidden />
-          Checklist
+          {t("editorChecklist")}
         </button>
         <button
           type="button"
           onClick={() => props.contentEditorRef?.current?.startList?.("bullet")}
         >
           <List aria-hidden />
-          List
+          {t("noteStartList")}
         </button>
         {props.canUpload && (
           <button type="button" onClick={() => strip.current?.pick()}>
             <ImagePlus aria-hidden />
-            Picture or audio
+            {t("editorPictureOrAudio")}
           </button>
         )}
         <span className="hint">
-          or type <kbd>/</kbd> for more
+          {t.rich("noteStartHint", {
+            kbd: (chunks) => <kbd>{chunks}</kbd>,
+          })}
         </span>
       </div>
     );
@@ -151,7 +179,7 @@ export function NoteEditorContent(props: NoteEditorContentProps) {
     <div ref={root} className="note-in">
       {props.readOnlyBar}
       {props.readOnly ? (
-        <h1 className="n-title">{props.title || "Untitled"}</h1>
+        <h1 className="n-title">{props.title || t("commonUntitled")}</h1>
       ) : (
         <TitleField
           ref={props.titleInputRef}
@@ -163,18 +191,9 @@ export function NoteEditorContent(props: NoteEditorContentProps) {
       )}
       {!props.isNew && (edited || props.sharedBy || people.length > 0) && (
         <div className="meta">
-          {edited && (
-            <span>
-              Edited{" "}
-              {edited === "Today" || edited === "Yesterday"
-                ? edited.toLowerCase()
-                : edited}
-            </span>
-          )}
+          {edited && <span>{edited}</span>}
           {edited && <span aria-hidden>·</span>}
-          <span>
-            {words} {words === 1 ? "word" : "words"}
-          </span>
+          <span>{t("noteWordCount", { count: words })}</span>
           {props.sharedBy && (
             <>
               <span aria-hidden>·</span>
@@ -185,7 +204,9 @@ export function NoteEditorContent(props: NoteEditorContentProps) {
                   src={props.sharedBy.profileImage}
                   size="xs"
                 />
-                Shared by {props.sharedBy.name.split(" ")[0]}
+                {t("noteSharedBy", {
+                  name: props.sharedBy.name.split(" ")[0],
+                })}
               </span>
             </>
           )}
@@ -205,7 +226,7 @@ export function NoteEditorContent(props: NoteEditorContentProps) {
                     />
                   ))}
                 </span>
-                Shared with {sharedLine(people)}
+                {sharedLine(t, people)}
               </span>
             </>
           )}
@@ -264,7 +285,11 @@ export function NoteEditorContent(props: NoteEditorContentProps) {
           ref={props.contentEditorRef}
           value={props.content}
           onChange={props.onContentChange}
-          placeholder={props.isNew ? "Start writing" : "Write something"}
+          placeholder={
+            props.isNew
+              ? t("editorPlaceholderNew")
+              : t("editorPlaceholderEmpty")
+          }
           readOnly={props.readOnly}
           onAddAttachment={
             props.canUpload ? () => strip.current?.pick() : undefined
@@ -280,7 +305,7 @@ export function NoteEditorContent(props: NoteEditorContentProps) {
           <div className="drop-ov" aria-hidden>
             <span className="drop-label">
               <Paperclip />
-              Drop to attach
+              {t("noteDropToAttach")}
             </span>
           </div>,
           dropping,
@@ -305,6 +330,7 @@ function TitleField({
   onKeyDown: React.KeyboardEventHandler<HTMLTextAreaElement>;
   onPaste: React.ClipboardEventHandler<HTMLTextAreaElement>;
 }) {
+  const t = useTranslations();
   // biome-ignore lint/correctness/useExhaustiveDependencies: the height follows the text.
   React.useLayoutEffect(() => {
     const field = ref.current;
@@ -325,8 +351,8 @@ function TitleField({
       className="n-title"
       rows={1}
       value={value}
-      aria-label="Title"
-      placeholder="Title"
+      aria-label={t("noteTitle")}
+      placeholder={t("noteTitle")}
       spellCheck={false}
       onChange={(e) => onChange(e.target.value)}
       onKeyDown={onKeyDown}
@@ -394,12 +420,16 @@ function useFileDrop(
 }
 
 function TagRow(props: NoteEditorContentProps) {
+  const t = useTranslations();
+  const locale = useLocale();
   const roving = useRovingFocus<HTMLDivElement>();
   const row = roving.ref;
   const flip = useFlip(row, { pop: true });
   const [reminderOpen, setReminderOpen] = React.useState(false);
   const tags = sortTagsByName(
-    props.tagIds.flatMap((id) => props.allTags.find((t) => t.id === id) ?? []),
+    props.tagIds.flatMap(
+      (id) => props.allTags.find((tag) => tag.id === id) ?? [],
+    ),
   );
   const late = !!props.reminder && isReminderPast(props.reminder);
   const ringBell = useRingOnce(
@@ -434,13 +464,13 @@ function TagRow(props: NoteEditorContentProps) {
       ref={row}
       className="n-tags"
       role="toolbar"
-      aria-label="Tags"
+      aria-label={t("noteTags")}
       onFocus={roving.onFocus}
       onKeyDown={roving.onKeyDown}
     >
       {tagsFailed && (
         <LoadFailedRow
-          message="Couldn’t load tags."
+          message={t("noteTagsLoadFailed")}
           onRetry={props.onRetryTags}
           isRetrying={props.tagsRetrying}
           className="w-full"
@@ -456,13 +486,13 @@ function TagRow(props: NoteEditorContentProps) {
             name={tag.name}
             color={tag.color}
             onRemove={props.tagsLocked ? undefined : () => removeTag(tag)}
-            removeLabel={`Remove tag ${tag.name}`}
+            removeLabel={t("noteRemoveTag", { name: tag.name })}
           />
         </span>
       ))}
       {props.reminder && props.canSetReminder && (
         <Popover open={reminderOpen} onOpenChange={setReminderOpen}>
-          <Tip label="Change the reminder">
+          <Tip label={t("noteChangeReminder")}>
             <PopoverTrigger asChild>
               <button
                 type="button"
@@ -483,8 +513,10 @@ function TagRow(props: NoteEditorContentProps) {
                 ) : (
                   <Bell aria-hidden />
                 )}
-                {late && <span className="sr-only">Late: </span>}
-                {reminderLabel(props.reminder)}
+                {late && (
+                  <span className="sr-only">{`${t("noteReminderLate")} `}</span>
+                )}
+                {reminderLabel(props.reminder, t, locale)}
               </button>
             </PopoverTrigger>
           </Tip>
@@ -505,7 +537,7 @@ function TagRow(props: NoteEditorContentProps) {
               className="inline-flex h-chip cursor-pointer items-center gap-1.5 rounded-pill border-0 bg-transparent px-2.5 text-small text-note-muted hover:bg-note-surface hover:text-foreground max-md:h-7.5 [&_svg]:size-3.5"
             >
               <Plus aria-hidden />
-              Add tag
+              {t("noteAddTag")}
             </button>
           </PopoverTrigger>
           <PopoverContent align="start" className="p-0">

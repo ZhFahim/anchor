@@ -126,16 +126,19 @@ class DrawerHostState extends State<DrawerHost>
               offset: Offset(28 * progress, 0),
               child: ExcludeSemantics(excluding: progress > 0, child: child),
             ),
-            if (progress == 0 && widget.canSwipeOpen && context.isCupertino)
+            if (widget.canSwipeOpen && context.isCupertino)
               Positioned(
                 left: 0,
                 top: 0,
                 bottom: 0,
                 width: 22, // off-scale: the edge a swipe starts from
-                child: GestureDetector(
-                  behavior: HitTestBehavior.translucent,
-                  onHorizontalDragUpdate: _dragUpdate,
-                  onHorizontalDragEnd: _dragEnd,
+                child: IgnorePointer(
+                  ignoring: progress > 0,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onHorizontalDragUpdate: _dragUpdate,
+                    onHorizontalDragEnd: _dragEnd,
+                  ),
                 ),
               ),
             if (progress > 0) ...[

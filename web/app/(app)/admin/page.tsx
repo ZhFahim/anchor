@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { Hash, NotebookPen, Users } from "lucide-react";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { AppPage, PageTitle } from "@/components/layout/app-page";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +28,7 @@ export default function AdminPage() {
 }
 
 function AdminPageContent() {
+  const t = useTranslations();
   const [tab, setTab] = React.useState<"people" | "signin">("people");
   const stats = useQuery({
     queryKey: adminKeys.stats,
@@ -40,42 +42,40 @@ function AdminPageContent() {
   const waitingCount = pending.data?.length ?? 0;
 
   return (
-    <AppPage title={<PageTitle>Admin</PageTitle>} scrollKey="admin">
+    <AppPage title={<PageTitle>{t("adminTitle")}</PageTitle>} scrollKey="admin">
       <div className="grid gap-4 pb-10">
         <div className="grid grid-cols-3 gap-3 max-md:gap-2">
           <StatCard
             icon={<Users />}
-            label="People"
+            label={t("adminPeople")}
             value={stats.data?.totalUsers}
             failed={stats.isError}
-            caption={
-              waitingCount ? `${waitingCount} waiting` : "No one waiting"
-            }
+            caption={t("adminWaitingCount", { count: waitingCount })}
           />
           <StatCard
             icon={<NotebookPen />}
-            label="Notes"
+            label={t("adminNotes")}
             value={stats.data?.totalNotes}
             failed={stats.isError}
-            caption="Including trash"
+            caption={t("adminNotesCaption")}
           />
           <StatCard
             icon={<Hash />}
-            label="Tags"
+            label={t("adminTags")}
             value={stats.data?.totalTags}
             failed={stats.isError}
-            caption="Across all people"
+            caption={t("adminTagsCaption")}
           />
         </div>
         {((stats.isError && !stats.data) || statsRetry.isRetrying) && (
           <LoadFailedRow
-            message="Couldn’t load the counts."
+            message={t("adminStatsLoadFailed")}
             onRetry={statsRetry.retry}
             isRetrying={statsRetry.isRetrying}
           />
         )}
         <Tabs
-          aria-label="Admin"
+          aria-label={t("adminTitle")}
           panelId="admin-panel"
           value={tab}
           onValueChange={setTab}
@@ -84,17 +84,19 @@ function AdminPageContent() {
               value: "people",
               label: (
                 <>
-                  People
+                  {t("adminPeople")}
                   {waitingCount > 0 && (
                     <Badge tone="warn">
-                      {waitingCount}
-                      <span className="sr-only"> waiting</span>
+                      <span aria-hidden>{waitingCount}</span>
+                      <span className="sr-only">
+                        {t("adminWaitingCount", { count: waitingCount })}
+                      </span>
                     </Badge>
                   )}
                 </>
               ),
             },
-            { value: "signin", label: "Sign-in" },
+            { value: "signin", label: t("adminSignInTab") },
           ]}
         />
         <TabPanel id="admin-panel" labelledBy={`admin-panel-tab-${tab}`}>

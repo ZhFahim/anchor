@@ -136,11 +136,33 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Check generated translations
+        run: |
+          flutter gen-l10n
+          git diff --exit-code -- lib/l10n || {
+            echo "::error::lib/l10n is out of date. Run flutter gen-l10n and commit the result."
+            exit 1
+          }
+
       - name: Analyze
         run: flutter analyze
 
       - name: Test
         run: flutter test
+
+  translations:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 26
+
+      - name: Check translations and TRANSLATIONS.md
+        run: node i18n/status.mjs --check
 
   docker:
     permissions:

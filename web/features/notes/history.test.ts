@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { englishT } from "@/i18n/translate";
 import {
   canRestoreRevisions,
   comparisonTargetId,
@@ -44,19 +45,28 @@ const note = (over: Partial<Note> = {}): Note =>
 describe("revisionAuthorName", () => {
   it("names the reader themselves", () => {
     expect(
-      revisionAuthorName(revision("r-1", "2026-08-16T10:00:00Z"), "user-1"),
+      revisionAuthorName(
+        englishT,
+        revision("r-1", "2026-08-16T10:00:00Z"),
+        "user-1",
+      ),
     ).toBe("You");
   });
 
   it("names anyone else", () => {
     expect(
-      revisionAuthorName(revision("r-1", "2026-08-16T10:00:00Z"), "user-2"),
+      revisionAuthorName(
+        englishT,
+        revision("r-1", "2026-08-16T10:00:00Z"),
+        "user-2",
+      ),
     ).toBe("Ada");
   });
 
   it("copes with an author whose account is gone", () => {
     expect(
       revisionAuthorName(
+        englishT,
         revision("r-1", "2026-08-16T10:00:00Z", { author: null }),
         "user-1",
       ),
@@ -102,13 +112,28 @@ describe("revisionDayTime", () => {
 
   it("names the day and the time", () => {
     expect(
-      revisionDayTime({ createdAt: "2026-08-16T10:00:00.000Z" }, now),
+      revisionDayTime(
+        englishT,
+        "en",
+        { createdAt: "2026-08-16T10:00:00.000Z" },
+        now,
+      ),
     ).toMatch(/^Today at /);
     expect(
-      revisionDayTime({ createdAt: "2026-08-15T10:00:00.000Z" }, now),
+      revisionDayTime(
+        englishT,
+        "en",
+        { createdAt: "2026-08-15T10:00:00.000Z" },
+        now,
+      ),
     ).toMatch(/^Yesterday at /);
     expect(
-      revisionDayTime({ createdAt: "2026-08-02T10:00:00.000Z" }, now),
+      revisionDayTime(
+        englishT,
+        "en",
+        { createdAt: "2026-08-02T10:00:00.000Z" },
+        now,
+      ),
     ).toMatch(/^August 2, 2026 at /);
   });
 });
@@ -202,6 +227,8 @@ describe("groupTimelineByDay", () => {
 
   it("names today and yesterday, and dates the rest", () => {
     const days = groupTimelineByDay(
+      englishT,
+      "en",
       entries(
         revision("r-1", "2026-08-16T10:00:00.000Z"),
         revision("r-2", "2026-08-15T10:00:00.000Z"),
@@ -219,6 +246,8 @@ describe("groupTimelineByDay", () => {
 
   it("keeps a day's entries together in the order given", () => {
     const days = groupTimelineByDay(
+      englishT,
+      "en",
       entries(
         revision("r-1", "2026-08-16T11:00:00.000Z"),
         revision("r-2", "2026-08-16T09:00:00.000Z"),
@@ -233,6 +262,6 @@ describe("groupTimelineByDay", () => {
   });
 
   it("has no days when there is nothing to show", () => {
-    expect(groupTimelineByDay([], now)).toEqual([]);
+    expect(groupTimelineByDay(englishT, "en", [], now)).toEqual([]);
   });
 });

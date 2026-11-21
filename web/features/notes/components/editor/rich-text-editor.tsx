@@ -2,6 +2,7 @@
 
 import { ChevronDown, GripVertical } from "lucide-react";
 import dynamic from "next/dynamic";
+import { useTranslations } from "next-intl";
 import Delta from "quill-delta";
 import {
   forwardRef,
@@ -177,7 +178,7 @@ export const RichTextEditor = forwardRef<
     {
       value,
       onChange,
-      placeholder = "Start typing...",
+      placeholder,
       readOnly = false,
       onAddAttachment,
       below,
@@ -186,6 +187,7 @@ export const RichTextEditor = forwardRef<
     },
     ref,
   ) => {
+    const t = useTranslations();
     const quillRef = useRef<{ getEditor: () => QuillInstance }>(null);
     const rootRef = useRef<HTMLDivElement>(null);
     const [editorContainerEl, setEditorContainerEl] =
@@ -554,12 +556,15 @@ export const RichTextEditor = forwardRef<
       } catch {}
     }, []);
 
-    const copyLinkToClipboard = useCallback((url: string) => {
-      copyText(url).then(
-        () => toast.success("Link copied"),
-        () => toast.error("Couldn’t copy the link"),
-      );
-    }, []);
+    const copyLinkToClipboard = useCallback(
+      (url: string) => {
+        copyText(url).then(
+          () => toast.success(t("editorLinkCopied")),
+          () => toast.error(t("editorLinkCopyFailed")),
+        );
+      },
+      [t],
+    );
 
     const openLinkDialog = useCallback(() => {
       const quill = quillRef.current?.getEditor?.() as QuillInstance | null;
@@ -761,6 +766,7 @@ export const RichTextEditor = forwardRef<
       [checklistEdits, getQuill, readOnly],
     );
 
+    const textLabel = t("editorNoteText");
     useEffect(() => {
       const host = editorContainerEl;
       if (!host || readOnly) return;
@@ -769,7 +775,7 @@ export const RichTextEditor = forwardRef<
         if (!root || root.getAttribute("role") === "textbox") return;
         root.setAttribute("role", "textbox");
         root.setAttribute("aria-multiline", "true");
-        root.setAttribute("aria-label", "Note text");
+        root.setAttribute("aria-label", textLabel);
       };
       markTextbox();
       const observer = new MutationObserver(markTextbox);
@@ -781,8 +787,9 @@ export const RichTextEditor = forwardRef<
         root?.removeAttribute("aria-multiline");
         root?.removeAttribute("aria-label");
       };
-    }, [editorContainerEl, readOnly]);
+    }, [editorContainerEl, readOnly, textLabel]);
 
+    const readOnlyLabel = t("editorNoteTextReadOnly");
     useEffect(() => {
       const host = editorContainerEl;
       if (!host || !readOnly) return;
@@ -791,7 +798,7 @@ export const RichTextEditor = forwardRef<
         if (!root || root.getAttribute("role") === "region") return;
         root.tabIndex = 0;
         root.setAttribute("role", "region");
-        root.setAttribute("aria-label", "Note text, read-only");
+        root.setAttribute("aria-label", readOnlyLabel);
       };
       markReadOnly();
       const observer = new MutationObserver(markReadOnly);
@@ -815,7 +822,7 @@ export const RichTextEditor = forwardRef<
         root?.removeAttribute("role");
         root?.removeAttribute("aria-label");
       };
-    }, [editorContainerEl, readOnly]);
+    }, [editorContainerEl, readOnly, readOnlyLabel]);
 
     // Runs before Quill's own paste handler.
     useEffect(() => {
@@ -886,7 +893,7 @@ export const RichTextEditor = forwardRef<
               className="m-0 flex items-center gap-2 pt-1 text-note-muted text-meta"
             >
               <StatusRing turning />
-              Loading the note…
+              {t("editorLoadingNote")}
             </p>
           )}
           <ReactQuill
@@ -899,7 +906,7 @@ export const RichTextEditor = forwardRef<
             onBlur={handleBlur}
             modules={QUILL_MODULES}
             formats={QUILL_FORMATS}
-            placeholder={placeholder}
+            placeholder={placeholder ?? t("editorPlaceholder")}
             readOnly={readOnly || !!longContent}
             useSemanticHTML={false}
           />
@@ -915,7 +922,7 @@ export const RichTextEditor = forwardRef<
                 checklistSort.cancel();
                 checklistDrag.startDrag(e);
               }}
-              aria-label="Drag to reorder"
+              aria-label={t("editorDragToReorder")}
             >
               <GripVertical size={15} />
             </button>
@@ -965,7 +972,7 @@ export const RichTextEditor = forwardRef<
               onClick={checkedFolds.toggle}
             >
               <ChevronDown aria-hidden />
-              {checkedItemsLabel(row.count)}
+              {checkedItemsLabel(t, row.count)}
             </button>
           ))}
           <CodeCopyButtons container={editorContainerEl} />

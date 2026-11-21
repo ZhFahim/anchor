@@ -1,6 +1,7 @@
 "use client";
 
 import { Archive, ArchiveRestore, Lock, RotateCcw, Trash2 } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import * as React from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,8 @@ type ReadOnlyBarProps =
 
 /** A new `nudge` number shakes it. */
 export function ReadOnlyBar(props: ReadOnlyBarProps & { nudge?: number }) {
+  const t = useTranslations();
+  const locale = useLocale();
   const ref = React.useRef<HTMLDivElement>(null);
   const actions = useRovingFocus<HTMLSpanElement>();
   React.useEffect(() => {
@@ -34,6 +37,7 @@ export function ReadOnlyBar(props: ReadOnlyBarProps & { nudge?: number }) {
     return () => window.clearTimeout(timer);
   }, [props.nudge]);
 
+  const bold = (chunks: React.ReactNode) => <b>{chunks}</b>;
   const icon = (node: React.ReactNode) => (
     <span className="ic" aria-hidden>
       {node}
@@ -50,30 +54,31 @@ export function ReadOnlyBar(props: ReadOnlyBarProps & { nudge?: number }) {
         <>
           {icon(<Trash2 />)}
           <span className="ro-msg">
-            <b>In trash.</b> It will be deleted on{" "}
-            {props.deletesOn.toLocaleDateString(undefined, {
-              month: "short",
-              day: "numeric",
+            {t.rich("noteTrashBar", {
+              b: bold,
+              date: new Intl.DateTimeFormat(locale, {
+                month: "long",
+                day: "numeric",
+              }).format(props.deletesOn),
             })}
-            .
           </span>
           <span
             ref={actions.ref}
             className="ro-acts"
             role="toolbar"
-            aria-label="In trash"
+            aria-label={t("noteInTrash")}
             onFocus={actions.onFocus}
             onKeyDown={actions.onKeyDown}
           >
             <Button
               onClick={props.onRestore}
-              busy={props.restoring && "Restoring…"}
+              busy={props.restoring && t("noteRestoring")}
             >
               <RotateCcw aria-hidden />
-              Restore
+              {t("noteRestore")}
             </Button>
             <Button variant="danger" onClick={props.onDelete}>
-              Delete permanently
+              {t("noteDeletePermanently")}
             </Button>
           </span>
         </>
@@ -87,7 +92,10 @@ export function ReadOnlyBar(props: ReadOnlyBarProps & { nudge?: number }) {
             size="md"
           />
           <span className="ro-msg">
-            <b>View only.</b> Shared by {props.sharedBy.name.split(" ")[0]}.
+            {t.rich("noteViewOnlyBar", {
+              b: bold,
+              name: props.sharedBy.name.split(" ")[0],
+            })}
           </span>
         </>
       )}
@@ -95,12 +103,12 @@ export function ReadOnlyBar(props: ReadOnlyBarProps & { nudge?: number }) {
         <>
           {icon(<Archive />)}
           <span className="ro-msg">
-            <b>Archived.</b> It’s hidden from your notes list.
+            {t.rich("noteArchivedBar", { b: bold })}
           </span>
           <span className="ro-acts">
             <Button variant="quiet" onClick={props.onUnarchive}>
               <ArchiveRestore aria-hidden />
-              Unarchive
+              {t("noteUnarchive")}
             </Button>
           </span>
         </>
@@ -109,7 +117,7 @@ export function ReadOnlyBar(props: ReadOnlyBarProps & { nudge?: number }) {
         <>
           {icon(<Lock />)}
           <span className="ro-msg">
-            <b>You can no longer edit this note.</b>
+            {t.rich("noteRefusedBar", { b: bold })}
           </span>
         </>
       )}

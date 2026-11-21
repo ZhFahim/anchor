@@ -5,6 +5,8 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
+import { coded } from '../common/errors/coded';
+import { ErrorCode } from '../common/errors/error-code';
 
 export type RegistrationMode = 'disabled' | 'enabled' | 'review';
 
@@ -91,13 +93,19 @@ export class SettingsService {
    */
   async setRegistrationMode(mode: RegistrationMode): Promise<void> {
     if (this.isRegistrationModeLocked()) {
-      throw new ForbiddenException(
-        'Registration mode is locked by USER_SIGNUP environment variable',
+      throw coded(
+        new ForbiddenException(
+          'Registration mode is locked by USER_SIGNUP environment variable',
+        ),
+        ErrorCode.REGISTRATION_MODE_LOCKED,
       );
     }
 
     if (!['disabled', 'enabled', 'review'].includes(mode)) {
-      throw new BadRequestException('Invalid registration mode');
+      throw coded(
+        new BadRequestException('Invalid registration mode'),
+        ErrorCode.INVALID_REGISTRATION_MODE,
+      );
     }
 
     // Upsert the setting

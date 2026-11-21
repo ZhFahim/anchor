@@ -14,6 +14,15 @@ extension L10n on BuildContext {
 
 final _english = lookupAppLocalizations(const Locale('en'));
 
+/// Joins words with this language's punctuation.
+extension Joining on AppLocalizations {
+  String joinSentences(Iterable<String> parts) => parts.join(sentenceSeparator);
+
+  String joinList(Iterable<String> parts) => parts.join(listSeparator);
+
+  String joinDetails(Iterable<String> parts) => parts.join(detailSeparator);
+}
+
 /// The phone's first locale in a language the app has, region kept.
 Locale appLocaleFor(List<Locale>? phone, Iterable<Locale> supported) {
   final language = basicLocaleListResolution(phone, supported).languageCode;

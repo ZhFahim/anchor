@@ -18,6 +18,7 @@
         android:icon="@mipmap/launcher_icon"
         android:allowBackup="false"
         android:enableOnBackInvokedCallback="true"
+        android:localeConfig="@xml/locales_config"
         android:requestLegacyExternalStorage="true">
         <activity
             android:name=".MainActivity"

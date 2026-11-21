@@ -225,9 +225,17 @@ String _roman(int number) {
       : '$number';
 }
 
-final _word = RegExp(r'\S+');
+final _eastAsian = RegExp(
+  r'[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]',
+  unicode: true,
+);
+final _word = RegExp(r'\S*[\p{L}\p{N}]\S*', unicode: true);
 
-int countWords(String text) => _word.allMatches(text).length;
+/// Spaced runs that hold a letter or number, and each Chinese or Japanese
+/// character on its own.
+int countWords(String text) =>
+    _eastAsian.allMatches(text).length +
+    _word.allMatches(text.replaceAll(_eastAsian, ' ')).length;
 
 int wordCount(String? content) => countWords(plainTextOf(content));
 

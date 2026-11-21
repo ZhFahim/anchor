@@ -1,6 +1,6 @@
 /* Generated from design/tokens by design/build/build.mjs. Do not edit by hand. */
 @theme static {
-  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans: var(--font-dm-sans), var(--font-manrope), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --font-serif: var(--font-playfair), Georgia, serif;
   --font-weight-regular: 400;

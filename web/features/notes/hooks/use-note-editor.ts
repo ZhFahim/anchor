@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "@/components/ui/toast";
 import { useSyncStatus } from "@/features/sync";
@@ -82,6 +83,7 @@ export function useNoteEditor({
   onCreated: (id: string) => void;
   onOpenHistory: () => void;
 }) {
+  const t = useTranslations();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const refreshLists = useRefreshNotes();
@@ -241,17 +243,14 @@ export function useNoteEditor({
 
   const keepOtherEdit = useCallback(() => {
     replacesOtherEdit.current = true;
-    toast.info(
-      "This note was changed elsewhere. Your version is kept, and the other one is in History.",
-      {
-        id: conflictToastId,
-        action: {
-          label: "History",
-          onClick: () => live.current.openHistory(),
-        },
+    toast.info(t("noteChangedElsewhereKept"), {
+      id: conflictToastId,
+      action: {
+        label: t("noteChangedElsewhereHistory"),
+        onClick: () => live.current.openHistory(),
       },
-    );
-  }, [live]);
+    });
+  }, [live, t]);
 
   useEffect(() => {
     if (!isNew) return;
@@ -490,7 +489,7 @@ export function useNoteEditor({
 
       if (serverWins) {
         applyServerNote(serverNote);
-        toast.info("This note was changed elsewhere and has been reloaded.", {
+        toast.info(t("noteChangedElsewhereReloaded"), {
           id: conflictToastId,
         });
         return null;
@@ -505,7 +504,7 @@ export function useNoteEditor({
       if (replacesText(next, base, incoming)) keepOtherEdit();
       return noteDraftsEqual(next, incoming) ? null : next;
     },
-    [applyServerNote, draft, keepOtherEdit, lastSaved, rebaseOnto],
+    [applyServerNote, draft, keepOtherEdit, lastSaved, rebaseOnto, t],
   );
 
   const dirtySince = useRef<number | null>(null);
@@ -672,7 +671,7 @@ export function useNoteEditor({
     if (next || !reminder) return;
     const removed = reminder;
     const removedFromId = isNew ? null : noteId;
-    toast.success("Reminder removed", {
+    toast.success(t("reminderRemoved"), {
       undo: () => {
         if (mounted.current) setReminder(removed);
         else if (removedFromId)
@@ -680,7 +679,7 @@ export function useNoteEditor({
             reminder: toReminderInput(removed),
           }).then((outcome) => {
             if (outcome.status === "saved") refreshLists();
-            else toast.error("Couldn’t undo that");
+            else toast.error(t("editorUndoFailed"));
           });
       },
     });

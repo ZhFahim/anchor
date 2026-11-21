@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect } from "react";
 import { isMac } from "@/lib/platform";
 import type { QuillInstance, QuillOp } from "../../quill";
@@ -22,7 +23,11 @@ function setAttribute(el: Element, name: string, value: string | null) {
   else el.setAttribute(name, value);
 }
 
-function labelBoxes(root: HTMLElement, isReadOnly: boolean) {
+function labelBoxes(
+  root: HTMLElement,
+  isReadOnly: boolean,
+  emptyItemLabel: string,
+) {
   const shortcut = isMac() ? "Meta+Enter" : "Control+Enter";
   for (const box of root.querySelectorAll("li > .ql-ui")) {
     const item = box.parentElement as HTMLElement;
@@ -37,7 +42,7 @@ function labelBoxes(root: HTMLElement, isReadOnly: boolean) {
       .trim();
     setAttribute(box, "role", "checkbox");
     setAttribute(box, "aria-checked", String(state === LIST_FORMATS.CHECKED));
-    setAttribute(box, "aria-label", text || "Empty item");
+    setAttribute(box, "aria-label", text || emptyItemLabel);
     setAttribute(box, "aria-disabled", isReadOnly ? "true" : null);
     setAttribute(box, "aria-keyshortcuts", isReadOnly ? null : shortcut);
   }
@@ -52,6 +57,8 @@ export function useChecklistBoxes({
   getQuill: () => QuillInstance | null;
   readOnly: boolean;
 }) {
+  const t = useTranslations();
+  const emptyItemLabel = t("editorEmptyItem");
   useEffect(() => {
     const host = containerEl;
     if (!host) return;
@@ -60,7 +67,8 @@ export function useChecklistBoxes({
     let isComposing = false;
     const label = () => {
       frame = 0;
-      if (watched && !isComposing) labelBoxes(watched, readOnly);
+      if (watched && !isComposing)
+        labelBoxes(watched, readOnly, emptyItemLabel);
     };
     const labelSoon = () => {
       frame ||= requestAnimationFrame(label);
@@ -101,7 +109,7 @@ export function useChecklistBoxes({
       host.removeEventListener("compositionstart", onCompositionStart);
       host.removeEventListener("compositionend", onCompositionEnd);
     };
-  }, [containerEl, readOnly]);
+  }, [containerEl, readOnly, emptyItemLabel]);
 
   useEffect(() => {
     const host = containerEl;

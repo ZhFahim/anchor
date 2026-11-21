@@ -31,9 +31,12 @@ import { SyncReminderRecurrence } from '../sync/dto/sync-request.dto';
 import {
   ImportNoteItemDto,
   ImportNoteResult,
+  ImportNoteWarning,
   ImportNotesDto,
   ImportNotesResponse,
 } from './dto/import-notes.dto';
+import { coded } from '../common/errors/coded';
+import { ErrorCode } from '../common/errors/error-code';
 
 /**
  * Truncate to whole seconds: mobile sync clients store timestamps with
@@ -218,7 +221,15 @@ export class ImportService {
         ref: item.ref,
         status,
         noteId: created.id,
-        ...(prepared.warning ? { warning: prepared.warning } : {}),
+        ...(prepared.warnings.length
+          ? {
+              warning: prepared.warnings.map((w) => w.text).join('; '),
+              warnings: prepared.warnings.map(({ code, params }) => ({
+                code,
+                ...(params ? { params } : {}),
+              })),
+            }
+          : {}),
       };
     } catch (error) {
       this.logger.error(
@@ -228,6 +239,7 @@ export class ImportService {
         ref: item.ref,
         status: 'failed',
         error: 'Failed to create note',
+        errorCode: ErrorCode.IMPORT_NOTE_FAILED,
       };
     }
   }
@@ -235,16 +247,19 @@ export class ImportService {
   private prepareNote(item: ImportNoteItemDto): {
     content: string | null;
     background: string | null;
-    warning?: string;
+    warnings: (ImportNoteWarning & { text: string })[];
   } {
-    const warnings: string[] = [];
+    const warnings: (ImportNoteWarning & { text: string })[] = [];
 
     let content: string | null = null;
     if (item.content) {
       if (this.isValidDeltaContent(item.content)) {
         content = item.content;
       } else {
-        warnings.push('Content was not valid note data and was dropped');
+        warnings.push({
+          code: ErrorCode.IMPORT_CONTENT_INVALID,
+          text: 'Content was not valid note data and was dropped',
+        });
       }
     }
 
@@ -253,15 +268,15 @@ export class ImportService {
       if (IMPORT_ALLOWED_BACKGROUNDS.has(item.background)) {
         background = item.background;
       } else {
-        warnings.push(`Unknown background "${item.background}" was ignored`);
+        warnings.push({
+          code: ErrorCode.IMPORT_BACKGROUND_UNKNOWN,
+          params: { background: item.background },
+          text: `Unknown background "${item.background}" was ignored`,
+        });
       }
     }
 
-    return {
-      content,
-      background,
-      ...(warnings.length ? { warning: warnings.join('; ') } : {}),
-    };
+    return { content, background, warnings };
   }
 
   private isValidDeltaContent(content: string): boolean {
@@ -388,7 +403,10 @@ export class ImportService {
       if (stored) {
         await deleteFileIfExists(stored.filePath, this.logger);
       }
-      throw new BadRequestException('Failed to import attachment');
+      throw coded(
+        new BadRequestException('Failed to import attachment'),
+        ErrorCode.IMPORT_ATTACHMENT_FAILED,
+      );
     }
   }
 }

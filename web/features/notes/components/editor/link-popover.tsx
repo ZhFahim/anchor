@@ -1,6 +1,7 @@
 "use client";
 
 import { Link as LinkIcon, Unlink } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
@@ -39,6 +40,7 @@ export function LinkPopover({
   onRemove,
   onClose,
 }: LinkPopoverProps) {
+  const t = useTranslations();
   const [text, setText] = useState(initialText);
   const isClosedOutside = useRef(false);
   const [url, setUrl] = useState(initialUrl);
@@ -73,7 +75,7 @@ export function LinkPopover({
         }}
         className="w-80 p-3.5"
       >
-        <PopoverTitle className="sr-only">Link</PopoverTitle>
+        <PopoverTitle className="sr-only">{t("editorLinkTitle")}</PopoverTitle>
         <form
           className="grid gap-3"
           onSubmit={(e) => {
@@ -82,21 +84,21 @@ export function LinkPopover({
           }}
         >
           {!isMultiLine && (
-            <Field label="Text">
+            <Field label={t("editorLinkTextField")}>
               <Input
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                placeholder="Text to display"
+                placeholder={t("editorLinkTextPlaceholder")}
                 autoFocus={isEditing || !initialText}
               />
             </Field>
           )}
-          <Field label="Link">
+          <Field label={t("editorLinkAddressField")}>
             <Input
               icon={<LinkIcon aria-hidden />}
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              placeholder="Paste or type a link"
+              placeholder={t("editorLinkAddressPlaceholder")}
               inputMode="url"
               autoComplete="url"
               autoFocus={!isEditing && !!initialText}
@@ -112,7 +114,7 @@ export function LinkPopover({
                 onClick={onRemove}
               >
                 <Unlink aria-hidden />
-                Remove
+                {t("commonRemove")}
               </Button>
             )}
             <Button
@@ -121,10 +123,10 @@ export function LinkPopover({
               size="sm"
               onClick={() => onClose(true)}
             >
-              Cancel
+              {t("commonCancel")}
             </Button>
             <Button type="submit" size="sm" disabled={!isAddress}>
-              {isEditing ? "Save" : "Add link"}
+              {isEditing ? t("commonSave") : t("editorAddLink")}
             </Button>
           </div>
         </form>

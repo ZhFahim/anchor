@@ -2,6 +2,7 @@
 
 import { ArrowLeft, CircleAlert, Info } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import type * as React from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -55,9 +56,10 @@ export const linkButtonClass =
   "cursor-pointer border-0 bg-transparent p-0 font-semibold text-accent-ink underline decoration-current/35 underline-offset-3 hover:decoration-current";
 
 export function OrDivider() {
+  const t = useTranslations();
   return (
     <div className="flex items-center gap-3 text-muted-foreground text-small before:h-px before:flex-1 before:bg-border/80 after:h-px after:flex-1 after:bg-border/80">
-      or
+      {t("authOr")}
     </div>
   );
 }
@@ -84,17 +86,18 @@ export function AuthStatusScreen({
 }
 
 export function PendingApprovalScreen({ onBack }: { onBack?: () => void }) {
+  const t = useTranslations();
   const back = (
     <>
       <ArrowLeft aria-hidden />
-      Back to sign in
+      {t("authBackToSignIn")}
     </>
   );
   return (
     <AuthStatusScreen
       illustration="waiting"
-      title="You’re on the list"
-      text="An admin needs to approve your account. Try signing in again later."
+      title={t("authPendingTitle")}
+      text={t("authPendingText")}
     >
       {onBack ? (
         <Button

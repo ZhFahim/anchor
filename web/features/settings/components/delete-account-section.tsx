@@ -2,6 +2,7 @@
 
 import { useMutation } from "@tanstack/react-query";
 import { HTTPError } from "ky";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +22,7 @@ import { useAuthStore } from "@/features/auth/store";
 import { Row, RowText, Section } from "./settings-blocks";
 
 export function DeleteAccountSection() {
+  const t = useTranslations();
   const hasPassword = useAuthStore((s) => s.user?.hasPassword !== false);
   const clearAuth = useAuthStore((s) => s.logout);
   const [isOpen, setIsOpen] = React.useState(false);
@@ -33,23 +35,19 @@ export function DeleteAccountSection() {
     mutationFn: deleteAccount,
     onSuccess: () => {
       clearAuth({ hasSignedOut: true });
-      toast.success("Account deleted");
+      toast.success(t("settingsAccountDeleted"));
     },
     onError: (e: Error) => {
       const status = e instanceof HTTPError ? e.response.status : 0;
       if (status === 403) {
         setPassword("");
-        setPasswordError("That isn’t your password.");
+        setPasswordError(t("settingsDeleteWrongPassword"));
         passwordInput.current?.focus();
       } else if (status === 409) {
-        setFormError(
-          "You’re the only admin on this server. Make someone else an admin first.",
-        );
+        setFormError(t("settingsDeleteOnlyAdmin"));
       } else {
         setFormError(
-          status
-            ? "Couldn’t delete your account. Try again in a moment."
-            : "Couldn’t reach the server. Check your connection and try again.",
+          status ? t("settingsDeleteFailed") : t("errorUnreachable"),
         );
       }
     },
@@ -63,14 +61,14 @@ export function DeleteAccountSection() {
   }, [isOpen]);
 
   return (
-    <Section id="delete-account" title="Delete account">
+    <Section id="delete-account" title={t("settingsDeleteAccount")}>
       <Row>
         <RowText
-          title="This can’t be undone"
-          text="Permanently delete your account and everything in it from this server. To keep a copy of your notes, export them first."
+          title={t("settingsDeleteWarningTitle")}
+          text={t("settingsDeleteWarningText")}
         />
         <Button variant="danger" onClick={() => setIsOpen(true)}>
-          Delete account
+          {t("settingsDeleteAccount")}
         </Button>
       </Row>
       <Dialog
@@ -91,19 +89,19 @@ export function DeleteAccountSection() {
             }}
           >
             <DialogHeader>
-              <DialogTitle className="pr-0">Delete your account?</DialogTitle>
+              <DialogTitle className="pr-0">
+                {t("settingsDeleteDialogTitle")}
+              </DialogTitle>
               <DialogDescription>
-                This can’t be undone. Your account, notes, tags, attachments and
-                reminders will be permanently deleted from this server. Notes
-                you shared will no longer be available to other people.
+                {t("settingsDeleteDialogMessage")}
               </DialogDescription>
             </DialogHeader>
             {(hasPassword || formError) && (
               <DialogBody>
                 {hasPassword && (
                   <Field
-                    label="Password"
-                    help="Enter your password to confirm."
+                    label={t("settingsPassword")}
+                    help={t("settingsDeleteConfirmHelp")}
                     error={passwordError}
                   >
                     <PasswordInput
@@ -128,15 +126,15 @@ export function DeleteAccountSection() {
                 onClick={() => setIsOpen(false)}
                 disabled={remove.isPending}
               >
-                Cancel
+                {t("commonCancel")}
               </Button>
               <Button
                 type="submit"
                 variant="destructive"
                 disabled={hasPassword && !password}
-                busy={remove.isPending && "Deleting…"}
+                busy={remove.isPending && t("uiDeleting")}
               >
-                Delete account
+                {t("settingsDeleteAccount")}
               </Button>
             </DialogFooter>
           </form>

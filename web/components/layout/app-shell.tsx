@@ -2,6 +2,7 @@
 
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { Toaster } from "@/components/ui/toast";
 import { usePreferencesStore } from "@/features/preferences";
@@ -19,6 +20,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   useOnlineStatus();
   useWarnWhenUnsaved();
   useTrackPageChanges();
+  const t = useTranslations();
   const router = useRouter();
   const folded = usePreferencesStore((s) => s.ui.sidebarCollapsed);
   const setUI = usePreferencesStore((s) => s.setUIPreference);
@@ -114,7 +116,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             className="fixed inset-y-0 left-0 z-(--z-drawer) flex overflow-hidden rounded-r-3xl shadow-menu outline-none animate-drawer-in data-[state=closed]:pointer-events-none! data-[state=closed]:animate-drawer-out lg:hidden"
           >
             <DialogPrimitive.Title className="sr-only">
-              Menu
+              {t("navMenu")}
             </DialogPrimitive.Title>
             <Sidebar drawer onNavigate={() => setDrawer(false)} />
           </DialogPrimitive.Content>

@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, Hash, Plus, Search } from "lucide-react";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { LoadFailedRow } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
@@ -43,6 +44,7 @@ export function TagPicker({
   onCreate,
   bulk,
 }: TagPickerProps) {
+  const t = useTranslations();
   const [query, setQuery] = React.useState("");
   const [active, setActive] = React.useState(0);
   const [creating, setCreating] = React.useState(false);
@@ -103,7 +105,7 @@ export function TagPicker({
   return (
     <div className="grid w-72.5 max-w-full p-1.5 max-md:w-auto">
       <PopoverTitle className="sr-only">
-        {bulk ? "Add tags" : "Tags"}
+        {bulk ? t("tagsAddTitle") : t("tagsTitle")}
       </PopoverTitle>
       <Input
         autoFocus
@@ -115,8 +117,8 @@ export function TagPicker({
         aria-activedescendant={
           optionCount ? `${listId}-${activeIndex}` : undefined
         }
-        aria-label="Find or create a tag"
-        placeholder="Find or create a tag"
+        aria-label={t("tagsFindOrCreate")}
+        placeholder={t("tagsFindOrCreate")}
         value={query}
         onChange={(e) => {
           setQuery(e.target.value);
@@ -147,7 +149,7 @@ export function TagPicker({
         />
       ) : loadFailed ? (
         <LoadFailedRow
-          message="Couldn’t load tags."
+          message={t("tagsLoadFailed")}
           onRetry={() => onRetry?.()}
           isRetrying={isRetrying}
           className="m-0.5"
@@ -157,7 +159,8 @@ export function TagPicker({
           ref={listRef}
           role="listbox"
           id={listId}
-          aria-label="Tags"
+          data-slot="tag-list"
+          aria-label={t("tagsTitle")}
           className="grid max-h-66 grid-cols-[minmax(0,1fr)] gap-px overflow-auto"
         >
           {shown.map((tag, i) => {
@@ -231,7 +234,10 @@ export function TagPicker({
             >
               <Plus aria-hidden />
               <span className="min-w-0 flex-1 truncate">
-                Create <b className="font-semibold">“{term}”</b>
+                {t.rich("tagsCreateNamed", {
+                  name: term,
+                  b: (chunks) => <b className="font-semibold">{chunks}</b>,
+                })}
               </span>
               <span
                 aria-hidden
@@ -243,7 +249,7 @@ export function TagPicker({
           )}
           {!optionCount && (
             <div className="px-2.5 py-3.5 text-center text-control text-muted-foreground">
-              No tags yet. Type a name to create one.
+              {t("tagsEmpty")}
             </div>
           )}
         </div>
@@ -251,12 +257,12 @@ export function TagPicker({
       <div className="mt-1 flex items-center justify-between gap-2 border-border/55 border-t px-1.5 pt-2 pb-0.5 text-caption text-muted-foreground max-md:hidden">
         <ShortcutHints
           groups={[
-            [["↑", "↓"], "move"],
-            [["↵"], "pick"],
+            [["↑", "↓"], t("tagsHintMove")],
+            [["↵"], t("tagsHintPick")],
           ]}
-          screenReaderText="Up and down arrows move, Enter picks"
+          screenReaderText={t("tagsHintsSpoken")}
         />
-        <span>{bulk ? `${bulk} ${bulk === 1 ? "note" : "notes"}` : ""}</span>
+        <span>{bulk ? t("tagsNoteCount", { count: bulk }) : ""}</span>
       </div>
     </div>
   );

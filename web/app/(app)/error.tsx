@@ -1,6 +1,7 @@
 "use client";
 
 import { Copy, RotateCw } from "lucide-react";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { AppPage } from "@/components/layout/app-page";
 import { ErrorScreen } from "@/components/layout/error-screen";
@@ -25,6 +26,7 @@ export default function AppError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const t = useTranslations();
   const id = React.useMemo(() => shortId(error.digest), [error.digest]);
   React.useEffect(() => console.error(error), [error]);
 
@@ -44,9 +46,9 @@ export default function AppError({
     <AppPage title={null}>
       <ErrorScreen
         illustration="broken"
-        code={`Error ${id}`}
-        title="Something went wrong"
-        text="An unexpected error occurred. Reloading the page usually fixes it. Your saved notes are safe."
+        code={t("appErrorCode", { id })}
+        title={t("appErrorTitle")}
+        text={t("appErrorText")}
         actions={
           <>
             <Button
@@ -56,19 +58,19 @@ export default function AppError({
               }}
             >
               <RotateCw aria-hidden />
-              Reload
+              {t("appReload")}
             </Button>
             <Button
               variant="secondary"
               onClick={() =>
                 copyText(details()).then(
-                  () => toast.success("Error details copied"),
-                  () => toast.error("Couldn’t copy the details"),
+                  () => toast.success(t("appErrorDetailsCopied")),
+                  () => toast.error(t("appErrorDetailsCopyFailed")),
                 )
               }
             >
               <Copy aria-hidden />
-              Copy error details
+              {t("appCopyErrorDetails")}
             </Button>
           </>
         }

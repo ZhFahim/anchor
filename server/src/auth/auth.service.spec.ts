@@ -13,6 +13,8 @@ import { SettingsService } from '../settings/settings.service';
 import { OidcConfigService } from './oidc/oidc-config.service';
 import { UserDeletionService } from '../users/user-deletion.service';
 import { REFRESH_TOKEN_REUSE_WINDOW_MS } from './constants/auth.constants';
+import { coded } from '../common/errors/coded';
+import { ErrorCode } from '../common/errors/error-code';
 
 /**
  * AuthService against in-memory user/refresh-token stores with real bcrypt.
@@ -237,8 +239,12 @@ describe('AuthService', () => {
     it('is forbidden when only provider sign-in is allowed', async () => {
       isProviderOnly = true;
       await expect(service.register(dto)).rejects.toThrow(
-        new ForbiddenException(
-          'Email and password sign-up is turned off. Sign up with Pocket ID.',
+        coded(
+          new ForbiddenException(
+            'Email and password sign-up is turned off. Sign up with Pocket ID.',
+          ),
+          ErrorCode.PASSWORD_SIGN_UP_DISABLED,
+          { provider: 'Pocket ID' },
         ),
       );
       expect(users.size).toBe(0);
@@ -325,8 +331,12 @@ describe('AuthService', () => {
       await expect(
         service.login({ email: 'u1@example.com', password: 'correct horse' }),
       ).rejects.toThrow(
-        new ForbiddenException(
-          'Email and password sign-in is turned off. Sign in with Pocket ID.',
+        coded(
+          new ForbiddenException(
+            'Email and password sign-in is turned off. Sign in with Pocket ID.',
+          ),
+          ErrorCode.PASSWORD_SIGN_IN_DISABLED,
+          { provider: 'Pocket ID' },
         ),
       );
     });
@@ -442,7 +452,10 @@ describe('AuthService', () => {
         addUser({ id: 'u1' });
 
         await expect(service.deleteAccount('u1', password)).rejects.toThrow(
-          new ForbiddenException('Current password is incorrect'),
+          coded(
+            new ForbiddenException('Current password is incorrect'),
+            ErrorCode.CURRENT_PASSWORD_INCORRECT,
+          ),
         );
         expect(userDeletionService.deleteUser).not.toHaveBeenCalled();
       },

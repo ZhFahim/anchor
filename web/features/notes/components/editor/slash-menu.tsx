@@ -13,9 +13,11 @@ import {
   Quote,
   Type,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { menuItem, menuSurface } from "@/components/ui/dropdown-menu";
 import { ShortcutHints } from "@/components/ui/shortcut-hints";
+import type { Messages } from "@/i18n/messages";
 import { isPhoneWidth } from "@/lib/hooks/use-is-phone";
 import { cn } from "@/lib/utils";
 import { lineFormatChange, type QuillInstance } from "../../quill";
@@ -36,86 +38,104 @@ type Kind =
 
 const ITEMS: {
   kind: Kind;
-  label: string;
+  label: keyof Messages;
   icon: React.ReactNode;
-  keywords: string;
+  words: keyof Messages;
+  englishWords: string;
   isPopular?: boolean;
   format?: Record<string, unknown>;
 }[] = [
   {
     kind: "checklist",
-    label: "Checklist",
+    label: "editorChecklist",
     icon: <ListChecks />,
-    keywords: "todo to-do task checkbox list",
+    words: "editorSlashWordsChecklist",
+    englishWords: "checklist todo to-do task checkbox list",
     isPopular: true,
     format: { list: "unchecked" },
   },
   {
     kind: "heading1",
-    label: "Heading 1",
+    label: "editorHeading1",
     icon: <Heading1 />,
-    keywords: "h1 title",
+    words: "editorSlashWordsHeading1",
+    englishWords: "heading 1 h1 title",
     isPopular: true,
     format: { header: 1 },
   },
   {
     kind: "heading2",
-    label: "Heading 2",
+    label: "editorHeading2",
     icon: <Heading2 />,
-    keywords: "h2 subtitle subheading",
+    words: "editorSlashWordsHeading2",
+    englishWords: "heading 2 h2 subtitle subheading",
     format: { header: 2 },
   },
   {
     kind: "heading3",
-    label: "Heading 3",
+    label: "editorHeading3",
     icon: <Heading3 />,
-    keywords: "h3 subheading",
+    words: "editorSlashWordsHeading3",
+    englishWords: "heading 3 h3 subheading",
     format: { header: 3 },
   },
   {
     kind: "bullets",
-    label: "Bullet list",
+    label: "editorBulletList",
     icon: <List />,
-    keywords: "unordered ul dashes",
+    words: "editorSlashWordsBullets",
+    englishWords: "bullet list unordered ul dashes",
     isPopular: true,
     format: { list: "bullet" },
   },
   {
     kind: "numbers",
-    label: "Numbered list",
+    label: "editorNumberedList",
     icon: <ListOrdered />,
-    keywords: "ordered ol",
+    words: "editorSlashWordsNumbers",
+    englishWords: "numbered list ordered ol",
     isPopular: true,
     format: { list: "ordered" },
   },
   {
     kind: "quote",
-    label: "Quote",
+    label: "editorQuote",
     icon: <Quote />,
-    keywords: "blockquote citation",
+    words: "editorSlashWordsQuote",
+    englishWords: "quote blockquote citation",
     isPopular: true,
     format: { blockquote: true },
   },
   {
     kind: "code",
-    label: "Code block",
+    label: "editorCodeBlock",
     icon: <Code />,
-    keywords: "pre snippet",
+    words: "editorSlashWordsCode",
+    englishWords: "code block pre snippet",
     format: { "code-block": "plain" },
   },
   {
     kind: "text",
-    label: "Text",
+    label: "editorText",
     icon: <Type />,
-    keywords: "paragraph plain normal body",
+    words: "editorSlashWordsText",
+    englishWords: "text paragraph plain normal body",
     format: {},
   },
-  { kind: "link", label: "Link", icon: <Link />, keywords: "url web address" },
+  {
+    kind: "link",
+    label: "editorLink",
+    icon: <Link />,
+    words: "editorSlashWordsLink",
+    englishWords: "link url web address",
+  },
   {
     kind: "attachment",
-    label: "Picture or audio",
+    label: "editorPictureOrAudio",
     icon: <ImagePlus />,
-    keywords: "image img photo file voice recording attachment",
+    words: "editorSlashWordsAttachment",
+    englishWords:
+      "picture or audio image img photo file voice recording attachment",
     isPopular: true,
   },
 ];
@@ -147,6 +167,7 @@ export function SlashMenu({
   onAddAttachment,
   onAddLink,
 }: SlashMenuProps) {
+  const t = useTranslations();
   const [slash, setSlash] = React.useState<Slash | null>(null);
   const [place, setPlace] = React.useState<Place | null>(null);
   const [hint, setHint] = React.useState<Place | null>(null);
@@ -161,10 +182,18 @@ export function SlashMenu({
   const items = React.useMemo(
     () =>
       findSlashItems(
-        ITEMS.filter((item) => item.kind !== "attachment" || onAddAttachment),
+        ITEMS.filter(
+          (item) => item.kind !== "attachment" || onAddAttachment,
+        ).map((item) => ({
+          kind: item.kind,
+          icon: item.icon,
+          label: t(item.label),
+          keywords: `${t(item.words)} ${item.englishWords}`,
+          isPopular: item.isPopular,
+        })),
         slash?.query ?? "",
       ),
-    [slash?.query, onAddAttachment],
+    [slash?.query, onAddAttachment, t],
   );
   const activeIndex = Math.min(active, Math.max(0, items.length - 1));
 
@@ -389,7 +418,7 @@ export function SlashMenu({
             lineHeight: `${hint.height}px`,
           }}
         >
-          Type / to add a block
+          {t("editorSlashHint")}
         </span>
       )}
       {searchHint && slash && (
@@ -403,7 +432,7 @@ export function SlashMenu({
             lineHeight: `${searchHint.height}px`,
           }}
         >
-          Type to search
+          {t("editorSlashSearchHint")}
         </span>
       )}
       {slash && place && (
@@ -427,7 +456,8 @@ export function SlashMenu({
             <div
               role="listbox"
               id={listId}
-              aria-label="Add a block"
+              data-slot="slash-menu"
+              aria-label={t("editorSlashMenu")}
               className="grid gap-px"
             >
               {items.map((item, i) => (
@@ -456,17 +486,17 @@ export function SlashMenu({
             </div>
           ) : (
             <div role="status" className="px-2 py-1.5 text-muted-foreground">
-              No results
+              {t("editorSlashNoResults")}
             </div>
           )}
           {items.length > 0 && (
             <div className="mt-1 flex items-center border-border/55 border-t px-1.5 pt-2 pb-0.5 text-caption text-muted-foreground max-md:hidden">
               <ShortcutHints
                 groups={[
-                  [["↑", "↓"], "move"],
-                  [["↵"], "add"],
+                  [["↑", "↓"], t("editorSlashMove")],
+                  [["↵"], t("editorSlashAdd")],
                 ]}
-                screenReaderText="Up and down arrows move, Enter adds"
+                screenReaderText={t("editorSlashKeys")}
               />
             </div>
           )}

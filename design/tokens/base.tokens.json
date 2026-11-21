@@ -1527,13 +1527,14 @@
       "sans": {
         "$value": [
           "DM Sans",
+          "Manrope",
           "ui-sans-serif",
           "system-ui",
           "-apple-system",
           "Segoe UI",
           "sans-serif"
         ],
-        "$description": "Everything"
+        "$description": "Everything; Manrope covers the Greek and Cyrillic DM Sans lacks"
       },
       "mono": {
         "$value": [

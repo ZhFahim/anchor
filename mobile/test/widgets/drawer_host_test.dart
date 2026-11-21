@@ -137,4 +137,29 @@ void main() {
     expect(find.semantics.byLabel('A note'), findsOne);
     semantics.dispose();
   });
+
+  testWidgets('on iPhone, a slow swipe from the left edge opens the drawer', (
+    tester,
+  ) async {
+    final drawer = GlobalKey<DrawerHostState>();
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light().copyWith(platform: TargetPlatform.iOS),
+        home: DrawerHost(
+          key: drawer,
+          drawerBuilder: (close) => const SizedBox(width: 300),
+          child: const SizedBox.expand(),
+        ),
+      ),
+    );
+    final gesture = await tester.startGesture(const Offset(4, 300));
+    for (var i = 0; i < 10; i++) {
+      await gesture.moveBy(const Offset(24, 0));
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(drawer.currentState!.isOpen, isTrue);
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect(drawer.currentState!.isOpen, isTrue);
+  });
 }

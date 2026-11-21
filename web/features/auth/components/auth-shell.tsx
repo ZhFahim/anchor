@@ -1,6 +1,7 @@
 "use client";
 
 import { Paperclip, Users } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import * as React from "react";
 import { Brand } from "@/components/layout/brand";
 import { Toaster } from "@/components/ui/toast";
@@ -9,6 +10,8 @@ import { ReminderChip } from "@/features/notes/components/reminder-chip";
 import type { NoteBlock } from "@/features/notes/note-blocks";
 import { toWallClock } from "@/features/notes/reminder";
 import { TagChip } from "@/features/tags/components/tag-chip";
+import { LanguageMenu } from "@/i18n/language-menu";
+import type { Translate } from "@/i18n/translate";
 import { onHighlightRepaint, paintHighlights } from "@/lib/highlight-paint";
 
 const PHOTOS = [
@@ -85,10 +88,36 @@ function SamplePhoto({ index }: { index: number }) {
   );
 }
 
-const run = (text: string, extra: Partial<NoteBlock["runs"][number]> = {}) => ({
+type Run = NoteBlock["runs"][number];
+
+const run = (text: string, extra: Partial<Run> = {}) => ({
   text,
   ...extra,
 });
+
+const MARKS: Record<string, Partial<Run>> = {
+  b: { bold: true },
+  yellow: { highlight: "yellow" },
+  green: { highlight: "green" },
+  blue: { highlight: "blue" },
+};
+
+const markTags = Object.fromEntries(
+  Object.keys(MARKS).map((tag) => [
+    tag,
+    (chunks: string) => `<${tag}>${chunks}</${tag}>`,
+  ]),
+);
+
+const runsOf = (markup: string): Run[] =>
+  markup
+    .split(/(<\w+>.*?<\/\w+>)/)
+    .filter(Boolean)
+    .map((part) => {
+      const marked = /^<(\w+)>(.*)<\/\1>$/.exec(part);
+      return marked ? run(marked[2], MARKS[marked[1]]) : run(part);
+    });
+
 const paragraph = (...runs: NoteBlock["runs"]): NoteBlock => ({
   type: "p",
   level: 0,
@@ -132,120 +161,112 @@ interface Sample {
   placement: [string, string, string, string];
 }
 
-const SAMPLES: Sample[] = [
-  {
-    key: "lisbon",
-    bg: "pattern_travel",
-    title: "Lisbon trip",
-    pics: [0, 1, 2],
-    files: 4,
-    shares: 1,
-    reminder: inDays(3, 9),
-    blocks: [
-      paragraph(
-        run("Five days in "),
-        run("Lisbon", { bold: true }),
-        run(", with a day trip to Sintra. Flights land at "),
-        run("9:40 on Friday", { highlight: "yellow" }),
-        run("."),
-      ),
-      { type: "h1", level: 0, runs: [run("Before the trip")] },
-      check("Renew the passport"),
-      check("Pack chargers and a travel adapter"),
-    ],
-    tags: [
-      ["#64B5F6", "travel"],
-      ["#FF8A65", "family"],
-    ],
-    date: "Today",
-    placement: ["8%", "6%", "-6deg", "0s"],
-  },
-  {
-    key: "goals",
-    bg: "color_yellow",
-    title: "Week 29 goals",
-    reminder: inDays(-2, 17),
-    blocks: [
-      numbered(0, "1.", run("Ship the sync fix")),
-      numbered(1, "a.", run("Retry the token refresh")),
-      numbered(1, "b.", run("Test on a slow network")),
-      numbered(0, "2.", run("Tidy up the editor")),
-      numbered(
-        0,
-        "3.",
-        run("Draft the "),
-        run("release notes", { highlight: "green" }),
-      ),
-    ],
-    tags: [
-      ["#7986CB", "work"],
-      ["#E57373", "bugs"],
-    ],
-    date: "Sep 22",
-    placement: ["52%", "3%", "5deg", "-2s"],
-  },
-  {
-    key: "groc",
-    bg: "pattern_groceries",
-    title: "Groceries",
-    blocks: [
-      check("Oat milk"),
-      check("Sourdough loaf"),
-      check("Tomatoes and basil"),
-      check("Coffee beans"),
-    ],
-    tags: [["#FFB74D", "shopping"]],
-    date: "Today",
-    placement: ["30%", "33%", "2deg", "-4s"],
-  },
-  {
-    key: "reading",
-    bg: "color_purple",
-    title: "Reading list",
-    shares: 2,
-    reminder: inDays(1, 8),
-    blocks: [
-      bullet(0, run("The Design of Everyday Things", { italic: true })),
-      bullet(1, run("Chapter 4, on constraints")),
-      bullet(0, run("Four Thousand Weeks")),
-      {
-        type: "quote",
-        level: 0,
-        runs: [
-          run(
-            "The day will never arrive when you finally have everything under control.",
-          ),
-        ],
-      },
-    ],
-    tags: [["#9575CD", "reading"]],
-    date: "Sep 20",
-    placement: ["62%", "40%", "-4deg", "-6s"],
-  },
-  {
-    key: "bread",
-    bg: "pattern_dots",
-    title: "Sourdough",
-    files: 1,
-    blocks: [
-      numbered(0, "1.", run("Feed the starter the night before")),
-      numbered(0, "2.", run("Mix 500 g flour with 350 g water")),
-      numbered(
-        0,
-        "3.",
-        run("Rest "),
-        run("30 minutes", { highlight: "blue" }),
-        run(", then add salt"),
-      ),
-      numbered(0, "4.", run("Fold four times, 30 minutes apart")),
-      numbered(0, "5.", run("Shape, then proof overnight")),
-      numbered(0, "6.", run("Bake at 250°C for 40 minutes")),
-    ],
-    tags: [["#FFD54F", "recipes"]],
-    date: "Sep 18",
-    placement: ["4%", "52%", "7deg", "-3s"],
-  },
-];
+function samplesFor(t: Translate, locale: string): Sample[] {
+  const marked = (
+    key:
+      | "authSampleTripText"
+      | "authSampleGoalsReleaseNotes"
+      | "authSampleBreadRest",
+  ) => runsOf(t.markup(key, markTags));
+  const shortDate = new Intl.DateTimeFormat(locale, {
+    month: "short",
+    day: "numeric",
+  });
+  const september = (day: number) => shortDate.format(new Date(2025, 8, day));
+  return [
+    {
+      key: "lisbon",
+      bg: "pattern_travel",
+      title: t("authSampleTripTitle"),
+      pics: [0, 1, 2],
+      files: 4,
+      shares: 1,
+      reminder: inDays(3, 9),
+      blocks: [
+        paragraph(...marked("authSampleTripText")),
+        { type: "h1", level: 0, runs: [run(t("authSampleTripHeading"))] },
+        check(t("authSampleTripPassport")),
+        check(t("authSampleTripChargers")),
+      ],
+      tags: [
+        ["#64B5F6", t("authSampleTagTravel")],
+        ["#FF8A65", t("authSampleTagFamily")],
+      ],
+      date: t("authSampleToday"),
+      placement: ["8%", "6%", "-6deg", "0s"],
+    },
+    {
+      key: "goals",
+      bg: "color_yellow",
+      title: t("authSampleGoalsTitle"),
+      reminder: inDays(-2, 17),
+      blocks: [
+        numbered(0, "1.", run(t("authSampleGoalsSync"))),
+        numbered(1, "a.", run(t("authSampleGoalsRetry"))),
+        numbered(1, "b.", run(t("authSampleGoalsSlowNetwork"))),
+        numbered(0, "2.", run(t("authSampleGoalsEditor"))),
+        numbered(0, "3.", ...marked("authSampleGoalsReleaseNotes")),
+      ],
+      tags: [
+        ["#7986CB", t("authSampleTagWork")],
+        ["#E57373", t("authSampleTagBugs")],
+      ],
+      date: september(22),
+      placement: ["52%", "3%", "5deg", "-2s"],
+    },
+    {
+      key: "groc",
+      bg: "pattern_groceries",
+      title: t("authSampleGroceriesTitle"),
+      blocks: [
+        check(t("authSampleGroceriesOatMilk")),
+        check(t("authSampleGroceriesBread")),
+        check(t("authSampleGroceriesTomatoes")),
+        check(t("authSampleGroceriesCoffee")),
+      ],
+      tags: [["#FFB74D", t("authSampleTagShopping")]],
+      date: t("authSampleToday"),
+      placement: ["30%", "33%", "2deg", "-4s"],
+    },
+    {
+      key: "reading",
+      bg: "color_purple",
+      title: t("authSampleReadingTitle"),
+      shares: 2,
+      reminder: inDays(1, 8),
+      blocks: [
+        bullet(0, run(t("authSampleReadingFirstBook"), { italic: true })),
+        bullet(1, run(t("authSampleReadingChapter"))),
+        bullet(0, run(t("authSampleReadingSecondBook"))),
+        {
+          type: "quote",
+          level: 0,
+          runs: [run(t("authSampleReadingQuote"))],
+        },
+      ],
+      tags: [["#9575CD", t("authSampleTagReading")]],
+      date: september(20),
+      placement: ["62%", "40%", "-4deg", "-6s"],
+    },
+    {
+      key: "bread",
+      bg: "pattern_dots",
+      title: t("authSampleBreadTitle"),
+      files: 1,
+      blocks: [
+        numbered(0, "1.", run(t("authSampleBreadStarter"))),
+        numbered(0, "2.", run(t("authSampleBreadMix"))),
+        numbered(0, "3.", ...marked("authSampleBreadRest")),
+        numbered(0, "4.", run(t("authSampleBreadFold"))),
+        numbered(0, "5.", run(t("authSampleBreadShape"))),
+        numbered(0, "6.", run(t("authSampleBreadBake"))),
+      ],
+      tags: [["#FFD54F", t("authSampleTagRecipes")]],
+      date: september(18),
+      placement: ["4%", "52%", "7deg", "-3s"],
+    },
+  ];
+}
 
 function SampleCard({ sample }: { sample: Sample }) {
   const [left, top, rotation, delay] = sample.placement;
@@ -311,7 +332,11 @@ function SampleCard({ sample }: { sample: Sample }) {
   );
 }
 
-function useCollageHighlights(collage: React.RefObject<HTMLDivElement | null>) {
+function useCollageHighlights(
+  collage: React.RefObject<HTMLDivElement | null>,
+  samples: Sample[],
+) {
+  // biome-ignore lint/correctness/useExhaustiveDependencies: repaint when the sample text changes language
   React.useLayoutEffect(() => {
     const el = collage.current;
     if (!el) return;
@@ -332,18 +357,22 @@ function useCollageHighlights(collage: React.RefObject<HTMLDivElement | null>) {
       resizeObserver.disconnect();
       stopRepainting();
     };
-  }, [collage]);
+  }, [collage, samples]);
 }
 
 export function AuthShell({ children }: { children: React.ReactNode }) {
+  const t = useTranslations();
+  const locale = useLocale();
+  const samples = React.useMemo(() => samplesFor(t, locale), [t, locale]);
   const collageRef = React.useRef<HTMLDivElement>(null);
-  useCollageHighlights(collageRef);
+  useCollageHighlights(collageRef, samples);
   return (
     <div className="grid min-h-dvh grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] bg-card max-lg:grid-cols-1">
       <main className="grid content-center justify-items-center overflow-auto p-8 max-md:content-start max-md:px-6 max-md:pt-12">
         <div className="grid w-[min(360px,100%)] gap-5">
           <Brand className="justify-self-start" />
           {children}
+          <LanguageMenu placement="auth" />
         </div>
       </main>
       <Toaster />
@@ -357,18 +386,17 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
           className="collage absolute inset-x-0 top-0 bottom-27.5"
         >
           <div className="collage-stage">
-            {SAMPLES.map((sample) => (
+            {samples.map((sample) => (
               <SampleCard key={sample.key} sample={sample} />
             ))}
           </div>
         </div>
         <div className="relative grid gap-1">
           <b className="font-bold font-serif text-[26px] leading-[1.2] tracking-[-.01em]">
-            Your thoughts, secured.
+            {t("authArtTitle")}
           </b>
           <span className="max-w-[40ch] text-muted-foreground text-ui">
-            Notes, checklists and reminders on your own server, in sync with
-            your phone.
+            {t("authArtText")}
           </span>
         </div>
       </div>

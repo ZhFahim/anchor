@@ -26,6 +26,73 @@ Security problems should not go in a public issue. See the [security policy](SEC
 
 Use the [feature request form](https://github.com/ZhFahim/anchor/issues/new?template=feature_request.yml). Describe the problem you want solved, not only the solution. Not every idea will fit Anchor, and that is fine: a clear request still helps shape what comes next.
 
+## Translations
+
+Anchor's phone and web apps can be translated. [TRANSLATIONS.md](../TRANSLATIONS.md) shows each language and how much of it is done.
+
+Translations come as pull requests. You don't need an issue first to add or improve a language, but please say in an issue or on Discord which language you are working on, so two people don't do the same one.
+
+### The files
+
+Each app has one English file. Every message in it has a description that says where it shows and what it is; read it before you translate.
+
+| App | English | Your language |
+|-----|---------|---------------|
+| Phone | `mobile/lib/l10n/app_en.arb` | `mobile/lib/l10n/app_<code>.arb`, for example `app_de.arb` or `app_pt_BR.arb` |
+| Web | `web/messages/en.json` | `web/messages/<code>.json`, for example `de.json` or `pt-BR.json` |
+
+A language file holds only the messages you translated. Anything missing shows in English, so you can send part of a language and finish it later. Leave out the `@` descriptions, and add your GitHub name so the table credits you:
+
+```json
+{
+  "@@locale": "de",
+  "@@x-translators": ["your-github-name"],
+  "commonCancel": "Abbrechen",
+  "notesCount": "{count, plural, =1{1 Notiz} other{{count} Notizen}}"
+}
+```
+
+The web file has no `@@locale` line; its name says the language.
+
+### Rules
+
+- Keep every placeholder in curly braces exactly as it is, such as `{name}` or `{count}`. You may move it within the sentence.
+- Keep tags such as `<b>…</b>` around the same words.
+- Plurals use [ICU plural syntax](https://unicode-org.github.io/icu/userguide/format_parse/messages/). Give every form your language needs: Polish and Russian need `one`, `few` and `many`. The check below tells you which ones are missing.
+- Keep "Anchor" as it is.
+- Use the same word for the same thing everywhere. Agree on these first:
+
+  | English | What it means in Anchor |
+  |---------|-------------------------|
+  | note | One page of text, a list or a checklist |
+  | tag | A label that groups notes; a note can have several |
+  | archive | Notes put away, out of the main list but kept |
+  | trash | Deleted notes, kept for 30 days before they're gone |
+  | pin | Keeps a note at the top of the list |
+  | reminder | A notification at a set time for a note |
+  | checklist | A list with a box to tick on each line |
+  | share | Lets another person on the same server see or edit a note |
+
+- Match the English tone: short, plain and friendly. Use the informal "you" if your language has one and apps in it usually use it.
+
+### Adding a language
+
+1. Add both files. Start with the messages people see first: `common`, `auth`, `notes` and `settings`.
+2. Add the code to `LOCALES` in `web/i18n/locales.ts`.
+3. Run `node i18n/status.mjs` from the repository root. It checks your files and updates `TRANSLATIONS.md`.
+4. For the phone app, run `flutter gen-l10n` and `dart run tool/native_strings.dart` in `mobile/`. The second one writes the Android and iPhone files for the home screen widget and the permission prompts. If you can't run Flutter, say so in the pull request and the maintainer will.
+5. Title the pull request `feat(i18n): add <language>`, or `fix(i18n): …` for corrections.
+
+Languages written right to left, such as Arabic, Hebrew, Persian and Urdu, aren't supported yet, because the app's layout doesn't mirror for them.
+
+### AI and machine translation
+
+A first draft from an AI or a translation service is fine, as long as a person who speaks the language well has read and corrected every message. Say in the pull request which tool you used and who checked it. Unchecked machine translations will be closed, for the same reasons as in [AI tools](#ai-tools).
+
+### When the English changes
+
+Fixing a typo in English changes the message in place. Changing what a message means gives it a new name, so the old translations drop out and show as missing in the table until someone translates the new one.
+
 ## Sending a pull request
 
 ### Talk first
@@ -39,7 +106,7 @@ You don't need an issue for typos, documentation fixes or small, clear bug fixes
 - One pull request does one thing. Don't mix a fix with a refactor, formatting changes or a new feature.
 - Big changes are hard to review. If a change touches many files, ask in the issue how to split it.
 - Keep to the style of the code around your change.
-- Phone app text goes in `mobile/lib/l10n/app_en.arb` with a description for translators, never as text in the code.
+- Text people see goes in `mobile/lib/l10n/app_en.arb` (phone) or `web/messages/en.json` (web) with a description for translators, never as text in the code. See [Translations](#translations).
 
 ### Test it yourself
 
@@ -60,7 +127,7 @@ type(scope): what changed
 ```
 
 - **type:** `feat`, `fix`, `perf`, `docs`, `refactor`, `test`, `chore`, `ci` or `build`.
-- **scope:** `web`, `mobile` or `server`. Leave it out when a change covers more than one.
+- **scope:** `web`, `mobile`, `server`, or `i18n` for translations. Leave it out when a change covers more than one.
 
 For example `fix(mobile): keep the cursor at the start of a line` or `feat(web): show note history`.
 
@@ -115,6 +182,7 @@ CI runs these on every pull request. Run them for each part you changed:
 | Server | `cd server && pnpm install && pnpm exec prisma generate && pnpm check && pnpm test` |
 | Web | `cd web && pnpm install && pnpm check && pnpm test && pnpm build` |
 | Phone app | `cd mobile && flutter pub get && flutter analyze && flutter test` |
+| Translations | `node i18n/status.mjs --check` |
 
 Fix lint and format problems with `pnpm check:fix` in `server/` or `web/`, and `dart format lib test` in `mobile/`.
 

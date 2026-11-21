@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, CircleAlert, LoaderCircle } from "lucide-react";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
@@ -108,6 +109,7 @@ export function SaveStatus({
   state: SaveState;
   onRetry?: () => void;
 }) {
+  const t = useTranslations();
   if (state === "saved")
     return (
       <span
@@ -115,7 +117,7 @@ export function SaveStatus({
         className="inline-flex animate-fade-in items-center gap-1 font-medium text-added-ink text-small [&_svg]:size-3.5"
       >
         <Check aria-hidden />
-        Saved
+        {t("uiSaved")}
       </span>
     );
   if (state === "saving")
@@ -125,7 +127,7 @@ export function SaveStatus({
         className="inline-flex items-center gap-1 font-medium text-muted-foreground text-small [&_svg]:size-3.5"
       >
         <LoaderCircle aria-hidden className="animate-spin" />
-        Saving…
+        {t("uiSaving")}
       </span>
     );
   if (state === "failed")
@@ -135,14 +137,14 @@ export function SaveStatus({
         className="inline-flex items-center gap-1.5 font-medium text-destructive text-small [&_svg]:size-3.5"
       >
         <CircleAlert aria-hidden />
-        Couldn’t save
+        {t("settingsSaveFailed")}
         {onRetry && (
           <button
             type="button"
             onClick={onRetry}
             className="cursor-pointer border-0 bg-transparent p-0 font-semibold text-foreground underline decoration-current/35 underline-offset-3 hover:decoration-current"
           >
-            Try again
+            {t("commonRetry")}
           </button>
         )}
       </span>

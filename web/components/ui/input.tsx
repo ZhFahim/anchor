@@ -1,6 +1,7 @@
 "use client";
 
 import { cva, type VariantProps } from "class-variance-authority";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { useFieldControl } from "@/components/ui/field";
 import { cn } from "@/lib/utils";
@@ -98,6 +99,7 @@ const PasswordInput = React.forwardRef<
   HTMLInputElement,
   Omit<InputProps, "type" | "end">
 >((props, ref) => {
+  const t = useTranslations();
   const [shown, setShown] = React.useState(false);
   const field = useFieldControl();
   return (
@@ -106,11 +108,11 @@ const PasswordInput = React.forwardRef<
       type={shown ? "text" : "password"}
       end={
         <InputButton
-          aria-label={shown ? "Hide password" : "Show password"}
+          aria-label={shown ? t("uiHidePassword") : t("uiShowPassword")}
           aria-controls={props.id ?? field?.id}
           onClick={() => setShown((v) => !v)}
         >
-          {shown ? "Hide" : "Show"}
+          {shown ? t("uiHide") : t("uiShow")}
         </InputButton>
       }
       {...props}

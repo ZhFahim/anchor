@@ -21,6 +21,8 @@ import {
   IMPORT_MAX_TITLE_LENGTH,
 } from '../constants/import.constants';
 import { NoteReminderDto } from '../../notes/dto/note-reminder.dto';
+import type { ErrorParams } from '../../common/errors/coded';
+import type { ErrorCode } from '../../common/errors/error-code';
 
 export class ImportNoteItemDto {
   @IsString()
@@ -113,12 +115,19 @@ export class ImportNotesDto {
 
 type ImportNoteStatus = 'created' | 'skipped' | 'remapped' | 'failed';
 
+export interface ImportNoteWarning {
+  code: ErrorCode;
+  params?: ErrorParams;
+}
+
 export interface ImportNoteResult {
   ref: string;
   status: ImportNoteStatus;
   noteId?: string;
   warning?: string;
+  warnings?: ImportNoteWarning[];
   error?: string;
+  errorCode?: ErrorCode;
 }
 
 export interface ImportNotesResponse {

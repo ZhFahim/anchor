@@ -162,10 +162,7 @@ function extractAttachments(
     if (!resolved) {
       // A plain link to some other file is not necessarily an attachment
       if (ref.kind === "image") {
-        skipped.push({
-          item: ref.target,
-          reason: "Attachment file not found",
-        });
+        skipped.push({ item: ref.target, reason: "attachmentNotFound" });
       }
       continue;
     }
@@ -179,7 +176,8 @@ function extractAttachments(
       if (ref.kind === "image") {
         skipped.push({
           item: basename(resolved),
-          reason: `Unsupported file type (${basename(resolved).split(".").pop()})`,
+          reason: "unsupportedFileType",
+          fileType: basename(resolved).split(".").pop() ?? "",
         });
       }
       continue;
@@ -208,7 +206,6 @@ function extractAttachments(
 
 export const markdownAdapter: ImportAdapter = {
   id: "markdown",
-  label: "Markdown files",
 
   async detect(zip) {
     return markdownEntries(zip).length > 0;
@@ -230,7 +227,7 @@ export const markdownAdapter: ImportAdapter = {
       const displayName = stem || basename(path);
 
       if (!raw.trim()) {
-        skipped.push({ item: displayName, reason: "Empty file" });
+        skipped.push({ item: displayName, reason: "emptyFile" });
         continue;
       }
 
@@ -243,10 +240,7 @@ export const markdownAdapter: ImportAdapter = {
 
       const contentDelta = markdownToDelta(extracted.body);
       if (stringifyDelta(contentDelta).length > IMPORT_MAX_CONTENT_LENGTH) {
-        skipped.push({
-          item: displayName,
-          reason: "Note is too large (over 1 MB of formatted content)",
-        });
+        skipped.push({ item: displayName, reason: "noteTooLarge" });
         continue;
       }
 
@@ -277,7 +271,6 @@ export const markdownAdapter: ImportAdapter = {
 
     return {
       formatId: "markdown",
-      formatLabel: this.label,
       notes,
       tags: tagNames.map((name) => ({ name, color: null })),
       attachmentCount: notes.reduce(

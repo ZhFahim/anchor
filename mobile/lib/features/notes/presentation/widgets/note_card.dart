@@ -84,7 +84,7 @@ class _NoteCardState extends State<NoteCard>
         (widget.layout == CardLayout.list && note.updatedAt != null
             ? shortDayLabel(note.updatedAt!.toLocal(), l10n)
             : null);
-    final label = [
+    final label = l10n.joinSentences([
       displayTitleOf(note.title, l10n),
       if (snippet.isNotEmpty)
         snippet.length > 120 ? '${snippet.substring(0, 120)}…' : snippet,
@@ -97,7 +97,7 @@ class _NoteCardState extends State<NoteCard>
         l10n.shareSharedWithCount(note.shareIds!.length),
       if (!note.isSynced) l10n.cardNotSynced,
       ?date,
-    ].join('. ');
+    ]);
 
     final card = ValueListenableBuilder<Set<String>>(
       valueListenable: CardRegistry.leaving,

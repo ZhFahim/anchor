@@ -1,6 +1,7 @@
 "use client";
 
 import { CircleCheck } from "lucide-react";
+import { useTranslations } from "next-intl";
 import type * as React from "react";
 import { SearchField, TopBarButton } from "@/components/layout/app-page";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ export function NoteListActions({
   onSearchFocus?: () => void;
   children?: React.ReactNode;
 }) {
+  const t = useTranslations();
   return (
     <>
       <SearchField
@@ -44,7 +46,7 @@ export function NoteListActions({
         aria-pressed={list.picking}
         onClick={list.togglePicking}
       >
-        Select
+        {t("notesSelectMode")}
       </TopBarButton>
       {children}
     </>
@@ -52,10 +54,11 @@ export function NoteListActions({
 }
 
 export function NoSearchResults({ list }: { list: NoteList }) {
+  const t = useTranslations();
   return (
     <EmptyState
       illustration="search"
-      title={`No results for “${list.query.trim()}”`}
+      title={t("notesNoResultsTitle", { query: list.query.trim() })}
       action={
         <Button
           variant="secondary"
@@ -64,11 +67,11 @@ export function NoSearchResults({ list }: { list: NoteList }) {
             list.searchRef.current?.focus();
           }}
         >
-          Clear search
+          {t("notesClearSearch")}
         </Button>
       }
     >
-      Check the spelling or try different words.
+      {t("notesNoResultsHelp")}
     </EmptyState>
   );
 }

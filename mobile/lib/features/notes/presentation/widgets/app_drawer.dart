@@ -297,7 +297,9 @@ class _Item extends StatelessWidget {
       onTap: onTap,
       onLongPress: onLongPress,
       selected: isCurrent,
-      semanticLabel: count == null ? label : '$label, $count',
+      semanticLabel: count == null
+          ? label
+          : context.l10n.joinList([label, '$count']),
       tintRadius: BorderRadius.circular(AnchorTokens.radiusLg),
       child: SizedBox(
         height: AnchorTokens.sizeControlMedium,

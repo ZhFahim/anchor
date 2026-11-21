@@ -10,6 +10,7 @@ import {
   Rows3,
   SlidersHorizontal,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { TopBarButton } from "@/components/layout/app-page";
 import {
   Popover,
@@ -18,6 +19,7 @@ import {
 } from "@/components/ui/popover";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import type { SortBy, SortOrder, ViewMode } from "@/features/preferences";
+import type { Messages } from "@/i18n/messages";
 import { useRovingFocus } from "@/lib/hooks/use-roving-focus";
 import { cn } from "@/lib/utils";
 
@@ -29,18 +31,18 @@ interface ViewOptionsProps {
   onSort: (sortBy: SortBy, sortOrder: SortOrder) => void;
 }
 
-const ORDER_OPTIONS: Record<SortBy, [SortOrder, string][]> = {
+const ORDER_OPTIONS: Record<SortBy, [SortOrder, keyof Messages][]> = {
   updatedAt: [
-    ["desc", "Newest first"],
-    ["asc", "Oldest first"],
+    ["desc", "viewNewestFirst"],
+    ["asc", "viewOldestFirst"],
   ],
   createdAt: [
-    ["desc", "Newest first"],
-    ["asc", "Oldest first"],
+    ["desc", "viewNewestFirst"],
+    ["asc", "viewOldestFirst"],
   ],
   title: [
-    ["asc", "A to Z"],
-    ["desc", "Z to A"],
+    ["asc", "viewAToZ"],
+    ["desc", "viewZToA"],
   ],
 };
 
@@ -53,54 +55,59 @@ export function ViewOptions({
   onLayout,
   onSort,
 }: ViewOptionsProps) {
+  const t = useTranslations();
   return (
     <Popover>
       <PopoverTrigger asChild>
         <TopBarButton icon={<SlidersHorizontal aria-hidden />}>
-          View
+          {t("viewButton")}
         </TopBarButton>
       </PopoverTrigger>
       <PopoverContent
         align="end"
-        aria-label="View options"
+        aria-label={t("viewOptions")}
         className="grid w-68 gap-3 p-3"
       >
         <div>
-          <h2 className={headingClass}>Layout</h2>
+          <h2 className={headingClass}>{t("viewLayout")}</h2>
           <SegmentedControl
             variant="tiles"
-            aria-label="Layout"
+            aria-label={t("viewLayout")}
             value={layout}
             onValueChange={onLayout}
             options={[
               {
                 value: "masonry",
-                label: "Masonry",
+                label: t("viewMasonry"),
                 icon: <LayoutDashboard aria-hidden />,
               },
               {
                 value: "grid",
-                label: "Grid",
+                label: t("viewGrid"),
                 icon: <LayoutGrid aria-hidden />,
               },
-              { value: "list", label: "List", icon: <Rows3 aria-hidden /> },
+              {
+                value: "list",
+                label: t("viewList"),
+                icon: <Rows3 aria-hidden />,
+              },
             ]}
           />
         </div>
         <div>
           <h2 className={headingClass} id="sort-by">
-            Sort by
+            {t("viewSortBy")}
           </h2>
           <SortChoices sortBy={sortBy} onSort={onSort} />
         </div>
         <SegmentedControl
           full
-          aria-label="Order"
+          aria-label={t("viewOrder")}
           value={sortOrder}
           onValueChange={(order) => onSort(sortBy, order)}
           options={ORDER_OPTIONS[sortBy].map(([value, label]) => ({
             value,
-            label,
+            label: t(label),
           }))}
         />
       </PopoverContent>
@@ -109,15 +116,16 @@ export function ViewOptions({
 }
 
 const SORT_CHOICES = [
-  ["updatedAt", "Last edited", PencilLine],
-  ["createdAt", "Date created", CalendarPlus],
-  ["title", "Title", ALargeSmall],
+  ["updatedAt", "viewSortEdited", PencilLine],
+  ["createdAt", "viewSortCreated", CalendarPlus],
+  ["title", "viewSortTitle", ALargeSmall],
 ] as const;
 
 function SortChoices({
   sortBy,
   onSort,
 }: Pick<ViewOptionsProps, "sortBy" | "onSort">) {
+  const t = useTranslations();
   const roving = useRovingFocus<HTMLDivElement>({
     orientation: "both",
     selectsOnMove: true,
@@ -149,7 +157,7 @@ function SortChoices({
             )}
           >
             <Icon aria-hidden />
-            {label}
+            {t(label)}
             {selected && (
               <Check aria-hidden className="ml-auto text-accent-strong!" />
             )}

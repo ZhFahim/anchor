@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Switch } from "@/components/ui/switch";
 import { usePreferencesStore } from "@/features/preferences";
 import {
@@ -11,18 +12,17 @@ import {
 } from "./settings-blocks";
 
 export function EditorSection() {
+  const t = useTranslations();
   const { editor, setEditorPreference } = usePreferencesStore();
   const [saveStatus, setSaveStatus] = useSaveStatus();
   return (
-    <Section id="editor" title="Editor">
+    <Section id="editor" title={t("settingsEditor")}>
       <Row>
         <RowText
           title={
-            <label htmlFor="sort-checked">
-              Move checked items to the bottom
-            </label>
+            <label htmlFor="sort-checked">{t("settingsMoveChecked")}</label>
           }
-          text="Checked items move below the unchecked ones."
+          text={t("settingsMoveCheckedHelp")}
           saved={<SaveStatus state={saveStatus} />}
         />
         <Switch

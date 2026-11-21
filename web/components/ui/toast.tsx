@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, CircleAlert, Info, LoaderCircle, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { createPortal } from "react-dom";
 import { create } from "zustand";
@@ -14,11 +15,15 @@ interface ToastAction {
   onClick: () => void;
 }
 
+type ShownAction =
+  | ToastAction
+  | { labelKey: "commonUndo" | "commonRetry"; onClick: () => void };
+
 interface ToastItem {
   id: string;
   kind: Kind;
   message: string;
-  action?: ToastAction;
+  action?: ShownAction;
   duration: number;
   serial: number;
   swap: boolean;
@@ -58,10 +63,10 @@ const useToastStore = create<ToastState>((set, get) => ({
   show: (kind, message, options = {}) => {
     const id = options.id ?? `t${++serial}`;
     const previous = get().current;
-    const action = options.undo
-      ? { label: "Undo", onClick: options.undo }
+    const action: ShownAction | undefined = options.undo
+      ? { labelKey: "commonUndo", onClick: options.undo }
       : options.retry
-        ? { label: "Try again", onClick: options.retry }
+        ? { labelKey: "commonRetry", onClick: options.retry }
         : options.action;
     const swap = !!previous && previous.id === id && previous.kind === "busy";
     if (previous && !swap) previous.onClose?.();
@@ -184,6 +189,7 @@ function ToastView({
   leaving?: boolean;
   moved?: boolean;
 }) {
+  const t = useTranslations();
   const dismiss = useToastStore((s) => s.dismiss);
   const finishLeaving = useToastStore((s) => s.finishLeaving);
   const ref = React.useRef<HTMLDivElement>(null);
@@ -285,12 +291,14 @@ function ToastView({
           }}
           className="h-7.5 flex-none cursor-pointer rounded-sm bg-transparent px-3 font-semibold text-control text-inverse-link shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--inverse-foreground)_18%,transparent)] transition-shadow duration-(--duration-hover) hover:shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--inverse-foreground)_40%,transparent)]"
         >
-          {item.action.label}
+          {"labelKey" in item.action
+            ? t(item.action.labelKey)
+            : item.action.label}
         </button>
       )}
       <button
         type="button"
-        aria-label="Dismiss"
+        aria-label={t("uiToastDismiss")}
         onClick={() => dismiss(item.id)}
         className="grid size-7.5 flex-none cursor-pointer place-items-center rounded-sm bg-transparent text-inverse-foreground/65 hover:bg-inverse-foreground/10 hover:text-inverse-foreground [&_svg]:size-3.75"
       >

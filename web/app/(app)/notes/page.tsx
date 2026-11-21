@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { AppPage, Fab, PageTitle } from "@/components/layout/app-page";
 import { newNoteHref } from "@/components/layout/sidebar";
@@ -51,9 +52,9 @@ import { useRefreshNotes } from "@/features/notes/hooks/use-refresh-notes";
 import { deletedNotesText, deleteNotesWarning } from "@/features/notes/trash";
 import type { Note } from "@/features/notes/types";
 import { tagColorStyle, useTagMap } from "@/features/tags";
+import type { Messages } from "@/i18n/messages";
 import { eachLimited } from "@/lib/each";
 import { rememberNewNoteButton } from "@/lib/morph";
-import { plural } from "@/lib/utils";
 
 const NO_NOTES: Note[] = [];
 
@@ -61,23 +62,27 @@ const UNDOABLE_ACTIONS = {
   pin: {
     run: (ids: string[]) => bulkPinNotes(ids, true),
     undo: (ids: string[]) => bulkPinNotes(ids, false),
-    done: "pinned",
+    done: "notesPinnedCount",
+    failed: "notesPinFailed",
   },
   unpin: {
     run: (ids: string[]) => bulkPinNotes(ids, false),
     undo: (ids: string[]) => bulkPinNotes(ids, true),
-    done: "unpinned",
+    done: "notesUnpinnedCount",
+    failed: "notesUnpinFailed",
   },
   archive: {
     run: (ids: string[]) => bulkArchiveNotes(ids),
     undo: (ids: string[]) => eachLimited(ids, unarchiveNote),
-    done: "archived",
+    done: "notesArchivedCount",
+    failed: "notesArchiveFailed",
     isArchived: true,
   },
   unarchive: {
     run: (ids: string[]) => eachLimited(ids, unarchiveNote),
     undo: (ids: string[]) => bulkArchiveNotes(ids),
-    done: "unarchived",
+    done: "notesUnarchivedCount",
+    failed: "notesUnarchiveFailed",
     isArchived: false,
   },
 } satisfies Record<
@@ -85,7 +90,8 @@ const UNDOABLE_ACTIONS = {
   {
     run: (ids: string[]) => Promise<unknown>;
     undo: (ids: string[]) => Promise<unknown>;
-    done: string;
+    done: keyof Messages;
+    failed: keyof Messages;
     isArchived?: boolean;
   }
 >;
@@ -99,6 +105,7 @@ export default function NotesPage() {
 }
 
 function NotesView({ tagId }: { tagId: string | null }) {
+  const t = useTranslations();
   const router = useRouter();
   const searchParams = useSearchParams();
   const refresh = useRefreshNotes();
@@ -161,14 +168,14 @@ function NotesView({ tagId }: { tagId: string | null }) {
         try {
           await run();
         } catch {
-          toast.error("Couldn’t undo that");
+          toast.error(t("notesUndoFailed"));
         }
         refresh();
       };
       if (kind === "trash") {
         const ownedIds = context?.ownedIds ?? [];
         toast.success(
-          deletedNotesText(ownedIds.length, ids.length - ownedIds.length),
+          deletedNotesText(ownedIds.length, ids.length - ownedIds.length, t),
           ownedIds.length
             ? { undo: () => undo(() => eachLimited(ownedIds, restoreNote)) }
             : undefined,
@@ -178,7 +185,7 @@ function NotesView({ tagId }: { tagId: string | null }) {
       const action = UNDOABLE_ACTIONS[kind];
       const isArchived = "isArchived" in action ? action.isArchived : null;
       if (isArchived !== null) archived.setArchivedInCache(ids, isArchived);
-      toast.success(`${plural(ids.length, "note")} ${action.done}`, {
+      toast.success(t(action.done, { count: ids.length }), {
         undo: () =>
           undo(async () => {
             await action.undo(ids);
@@ -188,8 +195,9 @@ function NotesView({ tagId }: { tagId: string | null }) {
       });
     },
     onError: (_, { kind, ids }) => {
-      const verb = kind === "trash" ? "delete" : kind;
-      toast.error(`Couldn’t ${verb} ${ids.length === 1 ? "note" : "notes"}`, {
+      const failed =
+        kind === "trash" ? "notesDeleteFailed" : UNDOABLE_ACTIONS[kind].failed;
+      toast.error(t(failed, { count: ids.length }), {
         retry: () => noteAction.mutate({ kind, ids }),
       });
     },
@@ -227,7 +235,7 @@ function NotesView({ tagId }: { tagId: string | null }) {
         onClick={(e) => rememberNewNoteButton(e.currentTarget)}
       >
         <Plus aria-hidden />
-        New note
+        {t("notesNew")}
       </Link>
     </Button>
   );
@@ -248,10 +256,10 @@ function NotesView({ tagId }: { tagId: string | null }) {
       >
         {tag.name}
       </PageTitle>
-      <Tip label="Show all notes">
+      <Tip label={t("notesShowAll")}>
         <IconButton
           size="sm"
-          label="Show all notes"
+          label={t("notesShowAll")}
           onClick={() => router.push("/notes")}
         >
           <X />
@@ -259,7 +267,7 @@ function NotesView({ tagId }: { tagId: string | null }) {
       </Tip>
     </div>
   ) : (
-    <PageTitle count={count}>Notes</PageTitle>
+    <PageTitle count={count}>{t("notesTitle")}</PageTitle>
   );
 
   const removeCount = confirmRemove?.ids.length ?? 0;
@@ -274,7 +282,9 @@ function NotesView({ tagId }: { tagId: string | null }) {
           !loadFailed && (
             <NoteListActions
               list={list}
-              placeholder={tag ? `Search #${tag.name}` : "Search notes"}
+              placeholder={
+                tag ? t("notesSearchTag", { tag: tag.name }) : t("notesSearch")
+              }
               autoFocus={searchParams.has("search")}
               onSearchFocus={archived.loadForSearch}
             />
@@ -290,7 +300,7 @@ function NotesView({ tagId }: { tagId: string | null }) {
         />
         {loadFailed && (
           <LoadFailedState
-            title="Couldn’t load your notes"
+            title={t("notesLoadFailed")}
             onRetry={() => refetch()}
             isRetrying={isFetching}
           />
@@ -299,19 +309,18 @@ function NotesView({ tagId }: { tagId: string | null }) {
           (tag ? (
             <EmptyState
               illustration="notes"
-              title={`No notes tagged #${tag.name}`}
+              title={t("tagsEmptyTitle", { tag: tag.name })}
               action={newNoteButton}
             >
-              New notes you create here get this tag.
+              {t("tagsEmptyHelp")}
             </EmptyState>
           ) : (
             <EmptyState
               illustration="notes"
-              title="No notes yet"
+              title={t("notesEmptyTitle")}
               action={newNoteButton}
             >
-              Create a note, or import your notes from Google Keep or Markdown
-              in Settings.
+              {t("notesEmptyHelp")}
             </EmptyState>
           ))}
         {noResults && <NoSearchResults list={list} />}
@@ -328,7 +337,7 @@ function NotesView({ tagId }: { tagId: string | null }) {
                 ? [
                     {
                       key: "pinned",
-                      label: "Pinned",
+                      label: t("notesGroupPinned"),
                       icon: <Pin aria-hidden />,
                       notes: pinned,
                     },
@@ -338,7 +347,7 @@ function NotesView({ tagId }: { tagId: string | null }) {
                 ? [
                     {
                       key: "others",
-                      label: pinned.length ? "Others" : undefined,
+                      label: pinned.length ? t("notesGroupOthers") : undefined,
                       notes: others,
                     },
                   ]
@@ -347,7 +356,7 @@ function NotesView({ tagId }: { tagId: string | null }) {
                 ? [
                     {
                       key: "archived",
-                      label: "Archived",
+                      label: t("notesGroupArchived"),
                       icon: <Archive aria-hidden />,
                       notes: list.archived,
                       fold: list.isArchivedFoldable
@@ -361,7 +370,7 @@ function NotesView({ tagId }: { tagId: string | null }) {
                         : undefined,
                       fallback: archiveFailed ? (
                         <LoadFailedRow
-                          message="Couldn’t load archived notes."
+                          message={t("notesArchivedLoadFailed")}
                           onRetry={() => archived.query.refetch()}
                           isRetrying={archived.query.isFetching}
                         />
@@ -375,7 +384,7 @@ function NotesView({ tagId }: { tagId: string | null }) {
       </AppPage>
 
       {!list.picking && (
-        <Fab label="New note" asChild>
+        <Fab label={t("notesNew")} asChild>
           <Link
             href={newNote}
             data-new-note="fab"
@@ -395,7 +404,7 @@ function NotesView({ tagId }: { tagId: string | null }) {
         actions={[
           {
             key: "tag",
-            label: "Tag",
+            label: t("notesTag"),
             icon: <TagIcon aria-hidden />,
             onClick: (button) =>
               setTagAnchor((current) => (current ? null : button)),
@@ -403,7 +412,7 @@ function NotesView({ tagId }: { tagId: string | null }) {
           allPinned
             ? {
                 key: "unpin",
-                label: "Unpin",
+                label: t("notesUnpin"),
                 icon: <PinOff aria-hidden />,
                 onClick: () =>
                   noteAction.mutate({
@@ -413,7 +422,7 @@ function NotesView({ tagId }: { tagId: string | null }) {
               }
             : {
                 key: "pin",
-                label: "Pin",
+                label: t("notesPin"),
                 icon: <Pin aria-hidden />,
                 onClick: () =>
                   noteAction.mutate({
@@ -424,7 +433,7 @@ function NotesView({ tagId }: { tagId: string | null }) {
           allArchived
             ? {
                 key: "unarchive",
-                label: "Unarchive",
+                label: t("notesUnarchive"),
                 icon: <ArchiveRestore aria-hidden />,
                 onClick: () =>
                   noteAction.mutate({
@@ -434,7 +443,7 @@ function NotesView({ tagId }: { tagId: string | null }) {
               }
             : {
                 key: "archive",
-                label: "Archive",
+                label: t("notesArchive"),
                 icon: <Archive aria-hidden />,
                 onClick: () =>
                   noteAction.mutate({
@@ -444,7 +453,7 @@ function NotesView({ tagId }: { tagId: string | null }) {
               },
           {
             key: "delete",
-            label: "Delete",
+            label: t("commonDelete"),
             icon: <Trash2 aria-hidden />,
             onClick: deleteChosen,
           },
@@ -454,13 +463,14 @@ function NotesView({ tagId }: { tagId: string | null }) {
       <ConfirmationDialog
         open={!!confirmRemove}
         onOpenChange={(open) => !open && setConfirmRemove(null)}
-        title={`Delete ${plural(removeCount, "note")}?`}
+        title={t("notesDeleteTitle", { count: removeCount })}
         description={deleteNotesWarning(
           removeCount - removeSharedCount,
           removeSharedCount,
+          t,
         )}
-        confirmLabel="Delete"
-        busyLabel="Deleting…"
+        confirmLabel={t("commonDelete")}
+        busyLabel={t("notesDeleting")}
         isPending={noteAction.isPending}
         onConfirm={() =>
           confirmRemove &&

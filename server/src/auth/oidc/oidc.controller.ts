@@ -14,6 +14,8 @@ import type { Request, Response } from 'express';
 import { OidcService } from './oidc.service';
 import { OidcConfigService } from './oidc-config.service';
 import { getErrorMessage } from './oidc.utils';
+import { coded } from '../../common/errors/coded';
+import { ErrorCode } from '../../common/errors/error-code';
 
 @Controller('api/auth/oidc')
 export class OidcController {
@@ -41,7 +43,10 @@ export class OidcController {
     try {
       const isEnabled = await this.oidcConfigService.isEnabled();
       if (!isEnabled) {
-        throw new BadRequestException('OIDC is not enabled');
+        throw coded(
+          new BadRequestException('OIDC is not enabled'),
+          ErrorCode.OIDC_DISABLED,
+        );
       }
 
       const authUrl = await this.oidcService.getAuthorizationUrl(redirectUrl);
@@ -50,7 +55,10 @@ export class OidcController {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      throw new InternalServerErrorException('Failed to initiate OIDC login');
+      throw coded(
+        new InternalServerErrorException('Failed to initiate OIDC login'),
+        ErrorCode.OIDC_SIGN_IN_FAILED,
+      );
     }
   }
 
@@ -71,14 +79,14 @@ export class OidcController {
     if (error) {
       const errorMsg = errorDescription || error;
       return res.redirect(
-        `${frontendUrl}/login?error=${encodeURIComponent(errorMsg)}`,
+        `${frontendUrl}/login?error=${encodeURIComponent(errorMsg)}&reason=${ErrorCode.OIDC_PROVIDER_ERROR}`,
       );
     }
 
     // Anchor's own errors carry a status; the provider's come without one.
     if (!code || !state) {
       return res.redirect(
-        `${frontendUrl}/login?error=${encodeURIComponent('Missing authorization code or state')}&status=400`,
+        `${frontendUrl}/login?error=${encodeURIComponent('Missing authorization code or state')}&status=400&reason=${ErrorCode.OIDC_CALLBACK_INVALID}`,
       );
     }
 
@@ -97,8 +105,9 @@ export class OidcController {
         'Failed to process OIDC callback',
       );
       const status = error instanceof HttpException ? error.getStatus() : 500;
+      const reason = codeOf(error) ?? ErrorCode.OIDC_SIGN_IN_FAILED;
       return res.redirect(
-        `${frontendUrl}/login?error=${encodeURIComponent(errorMsg)}&status=${status}`,
+        `${frontendUrl}/login?error=${encodeURIComponent(errorMsg)}&status=${status}&reason=${reason}`,
       );
     }
   }
@@ -109,7 +118,10 @@ export class OidcController {
   @Post('exchange')
   exchange(@Body('code') code: string | undefined) {
     if (!code || typeof code !== 'string') {
-      throw new BadRequestException('Missing or invalid code');
+      throw coded(
+        new BadRequestException('Missing or invalid code'),
+        ErrorCode.OIDC_LOGIN_CODE_INVALID,
+      );
     }
     return this.oidcService.exchangeCode(code);
   }
@@ -120,8 +132,19 @@ export class OidcController {
   @Post('exchange/mobile')
   async exchangeMobile(@Body('access_token') accessToken: string | undefined) {
     if (!accessToken || typeof accessToken !== 'string') {
-      throw new BadRequestException('Missing or invalid access_token');
+      throw coded(
+        new BadRequestException('Missing or invalid access_token'),
+        ErrorCode.OIDC_TOKEN_INVALID,
+      );
     }
     return this.oidcService.exchangeMobileToken(accessToken);
   }
+}
+
+function codeOf(error: unknown): string | undefined {
+  if (!(error instanceof HttpException)) return undefined;
+  const body = error.getResponse();
+  if (typeof body !== 'object' || body === null) return undefined;
+  const { code } = body as { code?: unknown };
+  return typeof code === 'string' ? code : undefined;
 }

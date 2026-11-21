@@ -18,6 +18,27 @@ import UserNotifications
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "ShareFolder") {
       ShareFolderChannel.register(with: registrar.messenger())
     }
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "LanguageSettings") {
+      LanguageSettingsChannel.register(with: registrar.messenger())
+    }
+  }
+}
+
+enum LanguageSettingsChannel {
+  static func register(with messenger: FlutterBinaryMessenger) {
+    let channel = FlutterMethodChannel(name: "anchor/language", binaryMessenger: messenger)
+    channel.setMethodCallHandler { call, result in
+      switch call.method {
+      case "canOpen":
+        result(true)
+      case "open":
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return result(nil) }
+        UIApplication.shared.open(url)
+        result(nil)
+      default:
+        result(FlutterMethodNotImplemented)
+      }
+    }
   }
 }
 

@@ -1,4 +1,5 @@
 import { CircleAlert, CloudOff, RotateCw } from "lucide-react";
+import { useTranslations } from "next-intl";
 import type * as React from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -161,6 +162,7 @@ export function LoadFailedRow({
   isRetrying?: boolean;
   className?: string;
 }) {
+  const t = useTranslations();
   return (
     <div
       role="alert"
@@ -178,10 +180,10 @@ export function LoadFailedRow({
         variant="secondary"
         size="sm"
         onClick={onRetry}
-        busy={isRetrying && "Trying again…"}
+        busy={isRetrying && t("uiTryingAgain")}
       >
         <RotateCw aria-hidden />
-        Try again
+        {t("commonRetry")}
       </Button>
     </div>
   );
@@ -196,6 +198,7 @@ export function LoadFailedState({
   onRetry: () => void;
   isRetrying?: boolean;
 }) {
+  const t = useTranslations();
   return (
     <div role="alert">
       <EmptyState
@@ -205,14 +208,14 @@ export function LoadFailedState({
           <Button
             variant="secondary"
             onClick={onRetry}
-            busy={isRetrying && "Trying again…"}
+            busy={isRetrying && t("uiTryingAgain")}
           >
             <RotateCw aria-hidden />
-            Try again
+            {t("commonRetry")}
           </Button>
         }
       >
-        Check your connection, then try again.
+        {t("uiLoadFailedText")}
       </EmptyState>
     </div>
   );

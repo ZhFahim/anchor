@@ -20,6 +20,7 @@ import {
   Underline,
   Undo2,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import type * as React from "react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Tip } from "@/components/ui/tooltip";
@@ -106,6 +107,7 @@ export function QuillToolbar({
   onAddAttachment,
   onUndoRedo,
 }: QuillToolbarProps) {
+  const t = useTranslations();
   const [format, setFormat] = useState<Record<string, unknown>>({});
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
@@ -183,6 +185,8 @@ export function QuillToolbar({
     listValue === LIST_FORMATS.CHECKED || listValue === LIST_FORMATS.UNCHECKED;
   const isInCode = !!format["code-block"];
   const modKey = isMac() ? "⌘" : "Ctrl+";
+  const withKeys = (label: string, shortcut: string) =>
+    t("editorToolTip", { label, shortcut });
 
   const toolButton = (
     label: string,
@@ -213,7 +217,7 @@ export function QuillToolbar({
         ref={colors.ref}
         className="tb"
         role="toolbar"
-        aria-label="Highlight colors"
+        aria-label={t("editorHighlightColors")}
         onFocus={colors.onFocus}
         onKeyDown={colors.onKeyDown}
       >
@@ -231,40 +235,45 @@ export function QuillToolbar({
       ref={formatting.ref}
       className="tb"
       role="toolbar"
-      aria-label="Formatting"
+      aria-label={t("editorToolbarFormatting")}
       onFocus={formatting.onFocus}
       onKeyDown={formatting.onKeyDown}
     >
-      {toolButton(`Undo (${modKey}Z)`, <Undo2 />, () => onUndoRedo("undo"), {
-        disabled: !canUndo,
-      })}
       {toolButton(
-        `Redo (${isMac() ? "⇧⌘Z" : "Ctrl+Y"})`,
+        withKeys(t("commonUndo"), `${modKey}Z`),
+        <Undo2 />,
+        () => onUndoRedo("undo"),
+        {
+          disabled: !canUndo,
+        },
+      )}
+      {toolButton(
+        withKeys(t("editorRedo"), isMac() ? "⇧⌘Z" : "Ctrl+Y"),
         <Redo2 />,
         () => onUndoRedo("redo"),
         { disabled: !canRedo },
       )}
       {divider}
       {toolButton(
-        `Bold (${modKey}B)`,
+        withKeys(t("editorBold"), `${modKey}B`),
         <Bold />,
         () => quill && toggleInlineFormat(quill, "bold"),
         { active: !!format.bold, toggle: true, disabled: isInCode },
       )}
       {toolButton(
-        `Italic (${modKey}I)`,
+        withKeys(t("editorItalic"), `${modKey}I`),
         <Italic />,
         () => quill && toggleInlineFormat(quill, "italic"),
         { active: !!format.italic, toggle: true, disabled: isInCode },
       )}
       {toolButton(
-        `Underline (${modKey}U)`,
+        withKeys(t("editorUnderline"), `${modKey}U`),
         <Underline />,
         () => quill && toggleInlineFormat(quill, "underline"),
         { active: !!format.underline, toggle: true, disabled: isInCode },
       )}
       {toolButton(
-        "Strikethrough",
+        t("editorStrikethrough"),
         <Strikethrough />,
         () => quill && toggleInlineFormat(quill, "strike"),
         { active: !!format.strike, toggle: true, disabled: isInCode },
@@ -276,7 +285,7 @@ export function QuillToolbar({
       />
       {divider}
       {toolButton(
-        "Heading 1",
+        t("editorHeading1"),
         <Heading1 />,
         () => quill && toggleHeader(quill, 1),
         {
@@ -285,7 +294,7 @@ export function QuillToolbar({
         },
       )}
       {toolButton(
-        "Heading 2",
+        t("editorHeading2"),
         <Heading2 />,
         () => quill && toggleHeader(quill, 2),
         {
@@ -294,7 +303,7 @@ export function QuillToolbar({
         },
       )}
       {toolButton(
-        "Heading 3",
+        t("editorHeading3"),
         <Heading3 />,
         () => quill && toggleHeader(quill, 3),
         {
@@ -304,50 +313,58 @@ export function QuillToolbar({
       )}
       {divider}
       {toolButton(
-        `Checklist (tick with ${isMac() ? "⌘↵" : "Ctrl+Enter"})`,
+        t("editorChecklistTip", { shortcut: isMac() ? "⌘↵" : "Ctrl+Enter" }),
         <ListChecks />,
         () => quill && toggleList(quill, "unchecked"),
         { active: isChecklist, toggle: true },
       )}
       {toolButton(
-        "Bullet list",
+        t("editorBulletList"),
         <List />,
         () => quill && toggleList(quill, "bullet"),
         { active: listValue === LIST_FORMATS.BULLET, toggle: true },
       )}
       {toolButton(
-        "Numbered list",
+        t("editorNumberedList"),
         <ListOrdered />,
         () => quill && toggleList(quill, "ordered"),
         { active: listValue === LIST_FORMATS.ORDERED, toggle: true },
       )}
       {toolButton(
-        "Outdent (Shift+Tab)",
+        withKeys(t("editorOutdent"), "Shift+Tab"),
         <IndentDecrease />,
         () => changeIndent(-1),
         {
           disabled: !canOutdent,
         },
       )}
-      {toolButton("Indent (Tab)", <IndentIncrease />, () => changeIndent(1), {
-        disabled: !canIndent,
-      })}
+      {toolButton(
+        withKeys(t("editorIndent"), "Tab"),
+        <IndentIncrease />,
+        () => changeIndent(1),
+        {
+          disabled: !canIndent,
+        },
+      )}
       {divider}
       {toolButton(
-        "Quote",
+        t("editorQuote"),
         <Quote />,
         () => quill && toggleBlock(quill, "blockquote"),
         { active: !!format.blockquote, toggle: true },
       )}
       {toolButton(
-        "Code block",
+        t("editorCodeBlock"),
         <Code />,
         () => quill && toggleBlock(quill, "code-block"),
         { active: !!format["code-block"], toggle: true },
       )}
       {divider}
       {toolButton(
-        `${format.link ? "Edit link" : "Link"} (${modKey}K)`,
+        withKeys(
+          format.link ? t("editorEditLink") : t("editorLink"),
+          `${modKey}K`,
+        ),
         <LinkIcon />,
         onOpenLinkDialog,
         {
@@ -357,7 +374,7 @@ export function QuillToolbar({
         },
       )}
       {onAddAttachment &&
-        toolButton("Add a picture or audio", <ImagePlus />, onAddAttachment)}
+        toolButton(t("editorAddAttachment"), <ImagePlus />, onAddAttachment)}
     </div>
   );
 }

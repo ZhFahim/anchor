@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { HTTPError } from "ky";
+import { useTranslations } from "next-intl";
 import { useCallback } from "react";
 import { toast } from "@/components/ui/toast";
 import { firstName } from "@/lib/utils";
@@ -77,19 +78,23 @@ export function useRegistrationMode() {
 }
 
 export function useLogin() {
+  const t = useTranslations();
   const setAuth = useAuthStore((state) => state.setAuth);
   return useMutation({
     mutationFn: (credentials: LoginCredentials) => loginApi(credentials),
     onSuccess: (data) => {
       if (data.access_token && data.refresh_token) {
         setAuth(data.user, data.access_token, data.refresh_token);
-        toast.success(`Welcome back, ${firstName(data.user.name)}`);
+        toast.success(
+          t("authWelcomeBackName", { name: firstName(data.user.name) }),
+        );
       }
     },
   });
 }
 
 export function useRegister() {
+  const t = useTranslations();
   const setAuth = useAuthStore((state) => state.setAuth);
   return useMutation({
     mutationFn: (credentials: RegisterCredentials) => registerApi(credentials),
@@ -97,7 +102,12 @@ export function useRegister() {
       // A pending account gets no tokens.
       if (data.access_token && data.refresh_token) {
         setAuth(data.user, data.access_token, data.refresh_token);
-        toast.success(`Welcome to Anchor, ${firstName(data.user.name)}`);
+        toast.success(
+          t("authWelcomeName", {
+            app: t("appName"),
+            name: firstName(data.user.name),
+          }),
+        );
       }
     },
   });

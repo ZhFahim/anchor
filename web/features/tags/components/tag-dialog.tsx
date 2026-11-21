@@ -3,6 +3,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { HTTPError } from "ky";
 import { Hash } from "lucide-react";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,6 +33,20 @@ interface TagDialogProps {
   onCreated?: (tag: Tag) => void;
 }
 
+const CREATE_FAILED = {
+  failed: "tagsDialogCreateFailed",
+  offline: "tagsDialogCreateOffline",
+  changed: "tagsDialogCreateChanged",
+} as const;
+
+const RENAME_FAILED = {
+  failed: "tagsDialogRenameFailed",
+  offline: "tagsDialogRenameOffline",
+  changed: "tagsDialogRenameChanged",
+} as const;
+
+type SaveFailure = keyof typeof CREATE_FAILED;
+
 export function TagDialog({
   open,
   onOpenChange,
@@ -39,6 +54,7 @@ export function TagDialog({
   tags,
   onCreated,
 }: TagDialogProps) {
+  const t = useTranslations();
   const queryClient = useQueryClient();
   const isNew = !tag;
   const [name, setName] = React.useState(tag?.name ?? "");
@@ -51,7 +67,9 @@ export function TagDialog({
   const taken =
     refusedName === trimmed.toLowerCase() ||
     tags.some(
-      (t) => t.id !== tag?.id && t.name.toLowerCase() === trimmed.toLowerCase(),
+      (other) =>
+        other.id !== tag?.id &&
+        other.name.toLowerCase() === trimmed.toLowerCase(),
     );
   const unchanged = !isNew && trimmed === tag.name;
 
@@ -66,16 +84,18 @@ export function TagDialog({
       onOpenChange(false);
     },
     onError: (error: Error) => {
-      const failed = isNew
-        ? `Couldn’t create #${trimmed}.`
-        : "Couldn’t rename the tag.";
+      const failed = (reason: SaveFailure) =>
+        isNew
+          ? t(CREATE_FAILED[reason], { name: trimmed })
+          : t(RENAME_FAILED[reason]);
       if (!(error instanceof HTTPError))
-        return setServerError(`${failed} Check your connection.`);
-      if (error.response.status !== 409) return setServerError(failed);
+        return setServerError(failed("offline"));
+      if (error.response.status !== 409)
+        return setServerError(failed("failed"));
       queryClient.invalidateQueries({ queryKey: ["tags"] });
       // A 409 with serverTag is a version conflict, not a taken name.
       if ((error.data as { serverTag?: unknown } | undefined)?.serverTag)
-        return setServerError(`${failed} It was changed somewhere else.`);
+        return setServerError(failed("changed"));
       setRefusedName(trimmed.toLowerCase());
     },
   });
@@ -94,13 +114,13 @@ export function TagDialog({
     >
       <DialogContent>
         <form onSubmit={submit} className="contents">
-          <DialogTitle>{isNew ? "New tag" : "Rename tag"}</DialogTitle>
+          <DialogTitle>
+            {isNew ? t("tagsNewTitle") : t("tagsRenameTitle")}
+          </DialogTitle>
           <DialogBody>
             <Field
-              label="Name"
-              error={
-                taken ? `A tag named “${trimmed}” already exists.` : undefined
-              }
+              label={t("tagsNameLabel")}
+              error={taken ? t("tagsNameTaken", { name: trimmed }) : undefined}
             >
               <Input
                 value={name}
@@ -108,7 +128,7 @@ export function TagDialog({
                   setName(e.target.value);
                   setServerError(null);
                 }}
-                placeholder="For example, travel"
+                placeholder={t("tagsNamePlaceholder")}
                 autoFocus
                 onFocus={(e) => !isNew && e.currentTarget.select()}
               />
@@ -116,7 +136,7 @@ export function TagDialog({
             {isNew && (
               <div className="grid gap-2">
                 <div className="flex items-baseline justify-between gap-2 font-semibold text-meta">
-                  <span id="tag-color-label">Color</span>
+                  <span id="tag-color-label">{t("tagsColorLabel")}</span>
                   <span
                     aria-hidden
                     className="flex max-w-[60%] justify-end overflow-hidden"
@@ -130,7 +150,7 @@ export function TagDialog({
                             !trimmed && "font-medium text-muted-foreground",
                           )}
                         >
-                          {trimmed || "tag name"}
+                          {trimmed || t("tagsNamePreview")}
                         </span>
                       }
                       className="max-w-full overflow-hidden font-semibold"
@@ -149,14 +169,17 @@ export function TagDialog({
               onClick={() => onOpenChange(false)}
               disabled={mutation.isPending}
             >
-              Cancel
+              {t("commonCancel")}
             </Button>
             <Button
               type="submit"
               disabled={!trimmed || taken || unchanged}
-              busy={mutation.isPending && (isNew ? "Creating…" : "Renaming…")}
+              busy={
+                mutation.isPending &&
+                (isNew ? t("tagsCreating") : t("tagsRenaming"))
+              }
             >
-              {isNew ? "Create tag" : "Rename"}
+              {isNew ? t("tagsCreate") : t("tagsRenameAction")}
             </Button>
           </DialogFooter>
         </form>
@@ -172,6 +195,7 @@ function ColorChoices({
   color: string;
   onChange: (color: string) => void;
 }) {
+  const t = useTranslations();
   const roving = useRovingFocus<HTMLDivElement>({
     orientation: "both",
     selectsOnMove: true,
@@ -187,7 +211,7 @@ function ColorChoices({
     >
       {TAG_COLORS.map((swatch) => {
         const selected = swatch.stored === color.toUpperCase();
-        const name = tagColorName(swatch.stored);
+        const name = tagColorName(swatch.stored, t);
         return (
           <Tip key={swatch.stored} label={name}>
             {/* biome-ignore lint/a11y/useSemanticElements: round color swatches in a radio group */}

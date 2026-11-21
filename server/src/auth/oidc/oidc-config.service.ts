@@ -3,6 +3,8 @@ import { ConfigService, type ConfigType } from '@nestjs/config';
 import { AppConfig } from '../../config/configuration';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { OidcConfig } from './oidc.types';
+import { coded } from '../../common/errors/coded';
+import { ErrorCode } from '../../common/errors/error-code';
 
 @Injectable()
 export class OidcConfigService {
@@ -197,8 +199,11 @@ export class OidcConfigService {
     disableInternalAuth?: boolean;
   }): Promise<void> {
     if (this.isLockedByEnv()) {
-      throw new ForbiddenException(
-        'OIDC settings are locked by environment variables. Remove OIDC_ENABLED, OIDC_ISSUER_URL and OIDC_CLIENT_ID to manage from UI.',
+      throw coded(
+        new ForbiddenException(
+          'OIDC settings are locked by environment variables. Remove OIDC_ENABLED, OIDC_ISSUER_URL and OIDC_CLIENT_ID to manage from UI.',
+        ),
+        ErrorCode.OIDC_SETTINGS_LOCKED,
       );
     }
 

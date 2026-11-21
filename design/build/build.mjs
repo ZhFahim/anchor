@@ -64,14 +64,18 @@ const out = {};
 // Must match the next/font variables in web/app/layout.tsx.
 const FONT_VARS = {
   "DM Sans": "--font-dm-sans",
+  Manrope: "--font-manrope",
   "JetBrains Mono": "--font-jetbrains-mono",
   "Playfair Display": "--font-playfair",
 };
-const family = (p) => {
-  const [first, ...rest] = baseCss[p].split(", ");
-  const v = FONT_VARS[first.replace(/"/g, "")];
-  return [v ? `var(${v})` : first, ...rest].join(", ");
-};
+const family = (p) =>
+  baseCss[p]
+    .split(", ")
+    .map((name) => {
+      const v = FONT_VARS[name.replace(/"/g, "")];
+      return v ? `var(${v})` : name;
+    })
+    .join(", ");
 const ms = (v) => (v.unit === "s" ? v.value * 1000 : v.value);
 
 const staticTheme = {

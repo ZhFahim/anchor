@@ -134,6 +134,10 @@ describe('provider-only sign-in', () => {
     expect(bodyOf<{ message: string }>(signIn).message).toBe(
       'Email and password sign-in is turned off. Sign in with Pocket ID.',
     );
+    expect(signIn.body).toMatchObject({
+      code: 'PASSWORD_SIGN_IN_DISABLED',
+      params: { provider: 'Pocket ID' },
+    });
     await request(ctx.http)
       .post('/api/auth/register')
       .send({ email: 'new@e2e.test', password: 'password-123', name: 'New' })

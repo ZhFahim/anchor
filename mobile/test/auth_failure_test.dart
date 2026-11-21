@@ -31,11 +31,15 @@ class _FakeServer implements HttpClientAdapter {
   void close({bool force = false}) {}
 }
 
-AuthService _answering(int status, Object message) {
+AuthService _answering(
+  int status,
+  Object message, [
+  Map<String, Object> extra = const {},
+]) {
   final dio = Dio(BaseOptions(baseUrl: 'https://anchor.test'))
     ..httpClientAdapter = _FakeServer(
       () async => ResponseBody.fromString(
-        jsonEncode({'statusCode': status, 'message': message}),
+        jsonEncode({'statusCode': status, 'message': message, ...extra}),
         status,
         headers: {
           Headers.contentTypeHeader: [Headers.jsonContentType],
@@ -45,9 +49,13 @@ AuthService _answering(int status, Object message) {
   return AuthService(dio);
 }
 
-Future<AuthFailure> _loginFailure(int status, Object message) async {
+Future<AuthFailure> _loginFailure(
+  int status,
+  Object message, [
+  Map<String, Object> extra = const {},
+]) async {
   try {
-    await _answering(status, message).login('ada@example.com', 'secret');
+    await _answering(status, message, extra).login('ada@example.com', 'secret');
   } on AuthFailure catch (failure) {
     return failure;
   }
@@ -93,6 +101,63 @@ void main() {
     );
 
     expect(failure, isA<LastAdminFailure>());
+  });
+
+  group('the server’s error codes', () {
+    test('a code is read even when the sentence is new', () async {
+      expect(
+        await _loginFailure(401, 'Wrong email or password', {
+          'code': 'INVALID_CREDENTIALS',
+        }),
+        isA<InvalidCredentialsFailure>(),
+      );
+    });
+
+    test('the provider comes from the code’s values', () async {
+      final failure = await _loginFailure(403, 'Use single sign-on', {
+        'code': 'PASSWORD_SIGN_IN_DISABLED',
+        'params': {'provider': 'Authentik'},
+      });
+
+      expect(
+        failure,
+        isA<PasswordSignInDisabledFailure>().having(
+          (f) => f.provider,
+          'provider',
+          'Authentik',
+        ),
+      );
+    });
+
+    test('fields the server turned down come from its field list', () async {
+      final failure = await _loginFailure(
+        400,
+        ['email must be an email'],
+        {
+          'code': 'VALIDATION_FAILED',
+          'fields': [
+            {
+              'field': 'email',
+              'rules': ['isEmail'],
+            },
+          ],
+        },
+      );
+
+      expect(
+        failure,
+        isA<InvalidInputFailure>().having((f) => f.fields, 'fields', ['email']),
+      );
+    });
+
+    test('an unknown code falls back to the sentence', () async {
+      expect(
+        await _loginFailure(401, 'Invalid credentials', {
+          'code': 'SOMETHING_NEW',
+        }),
+        isA<InvalidCredentialsFailure>(),
+      );
+    });
   });
 
   group('the server’s answers', () {

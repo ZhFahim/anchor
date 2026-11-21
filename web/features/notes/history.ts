@@ -1,4 +1,5 @@
 import { format, isSameDay } from "date-fns";
+import type { Translate } from "@/i18n/translate";
 import type {
   Note,
   NoteRevisionAuthor,
@@ -23,34 +24,80 @@ export interface TimelineDay {
   entries: TimelineEntry[];
 }
 
-const labels: Record<NoteRevisionCause, string> = {
-  edit: "Earlier version",
-  conflict: "Not saved",
-  restore: "Before a restore",
-};
+const labels = {
+  edit: "historyEarlierVersion",
+  conflict: "historyNotSaved",
+  restore: "historyBeforeRestore",
+} as const satisfies Record<NoteRevisionCause, string>;
 
-export function revisionLabel(cause: NoteRevisionCause): string {
-  return labels[cause];
+export function revisionLabel(t: Translate, cause: NoteRevisionCause): string {
+  return t(labels[cause]);
 }
 
 export function revisionAuthorName(
+  t: Translate,
   entry: { author: NoteRevisionAuthor | null },
   currentUserId: string | null,
 ): string {
-  if (!entry.author) return "Someone";
-  return entry.author.id === currentUserId ? "You" : entry.author.name;
+  if (!entry.author) return t("historySomeone");
+  return entry.author.id === currentUserId
+    ? t("historyYou")
+    : entry.author.name;
 }
 
-export function revisionTime(entry: { createdAt: string }): string {
-  return format(new Date(entry.createdAt), "h:mm a");
+const formats = new Map<string, Intl.DateTimeFormat>();
+
+function formatOf(locale: string, kind: "time" | "date") {
+  const key = `${locale} ${kind}`;
+  let found = formats.get(key);
+  if (!found) {
+    found = new Intl.DateTimeFormat(
+      locale,
+      kind === "time"
+        ? { hour: "numeric", minute: "2-digit" }
+        : { year: "numeric", month: "long", day: "numeric" },
+    );
+    formats.set(key, found);
+  }
+  return found;
+}
+
+export interface RevisionMoment {
+  day: "today" | "yesterday" | "earlier";
+  date: string;
+  time: string;
+}
+
+export function revisionMoment(
+  locale: string,
+  entry: { createdAt: string },
+  now: Date = new Date(),
+): RevisionMoment {
+  const date = new Date(entry.createdAt);
+  return {
+    day: dayOf(date, now),
+    date: formatOf(locale, "date").format(date),
+    time: formatOf(locale, "time").format(date),
+  };
+}
+
+export function revisionTime(
+  locale: string,
+  entry: { createdAt: string },
+): string {
+  return formatOf(locale, "time").format(new Date(entry.createdAt));
 }
 
 export function revisionDayTime(
+  t: Translate,
+  locale: string,
   entry: { createdAt: string },
   now: Date = new Date(),
 ): string {
-  const date = new Date(entry.createdAt);
-  return `${dayLabel(date, now)} at ${format(date, "h:mm a")}`;
+  const { day, date, time } = revisionMoment(locale, entry, now);
+  if (day === "today") return t("historyTodayAt", { time });
+  if (day === "yesterday") return t("historyYesterdayAt", { time });
+  return t("historyDateAt", { date, time });
 }
 
 export function historyHasMultipleAuthors(
@@ -99,6 +146,8 @@ export function comparisonTargetId(
 }
 
 export function groupTimelineByDay(
+  t: Translate,
+  locale: string,
   entries: TimelineEntry[],
   now: Date = new Date(),
 ): TimelineDay[] {
@@ -114,18 +163,25 @@ export function groupTimelineByDay(
       continue;
     }
 
-    days.push({ key, label: dayLabel(date, now), entries: [entry] });
+    const day = dayOf(date, now);
+    const label =
+      day === "today"
+        ? t("historyToday")
+        : day === "yesterday"
+          ? t("historyYesterday")
+          : formatOf(locale, "date").format(date);
+    days.push({ key, label, entries: [entry] });
   }
 
   return days;
 }
 
-function dayLabel(date: Date, now: Date): string {
-  if (isSameDay(date, now)) return "Today";
+function dayOf(date: Date, now: Date): RevisionMoment["day"] {
+  if (isSameDay(date, now)) return "today";
 
   const yesterday = new Date(now);
   yesterday.setDate(yesterday.getDate() - 1);
-  if (isSameDay(date, yesterday)) return "Yesterday";
+  if (isSameDay(date, yesterday)) return "yesterday";
 
-  return format(date, "MMMM d, yyyy");
+  return "earlier";
 }

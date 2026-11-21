@@ -1966,11 +1966,11 @@
   },
   "trashDeletesOn": "Will be deleted on {date}.",
   "@trashDeletesOn": {
-    "description": "Follows the bold “In trash.” at the bottom of a note opened from the trash.",
+    "description": "Follows the bold “In trash.” at the bottom of a note opened from the trash. {date} has the full month name.",
     "placeholders": {
       "date": {
         "type": "String",
-        "example": "Nov 10"
+        "example": "November 10"
       }
     }
   },
@@ -3599,5 +3599,69 @@
         "example": "IMG_2041.jpg"
       }
     }
+  },
+  "nativeWidgetLabel": "Notes",
+  "@nativeWidgetLabel": {
+    "description": "Android home screen widget: its name in the list of widgets. Short."
+  },
+  "nativeWidgetDescription": "See your notes and start a new one from the home screen.",
+  "@nativeWidgetDescription": {
+    "description": "Android home screen widget: the sentence under its name in the list of widgets."
+  },
+  "nativeWidgetNewNote": "New note",
+  "@nativeWidgetNewNote": {
+    "description": "Android home screen widget: spoken label of the + button that starts a note. Verb phrase."
+  },
+  "nativeWidgetEmpty": "No notes yet.\nTap + to write your first one.",
+  "@nativeWidgetEmpty": {
+    "description": "Android home screen widget: shown when there are no notes. Keep the line break and the + sign."
+  },
+  "nativeWidgetSignedOut": "Sign in to Anchor\nto see your notes here.",
+  "@nativeWidgetSignedOut": {
+    "description": "Android home screen widget: shown when nobody is signed in. Keep the line break. Anchor is the app's name."
+  },
+  "nativeCameraUse": "Anchor uses the camera to take pictures for your notes and your profile photo.",
+  "@nativeCameraUse": {
+    "description": "iPhone permission prompt: why the app asks for the camera. Starts with the app's name."
+  },
+  "nativeMicrophoneUse": "Anchor uses the microphone to record voice notes.",
+  "@nativeMicrophoneUse": {
+    "description": "iPhone permission prompt: why the app asks for the microphone."
+  },
+  "nativePhotoLibraryUse": "Anchor uses your photo library to add pictures to notes and to choose your profile photo.",
+  "@nativePhotoLibraryUse": {
+    "description": "iPhone permission prompt: why the app asks to read the photo library."
+  },
+  "nativePhotoLibraryAddUse": "Anchor saves pictures from your notes to your photo library.",
+  "@nativePhotoLibraryAddUse": {
+    "description": "iPhone permission prompt: why the app asks to add photos to the library."
+  },
+  "nativeMusicUse": "Anchor uses your music library to add audio files to notes.",
+  "@nativeMusicUse": {
+    "description": "iPhone permission prompt: why the app asks for the music library."
+  },
+  "nativeLocalNetworkUse": "Anchor connects to your server when it is on your local network.",
+  "@nativeLocalNetworkUse": {
+    "description": "iPhone permission prompt: why the app asks to use the local network."
+  },
+  "settingsLanguage": "Language",
+  "@settingsLanguage": {
+    "description": "Settings row that opens the phone's page for choosing the app's language. Noun. Short."
+  },
+  "languageName": "English",
+  "@languageName": {
+    "description": "The name of this language, written the way people who speak it write it, such as Deutsch or Español. Shown in Settings next to Language."
+  },
+  "sentenceSeparator": ". ",
+  "@sentenceSeparator": {
+    "description": "Goes between two sentences read one after the other, such as a note card's title and its text for a screen reader. Keep the space if your language uses one."
+  },
+  "listSeparator": ", ",
+  "@listSeparator": {
+    "description": "Goes between the items of a list, such as \"3 lines added, 1 removed\". Keep the space if your language uses one."
+  },
+  "detailSeparator": " · ",
+  "@detailSeparator": {
+    "description": "Goes between short details shown on one line, such as a person's name and a count of changes. Keep the spaces if your language uses them."
   }
 }

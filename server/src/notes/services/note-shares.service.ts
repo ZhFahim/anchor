@@ -18,6 +18,8 @@ import {
 } from '../constants/notes.constants';
 import { reconcileUserTags } from '../utils/note-tags.util';
 import { Prisma } from '../../generated/prisma/client';
+import { coded } from '../../common/errors/coded';
+import { ErrorCode } from '../../common/errors/error-code';
 
 @Injectable()
 export class NoteSharesService {
@@ -33,7 +35,10 @@ export class NoteSharesService {
     await this.noteAccessService.verifyNoteOwnership(ownerId, noteId);
 
     if (sharedWithUserId === ownerId) {
-      throw new BadRequestException(ERROR_MESSAGES.CANNOT_SHARE_WITH_SELF);
+      throw coded(
+        new BadRequestException(ERROR_MESSAGES.CANNOT_SHARE_WITH_SELF),
+        ErrorCode.CANNOT_SHARE_WITH_SELF,
+      );
     }
 
     const user = await this.prisma.user.findUnique({
@@ -41,7 +46,10 @@ export class NoteSharesService {
     });
 
     if (!user) {
-      throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
+      throw coded(
+        new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND),
+        ErrorCode.USER_NOT_FOUND,
+      );
     }
 
     const existingShare = await this.prisma.noteShare.findUnique({
@@ -158,11 +166,17 @@ export class NoteSharesService {
     });
 
     if (!share || share.isDeleted) {
-      throw new NotFoundException(ERROR_MESSAGES.SHARE_NOT_FOUND);
+      throw coded(
+        new NotFoundException(ERROR_MESSAGES.SHARE_NOT_FOUND),
+        ErrorCode.SHARE_NOT_FOUND,
+      );
     }
 
     if (share.noteId !== noteId) {
-      throw new NotFoundException(ERROR_MESSAGES.SHARE_NOT_FOUND);
+      throw coded(
+        new NotFoundException(ERROR_MESSAGES.SHARE_NOT_FOUND),
+        ErrorCode.SHARE_NOT_FOUND,
+      );
     }
 
     const updated = await this.prisma.$transaction(async (tx) => {
@@ -197,11 +211,17 @@ export class NoteSharesService {
     });
 
     if (!share || share.isDeleted) {
-      throw new NotFoundException(ERROR_MESSAGES.SHARE_NOT_FOUND);
+      throw coded(
+        new NotFoundException(ERROR_MESSAGES.SHARE_NOT_FOUND),
+        ErrorCode.SHARE_NOT_FOUND,
+      );
     }
 
     if (share.noteId !== noteId) {
-      throw new NotFoundException(ERROR_MESSAGES.SHARE_NOT_FOUND);
+      throw coded(
+        new NotFoundException(ERROR_MESSAGES.SHARE_NOT_FOUND),
+        ErrorCode.SHARE_NOT_FOUND,
+      );
     }
 
     await this.prisma.$transaction((tx) => this.endShare(tx, share));

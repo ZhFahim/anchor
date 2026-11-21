@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { englishT } from "@/i18n/translate";
 import {
   isReminderPast,
   nextOccurrence,
@@ -56,14 +57,14 @@ describe("isReminderPast", () => {
 describe("presetReminders", () => {
   it("offers times that are all valid wall clocks", () => {
     const now = new Date(2026, 8, 4, 12, 0);
-    for (const preset of presetReminders(now)) {
+    for (const preset of presetReminders(englishT, now)) {
       expect(parseWallClock(preset.remindAt)).not.toBeNull();
     }
   });
 
   it("puts tomorrow and next week on the right days at 09:00", () => {
     const now = new Date(2026, 8, 4, 12, 0);
-    const presets = presetReminders(now);
+    const presets = presetReminders(englishT, now);
     expect(presets[1]).toEqual({
       key: "tomorrow",
       label: "Tomorrow",
@@ -77,19 +78,20 @@ describe("presetReminders", () => {
   });
 
   it("rounds later today up to the next five minutes", () => {
-    const later = presetReminders(new Date(2026, 8, 4, 12, 2, 30))[0];
+    const later = presetReminders(englishT, new Date(2026, 8, 4, 12, 2, 30))[0];
     expect(later).toEqual({
       key: "later",
       label: "Later today",
       remindAt: "2026-09-04T15:05",
     });
-    expect(presetReminders(new Date(2026, 8, 4, 12, 0))[0].remindAt).toBe(
-      "2026-09-04T15:00",
-    );
+    expect(
+      presetReminders(englishT, new Date(2026, 8, 4, 12, 0))[0].remindAt,
+    ).toBe("2026-09-04T15:00");
   });
 
   it("drops later today once it would pass midnight", () => {
-    const keys = (now: Date) => presetReminders(now).map((p) => p.key);
+    const keys = (now: Date) =>
+      presetReminders(englishT, now).map((p) => p.key);
     expect(keys(new Date(2026, 8, 4, 20, 55))).toEqual([
       "later",
       "tomorrow",
@@ -104,31 +106,27 @@ describe("reminderLabel", () => {
   const now = new Date(2026, 8, 4, 12, 0);
 
   it("names the repeat when there is one", () => {
-    expect(reminderLabel(reminder({ recurrence: "daily" }), now)).toContain(
-      "· Daily",
-    );
+    expect(
+      reminderLabel(reminder({ recurrence: "daily" }), englishT, "en", now),
+    ).toContain("· Daily");
   });
 
   it("says nothing about repeating when it does not repeat", () => {
-    expect(reminderLabel(reminder(), now)).not.toContain("·");
+    expect(reminderLabel(reminder(), englishT, "en", now)).not.toContain("·");
   });
 
   it("names the day of a future reminder, and the date of a late one", () => {
-    expect(reminderLabel(reminder({ remindAt: "2026-09-11T09:00" }), now)).toBe(
-      "Fri, Sep 11, 9:00 AM",
-    );
-    expect(reminderLabel(reminder({ remindAt: "2026-09-05T09:00" }), now)).toBe(
-      "Tomorrow, 9:00 AM",
-    );
-    expect(reminderLabel(reminder({ remindAt: "2026-09-01T17:00" }), now)).toBe(
-      "Sep 1, 5:00 PM",
-    );
+    const label = (remindAt: string) =>
+      reminderLabel(reminder({ remindAt }), englishT, "en", now);
+    expect(label("2026-09-11T09:00")).toBe("Fri, Sep 11, 9:00 AM");
+    expect(label("2026-09-05T09:00")).toBe("Tomorrow, 9:00 AM");
+    expect(label("2026-09-01T17:00")).toBe("Sep 1, 5:00 PM");
   });
 
   it("falls back to the raw value it cannot parse", () => {
-    expect(reminderLabel(reminder({ remindAt: "nonsense" }), now)).toBe(
-      "nonsense",
-    );
+    expect(
+      reminderLabel(reminder({ remindAt: "nonsense" }), englishT, "en", now),
+    ).toBe("nonsense");
   });
 });
 
@@ -256,7 +254,7 @@ describe("reminderSummary", () => {
 
   it("says when it rings and how far away that is", () => {
     const at = new Date(2026, 8, 28, 18, 5);
-    expect(reminderSummary(at, "none", now)).toEqual({
+    expect(reminderSummary(at, "none", englishT, "en", now)).toEqual({
       headline: "Today, 6:05 PM",
       caption: "In 3 hours",
       ok: true,
@@ -265,17 +263,29 @@ describe("reminderSummary", () => {
 
   it("names the rule for a repeating reminder", () => {
     const at = new Date(2026, 8, 30, 20, 0);
-    expect(reminderSummary(at, "weekly", now).caption).toBe(
+    expect(reminderSummary(at, "weekly", englishT, "en", now).caption).toBe(
       "Repeats every Wednesday",
     );
     expect(
-      reminderSummary(new Date(2026, 8, 23, 9, 0), "monthly", now).caption,
-    ).toBe("Repeats monthly on the 23rd");
+      reminderSummary(
+        new Date(2026, 8, 23, 9, 0),
+        "monthly",
+        englishT,
+        "en",
+        now,
+      ).caption,
+    ).toBe("Repeats monthly on day 23");
   });
 
   it("turns down a time that has passed", () => {
     expect(
-      reminderSummary(new Date(2026, 8, 27, 17, 0), "none", now),
+      reminderSummary(
+        new Date(2026, 8, 27, 17, 0),
+        "none",
+        englishT,
+        "en",
+        now,
+      ),
     ).toMatchObject({
       headline: "That time has passed",
       ok: false,

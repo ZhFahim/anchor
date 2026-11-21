@@ -2700,4 +2700,61 @@ class AppLocalizationsEn extends AppLocalizations {
   String shareRemoveItem(String name) {
     return 'Remove $name';
   }
+
+  @override
+  String get nativeWidgetLabel => 'Notes';
+
+  @override
+  String get nativeWidgetDescription =>
+      'See your notes and start a new one from the home screen.';
+
+  @override
+  String get nativeWidgetNewNote => 'New note';
+
+  @override
+  String get nativeWidgetEmpty =>
+      'No notes yet.\nTap + to write your first one.';
+
+  @override
+  String get nativeWidgetSignedOut =>
+      'Sign in to Anchor\nto see your notes here.';
+
+  @override
+  String get nativeCameraUse =>
+      'Anchor uses the camera to take pictures for your notes and your profile photo.';
+
+  @override
+  String get nativeMicrophoneUse =>
+      'Anchor uses the microphone to record voice notes.';
+
+  @override
+  String get nativePhotoLibraryUse =>
+      'Anchor uses your photo library to add pictures to notes and to choose your profile photo.';
+
+  @override
+  String get nativePhotoLibraryAddUse =>
+      'Anchor saves pictures from your notes to your photo library.';
+
+  @override
+  String get nativeMusicUse =>
+      'Anchor uses your music library to add audio files to notes.';
+
+  @override
+  String get nativeLocalNetworkUse =>
+      'Anchor connects to your server when it is on your local network.';
+
+  @override
+  String get settingsLanguage => 'Language';
+
+  @override
+  String get languageName => 'English';
+
+  @override
+  String get sentenceSeparator => '. ';
+
+  @override
+  String get listSeparator => ', ';
+
+  @override
+  String get detailSeparator => ' · ';
 }

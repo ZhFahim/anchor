@@ -162,19 +162,19 @@ class _NoteHistoryScreenState extends ConsumerState<NoteHistoryScreen> {
         time: clockLabel(revision.createdAtLocal),
         cause: cause,
         isWarning: revision.cause == RevisionCause.conflict,
-        summary: [
+        summary: l10n.joinDetails([
           if (showsAuthor) authorName,
           lineChangesLabel(counts, l10n),
-        ].join(' · '),
+        ]),
         counts: counts,
-        semanticLabel: [
+        semanticLabel: l10n.joinList([
           dayTimeLabel(revision.createdAtLocal, l10n, now: now),
           if (showsAuthor) authorName,
           ?cause,
           spokenCounts.isEmpty
               ? l10n.historyNoChanges
-              : spokenCounts.join(', '),
-        ].join(', '),
+              : l10n.joinList(spokenCounts),
+        ]),
         onTap: () => _open(revision.id),
       );
     }

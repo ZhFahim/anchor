@@ -2,10 +2,19 @@
   "template": "#{{CHANGELOG}}\n\n**Full Changelog**: #{{RELEASE_DIFF}}",
   "categories": [
     {
+      "title": "## Translations",
+      "labels": [
+        "i18n"
+      ]
+    },
+    {
       "title": "## Features",
       "labels": [
         "feat",
         "feature"
+      ],
+      "exclude_labels": [
+        "i18n"
       ]
     },
     {
@@ -13,6 +22,9 @@
       "labels": [
         "fix",
         "bug"
+      ],
+      "exclude_labels": [
+        "i18n"
       ]
     },
     {
@@ -20,6 +32,9 @@
       "labels": [
         "perf",
         "performance"
+      ],
+      "exclude_labels": [
+        "i18n"
       ]
     },
     {
@@ -27,6 +42,9 @@
       "labels": [
         "docs",
         "documentation"
+      ],
+      "exclude_labels": [
+        "i18n"
       ]
     },
     {
@@ -36,6 +54,9 @@
         "refactor",
         "style",
         "test"
+      ],
+      "exclude_labels": [
+        "i18n"
       ]
     },
     {
@@ -48,6 +69,11 @@
       "pattern": "^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}\\s*(\\([\\w\\-\\.]+\\))?(!)?: ([\\w ])+([\\s\\S]*)",
       "on_property": "title",
       "target": "$1"
+    },
+    {
+      "pattern": "^\\w+\\(i18n\\)",
+      "on_property": "title",
+      "target": "i18n"
     }
   ],
   "trim_values": true,

@@ -3,6 +3,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { HTTPError } from "ky";
 import { Upload } from "lucide-react";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { Avatar, preloadPhoto } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -16,17 +17,19 @@ import {
 } from "@/features/auth/api";
 import { useAuthStore } from "@/features/auth/store";
 import type { User } from "@/features/auth/types";
+import type { Translate } from "@/i18n/translate";
+import { errorCodeOf } from "@/lib/api/error-code";
 import { Row, SaveStatus, Section, useSaveStatus } from "./settings-blocks";
 
 const PICTURE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const PICTURE_MAX_MB = 5;
 
-function pictureUploadError(error: Error) {
-  if (!(error instanceof HTTPError))
-    return "Couldn’t upload the picture. Check your connection.";
+function pictureUploadError(error: Error, t: Translate) {
+  if (!(error instanceof HTTPError)) return t("settingsPictureUploadOffline");
   const { status } = error.response;
-  if (status === 413 || (status === 400 && /file size/i.test(error.message)))
-    return "Couldn’t upload the picture. It’s too big.";
-  return "Couldn’t upload the picture.";
+  if (status === 413 || errorCodeOf(error) === "FILE_TOO_LARGE")
+    return t("settingsPictureTooBig");
+  return t("settingsPictureUploadFailed");
 }
 
 type PictureRemoval = { picture: string; isCanceled: boolean; isSent: boolean };
@@ -37,7 +40,7 @@ const applyUser = (updated: User) => useAuthStore.getState().mergeUser(updated);
 const showPicture = (picture?: string) =>
   useAuthStore.getState().mergeUser({ profileImage: picture });
 
-function sendRemoval(removal: PictureRemoval) {
+function sendRemoval(removal: PictureRemoval, t: Translate) {
   if (removal.isCanceled) return;
   removal.isSent = true;
   removeProfileImage().then(
@@ -48,11 +51,11 @@ function sendRemoval(removal: PictureRemoval) {
       removal.isSent = false;
       if (removal.isCanceled) return;
       showPicture(removal.picture);
-      toast.error("Couldn’t remove the profile picture", {
+      toast.error(t("settingsPictureRemoveFailed"), {
         retry: () => {
           if (removal.isCanceled) return;
           showPicture();
-          sendRemoval(removal);
+          sendRemoval(removal, t);
         },
       });
     },
@@ -60,6 +63,7 @@ function sendRemoval(removal: PictureRemoval) {
 }
 
 function useProfilePicture() {
+  const t = useTranslations();
   const [pictureError, setPictureError] = React.useState<string | null>(null);
   const removalRef = React.useRef<PictureRemoval | null>(null);
 
@@ -74,11 +78,11 @@ function useProfilePicture() {
     onSuccess: async (updated) => {
       if (updated.profileImage) await preloadPhoto(updated.profileImage);
       applyUser(updated);
-      toast.success("Profile picture updated");
+      toast.success(t("settingsPictureUpdated"));
     },
     onError: (e: Error, _file, replaced) => {
       if (replaced) showPicture(replaced.picture);
-      setPictureError(pictureUploadError(e));
+      setPictureError(pictureUploadError(e, t));
     },
   });
 
@@ -86,12 +90,12 @@ function useProfilePicture() {
     const removal = { picture, isCanceled: false, isSent: false };
     removalRef.current = removal;
     showPicture();
-    toast.success("Profile picture removed", {
+    toast.success(t("settingsPictureRemoved"), {
       undo: () => {
         removal.isCanceled = true;
         showPicture(picture);
       },
-      onClose: () => sendRemoval(removal),
+      onClose: () => sendRemoval(removal, t),
     });
   };
 
@@ -99,6 +103,7 @@ function useProfilePicture() {
 }
 
 export function ProfileSection() {
+  const t = useTranslations();
   const user = useAuthStore((s) => s.user);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const uploadButtonId = React.useId();
@@ -140,8 +145,8 @@ export function ProfileSection() {
   return (
     <Section
       id="profile"
-      title="Profile"
-      description="How you appear to people you share notes with."
+      title={t("settingsProfile")}
+      description={t("settingsProfileHelp")}
     >
       <Row>
         <div className="flex flex-wrap items-center gap-5">
@@ -164,12 +169,12 @@ export function ProfileSection() {
                   e.target.value = "";
                   if (!file) return;
                   if (!PICTURE_TYPES.includes(file.type))
+                    return setPictureError(t("settingsPictureWrongType"));
+                  if (file.size >= PICTURE_MAX_MB * 1024 * 1024)
                     return setPictureError(
-                      "That file isn’t a picture Anchor can use. Pick a JPG, PNG or WebP.",
-                    );
-                  if (file.size > 5 * 1024 * 1024)
-                    return setPictureError(
-                      "That picture is over 5 MB. Pick a smaller one.",
+                      t("settingsPictureOverLimit", {
+                        megabytes: PICTURE_MAX_MB,
+                      }),
                     );
                   setPictureError(null);
                   uploadPicture.mutate(file);
@@ -179,10 +184,10 @@ export function ProfileSection() {
                 id={uploadButtonId}
                 variant="secondary"
                 onClick={() => fileInputRef.current?.click()}
-                busy={uploadPicture.isPending && "Uploading…"}
+                busy={uploadPicture.isPending && t("settingsUploading")}
               >
                 <Upload aria-hidden />
-                Upload a picture
+                {t("settingsUploadPicture")}
               </Button>
               {profileImage && (
                 <Button
@@ -194,14 +199,16 @@ export function ProfileSection() {
                     removePicture(profileImage);
                   }}
                 >
-                  Remove
+                  {t("commonRemove")}
                 </Button>
               )}
             </div>
             {pictureError ? (
               <FieldError>{pictureError}</FieldError>
             ) : (
-              <FieldDescription>JPG, PNG or WebP, up to 5 MB.</FieldDescription>
+              <FieldDescription>
+                {t("settingsPictureHelp", { megabytes: PICTURE_MAX_MB })}
+              </FieldDescription>
             )}
           </div>
         </div>
@@ -210,7 +217,7 @@ export function ProfileSection() {
         <Field
           label={
             <span className="flex items-center gap-2.5">
-              Name
+              {t("settingsName")}
               <SaveStatus state={nameState} onRetry={commitName} />
             </span>
           }
@@ -226,7 +233,7 @@ export function ProfileSection() {
             }}
           />
         </Field>
-        <Field label="Email" help="Only an admin can change your email.">
+        <Field label={t("settingsEmail")} help={t("settingsEmailHelp")}>
           <Input value={user?.email ?? ""} readOnly />
         </Field>
       </Row>

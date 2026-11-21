@@ -15,6 +15,8 @@ import {
 } from './export-manifest.util';
 import { ExportFormat } from './dto/export-query.dto';
 import { planMarkdownExport } from './markdown/markdown-export.util';
+import { coded } from '../common/errors/coded';
+import { ErrorCode } from '../common/errors/error-code';
 
 const NOTES_PAGE_SIZE = 500;
 
@@ -156,7 +158,10 @@ export class ExportService {
       select: { id: true, email: true },
     });
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw coded(
+        new NotFoundException('User not found'),
+        ErrorCode.USER_NOT_FOUND,
+      );
     }
 
     const tags = await this.prisma.tag.findMany({

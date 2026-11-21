@@ -3,8 +3,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { HTTPError } from "ky";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "@/components/ui/toast";
+import { errorCodeOf } from "@/lib/api/error-code";
 import { firstName } from "@/lib/utils";
 import { exchangeOidcCode, getOidcConfig } from "../api";
 import { useAuthStore } from "../store";
@@ -36,10 +38,11 @@ export function useOidcLogin() {
 /** status is 0 when the server couldn't be reached. */
 export type ProviderSignInFailure =
   | { by: "provider"; message: string }
-  | { by: "server"; status: number; message: string };
+  | { by: "server"; status: number; message: string; reason?: string };
 
 /** Handles the OIDC callback: ?code=...&redirect=... (no JWT in the URL). */
 export function useOidcCallback() {
+  const t = useTranslations();
   const searchParams = useSearchParams();
   const router = useRouter();
   const { setAuth, setInitialized } = useAuthStore();
@@ -53,13 +56,14 @@ export function useOidcCallback() {
     const code = searchParams.get("code");
     const error = searchParams.get("error");
     const status = searchParams.get("status");
+    const reason = searchParams.get("reason") ?? undefined;
 
     if (error) {
       if (!processedRef.current) {
         processedRef.current = true;
         setFailure(
           status
-            ? { by: "server", status: Number(status), message: error }
+            ? { by: "server", status: Number(status), message: error, reason }
             : { by: "provider", message: error },
         );
         router.replace("/login");
@@ -74,13 +78,16 @@ export function useOidcCallback() {
           // GuestGuard navigates once signed in.
           setAuth(result.user, result.access_token, result.refresh_token);
           setInitialized(true);
-          toast.success(`Welcome back, ${firstName(result.user.name)}`);
+          toast.success(
+            t("authWelcomeBackName", { name: firstName(result.user.name) }),
+          );
         })
         .catch((err: unknown) => {
           setFailure({
             by: "server",
             status: err instanceof HTTPError ? err.response.status : 0,
             message: err instanceof Error ? err.message : "",
+            reason: errorCodeOf(err),
           });
           router.replace("/login");
         })
@@ -88,7 +95,7 @@ export function useOidcCallback() {
           setIsProcessing(false);
         });
     }
-  }, [searchParams, router, setAuth, setInitialized]);
+  }, [searchParams, router, setAuth, setInitialized, t]);
 
   return { isProcessing, failure, clearFailure: () => setFailure(null) };
 }

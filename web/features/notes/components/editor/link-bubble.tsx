@@ -1,6 +1,7 @@
 "use client";
 
 import { Copy, ExternalLink, Pencil, Unlink } from "lucide-react";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { IconButton } from "@/components/ui/button";
 import type { LinkRange } from "../../link-utils";
@@ -96,6 +97,7 @@ export function LinkBubble({
   onEdit,
   onRemove,
 }: LinkBubbleProps) {
+  const t = useTranslations();
   const [link, setLink] = React.useState<LinkRange | null>(null);
   const [focusRequest, setFocusRequest] = React.useState(0);
   const handledFocusRequest = React.useRef(0);
@@ -361,7 +363,7 @@ export function LinkBubble({
     <div
       ref={bubble}
       role="dialog"
-      aria-label="Link"
+      aria-label={t("editorLinkTitle")}
       aria-keyshortcuts="Alt+Enter"
       className="lb float animate-pop-in data-[side=top]:animate-pop-up"
       // Keep the caret in the text.
@@ -425,7 +427,7 @@ export function LinkBubble({
       <span className="dv" aria-hidden />
       <IconButton
         size="sm"
-        label="Open"
+        label={t("editorLinkOpen")}
         tabIndex={-1}
         className={actionClass}
         onClick={() => onOpen(link.url)}
@@ -434,7 +436,7 @@ export function LinkBubble({
       </IconButton>
       <IconButton
         size="sm"
-        label="Copy link"
+        label={t("editorLinkCopy")}
         tabIndex={-1}
         className={actionClass}
         onClick={() => onCopy(link.url)}
@@ -445,7 +447,7 @@ export function LinkBubble({
         <>
           <IconButton
             size="sm"
-            label="Edit link"
+            label={t("editorEditLink")}
             tabIndex={-1}
             className={actionClass}
             onClick={() => {
@@ -457,7 +459,7 @@ export function LinkBubble({
           </IconButton>
           <IconButton
             size="sm"
-            label="Remove link"
+            label={t("editorLinkRemove")}
             tabIndex={-1}
             className={actionClass}
             onClick={() => {

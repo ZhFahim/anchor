@@ -1,13 +1,22 @@
+import type { Translate } from "@/i18n/translate";
 import type { NoteReminder, ReminderRecurrence } from "./types";
 
 /** One word, for the repeat toggles and the chip on a note card. */
-const recurrenceShortLabels: Record<ReminderRecurrence, string> = {
-  none: "Never",
-  daily: "Daily",
-  weekly: "Weekly",
-  monthly: "Monthly",
-  yearly: "Yearly",
-};
+export function recurrenceShortLabel(
+  recurrence: Exclude<ReminderRecurrence, "none">,
+  t: Translate,
+): string {
+  switch (recurrence) {
+    case "daily":
+      return t("reminderRepeatDaily");
+    case "weekly":
+      return t("reminderRepeatWeekly");
+    case "monthly":
+      return t("reminderRepeatMonthly");
+    case "yearly":
+      return t("reminderRepeatYearly");
+  }
+}
 
 const pad = (value: number) => String(value).padStart(2, "0");
 
@@ -39,7 +48,10 @@ function roundUpToFiveMinutes(date: Date): Date {
   return rounded;
 }
 
-export function presetReminders(now = new Date()): ReminderPreset[] {
+export function presetReminders(
+  t: Translate,
+  now = new Date(),
+): ReminderPreset[] {
   const at = (date: Date, hours: number, minutes = 0) => {
     const copy = new Date(date);
     copy.setHours(hours, minutes, 0, 0);
@@ -60,17 +72,21 @@ export function presetReminders(now = new Date()): ReminderPreset[] {
       ? [
           {
             key: "later" as const,
-            label: "Later today",
+            label: t("reminderLaterToday"),
             remindAt: toWallClock(laterToday),
           },
         ]
       : []),
     {
       key: "tomorrow",
-      label: "Tomorrow",
+      label: t("reminderTomorrow"),
       remindAt: toWallClock(at(tomorrow, 9)),
     },
-    { key: "week", label: "Next week", remindAt: toWallClock(at(nextWeek, 9)) },
+    {
+      key: "week",
+      label: t("reminderNextWeek"),
+      remindAt: toWallClock(at(nextWeek, 9)),
+    },
   ];
 }
 
@@ -86,6 +102,8 @@ export function isReminderPast(
 /** “Tomorrow, 9:00 AM · Weekly”, or “Oct 2, 9:00 AM” once passed. */
 export function reminderLabel(
   reminder: NoteReminder,
+  t: Translate,
+  locale: string,
   now = new Date(),
 ): string {
   const at = parseWallClock(reminder.remindAt);
@@ -94,13 +112,20 @@ export function reminderLabel(
   const sameYear = next.getFullYear() === now.getFullYear();
   const when =
     next.getTime() <= now.getTime() || !sameYear
-      ? `${next.toLocaleDateString("en-US", { month: "short", day: "numeric", ...(sameYear ? {} : { year: "numeric" }) })}, ${next.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`
-      : reminderTimeLabel(next, now);
-  const repeat =
-    reminder.recurrence === "none"
-      ? ""
-      : ` · ${recurrenceShortLabels[reminder.recurrence]}`;
-  return `${when}${repeat}`;
+      ? t("reminderDayTime", {
+          day: next.toLocaleDateString(locale, {
+            month: "short",
+            day: "numeric",
+            ...(sameYear ? {} : { year: "numeric" }),
+          }),
+          time: timeOf(next, locale),
+        })
+      : reminderTimeLabel(next, t, locale, now);
+  if (reminder.recurrence === "none") return when;
+  return t("reminderWithRepeat", {
+    when,
+    repeat: recurrenceShortLabel(reminder.recurrence, t),
+  });
 }
 
 const daysInMonth = (year: number, month: number) =>
@@ -193,50 +218,63 @@ const addDays = (date: Date, days: number) => {
   result.setDate(result.getDate() + days);
   return result;
 };
-const ordinal = (n: number) => {
-  const tail =
-    n % 100 >= 11 && n % 100 <= 13
-      ? "th"
-      : (["th", "st", "nd", "rd"][n % 10] ?? "th");
-  return `${n}${tail}`;
-};
-const timeOf = (d: Date) =>
-  d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+const timeOf = (d: Date, locale: string) =>
+  d.toLocaleTimeString(locale, { hour: "numeric", minute: "2-digit" });
 
 /** “Today, 3:05 PM”, “Tomorrow, 9:00 AM” or “Wed, Sep 30, 9:00 AM”. */
-function reminderTimeLabel(at: Date, now = new Date()): string {
+function reminderTimeLabel(
+  at: Date,
+  t: Translate,
+  locale: string,
+  now = new Date(),
+): string {
   const day = sameDay(at, now)
-    ? "Today"
+    ? t("reminderToday")
     : sameDay(at, addDays(now, 1))
-      ? "Tomorrow"
-      : at.toLocaleDateString("en-US", {
+      ? t("reminderTomorrow")
+      : at.toLocaleDateString(locale, {
           weekday: "short",
           month: "short",
           day: "numeric",
         });
-  return `${day}, ${timeOf(at)}`;
+  return t("reminderDayTime", { day, time: timeOf(at, locale) });
 }
 
 /** “In 20 minutes”, “In 3 hours”, “Tomorrow”, “In 5 days”. */
-function reminderCountdownLabel(at: Date, now = new Date()): string {
+function reminderCountdownLabel(
+  at: Date,
+  t: Translate,
+  now = new Date(),
+): string {
   const minutes = Math.round((at.getTime() - now.getTime()) / 60000);
-  if (minutes < 60) return `In ${minutes} minute${minutes === 1 ? "" : "s"}`;
+  if (minutes < 60) return t("reminderInMinutes", { count: minutes });
   const hours = Math.round(minutes / 60);
-  if (hours < 24) return `In ${hours} hour${hours === 1 ? "" : "s"}`;
+  if (hours < 24) return t("reminderInHours", { count: hours });
   const midnight = (d: Date) =>
     new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
   const days = Math.round((midnight(at) - midnight(now)) / 86400000);
-  return days === 1 ? "Tomorrow" : `In ${days} days`;
+  return days === 1
+    ? t("reminderTomorrow")
+    : t("reminderInDays", { count: days });
 }
 
-function recurrenceLabel(at: Date, recurrence: ReminderRecurrence): string {
-  if (recurrence === "daily") return "Repeats every day";
+function recurrenceLabel(
+  at: Date,
+  recurrence: ReminderRecurrence,
+  t: Translate,
+  locale: string,
+): string {
+  if (recurrence === "daily") return t("reminderRepeatsDaily");
   if (recurrence === "weekly")
-    return `Repeats every ${at.toLocaleDateString("en-US", { weekday: "long" })}`;
+    return t("reminderRepeatsWeekly", {
+      weekday: at.toLocaleDateString(locale, { weekday: "long" }),
+    });
   if (recurrence === "monthly")
-    return `Repeats monthly on the ${ordinal(at.getDate())}`;
+    return t("reminderRepeatsMonthly", { day: at.getDate() });
   if (recurrence === "yearly")
-    return `Repeats every year on ${at.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+    return t("reminderRepeatsYearly", {
+      date: at.toLocaleDateString(locale, { month: "short", day: "numeric" }),
+    });
   return "";
 }
 
@@ -244,18 +282,20 @@ function recurrenceLabel(at: Date, recurrence: ReminderRecurrence): string {
 export function reminderSummary(
   at: Date | null,
   recurrence: ReminderRecurrence,
+  t: Translate,
+  locale: string,
   now = new Date(),
 ): { headline: string; caption: string; ok: boolean; past?: boolean } {
   if (!at)
     return {
-      headline: "No reminder",
-      caption: "Pick when to be reminded",
+      headline: t("reminderNone"),
+      caption: t("reminderPickWhen"),
       ok: false,
     };
   if (recurrence === "none" && at.getTime() <= now.getTime())
     return {
-      headline: "That time has passed",
-      caption: reminderTimeLabel(at, now),
+      headline: t("reminderTimePassed"),
+      caption: reminderTimeLabel(at, t, locale, now),
       ok: false,
       past: true,
     };
@@ -265,11 +305,11 @@ export function reminderSummary(
       now,
     ) ?? at;
   return {
-    headline: reminderTimeLabel(next, now),
+    headline: reminderTimeLabel(next, t, locale, now),
     caption:
       recurrence === "none"
-        ? reminderCountdownLabel(next, now)
-        : recurrenceLabel(at, recurrence),
+        ? reminderCountdownLabel(next, t, now)
+        : recurrenceLabel(at, recurrence, t, locale),
     ok: true,
   };
 }

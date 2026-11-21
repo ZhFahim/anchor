@@ -14,6 +14,7 @@ import '../../../core/motion/springs.dart';
 import '../../../core/network/connectivity_provider.dart';
 import '../../../core/network/server_address.dart';
 import '../../../core/network/server_config_provider.dart';
+import '../../../core/platform/language_settings.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/context_extensions.dart';
 import '../../../core/theme/display_density.dart';
@@ -162,25 +163,36 @@ class _AppearanceSection extends ConsumerWidget {
     final l10n = context.l10n;
     return Section(
       label: l10n.settingsAppearance,
-      child: GroupedList(
-        children: [
-          const _ThemePicker(),
-          StackedListTile(
-            label: l10n.settingsDensity,
-            subtitle: l10n.settingsDensityHelp,
-            child: SegmentedControl<DisplayDensity>(
-              semanticLabel: l10n.settingsDensity,
-              value: density,
-              segments: [
-                for (final option in DisplayDensity.values)
-                  Segment(value: option, label: option.labelIn(l10n)),
-              ],
-              onChanged: (option) => ref
-                  .read(displayDensityControllerProvider.notifier)
-                  .setDensity(option),
+      child: FutureBuilder(
+        future: LanguageSettings.isAvailable,
+        builder: (context, snapshot) => GroupedList(
+          children: [
+            const _ThemePicker(),
+            if (snapshot.data ?? false)
+              GroupedListTile(
+                icon: LucideIcons.languages,
+                label: l10n.settingsLanguage,
+                value: l10n.languageName,
+                showChevron: true,
+                onTap: LanguageSettings.open,
+              ),
+            StackedListTile(
+              label: l10n.settingsDensity,
+              subtitle: l10n.settingsDensityHelp,
+              child: SegmentedControl<DisplayDensity>(
+                semanticLabel: l10n.settingsDensity,
+                value: density,
+                segments: [
+                  for (final option in DisplayDensity.values)
+                    Segment(value: option, label: option.labelIn(l10n)),
+                ],
+                onChanged: (option) => ref
+                    .read(displayDensityControllerProvider.notifier)
+                    .setDensity(option),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -44,6 +44,8 @@ import {
 import { trashDate } from '../utils/trash-date.util';
 import { NoteReminderDto } from '../dto/note-reminder.dto';
 import { RETENTION_CHUNK_SIZE } from '../../common/retention.constants';
+import { coded } from '../../common/errors/coded';
+import { ErrorCode } from '../../common/errors/error-code';
 
 @Injectable()
 export class NotesService {
@@ -130,7 +132,10 @@ export class NotesService {
     });
     if (!existing) return null;
     if (existing.userId !== userId) {
-      throw new ConflictException('A note with this id already exists');
+      throw coded(
+        new ConflictException('A note with this id already exists'),
+        ErrorCode.NOTE_ID_EXISTS,
+      );
     }
     return this.findOne(userId, id);
   }
@@ -198,7 +203,10 @@ export class NotesService {
     const access = await this.noteAccessService.hasNoteAccess(userId, id);
 
     if (!access.hasAccess) {
-      throw new NotFoundException(ERROR_MESSAGES.NOTE_NOT_FOUND);
+      throw coded(
+        new NotFoundException(ERROR_MESSAGES.NOTE_NOT_FOUND),
+        ErrorCode.NOTE_NOT_FOUND,
+      );
     }
 
     const note = await this.prisma.note.findUnique({
@@ -214,11 +222,17 @@ export class NotesService {
     });
 
     if (!note) {
-      throw new NotFoundException(ERROR_MESSAGES.NOTE_NOT_FOUND);
+      throw coded(
+        new NotFoundException(ERROR_MESSAGES.NOTE_NOT_FOUND),
+        ErrorCode.NOTE_NOT_FOUND,
+      );
     }
 
     if (!includeAllStates && note.state === NoteState.deleted) {
-      throw new NotFoundException(ERROR_MESSAGES.NOTE_NOT_FOUND);
+      throw coded(
+        new NotFoundException(ERROR_MESSAGES.NOTE_NOT_FOUND),
+        ErrorCode.NOTE_NOT_FOUND,
+      );
     }
 
     return transformNote(note, userId);
@@ -314,7 +328,10 @@ export class NotesService {
     });
 
     if ('gone' in outcome) {
-      throw new NotFoundException(ERROR_MESSAGES.NOTE_NOT_FOUND);
+      throw coded(
+        new NotFoundException(ERROR_MESSAGES.NOTE_NOT_FOUND),
+        ErrorCode.NOTE_NOT_FOUND,
+      );
     }
     if (outcome.conflict) {
       throw await this.noteVersionConflict(userId, id, updateNoteDto);
@@ -358,17 +375,23 @@ export class NotesService {
       );
     }
 
-    return new ConflictException({
-      message: 'Note was changed by someone else',
-      serverNote: transformNote(server, userId),
-    });
+    return coded(
+      new ConflictException({
+        message: 'Note was changed by someone else',
+        serverNote: transformNote(server, userId),
+      }),
+      ErrorCode.NOTE_CHANGED,
+    );
   }
 
   // Soft delete - the owner moves the note to trash; a sharee leaves it
   async remove(userId: string, id: string, trashedAt?: string) {
     const access = await this.noteAccessService.hasNoteAccess(userId, id);
     if (!access.hasAccess || access.state === NoteState.deleted) {
-      throw new NotFoundException(ERROR_MESSAGES.NOTE_NOT_FOUND);
+      throw coded(
+        new NotFoundException(ERROR_MESSAGES.NOTE_NOT_FOUND),
+        ErrorCode.NOTE_NOT_FOUND,
+      );
     }
     if (!access.isOwner) {
       await this.noteSharesService.leaveShare(userId, id);
@@ -378,7 +401,10 @@ export class NotesService {
     const note = await this.prisma.$transaction(async (tx) => {
       const prior = await tx.note.findUniqueOrThrow({ where: { id } });
       if (prior.state === NoteState.deleted) {
-        throw new NotFoundException(ERROR_MESSAGES.NOTE_NOT_FOUND);
+        throw coded(
+          new NotFoundException(ERROR_MESSAGES.NOTE_NOT_FOUND),
+          ErrorCode.NOTE_NOT_FOUND,
+        );
       }
       const updated = await tx.note.update({
         where: { id },
@@ -415,7 +441,10 @@ export class NotesService {
     });
 
     if (!note || note.state !== NoteState.trashed) {
-      throw new NotFoundException('Note is not in trash');
+      throw coded(
+        new NotFoundException('Note is not in trash'),
+        ErrorCode.NOTE_NOT_IN_TRASH,
+      );
     }
 
     const restoredNote = await this.prisma.$transaction(async (tx) => {

@@ -56,7 +56,6 @@ function readManifest(zip: ZipArchive): Manifest | null {
 
 export const anchorAdapter: ImportAdapter = {
   id: "anchor",
-  label: "Anchor backup",
 
   async detect(zip) {
     return readManifest(zip) !== null;
@@ -71,9 +70,7 @@ export const anchorAdapter: ImportAdapter = {
       typeof manifest.version !== "number" ||
       manifest.version > SUPPORTED_VERSION
     ) {
-      throw new ImportFileError(
-        "This backup is from a newer version of Anchor. Update your server, then try again.",
-      );
+      throw new ImportFileError("backupTooNew");
     }
 
     const tagById = new Map(manifest.tags.map((tag) => [tag.id, tag]));
@@ -86,7 +83,7 @@ export const anchorAdapter: ImportAdapter = {
         if (!zip.has(attachment.archivePath)) {
           skipped.push({
             item: attachment.originalFilename,
-            reason: "Attachment file missing from backup archive",
+            reason: "backupAttachmentMissing",
           });
           continue;
         }
@@ -125,7 +122,6 @@ export const anchorAdapter: ImportAdapter = {
 
     return {
       formatId: "anchor",
-      formatLabel: this.label,
       notes,
       tags,
       attachmentCount: notes.reduce(

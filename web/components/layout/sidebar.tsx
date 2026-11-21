@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
 import * as React from "react";
 import { Avatar } from "@/components/ui/avatar";
@@ -68,9 +69,9 @@ interface SidebarProps {
 }
 
 const PAGES = [
-  { href: "/notes", label: "Notes", icon: NotebookPen },
-  { href: "/archive", label: "Archive", icon: Archive },
-  { href: "/trash", label: "Trash", icon: Trash2 },
+  { href: "/notes", labelKey: "navNotes", icon: NotebookPen },
+  { href: "/archive", labelKey: "navArchive", icon: Archive },
+  { href: "/trash", labelKey: "navTrash", icon: Trash2 },
 ] as const;
 
 export function newNoteHref(pathname: string, tagId?: string | null) {
@@ -151,6 +152,7 @@ export function Sidebar({
   drawer = false,
   onNavigate,
 }: SidebarProps) {
+  const t = useTranslations();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -203,7 +205,7 @@ export function Sidebar({
     onSuccess: (saved) => updateCachedTag(saved.id, { version: saved.version }),
     onError: (_, { tag }, context) => {
       updateCachedTag(tag.id, { color: context?.previousColor });
-      toast.error(`Couldn’t change the color of #${tag.name}`);
+      toast.error(t("navTagColorFailed", { name: tag.name }));
     },
     onSettled: () => {
       if (queryClient.isMutating({ mutationKey: ["tag-color"] }) <= 1)
@@ -220,7 +222,8 @@ export function Sidebar({
       if (tagId === tag.id) router.push("/notes");
       setTagToDelete(null);
     },
-    onError: (_, tag) => toast.error(`Couldn’t delete #${tag.name}`),
+    onError: (_, tag) =>
+      toast.error(t("navTagDeleteFailed", { name: tag.name })),
   });
 
   const root = React.useRef<HTMLElement>(null);
@@ -292,7 +295,7 @@ export function Sidebar({
       ref={root}
       data-folded={folded || undefined}
       data-narrow={isNarrow || undefined}
-      aria-label="Sidebar"
+      aria-label={t("navSidebar")}
       className={cn(
         "group/sb relative isolate z-(--z-drawer) flex min-h-0 flex-none flex-col gap-0.5 overflow-hidden bg-sidebar px-3 pt-3 pb-2.5 transition-[width,margin-right,border-radius,box-shadow] duration-(--duration-header) ease-standard data-moving:[&_.truncate]:text-clip",
         drawer
@@ -313,7 +316,12 @@ export function Sidebar({
         />
       </div>
 
-      <Tip label="New note (N)" side="right" isDisabled={!isNarrow} isFocusOnly>
+      <Tip
+        label={t("navNewNoteShortcut", { shortcut: "N" })}
+        side="right"
+        isDisabled={!isNarrow}
+        isFocusOnly
+      >
         <Link
           href={newNoteHref(pathname, tagId)}
           onClick={(e) => {
@@ -327,7 +335,7 @@ export function Sidebar({
           className="mb-3 flex h-9.5 items-center gap-2 overflow-hidden whitespace-nowrap rounded-md bg-foreground pr-2.5 pl-[11.5px] font-semibold text-card text-ui no-underline shadow-control transition-[background-color,transform] duration-(--duration-hover) hover:bg-[color-mix(in_srgb,var(--foreground)_88%,var(--card))] active:scale-[.98] [&>svg]:size-4.25 [&>svg]:shrink-0"
         >
           <Plus aria-hidden />
-          <span className={labelClass}>New note</span>
+          <span className={labelClass}>{t("navNewNote")}</span>
           {!drawer && (
             <kbd
               aria-hidden
@@ -339,11 +347,11 @@ export function Sidebar({
         </Link>
       </Tip>
 
-      <nav aria-label="Pages" className="grid gap-px">
-        {PAGES.map(({ href, label: name, icon: Icon }) => (
+      <nav aria-label={t("navPages")} className="grid gap-px">
+        {PAGES.map(({ href, labelKey, icon: Icon }) => (
           <Tip
             key={href}
-            label={name}
+            label={t(labelKey)}
             side="right"
             isDisabled={!isNarrow}
             isFocusOnly
@@ -356,7 +364,7 @@ export function Sidebar({
               className={rowClass}
             >
               <Icon aria-hidden />
-              <span className={labelClass}>{name}</span>
+              <span className={labelClass}>{t(labelKey)}</span>
             </Link>
           </Tip>
         ))}
@@ -364,13 +372,13 @@ export function Sidebar({
 
       <div className="relative mt-3.5 flex h-7.5 items-center gap-1.5 whitespace-nowrap pr-0.5 pl-[11.5px] text-label text-muted-foreground uppercase">
         <span aria-hidden className={cn("flex-1", hideClass)}>
-          Tags
+          {t("navTags")}
         </span>
         <span className={hideClass}>
-          <Tip label="New tag">
+          <Tip label={t("navNewTag")}>
             <IconButton
               size="sm"
-              label="New tag"
+              label={t("navNewTag")}
               onClick={() => setTagDialog({ tag: null })}
             >
               <Plus />
@@ -384,21 +392,21 @@ export function Sidebar({
       </div>
 
       <nav
-        aria-label="Tags"
+        aria-label={t("navTags")}
         className="-mx-1 grid min-h-0 flex-1 content-start gap-px overflow-auto px-1 pb-2 scrollbar-none mask-[linear-gradient(#000_calc(100%-22px),transparent)]"
       >
         {tagsFailed && (
           <>
             <LoadFailedRow
-              message="Couldn’t load tags"
+              message={t("navTagsLoadFailed")}
               onRetry={() => tagsQuery.refetch()}
               isRetrying={tagsQuery.isFetching}
               className="mt-0.5 gap-2 py-2 pr-2 pl-[11.5px] group-data-narrow/sb:hidden [&>span]:min-w-fit"
             />
-            <Tip label="Couldn’t load tags. Try again" side="right">
+            <Tip label={t("navTagsLoadFailedRetry")} side="right">
               <IconButton
                 size="sm"
-                label="Couldn’t load tags. Try again"
+                label={t("navTagsLoadFailedRetry")}
                 aria-busy={tagsQuery.isFetching || undefined}
                 onClick={() => tagsQuery.refetch()}
                 className="hidden justify-self-center group-data-narrow/sb:inline-grid"
@@ -410,7 +418,7 @@ export function Sidebar({
         )}
         {tagsLoaded && sortedTags.length === 0 && (
           <p className="m-0 py-1 pr-2.5 pl-[11.5px] text-muted-foreground text-small group-data-narrow/sb:hidden">
-            No tags yet
+            {t("navNoTags")}
           </p>
         )}
         {sortedTags.map((tag) => {
@@ -430,7 +438,7 @@ export function Sidebar({
               )}
             >
               <Tip
-                label={`#${tag.name} · ${noteCount} ${noteCount === 1 ? "note" : "notes"}`}
+                label={t("navTagTip", { name: tag.name, count: noteCount })}
                 side="right"
                 isDisabled={!isNarrow}
                 isFocusOnly
@@ -468,7 +476,7 @@ export function Sidebar({
                   <DropdownMenuTrigger asChild>
                     <button
                       type="button"
-                      aria-label={`Options for ${tag.name}`}
+                      aria-label={t("navTagOptions", { name: tag.name })}
                       className={tagMenuButtonClass}
                     >
                       <Ellipsis />
@@ -476,7 +484,7 @@ export function Sidebar({
                   </DropdownMenuTrigger>
                   <DropdownMenuContent
                     className="w-57"
-                    aria-label={`Tag ${tag.name}`}
+                    aria-label={t("navTagMenu", { name: tag.name })}
                     onCloseAutoFocus={() => {
                       const openDialog = afterTagMenu.current;
                       afterTagMenu.current = null;
@@ -489,9 +497,11 @@ export function Sidebar({
                       }}
                     >
                       <Pencil />
-                      Rename
+                      {t("navTagRename")}
                     </DropdownMenuItem>
-                    <DropdownMenuLabel aria-hidden>Color</DropdownMenuLabel>
+                    <DropdownMenuLabel aria-hidden>
+                      {t("navTagColor")}
+                    </DropdownMenuLabel>
                     <MenuPrimitive.RadioGroup
                       value={tag.color?.toUpperCase()}
                       onValueChange={(color) =>
@@ -504,7 +514,7 @@ export function Sidebar({
                           key={color.stored}
                           value={color.stored}
                           onSelect={(e) => e.preventDefault()}
-                          aria-label={tagColorName(color.stored)}
+                          aria-label={tagColorName(color.stored, t)}
                           style={tagColorStyle(color.stored)}
                           className="tag-color grid size-6 cursor-pointer place-items-center rounded-full bg-(--tint) text-(--hash) shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--hash)_30%,transparent)] transition-transform duration-(--duration-hover) ease-standard hover:scale-110 data-highlighted:scale-110 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2 data-[state=checked]:shadow-[0_0_0_2px_var(--card),0_0_0_3.5px_var(--accent-strong)] [&>svg]:size-3.25 [&>svg]:stroke-3"
                         >
@@ -520,7 +530,7 @@ export function Sidebar({
                       }}
                     >
                       <Trash2 />
-                      Delete tag
+                      {t("navDeleteTag")}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -538,16 +548,17 @@ export function Sidebar({
           >
             <CloudOff aria-hidden />
             <span className={labelClass}>
-              Offline
               {unsaved
-                ? ` · ${unsaved} unsaved ${unsaved === 1 ? "change" : "changes"}`
-                : ""}
+                ? t("navOfflineUnsaved", { count: unsaved })
+                : t("navOffline")}
             </span>
           </div>
         )}
         {onToggleFold && (
           <Tip
-            label={`Expand sidebar (${isMac() ? "⌘\\" : "Ctrl+\\"})`}
+            label={t("navExpandSidebarShortcut", {
+              shortcut: isMac() ? "⌘\\" : `${t("uiCtrlKey")}+\\`,
+            })}
             side="right"
             isDisabled={!isNarrow}
             isFocusOnly
@@ -556,10 +567,10 @@ export function Sidebar({
               type="button"
               aria-label={
                 !folded
-                  ? "Collapse sidebar"
+                  ? t("navCollapseSidebar")
                   : isPeeking
-                    ? "Keep sidebar open"
-                    : "Expand sidebar"
+                    ? t("navKeepSidebarOpen")
+                    : t("navExpandSidebar")
               }
               aria-keyshortcuts={isMac() ? "Meta+\\" : "Control+\\"}
               onClick={onToggleFold}
@@ -576,7 +587,7 @@ export function Sidebar({
                     isPeeking ? "opacity-0" : "opacity-100",
                   )}
                 >
-                  Collapse
+                  {t("navCollapse")}
                 </span>
                 <span
                   className={cn(
@@ -584,14 +595,14 @@ export function Sidebar({
                     isPeeking ? "opacity-100" : "opacity-0",
                   )}
                 >
-                  Keep open
+                  {t("navKeepOpen")}
                 </span>
               </span>
               <kbd
                 aria-hidden
                 className="ml-auto opacity-0 transition-opacity duration-(--duration-hover) group-hover/fold:opacity-100 group-focus-visible/fold:opacity-100 group-data-narrow/sb:invisible"
               >
-                {isMac() ? "⌘\\" : "Ctrl \\"}
+                {isMac() ? "⌘\\" : `${t("uiCtrlKey")} \\`}
               </kbd>
             </button>
           </Tip>
@@ -618,14 +629,14 @@ export function Sidebar({
       <ConfirmationDialog
         open={!!tagToDelete}
         onOpenChange={(open) => !open && setTagToDelete(null)}
-        title={`Delete tag “${tagToDelete?.name ?? ""}”?`}
+        title={t("navDeleteTagTitle", { name: tagToDelete?.name ?? "" })}
         description={
           tagToDelete && countNotes(tagToDelete)
-            ? `The tag will be removed from ${countNotes(tagToDelete)} ${countNotes(tagToDelete) === 1 ? "note" : "notes"}. Your notes won’t be deleted.`
-            : "No notes use this tag."
+            ? t("navDeleteTagMessage", { count: countNotes(tagToDelete) })
+            : t("navDeleteTagUnused")
         }
-        confirmLabel="Delete tag"
-        busyLabel="Deleting…"
+        confirmLabel={t("navDeleteTag")}
+        busyLabel={t("uiDeleting")}
         isPending={deleteMutation.isPending}
         onConfirm={() => tagToDelete && deleteMutation.mutate(tagToDelete)}
       />
@@ -652,6 +663,7 @@ function AccountMenu({
   onNavigate?: () => void;
   onClose: () => void;
 }) {
+  const t = useTranslations();
   const router = useRouter();
   const { theme = "system", setTheme } = useTheme();
   const [isOpen, setIsOpen] = React.useState(false);
@@ -698,7 +710,7 @@ function AccountMenu({
         side={opensRight ? "right" : "top"}
         align={opensRight ? "end" : "start"}
         className="w-64"
-        aria-label="Account"
+        aria-label={t("navAccount")}
       >
         <div className="mb-1 flex items-center gap-2.5 rounded-lg bg-foreground/4 p-2.5">
           <Avatar id={user.id} name={user.name} src={user.profileImage} />
@@ -712,12 +724,12 @@ function AccountMenu({
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => goTo("/settings")}>
           <Settings />
-          Settings
+          {t("navSettings")}
         </DropdownMenuItem>
         {user.isAdmin && (
           <DropdownMenuItem onSelect={() => goTo("/admin")}>
             <ShieldCheck />
-            Admin
+            {t("navAdmin")}
           </DropdownMenuItem>
         )}
         <ThemeChoices
@@ -727,7 +739,7 @@ function AccountMenu({
         <DropdownMenuSeparator />
         <DropdownMenuItem tone="danger" onSelect={onSignOut}>
           <LogOut />
-          Sign out
+          {t("navSignOut")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -735,9 +747,9 @@ function AccountMenu({
 }
 
 const THEMES = [
-  { value: "light", label: "Light", icon: Sun },
-  { value: "dark", label: "Dark", icon: Moon },
-  { value: "system", label: "Match system", icon: Monitor },
+  { value: "light", labelKey: "navThemeLight", icon: Sun },
+  { value: "dark", labelKey: "navThemeDark", icon: Moon },
+  { value: "system", labelKey: "navThemeSystem", icon: Monitor },
 ] as const;
 
 const themeItemClass =
@@ -750,6 +762,7 @@ function ThemeChoices({
   value: string;
   onChange: (value: string) => void;
 }) {
+  const t = useTranslations();
   const root = React.useRef<HTMLDivElement>(null);
   const fill = useGlidingFill(root, value);
   const labelId = React.useId();
@@ -768,7 +781,7 @@ function ThemeChoices({
 
   return (
     <div className="flex items-center justify-between gap-3 py-1 pr-1 pl-2.5 text-ui">
-      <span id={labelId}>Theme</span>
+      <span id={labelId}>{t("navTheme")}</span>
       <MenuPrimitive.RadioGroup
         ref={root}
         data-slot="segmented-control"
@@ -778,12 +791,12 @@ function ThemeChoices({
         onKeyDown={onKeyDown}
         className="relative inline-flex gap-0.5 rounded-lg bg-muted p-0.75"
       >
-        {THEMES.map(({ value: option, label, icon: Icon }) => (
-          <Tip key={option} label={label}>
+        {THEMES.map(({ value: option, labelKey, icon: Icon }) => (
+          <Tip key={option} label={t(labelKey)}>
             <MenuPrimitive.RadioItem
               value={option}
               data-seg={option}
-              aria-label={label}
+              aria-label={t(labelKey)}
               onSelect={(e) => e.preventDefault()}
               className={cn(
                 themeItemClass,

@@ -3,6 +3,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { HTTPError } from "ky";
 import { KeyRound } from "lucide-react";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,9 +20,10 @@ import { Input, InputButton } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/components/ui/toast";
 import {
-  ACCOUNT_FIELD_HELP,
   type AccountField,
+  accountFieldHelp,
   NAME_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
   refusedField,
 } from "@/features/auth/account-fields";
 import { useAuthStore } from "@/features/auth/store";
@@ -33,7 +35,6 @@ import type { AdminUser } from "../types";
 
 const isEmailTaken = (error: Error) =>
   error instanceof HTTPError && error.response.status === 409;
-const EMAIL_TAKEN = "An account with this email already exists.";
 
 const couldWorkLater = (error: Error) =>
   !(error instanceof HTTPError) || error.response.status >= 500;
@@ -55,6 +56,7 @@ export function AddPersonDialog({
   onOpenChange: (open: boolean) => void;
   onDone: () => void;
 }) {
+  const t = useTranslations();
   const [name, setName] = React.useState("");
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
@@ -73,15 +75,15 @@ export function AddPersonDialog({
     onSuccess: (user) => {
       onDone();
       onOpenChange(false);
-      toast.success(`${firstName(user.name)} can sign in now`);
+      toast.success(t("adminCanSignIn", { name: firstName(user.name) }));
     },
     onError: (e: Error, dto) => {
       const field = refusedField(e);
-      if (isEmailTaken(e)) showError("email", EMAIL_TAKEN);
-      else if (field) showError(field, ACCOUNT_FIELD_HELP[field]);
+      if (isEmailTaken(e)) showError("email", t("adminEmailTaken"));
+      else if (field) showError(field, accountFieldHelp(t, field));
       else
         toast.error(
-          `Couldn’t add ${firstName(dto.name)}`,
+          t("adminAddFailed", { name: firstName(dto.name) }),
           couldWorkLater(e) ? { retry: () => create.mutate(dto) } : undefined,
         );
     },
@@ -101,18 +103,16 @@ export function AddPersonDialog({
           className="contents"
           onSubmit={(e) => {
             e.preventDefault();
-            if (!name.trim()) return showError("name", "Enter their name.");
+            if (!name.trim()) return showError("name", t("adminEnterName"));
             create.mutate({ name: name.trim(), email: email.trim(), password });
           }}
         >
           <DialogHeader>
-            <DialogTitle>Add a person</DialogTitle>
-            <DialogDescription>
-              They can sign in right away and change their password in Settings.
-            </DialogDescription>
+            <DialogTitle>{t("adminAddPersonTitle")}</DialogTitle>
+            <DialogDescription>{t("adminAddPersonMessage")}</DialogDescription>
           </DialogHeader>
           <DialogBody>
-            <Field label="Name" error={errors.name}>
+            <Field label={t("adminName")} error={errors.name}>
               <Input
                 ref={refs.name}
                 value={name}
@@ -121,11 +121,11 @@ export function AddPersonDialog({
                   setName(e.target.value);
                   setErrors((prev) => ({ ...prev, name: undefined }));
                 }}
-                placeholder="Their name"
+                placeholder={t("adminNamePlaceholder")}
                 autoFocus
               />
             </Field>
-            <Field label="Email" error={errors.email}>
+            <Field label={t("adminEmail")} error={errors.email}>
               <Input
                 ref={refs.email}
                 type="email"
@@ -134,11 +134,11 @@ export function AddPersonDialog({
                   setEmail(e.target.value);
                   setErrors((prev) => ({ ...prev, email: undefined }));
                 }}
-                placeholder="name@example.com"
+                placeholder={t("adminEmailPlaceholder")}
                 required
               />
             </Field>
-            <Field label="Password" error={errors.password}>
+            <Field label={t("adminPassword")} error={errors.password}>
               <Input
                 ref={refs.password}
                 mono
@@ -147,12 +147,14 @@ export function AddPersonDialog({
                   setPassword(e.target.value);
                   setErrors((prev) => ({ ...prev, password: undefined }));
                 }}
-                placeholder="At least 8 characters"
-                minLength={8}
+                placeholder={t("adminPasswordPlaceholder", {
+                  count: PASSWORD_MIN_LENGTH,
+                })}
+                minLength={PASSWORD_MIN_LENGTH}
                 required
                 end={
                   <InputButton onClick={() => setPassword(makePassword())}>
-                    Generate
+                    {t("adminGeneratePassword")}
                   </InputButton>
                 }
               />
@@ -164,14 +166,14 @@ export function AddPersonDialog({
               variant="quiet"
               onClick={() => onOpenChange(false)}
             >
-              Cancel
+              {t("commonCancel")}
             </Button>
             <Button
               type="submit"
-              disabled={!email.trim() || password.length < 8}
-              busy={create.isPending && "Adding…"}
+              disabled={!email.trim() || password.length < PASSWORD_MIN_LENGTH}
+              busy={create.isPending && t("adminAdding")}
             >
-              Add person
+              {t("adminAddPerson")}
             </Button>
           </DialogFooter>
         </form>
@@ -191,6 +193,7 @@ export function EditPersonDialog({
   onClose: () => void;
   onDone: () => void;
 }) {
+  const t = useTranslations();
   const shownUser = useLastShown(user, !!user);
   const isShownSelf = useLastShown(isSelf, !!user);
   const [name, setName] = React.useState("");
@@ -223,16 +226,16 @@ export function EditPersonDialog({
         mergeUser({ name: updated.name, email: updated.email });
       onDone();
       onClose();
-      toast.success("Saved");
+      toast.success(t("uiSaved"));
     },
     onError: (e: Error) => {
       const field = refusedField(e);
-      if (isEmailTaken(e)) showError("email", EMAIL_TAKEN);
+      if (isEmailTaken(e)) showError("email", t("adminEmailTaken"));
       else if (field === "name" || field === "email")
-        showError(field, ACCOUNT_FIELD_HELP[field]);
+        showError(field, accountFieldHelp(t, field));
       else
         toast.error(
-          "Couldn’t save the changes",
+          t("adminSaveFailed"),
           couldWorkLater(e) ? { retry: () => save.mutate() } : undefined,
         );
     },
@@ -244,15 +247,17 @@ export function EditPersonDialog({
           className="contents"
           onSubmit={(e) => {
             e.preventDefault();
-            if (!name.trim()) return showError("name", "Enter their name.");
+            if (!name.trim()) return showError("name", t("adminEnterName"));
             save.mutate();
           }}
         >
           <DialogHeader>
-            <DialogTitle>Edit {shownUser?.name}</DialogTitle>
+            <DialogTitle>
+              {t("adminEditTitle", { name: shownUser?.name ?? "" })}
+            </DialogTitle>
           </DialogHeader>
           <DialogBody>
-            <Field label="Name" error={errors.name}>
+            <Field label={t("adminName")} error={errors.name}>
               <Input
                 ref={nameRef}
                 value={name}
@@ -263,7 +268,7 @@ export function EditPersonDialog({
                 }}
               />
             </Field>
-            <Field label="Email" error={errors.email}>
+            <Field label={t("adminEmail")} error={errors.email}>
               <Input
                 ref={emailRef}
                 type="email"
@@ -278,12 +283,10 @@ export function EditPersonDialog({
             <div className="flex items-center gap-4 pt-1">
               <div className="grid flex-1 gap-0.5">
                 <label htmlFor="edit-admin" className="font-semibold text-ui">
-                  Admin
+                  {t("adminRoleAdmin")}
                 </label>
                 <span className="text-meta text-muted-foreground">
-                  {isShownSelf
-                    ? "You can’t change your own role. Another admin can."
-                    : "Can add people and change sign-in settings."}
+                  {isShownSelf ? t("adminOwnRole") : t("adminRoleHelp")}
                 </span>
               </div>
               <Switch
@@ -296,10 +299,10 @@ export function EditPersonDialog({
           </DialogBody>
           <DialogFooter>
             <Button type="button" variant="quiet" onClick={onClose}>
-              Cancel
+              {t("commonCancel")}
             </Button>
-            <Button type="submit" busy={save.isPending && "Saving…"}>
-              Save
+            <Button type="submit" busy={save.isPending && t("uiSaving")}>
+              {t("commonSave")}
             </Button>
           </DialogFooter>
         </form>
@@ -315,6 +318,7 @@ export function NewPasswordDialog({
   value: { user: AdminUser; password: string } | null;
   onClose: () => void;
 }) {
+  const t = useTranslations();
   const shown = useLastShown(value, !!value);
   const [copied, setCopied] = React.useState(false);
   // biome-ignore lint/correctness/useExhaustiveDependencies: each new password starts with Copy
@@ -324,16 +328,16 @@ export function NewPasswordDialog({
     <Dialog open={!!value} onOpenChange={(open) => !open && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>New password for {name}</DialogTitle>
+          <DialogTitle>{t("adminNewPasswordTitle", { name })}</DialogTitle>
           <DialogDescription>
-            Share it with {name} securely. It won’t be shown again.
+            {t("adminNewPasswordMessage", { name })}
           </DialogDescription>
         </DialogHeader>
         <DialogBody>
           <Input
             readOnly
             mono
-            aria-label={`New password for ${name}`}
+            aria-label={t("adminNewPasswordTitle", { name })}
             value={shown?.password ?? ""}
             icon={<KeyRound aria-hidden />}
             end={
@@ -341,17 +345,17 @@ export function NewPasswordDialog({
                 onClick={() =>
                   copyText(shown?.password ?? "").then(
                     () => setCopied(true),
-                    () => toast.error("Couldn’t copy the password"),
+                    () => toast.error(t("adminCopyPasswordFailed")),
                   )
                 }
               >
-                {copied ? "Copied" : "Copy"}
+                {copied ? t("commonCopied") : t("commonCopy")}
               </InputButton>
             }
           />
         </DialogBody>
         <DialogFooter>
-          <Button onClick={onClose}>Done</Button>
+          <Button onClick={onClose}>{t("commonDone")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

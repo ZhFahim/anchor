@@ -60,7 +60,6 @@ const parentDir = (path: string) =>
 
 export const googleKeepAdapter: ImportAdapter = {
   id: "google-keep",
-  label: "Google Keep",
 
   async detect(zip) {
     return findNoteEntries(zip).length > 0;
@@ -87,7 +86,7 @@ export const googleKeepAdapter: ImportAdapter = {
     for (const entryPath of noteEntries) {
       const keepNote = readKeepNote(zip, entryPath);
       if (!keepNote) {
-        skipped.push({ item: entryPath, reason: "Unreadable note file" });
+        skipped.push({ item: entryPath, reason: "noteFileUnreadable" });
         continue;
       }
 
@@ -95,7 +94,7 @@ export const googleKeepAdapter: ImportAdapter = {
         keepNote.title?.trim() || basenameForDisplay(entryPath);
 
       if (keepNote.isTrashed) {
-        skipped.push({ item: displayName, reason: "Trashed in Google Keep" });
+        skipped.push({ item: displayName, reason: "trashedInKeep" });
         continue;
       }
 
@@ -105,7 +104,7 @@ export const googleKeepAdapter: ImportAdapter = {
         if (!resolved) {
           skipped.push({
             item: ref.filePath,
-            reason: "Attachment file not found in export",
+            reason: "exportAttachmentMissing",
           });
           continue;
         }
@@ -113,7 +112,8 @@ export const googleKeepAdapter: ImportAdapter = {
         if (!supported) {
           skipped.push({
             item: ref.filePath,
-            reason: `Unsupported file type (${ref.mimetype})`,
+            reason: "unsupportedFileType",
+            fileType: ref.mimetype,
           });
         }
         attachments.push({
@@ -148,7 +148,6 @@ export const googleKeepAdapter: ImportAdapter = {
 
     return {
       formatId: "google-keep",
-      formatLabel: this.label,
       notes,
       tags,
       attachmentCount: notes.reduce(

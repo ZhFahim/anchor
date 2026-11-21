@@ -1,7 +1,10 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
 import { RadioCards } from "@/components/ui/radio-cards";
+import { LanguageMenu } from "@/i18n/language-menu";
+import { LOCALES } from "@/i18n/locales";
 import { switchTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 import { Row, RowText, Section } from "./settings-blocks";
@@ -24,24 +27,27 @@ function ThemeThumb({ theme }: { theme: "light" | "dark" }) {
   );
 }
 
+const hasLanguages = LOCALES.length > 1;
+
 export function AppearanceSection() {
+  const t = useTranslations();
   const { theme = "system", setTheme } = useTheme();
   const frameClass =
     "relative mb-2 h-16 overflow-hidden rounded-md shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--border)_80%,transparent)]";
   return (
-    <Section id="appearance" title="Appearance">
+    <Section id="appearance" title={t("settingsAppearance")}>
       <Row className="grid items-start gap-3.5">
-        <RowText title="Theme" text="Choose how Anchor looks." />
+        <RowText title={t("settingsTheme")} text={t("settingsThemeHelp")} />
         <RadioCards
-          aria-label="Theme"
+          aria-label={t("settingsTheme")}
           value={theme as "light" | "dark" | "system"}
           onValueChange={(v) => switchTheme(v, setTheme)}
           className="grid-cols-3 max-md:grid-cols-1"
           options={[
             {
               value: "light",
-              label: "Light",
-              description: "Always light",
+              label: t("settingsThemeLight"),
+              description: t("settingsThemeLightHelp"),
               picture: (
                 <div className={frameClass}>
                   <ThemeThumb theme="light" />
@@ -50,8 +56,8 @@ export function AppearanceSection() {
             },
             {
               value: "dark",
-              label: "Dark",
-              description: "Always dark",
+              label: t("settingsThemeDark"),
+              description: t("settingsThemeDarkHelp"),
               picture: (
                 <div className={frameClass}>
                   <ThemeThumb theme="dark" />
@@ -60,8 +66,8 @@ export function AppearanceSection() {
             },
             {
               value: "system",
-              label: "Match system",
-              description: "Follows your device",
+              label: t("settingsThemeSystem"),
+              description: t("settingsThemeSystemHelp"),
               picture: (
                 <div className={frameClass}>
                   <div className="absolute inset-0">
@@ -76,6 +82,15 @@ export function AppearanceSection() {
           ]}
         />
       </Row>
+      {hasLanguages && (
+        <Row>
+          <RowText
+            title={t("settingsLanguage")}
+            text={t("settingsLanguageHelp")}
+          />
+          <LanguageMenu placement="settings" />
+        </Row>
+      )}
     </Section>
   );
 }

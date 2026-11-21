@@ -39,7 +39,27 @@
       },
       "style": {
         "noNonNullAssertion": "off",
-        "noDescendingSpecificity": "off"
+        "noDescendingSpecificity": "off",
+        "noJsxLiterals": {
+          "level": "error",
+          "options": {
+            "allowedStrings": [
+              "Anchor",
+              "Google Keep",
+              "Markdown",
+              "N",
+              "404",
+              "+",
+              "−",
+              "±",
+              "—",
+              "↑",
+              "↓",
+              "·",
+              "."
+            ]
+          }
+        }
       },
       "performance": {
         "noImgElement": "off"

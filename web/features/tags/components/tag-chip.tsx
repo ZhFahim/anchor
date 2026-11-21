@@ -1,4 +1,5 @@
 import { Hash, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import type * as React from "react";
 import { cn } from "@/lib/utils";
 import { tagColorStyle } from "../utils";
@@ -20,6 +21,7 @@ export function TagChip({
   removeLabel,
   className,
 }: TagChipProps) {
+  const t = useTranslations();
   const small = size === "sm";
   return (
     <span
@@ -46,7 +48,7 @@ export function TagChip({
       {onRemove && (
         <button
           type="button"
-          aria-label={removeLabel ?? "Remove tag"}
+          aria-label={removeLabel ?? t("tagsRemove")}
           onClick={onRemove}
           className="inline-grid cursor-pointer place-items-center rounded-pill bg-transparent p-0.5 text-note-muted hover:text-foreground [&_svg]:size-3"
         >
@@ -58,9 +60,10 @@ export function TagChip({
 }
 
 export function MoreChip({ count }: { count: number }) {
+  const t = useTranslations();
   return (
     <span className="inline-flex h-chip-card items-center rounded-pill bg-note-surface px-1.75 font-medium text-caption text-note-muted shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--note-border)_55%,transparent)]">
-      +{count}
+      {t("tagsMoreCount", { count })}
     </span>
   );
 }

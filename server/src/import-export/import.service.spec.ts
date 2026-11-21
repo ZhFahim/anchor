@@ -240,6 +240,13 @@ describe('ImportService.importNotes', () => {
     expect(data.background).toBeNull();
     expect(response.results[0].warning).toContain('Content');
     expect(response.results[0].warning).toContain('hot_pink_zebra');
+    expect(response.results[0].warnings).toEqual([
+      { code: 'IMPORT_CONTENT_INVALID' },
+      {
+        code: 'IMPORT_BACKGROUND_UNKNOWN',
+        params: { background: 'hot_pink_zebra' },
+      },
+    ]);
   });
 
   it('reuses existing tags case-sensitively and creates missing ones', async () => {
@@ -282,7 +289,12 @@ describe('ImportService.importNotes', () => {
     });
 
     expect(response.results).toEqual([
-      { ref: 'ref-1', status: 'failed', error: 'Failed to create note' },
+      {
+        ref: 'ref-1',
+        status: 'failed',
+        error: 'Failed to create note',
+        errorCode: 'IMPORT_NOTE_FAILED',
+      },
       { ref: 'ref-2', status: 'created', noteId: 'second-id' },
     ]);
     expect(loggerError).toHaveBeenCalledTimes(1);

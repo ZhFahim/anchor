@@ -16,6 +16,7 @@ import {
   TriangleAlert,
   X,
 } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import * as React from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { Button, IconButton } from "@/components/ui/button";
@@ -23,6 +24,7 @@ import { EmptyState, LoadFailedRow } from "@/components/ui/empty-state";
 import { Skeleton, SkeletonRows } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/toast";
 import { Tip } from "@/components/ui/tooltip";
+import type { Translate } from "@/i18n/translate";
 import { useHighlightPaint } from "@/lib/highlight-paint";
 import { useDelayedFlag } from "@/lib/hooks/use-delayed-flag";
 import { isPhoneWidth, useIsPhone } from "@/lib/hooks/use-is-phone";
@@ -38,6 +40,7 @@ import {
   revisionAuthorName,
   revisionDayTime,
   revisionLabel,
+  revisionMoment,
   revisionsFromPages,
   revisionTime,
   type TimelineEntry,
@@ -69,21 +72,32 @@ interface HistoryViewProps {
 }
 
 /** “Edited just now”, “Edited 12 min ago”, “Edited today at 2:14 PM”. */
-function editedAgo(iso: string | undefined) {
+function editedAgo(t: Translate, locale: string, iso: string | undefined) {
   if (!iso) return "";
   const minutes = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
-  if (minutes < 1) return "Edited just now";
-  if (minutes < 60) return `Edited ${minutes} min ago`;
-  const when = revisionDayTime({ createdAt: iso });
-  return `Edited ${when.startsWith("Today") || when.startsWith("Yesterday") ? when.charAt(0).toLowerCase() + when.slice(1) : when}`;
+  if (minutes < 1) return t("historyEditedJustNow");
+  if (minutes < 60) return t("historyEditedMinutesAgo", { count: minutes });
+  const { day, date, time } = revisionMoment(locale, { createdAt: iso });
+  if (day === "today") return t("historyEditedTodayAt", { time });
+  if (day === "yesterday") return t("historyEditedYesterdayAt", { time });
+  return t("historyEditedDateAt", { date, time });
 }
 
-const lowercaseDay = (label: string) =>
-  label.startsWith("Today") || label.startsWith("Yesterday")
-    ? label.charAt(0).toLowerCase() + label.slice(1)
-    : label;
+function comparedWith(
+  t: Translate,
+  locale: string,
+  entry: TimelineEntry | null | undefined,
+) {
+  if (!entry) return t("historyComparedCurrent");
+  const { day, date, time } = revisionMoment(locale, entry);
+  if (day === "today") return t("historyComparedTodayAt", { time });
+  if (day === "yesterday") return t("historyComparedYesterdayAt", { time });
+  return t("historyComparedDateAt", { date, time });
+}
 
 export function HistoryView(props: HistoryViewProps) {
+  const t = useTranslations();
+  const locale = useLocale();
   const queryClient = useQueryClient();
   const [selectedId, setSelectedId] = React.useState(CURRENT_ENTRY_ID);
   const [view, setView] = React.useState<"list" | "ver">("list");
@@ -195,14 +209,14 @@ export function HistoryView(props: HistoryViewProps) {
       applyRestored(note);
       // The server skips a restore that would change nothing.
       if (note.version === versionBefore)
-        toast.success("The note already matches this version");
+        toast.success(t("historyAlreadyMatches"));
       else
-        toast.success("Version restored", {
+        toast.success(t("historyRestored"), {
           undo: () => undoRestore(note.version - 1),
         });
       props.onClose();
     } catch {
-      toast.error("Couldn’t restore this version", {
+      toast.error(t("historyRestoreFailed"), {
         retry: () => void restore(),
       });
     } finally {
@@ -228,26 +242,32 @@ export function HistoryView(props: HistoryViewProps) {
       if (!before) throw new Error("nothing to undo");
       applyRestored(await restoreNoteRevision(props.noteId, before.id));
     } catch {
-      toast.error("Couldn’t undo the restore");
+      toast.error(t("historyUndoRestoreFailed"));
     }
   };
 
   const canRestore = !!revision && canRestoreRevisions(props.note);
   const authorName = entry
-    ? revisionAuthorName(entry, props.currentUserId)
+    ? revisionAuthorName(t, entry, props.currentUserId)
     : "";
   const subtitle = revision
     ? [
         showAuthors ? authorName : null,
-        revision.cause === "edit" ? null : revisionLabel(revision.cause),
+        revision.cause === "edit" ? null : revisionLabel(t, revision.cause),
       ]
         .filter(Boolean)
         .join(" · ")
-    : editedAgo(props.note?.updatedAt);
+    : editedAgo(t, locale, props.note?.updatedAt);
   const comparedEntry = comparedId
     ? entries.find((e) => e.id === comparedId)
     : null;
-  const backLabel = isPhone ? "Back to the version list" : "Back to the note";
+  const backLabel = isPhone ? t("historyBackToList") : t("historyBackToNote");
+  const bold = (chunks: React.ReactNode) => <b>{chunks}</b>;
+  const conflictNotice = !entry?.author
+    ? t.rich("historyConflictSomeone", { b: bold })
+    : entry.author.id === props.currentUserId
+      ? t.rich("historyConflictYours", { b: bold })
+      : t.rich("historyConflictNamed", { b: bold, name: entry.author.name });
 
   const versionView = (
     <div className="hs-paper">
@@ -255,38 +275,30 @@ export function HistoryView(props: HistoryViewProps) {
         <div className="hs-legend">
           <span className="lg add">
             <span className="sg">+</span>
-            {diff.added} added
+            {t("historyAdded", { count: diff.added })}
           </span>
           <span className="lg del">
             <span className="sg">−</span>
-            {diff.removed} removed
+            {t("historyRemoved", { count: diff.removed })}
           </span>
           <span className="lg chg">
             <span className="sg">±</span>
-            {diff.changed + (titleChanged ? 1 : 0)} changed
+            {t("historyChanged", {
+              count: diff.changed + (titleChanged ? 1 : 0),
+            })}
           </span>
-          <span className="vs">
-            Compared with{" "}
-            {comparedEntry
-              ? lowercaseDay(revisionDayTime(comparedEntry))
-              : "the current version"}
-          </span>
+          <span className="vs">{comparedWith(t, locale, comparedEntry)}</span>
         </div>
       ) : null}
       {revision?.cause === "conflict" && (
         <div className="callout">
           <TriangleAlert aria-hidden />
-          <span>
-            <b>Not saved.</b>{" "}
-            {authorName === "You" ? "Your" : `${authorName}’s`} edit wasn’t
-            saved because the note changed on another device first. Restore it,
-            or copy what you need.
-          </span>
+          <span>{conflictNotice}</span>
         </div>
       )}
       {failed ? (
         <LoadFailedRow
-          message="Couldn’t load this version."
+          message={t("historyLoadVersionFailed")}
           onRetry={() => {
             void detail.refetch();
             if (comparedId) void compared.refetch();
@@ -298,14 +310,16 @@ export function HistoryView(props: HistoryViewProps) {
           {titleChanged ? (
             <div className="t-chg">
               <h2 className="n-title dl del">
-                {draftTitle(title) || "Untitled"}
+                {draftTitle(title) || t("commonUntitled")}
               </h2>
               <h2 className="n-title dl add">
-                {draftTitle(nextTitle) || "Untitled"}
+                {draftTitle(nextTitle) || t("commonUntitled")}
               </h2>
             </div>
           ) : (
-            <h2 className="n-title">{hasTitle(title) ? title : "Untitled"}</h2>
+            <h2 className="n-title">
+              {hasTitle(title) ? title : t("commonUntitled")}
+            </h2>
           )}
           {diff &&
             !diff.added &&
@@ -314,9 +328,7 @@ export function HistoryView(props: HistoryViewProps) {
             !titleChanged &&
             diff.lines.length > 0 && (
               <p className="hs-note">
-                {comparedId
-                  ? "Same text as the version after this one."
-                  : "Same text as the note is now."}
+                {comparedId ? t("historySameAsNext") : t("historySameAsNow")}
               </p>
             )}
           {revision ? (
@@ -338,7 +350,7 @@ export function HistoryView(props: HistoryViewProps) {
                 }
               />
             ) : (
-              <p className="hs-note">This version has no text.</p>
+              <p className="hs-note">{t("historyNoText")}</p>
             )
           ) : blocks.length ? (
             <VersionBody
@@ -346,7 +358,7 @@ export function HistoryView(props: HistoryViewProps) {
               whole
             />
           ) : (
-            <p className="hs-note">This version has no text.</p>
+            <p className="hs-note">{t("historyNoText")}</p>
           )}
         </>
       )}
@@ -397,20 +409,22 @@ export function HistoryView(props: HistoryViewProps) {
           </Tip>
           <div ref={versionNameRef} className="hs-what" tabIndex={-1}>
             <b>
-              {revision && entry ? revisionDayTime(entry) : "Current version"}
+              {revision && entry
+                ? revisionDayTime(t, locale, entry)
+                : t("historyCurrentVersion")}
             </b>
             {subtitle && <span>{subtitle}</span>}
           </div>
           <span className="hs-nav flex">
             <IconButton
-              label="Newer version"
+              label={t("historyNewer")}
               disabled={selectedIndex === 0}
               onClick={() => step(-1)}
             >
               <ChevronUp />
             </IconButton>
             <IconButton
-              label="Older version"
+              label={t("historyOlder")}
               disabled={
                 selectedIndex === orderedIds.length - 1 && !pages.hasNextPage
               }
@@ -423,18 +437,18 @@ export function HistoryView(props: HistoryViewProps) {
             <Tip
               label={
                 props.saving
-                  ? "Waiting for the note to save"
-                  : "Put this version back on the note"
+                  ? t("historyWaitingToSave")
+                  : t("historyRestoreTip")
               }
             >
               <span>
                 <Button
                   onClick={() => void restore()}
                   disabled={props.saving || loading || failed}
-                  busy={restoring && "Restoring…"}
+                  busy={restoring && t("historyRestoring")}
                 >
                   <RotateCcw aria-hidden />
-                  Restore
+                  {t("historyRestore")}
                 </Button>
               </span>
             </Tip>
@@ -447,7 +461,7 @@ export function HistoryView(props: HistoryViewProps) {
               className={cn("hs-wait", !showLoadingShapes && "invisible")}
               role="status"
               aria-busy="true"
-              aria-label="Loading this version"
+              aria-label={t("historyLoadingVersion")}
             >
               <Skeleton className="h-8 w-3/5" />
               <SkeletonRows count={6} />
@@ -459,10 +473,14 @@ export function HistoryView(props: HistoryViewProps) {
           versionView
         )}
       </div>
-      <section className="hs-side hs-pane" aria-label="Versions">
+      <section className="hs-side hs-pane" aria-label={t("historyVersions")}>
         <div className="hs-side-h">
-          <h2 className="m-0 font-semibold text-lead">History</h2>
-          <IconButton label="Close history" size="sm" onClick={props.onClose}>
+          <h2 className="m-0 font-semibold text-lead">{t("historyTitle")}</h2>
+          <IconButton
+            label={t("historyClose")}
+            size="sm"
+            onClick={props.onClose}
+          >
             <X />
           </IconButton>
         </div>
@@ -472,7 +490,7 @@ export function HistoryView(props: HistoryViewProps) {
           selectedId={selectedId}
           showAuthors={showAuthors}
           currentUserId={props.currentUserId}
-          currentWhen={editedAgo(props.note?.updatedAt)}
+          currentWhen={editedAgo(t, locale, props.note?.updatedAt)}
           loading={pages.isLoading}
           failed={pages.isLoadingError}
           retrying={pages.isFetching && !pages.isFetchingNextPage}
@@ -485,14 +503,19 @@ export function HistoryView(props: HistoryViewProps) {
         />
         <div className="hs-foot">
           <span className="hs-keys">
-            <span aria-hidden>
-              <kbd>↑</kbd>
-              <kbd>↓</kbd>
-            </span>
-            <span className="sr-only">Up and down arrows</span> to move between
-            versions
+            {t.rich("historyKeysHint", {
+              arrows: (chunks) => (
+                <>
+                  <span aria-hidden>
+                    <kbd>↑</kbd>
+                    <kbd>↓</kbd>
+                  </span>
+                  <span className="sr-only">{chunks}</span>
+                </>
+              ),
+            })}
           </span>
-          <span>Versions older than 90 days are deleted.</span>
+          <span>{t("historyKeptFor")}</span>
         </div>
       </section>
     </div>
@@ -532,6 +555,8 @@ function VersionList({
   onMore: () => void;
   onPick: (id: string) => void;
 }) {
+  const t = useTranslations();
+  const locale = useLocale();
   const endRef = React.useRef<HTMLDivElement>(null);
   const showLoadingShapes = useDelayedFlag(loading);
   const showMoreShapes = useDelayedFlag(fetchingMore);
@@ -569,7 +594,7 @@ function VersionList({
       {children}
       {cause && cause !== "edit" && (
         <span className={cn("hs-tag", cause === "conflict" && "warn")}>
-          {revisionLabel(cause)}
+          {revisionLabel(t, cause)}
         </span>
       )}
     </button>
@@ -582,7 +607,7 @@ function VersionList({
         ref={listRef}
         className="hs-list scrollbar-slim"
         role="listbox"
-        aria-label="Versions"
+        aria-label={t("historyVersions")}
       >
         {row(
           CURRENT_ENTRY_ID,
@@ -592,7 +617,7 @@ function VersionList({
               <SquarePen />
             </span>
             <span className="hs-tx">
-              <b>Current version</b>
+              <b>{t("historyCurrentVersion")}</b>
               <span>{currentWhen}</span>
             </span>
           </>,
@@ -604,13 +629,13 @@ function VersionList({
           />
         ) : failed ? (
           <LoadFailedRow
-            message="Couldn’t load versions."
+            message={t("historyLoadFailed")}
             onRetry={onRetry}
             isRetrying={retrying}
             className="mx-1 mt-2"
           />
         ) : !entries.length ? null : (
-          groupTimelineByDay(entries).map((day) => (
+          groupTimelineByDay(t, locale, entries).map((day) => (
             <React.Fragment key={day.key}>
               <div className="hs-day" role="presentation">
                 {day.label}
@@ -631,9 +656,11 @@ function VersionList({
                       <span className="hs-dot" aria-hidden />
                     )}
                     <span className="hs-tx">
-                      <b>{revisionTime(entry)}</b>
+                      <b>{revisionTime(locale, entry)}</b>
                       {showAuthors && (
-                        <span>{revisionAuthorName(entry, currentUserId)}</span>
+                        <span>
+                          {revisionAuthorName(t, entry, currentUserId)}
+                        </span>
                       )}
                     </span>
                   </>,
@@ -645,7 +672,7 @@ function VersionList({
         )}
         {moreFailed ? (
           <LoadFailedRow
-            message="Couldn’t load older versions."
+            message={t("historyLoadMoreFailed")}
             onRetry={onMore}
             isRetrying={fetchingMore}
             className="mx-1 my-2"
@@ -667,10 +694,10 @@ function VersionList({
         <EmptyState
           size="sm"
           icon={<History />}
-          title="No earlier versions yet"
+          title={t("historyEmptyTitle")}
           className="hs-none"
         >
-          A version is kept each time the note changes, for 90 days.
+          {t("historyEmptyText")}
         </EmptyState>
       )}
     </>
@@ -705,6 +732,7 @@ function VersionBody({
   onOpen?: (fold: Fold) => void;
   whole?: boolean;
 }) {
+  const t = useTranslations();
   const docRef = React.useRef<HTMLDivElement>(null);
   useHighlightPaint(docRef, docRef, [lines, open?.size, whole]);
   // An opened fold's button goes away; focus moves to its first line.
@@ -752,7 +780,9 @@ function VersionBody({
             >
               <span>
                 <ChevronsUpDown aria-hidden />
-                {segment.fold.to - segment.fold.from} unchanged lines
+                {t("historyUnchangedLines", {
+                  count: segment.fold.to - segment.fold.from,
+                })}
               </span>
             </button>
           );
@@ -786,7 +816,7 @@ function VersionBody({
                     <MarkLabel kind={line.kind} />
                     {line.block.type === "check" && (
                       <span className="sr-only">
-                        {line.block.done ? "Checked: " : "Not checked: "}
+                        {`${line.block.done ? t("historyLineChecked") : t("historyLineNotChecked")} `}
                       </span>
                     )}
                     <LineText line={line} />
@@ -850,13 +880,16 @@ function VersionBody({
   );
 }
 
+const MARK_LABELS = {
+  added: "historyLineAdded",
+  removed: "historyLineRemoved",
+  changed: "historyLineChanged",
+} as const;
+
 function MarkLabel({ kind }: { kind: VersionLine["kind"] }) {
+  const t = useTranslations();
   if (kind === "same") return null;
-  return (
-    <span className="sr-only">
-      {{ added: "Added: ", removed: "Removed: ", changed: "Changed: " }[kind]}
-    </span>
-  );
+  return <span className="sr-only">{`${t(MARK_LABELS[kind])} `}</span>;
 }
 
 function LineText({ line }: { line: VersionLine }) {

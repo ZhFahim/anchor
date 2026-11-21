@@ -1,6 +1,7 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import {
   Popover,
@@ -22,7 +23,6 @@ import { bulkAddTagsToNotes, saveNote } from "../api";
 import type { Note } from "../types";
 
 const tagIdsOf = (n: Note) => n.tagIds ?? [];
-const noteCount = (n: number) => `${n} ${n === 1 ? "note" : "notes"}`;
 const sameTags = (a: string[], b: string[]) =>
   a.length === b.length && a.every((id) => b.includes(id));
 
@@ -41,6 +41,7 @@ interface BulkTagPickerProps {
 }
 
 export function BulkTagPicker({ anchor, notes, onClose }: BulkTagPickerProps) {
+  const t = useTranslations();
   const queryClient = useQueryClient();
   const {
     data: tags = [],
@@ -136,7 +137,7 @@ export function BulkTagPicker({ anchor, notes, onClose }: BulkTagPickerProps) {
           updateCachedNotes(
             new Map(ids.map((id) => [id, tagging.tagsNow.get(id) ?? []])),
           );
-          toast.error("Couldn’t update tags", {
+          toast.error(t("tagsUpdateFailed"), {
             retry: () => apply(tag, add, ids),
           });
         },
@@ -168,7 +169,7 @@ export function BulkTagPicker({ anchor, notes, onClose }: BulkTagPickerProps) {
       if (result.status !== "saved") throw new Error("not saved");
     }).then(refresh, () => {
       refresh();
-      toast.error("Couldn’t undo that");
+      toast.error(t("notesUndoFailed"));
     });
   };
 
@@ -177,7 +178,7 @@ export function BulkTagPicker({ anchor, notes, onClose }: BulkTagPickerProps) {
       ([id, tagIds]) => !sameTags(tagIds, tagsAtStart.get(id) ?? []),
     );
     if (hasChanged)
-      toast.success(`Tags updated on ${noteCount(tagsAtStart.size)}`, {
+      toast.success(t("tagsUpdatedOn", { count: tagsAtStart.size }), {
         undo: () => undoAll(tagsAtStart),
       });
   };
@@ -246,7 +247,7 @@ export function BulkTagPicker({ anchor, notes, onClose }: BulkTagPickerProps) {
               );
               return tag;
             } catch {
-              toast.error(`Couldn’t create #${name}`);
+              toast.error(t("tagsCreateFailed", { name }));
               return undefined;
             }
           }}

@@ -3,6 +3,7 @@
 import { HTTPError } from "ky";
 import { ArrowLeft, KeyRound } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
@@ -14,8 +15,9 @@ import {
   useRegistrationMode,
 } from "@/features/auth";
 import {
-  ACCOUNT_FIELD_HELP,
+  accountFieldHelp,
   NAME_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
   refusedField,
 } from "@/features/auth/account-fields";
 import {
@@ -26,6 +28,8 @@ import {
   OrDivider,
   PendingApprovalScreen,
 } from "@/features/auth/components/auth-parts";
+import { providerValues } from "@/features/auth/utils/sign-in-error";
+import { errorCodeOf } from "@/lib/api/error-code";
 
 type Errors = {
   name?: string;
@@ -35,6 +39,7 @@ type Errors = {
 };
 
 export default function RegisterPage() {
+  const t = useTranslations();
   const register = useRegister();
   const oidc = useOidcConfig();
   const { initiate } = useOidcLogin();
@@ -47,43 +52,44 @@ export default function RegisterPage() {
   const emailRef = React.useRef<HTMLInputElement>(null);
   const passwordRef = React.useRef<HTMLInputElement>(null);
   const refs = { name: nameRef, email: emailRef, password: passwordRef };
-  const providerName = oidc.data?.providerName || "your provider";
+  const providerName = oidc.data?.providerName || undefined;
   const isProviderOnly =
     !!oidc.data?.enabled && !!oidc.data?.disableInternalAuth;
 
   const showRegisterError = (error: Error) => {
-    const message = error.message;
+    const code = errorCodeOf(error);
     if (
       error instanceof HTTPError &&
-      (error.response.status === 409 || /exist/i.test(message))
+      (error.response.status === 409 || code === "USER_EXISTS")
     ) {
-      setErrors({
-        email: "An account with this email already exists. Sign in instead?",
-      });
+      setErrors({ email: t("authEmailTakenSignIn") });
       refs.email.current?.focus();
     } else if (error instanceof HTTPError && error.response.status === 403) {
       void registrationMode.refetch();
       void oidc.refetch();
-      if (/turned off/i.test(message))
-        setErrors({ form: `Sign up with ${providerName} instead.` });
+      if (code === "PASSWORD_SIGN_UP_DISABLED")
+        setErrors({
+          form: t(
+            "authSignUpWithProviderInstead",
+            providerValues(providerName),
+          ),
+        });
     } else if (!(error instanceof HTTPError))
-      setErrors({
-        form: "Couldn’t reach the server. Check your connection and try again.",
-      });
+      setErrors({ form: t("errorUnreachable") });
     else {
       const { status } = error.response;
       const field = refusedField(error);
       if (field) {
-        setErrors({ [field]: ACCOUNT_FIELD_HELP[field] });
+        setErrors({ [field]: accountFieldHelp(t, field) });
         refs[field].current?.focus();
       } else
         setErrors({
           form:
             status >= 500
-              ? "Something went wrong on the server. Try again in a moment."
+              ? t("errorServer")
               : status === 429
-                ? "Too many tries. Wait a minute, then try again."
-                : "Couldn’t create your account.",
+                ? t("authTooManyTries")
+                : t("authCreateFailed"),
         });
     }
   };
@@ -92,13 +98,13 @@ export default function RegisterPage() {
     return (
       <AuthStatusScreen
         illustration="closed"
-        title="Sign-ups are closed"
-        text="Ask an admin to create an account for you."
+        title={t("authSignUpsClosedTitle")}
+        text={t("authSignUpsClosedText")}
       >
         <Button size="lg" variant="secondary" className="w-full" asChild>
           <Link href="/login">
             <ArrowLeft aria-hidden />
-            Back to sign in
+            {t("authBackToSignIn")}
           </Link>
         </Button>
       </AuthStatusScreen>
@@ -111,11 +117,13 @@ export default function RegisterPage() {
     e.preventDefault();
     if (register.isPending) return;
     const fieldErrors: Errors = {};
-    if (!name.trim()) fieldErrors.name = "Enter your name.";
+    if (!name.trim()) fieldErrors.name = t("authEnterName");
     if (!/.+@.+\..+/.test(email.trim()))
-      fieldErrors.email = "Enter a valid email address.";
-    if (password.length < 8)
-      fieldErrors.password = "Use at least 8 characters.";
+      fieldErrors.email = t("authEnterValidEmail");
+    if (password.length < PASSWORD_MIN_LENGTH)
+      fieldErrors.password = t("authPasswordTooShort", {
+        count: PASSWORD_MIN_LENGTH,
+      });
     setErrors(fieldErrors);
     const firstInvalid = (["name", "email", "password"] as const).find(
       (field) => fieldErrors[field],
@@ -134,11 +142,11 @@ export default function RegisterPage() {
   return (
     <>
       <AuthHeading
-        title="Create your account"
+        title={t("authCreateYourAccount")}
         sub={
           registrationMode.data?.mode === "review"
-            ? "An admin approves new accounts before you can sign in."
-            : "Start capturing your thoughts."
+            ? t("authApprovalNeeded")
+            : t("authRegisterSubtitle")
         }
       />
       {oidc.data?.enabled && (
@@ -150,7 +158,7 @@ export default function RegisterPage() {
             onClick={() => initiate()}
           >
             <KeyRound aria-hidden />
-            Continue with {providerName}
+            {t("authContinueWith", { provider: oidc.data.providerName })}
           </Button>
           {!isProviderOnly && <OrDivider />}
         </>
@@ -158,11 +166,11 @@ export default function RegisterPage() {
       {errors.form && <AuthMessage>{errors.form}</AuthMessage>}
       {!isProviderOnly && (
         <form className="grid gap-3.5" noValidate onSubmit={submit}>
-          <Field label="Name" error={errors.name}>
+          <Field label={t("authNameLabel")} error={errors.name}>
             <Input
               ref={refs.name}
               autoComplete="name"
-              placeholder="Your name"
+              placeholder={t("authNamePlaceholder")}
               maxLength={NAME_MAX_LENGTH}
               value={name}
               boxClassName="h-field-large"
@@ -172,12 +180,12 @@ export default function RegisterPage() {
               }}
             />
           </Field>
-          <Field label="Email" error={errors.email}>
+          <Field label={t("authEmailLabel")} error={errors.email}>
             <Input
               ref={refs.email}
               type="email"
               autoComplete="email"
-              placeholder="you@example.com"
+              placeholder={t("authEmailPlaceholder")}
               value={email}
               boxClassName="h-field-large"
               onChange={(e) => {
@@ -187,8 +195,8 @@ export default function RegisterPage() {
             />
           </Field>
           <Field
-            label="Password"
-            help="At least 8 characters."
+            label={t("authPasswordLabel")}
+            help={t("authPasswordHelp", { count: PASSWORD_MIN_LENGTH })}
             error={errors.password}
           >
             <PasswordInput
@@ -206,17 +214,20 @@ export default function RegisterPage() {
             type="submit"
             size="lg"
             className="w-full"
-            busy={register.isPending && "Creating account…"}
+            busy={register.isPending && t("authCreatingAccount")}
           >
-            Create account
+            {t("authCreateAccount")}
           </Button>
         </form>
       )}
       <p className="m-0 text-center text-muted-foreground text-ui">
-        Already have an account?{" "}
-        <Link href="/login" className={linkButtonClass}>
-          Sign in
-        </Link>
+        {t.rich("authHaveAccount", {
+          link: (chunks) => (
+            <Link href="/login" className={linkButtonClass}>
+              {chunks}
+            </Link>
+          ),
+        })}
       </p>
     </>
   );

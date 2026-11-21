@@ -1,3 +1,5 @@
+import type { Translate } from "@/i18n/translate";
+
 export interface CheckedFold {
   /** 1-based, among the editor's blocks. */
   block: number;
@@ -59,5 +61,5 @@ export function checkedFoldStyles(
 
 export const foldCount = (fold: CheckedFold) => fold.last - fold.first + 1;
 
-export const checkedItemsLabel = (count: number) =>
-  count === 1 ? "1 checked item" : `${count} checked items`;
+export const checkedItemsLabel = (t: Translate, count: number) =>
+  t("editorCheckedItems", { count });

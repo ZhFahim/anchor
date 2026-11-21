@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { HTTPError } from "ky";
 import { useParams, usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
@@ -65,6 +66,7 @@ function NoteEditor({
   routeId: string;
   onCreated: (id: string) => void;
 }) {
+  const t = useTranslations();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const pageRef = useRef<HTMLDivElement>(null);
@@ -125,12 +127,12 @@ function NoteEditor({
       createTag({ name, color: nextTagColor(allTags.length) }),
     onSuccess: (tag) => {
       queryClient.setQueryData<Tag[]>(["tags"], (list = []) => [
-        ...list.filter((t) => t.id !== tag.id),
+        ...list.filter((existing) => existing.id !== tag.id),
         tag,
       ]);
       queryClient.invalidateQueries({ queryKey: ["tags"] });
     },
-    onError: () => toast.error("Couldn’t create tag"),
+    onError: () => toast.error(t("noteCreateTagFailed")),
   });
 
   const showHistory = (open: boolean) => {
@@ -157,9 +159,11 @@ function NoteEditor({
   };
   const closeHistory = () => {
     showHistory(false);
+    const labelled = (label: string) =>
+      `.ed-head [aria-label="${CSS.escape(label)}"]`;
     document
       .querySelector<HTMLElement>(
-        '.ed-head [aria-label="More"], .ed-head [aria-label="Version history"]',
+        `${labelled(t("noteMore"))}, ${labelled(t("noteVersionHistory"))}`,
       )
       ?.focus({ preventScroll: true });
   };
@@ -223,7 +227,7 @@ function NoteEditor({
             ? ""
             : undefined
         }
-        aria-label="Note"
+        aria-label={t("noteLabel")}
       >
         {editor.historyOpen && !isNew && (
           <HistoryView
@@ -314,20 +318,20 @@ function NoteEditor({
       <ConfirmationDialog
         open={actions.confirmPermanentDelete}
         onOpenChange={actions.setConfirmPermanentDelete}
-        title="Permanently delete this note?"
-        description="This can’t be undone. People you shared it with will lose access too."
-        confirmLabel="Delete permanently"
-        busyLabel="Deleting…"
+        title={t("noteDeleteForeverTitle")}
+        description={t("noteDeleteForeverText")}
+        confirmLabel={t("noteDeletePermanently")}
+        busyLabel={t("noteDeleting")}
         isPending={actions.isDeletingPermanently}
         onConfirm={actions.deletePermanently}
       />
       <ConfirmationDialog
         open={actions.confirmLeaveShare}
         onOpenChange={actions.setConfirmLeaveShare}
-        title="Remove this note from your notes?"
-        description="To see it again, its owner has to share it with you again."
-        confirmLabel="Remove"
-        busyLabel="Removing…"
+        title={t("noteLeaveTitle")}
+        description={t("noteLeaveText")}
+        confirmLabel={t("commonRemove")}
+        busyLabel={t("noteRemoving")}
         isPending={actions.isLeavingShare}
         onConfirm={actions.leaveShare}
       />

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:lucide_icons_flutter/lucide_icons_500.dart';
 
+import '../../l10n/l10n.dart';
 import '../motion/haptics.dart';
 import '../motion/springs.dart';
 import '../theme/app_typography.dart';
@@ -394,7 +395,7 @@ class SectionHeader extends StatelessWidget {
     final style = AppTypography.label.copyWith(color: colors.appMuted);
     final label = Semantics(
       header: true,
-      label: count == null ? null : '$text, $count',
+      label: count == null ? null : context.l10n.joinList([text, '$count']),
       excludeSemantics: count != null,
       child: Row(
         mainAxisSize: MainAxisSize.min,

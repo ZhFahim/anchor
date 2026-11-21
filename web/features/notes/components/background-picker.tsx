@@ -1,11 +1,41 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { PopoverTitle } from "@/components/ui/popover";
+import type { Messages } from "@/i18n/messages";
 import { BACKGROUNDS } from "@/lib/design/tokens";
 import { cn } from "@/lib/utils";
 
 type Background = { id: string | null; name: string; kind?: string };
+type BackgroundId = Exclude<
+  (typeof BACKGROUNDS)[keyof typeof BACKGROUNDS][number]["id"],
+  null
+>;
+
+const NAME_KEYS = {
+  color_yellow: "colorYellow",
+  color_orange: "colorOrange",
+  color_brown: "colorBrown",
+  color_red: "colorRed",
+  color_pink: "colorPink",
+  color_purple: "colorPurple",
+  color_dark_blue: "colorIndigo",
+  color_blue: "colorBlue",
+  color_teal: "colorTeal",
+  color_green: "colorGreen",
+  pattern_dots: "colorPatternDots",
+  pattern_grid: "colorPatternGrid",
+  pattern_lines: "colorPatternLines",
+  pattern_waves: "colorPatternWaves",
+  pattern_groceries: "colorPatternGroceries",
+  pattern_music: "colorPatternMusic",
+  pattern_travel: "colorPatternTravel",
+  pattern_code: "colorPatternCode",
+} as const satisfies Record<BackgroundId, keyof Messages>;
+
+const nameKeyOf = (id: string | null) =>
+  id === null ? "colorDefault" : NAME_KEYS[id as BackgroundId];
 
 interface BackgroundPickerProps {
   value: string | null;
@@ -30,17 +60,20 @@ export function BackgroundPicker({
   onChange,
   onPreview,
 }: BackgroundPickerProps) {
+  const t = useTranslations();
   const isPattern = !!value?.startsWith("pattern_");
-  const chosenName = (list: readonly Background[]) =>
-    list.find((b) => b.id === value)?.name ?? "";
+  const chosenName = (list: readonly Background[]) => {
+    const chosen = list.find((b) => b.id === value);
+    return chosen ? t(nameKeyOf(chosen.id)) : "";
+  };
   return (
     <div
       className="grid w-75 max-w-full gap-3.5 p-3.5 max-md:w-auto"
       onPointerLeave={() => onPreview?.(false)}
     >
-      <PopoverTitle className="sr-only">Background</PopoverTitle>
+      <PopoverTitle className="sr-only">{t("notesBackground")}</PopoverTitle>
       <Section
-        label="Color"
+        label={t("notesBackgroundColor")}
         chosen={isPattern ? "" : chosenName(BACKGROUNDS.colors)}
         items={BACKGROUNDS.colors}
         value={value}
@@ -49,7 +82,7 @@ export function BackgroundPicker({
         color
       />
       <Section
-        label="Pattern"
+        label={t("notesBackgroundPattern")}
         chosen={isPattern ? chosenName(BACKGROUNDS.patterns) : ""}
         items={BACKGROUNDS.patterns}
         value={value}
@@ -77,6 +110,7 @@ function Section({
   onPreview?: (id: string | null | false) => void;
   color?: boolean;
 }) {
+  const t = useTranslations();
   const gridRef = React.useRef<HTMLDivElement>(null);
   const chooseByKeyboard = (id: string | null) => {
     onChange(id);
@@ -111,6 +145,7 @@ function Section({
       >
         {items.map((background, index) => {
           const isChosen = background.id === value;
+          const name = t(nameKeyOf(background.id));
           return (
             // biome-ignore lint/a11y/useSemanticElements: tiles in a radio group
             <button
@@ -118,8 +153,8 @@ function Section({
               type="button"
               role="radio"
               aria-checked={isChosen}
-              aria-label={background.name}
-              title={background.name}
+              aria-label={name}
+              title={name}
               tabIndex={isChosen || (chosenIndex < 0 && index === 0) ? 0 : -1}
               data-note={background.id ?? ""}
               onClick={(e) =>
@@ -137,7 +172,7 @@ function Section({
                   "shadow-[0_0_0_2px_var(--card),0_0_0_4px_var(--ring)]",
               )}
             >
-              {color ? "Aa" : ""}
+              {color ? t("notesBackgroundSample") : ""}
             </button>
           );
         })}

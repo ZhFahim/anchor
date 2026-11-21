@@ -6,8 +6,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { format, formatDistanceToNowStrict, isYesterday } from "date-fns";
-import { HTTPError } from "ky";
+import { isYesterday } from "date-fns";
 import {
   Check,
   Ellipsis,
@@ -23,6 +22,7 @@ import {
   UserRound,
   UserRoundPlus,
 } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import * as React from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -48,9 +48,11 @@ import {
 } from "@/components/ui/table";
 import { toast } from "@/components/ui/toast";
 import { useAuth } from "@/features/auth";
+import type { Translate } from "@/i18n/translate";
+import { errorCodeOf } from "@/lib/api/error-code";
 import { useLastShown } from "@/lib/hooks/use-last-shown";
 import { useRetry } from "@/lib/hooks/use-retry";
-import { cn, firstName, plural } from "@/lib/utils";
+import { cn, firstName } from "@/lib/utils";
 import {
   approveUser,
   deleteUser,
@@ -71,13 +73,26 @@ import {
 
 const PAGE_SIZE = 50;
 
+function timeAgo(date: Date, locale: string) {
+  const format = new Intl.RelativeTimeFormat(locale, { numeric: "always" });
+  const seconds = Math.abs(Date.now() - date.getTime()) / 1000;
+  if (seconds < 60) return format.format(-Math.round(seconds), "second");
+  if (seconds < 3600) return format.format(-Math.round(seconds / 60), "minute");
+  return format.format(-Math.round(seconds / 3600), "hour");
+}
+
 /** “Requested 2 hours ago”, “Requested yesterday”, “Requested Sep 3”. */
-function requested(iso: string) {
+function requested(iso: string, t: Translate, locale: string) {
   const date = new Date(iso);
-  if (isYesterday(date)) return "Requested yesterday";
+  if (isYesterday(date)) return t("adminRequestedYesterday");
   if (Date.now() - date.getTime() < 24 * 3600 * 1000)
-    return `Requested ${formatDistanceToNowStrict(date)} ago`;
-  return `Requested ${format(date, "MMM d")}`;
+    return t("adminRequestedAgo", { time: timeAgo(date, locale) });
+  return t("adminRequestedOn", {
+    date: new Intl.DateTimeFormat(locale, {
+      month: "short",
+      day: "numeric",
+    }).format(date),
+  });
 }
 
 function Person({
@@ -87,13 +102,13 @@ function Person({
   user: Pick<AdminUser, "id" | "name" | "email" | "profileImage">;
   you?: boolean;
 }) {
+  const t = useTranslations();
   return (
     <span className="flex min-w-0 items-center gap-2.5">
       <Avatar id={user.id} name={user.name} src={user.profileImage} />
       <span className="grid min-w-0 leading-[1.3]">
         <b className="truncate font-semibold text-ui">
-          {user.name}
-          {you && " (you)"}
+          {you ? t("adminPersonYou", { name: user.name }) : user.name}
         </b>
         <small className="truncate text-muted-foreground text-small">
           {user.email}
@@ -104,6 +119,8 @@ function Person({
 }
 
 export function PeopleTab({ hidden }: { hidden?: boolean }) {
+  const t = useTranslations();
+  const locale = useLocale();
   const queryClient = useQueryClient();
   const { user: me } = useAuth();
   const [query, setQuery] = React.useState("");
@@ -144,7 +161,12 @@ export function PeopleTab({ hidden }: { hidden?: boolean }) {
     queryKey: adminKeys.oidc,
     queryFn: getOidcSettings,
   });
-  const providerName = oidc.data?.providerName || "Single sign-on";
+  const providerName = oidc.data?.providerName || t("adminSingleSignOn");
+  const joinedDate = new Intl.DateTimeFormat(locale, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 
   const refresh = () =>
     Promise.all([
@@ -156,10 +178,10 @@ export function PeopleTab({ hidden }: { hidden?: boolean }) {
     mutationFn: (user: AdminUser) => approveUser(user.id),
     onSuccess: async (_, user) => {
       await refresh();
-      toast.success(`${firstName(user.name)} can sign in now`);
+      toast.success(t("adminCanSignIn", { name: firstName(user.name) }));
     },
     onError: (_, user) =>
-      toast.error(`Couldn’t approve ${firstName(user.name)}`, {
+      toast.error(t("adminApproveFailed", { name: firstName(user.name) }), {
         retry: () => approve.mutate(user),
       }),
   });
@@ -168,23 +190,26 @@ export function PeopleTab({ hidden }: { hidden?: boolean }) {
     onSuccess: async (_, user) => {
       await refresh();
       setDeclining(null);
-      toast.success(`${firstName(user.name)}’s request declined`);
+      toast.success(t("adminDeclined", { name: firstName(user.name) }));
     },
     onError: (_, user) =>
-      toast.error(`Couldn’t decline ${firstName(user.name)}`),
+      toast.error(t("adminDeclineFailed", { name: firstName(user.name) })),
   });
   const remove = useMutation({
     mutationFn: (user: AdminUser) => deleteUser(user.id),
     onSuccess: async (_, user) => {
       await refresh();
       setDeleting(null);
-      toast.success(`${firstName(user.name)}’s account deleted`);
+      toast.success(t("adminDeleted", { name: firstName(user.name) }));
     },
     onError: (e: Error, user) =>
       toast.error(
-        e instanceof HTTPError && /last admin/i.test(e.message)
-          ? `Couldn’t delete ${firstName(user.name)}. They’re the only admin.`
-          : `Couldn’t delete ${firstName(user.name)}`,
+        t(
+          errorCodeOf(e) === "LAST_ADMIN"
+            ? "adminDeleteOnlyAdmin"
+            : "adminDeleteFailed",
+          { name: firstName(user.name) },
+        ),
       ),
   });
   const reset = useMutation({
@@ -192,10 +217,11 @@ export function PeopleTab({ hidden }: { hidden?: boolean }) {
     onSuccess: (res, user) => {
       setResetting(null);
       if (res.newPassword) setNewPassword({ user, password: res.newPassword });
-      else toast.success(`${firstName(user.name)}’s password was reset`);
+      else
+        toast.success(t("adminPasswordReset", { name: firstName(user.name) }));
     },
     onError: (_, user) =>
-      toast.error(`Couldn’t reset ${firstName(user.name)}’s password`),
+      toast.error(t("adminResetFailed", { name: firstName(user.name) })),
   });
 
   const rows = users.data?.users ?? [];
@@ -206,7 +232,7 @@ export function PeopleTab({ hidden }: { hidden?: boolean }) {
     <div hidden={hidden} className="grid gap-3.5">
       {((pending.isError && !pending.data) || pendingRetry.isRetrying) && (
         <LoadFailedRow
-          message="Couldn’t load who’s waiting for approval."
+          message={t("adminPendingLoadFailed")}
           onRetry={pendingRetry.retry}
           isRetrying={pendingRetry.isRetrying}
         />
@@ -215,9 +241,7 @@ export function PeopleTab({ hidden }: { hidden?: boolean }) {
         <div className="grid gap-0.5 rounded-2xl bg-[color-mix(in_srgb,var(--warn)_70%,var(--card))] p-1.5 shadow-[0_0_0_1px_color-mix(in_srgb,var(--warn-foreground)_18%,transparent)]">
           <header className="flex items-center gap-2 px-2.5 pt-2 pb-1.5 font-semibold text-ui text-warn-foreground [&_svg]:size-4">
             <UserRoundPlus aria-hidden />
-            {waiting.length === 1
-              ? "1 person waiting for approval"
-              : `${waiting.length} people waiting for approval`}
+            {t("adminWaitingForApproval", { count: waiting.length })}
           </header>
           {waiting.map((user) => (
             <div
@@ -228,14 +252,14 @@ export function PeopleTab({ hidden }: { hidden?: boolean }) {
                 <Person user={user} />
               </span>
               <span className="mr-1.5 whitespace-nowrap text-muted-foreground text-small max-md:hidden">
-                {requested(user.createdAt)}
+                {requested(user.createdAt, t, locale)}
               </span>
               <Button
                 variant="quiet"
                 size="sm"
                 onClick={() => setDeclining(user)}
               >
-                Decline
+                {t("adminDecline")}
               </Button>
               <Button
                 size="sm"
@@ -243,11 +267,11 @@ export function PeopleTab({ hidden }: { hidden?: boolean }) {
                 busy={
                   approve.isPending &&
                   approve.variables?.id === user.id &&
-                  "Approving…"
+                  t("adminApproving")
                 }
               >
                 <Check aria-hidden />
-                Approve
+                {t("adminApprove")}
               </Button>
             </div>
           ))}
@@ -259,8 +283,8 @@ export function PeopleTab({ hidden }: { hidden?: boolean }) {
           <Input
             type="search"
             icon={<Search aria-hidden />}
-            placeholder="Find people"
-            aria-label="Find people"
+            placeholder={t("adminFindPeople")}
+            aria-label={t("adminFindPeople")}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             boxClassName="h-9 w-65 bg-background shadow-none focus-within:w-70 max-md:w-auto max-md:flex-1 transition-[width,box-shadow]"
@@ -268,13 +292,13 @@ export function PeopleTab({ hidden }: { hidden?: boolean }) {
           <span className="flex-1 max-md:hidden" />
           <Button onClick={() => setAdding(true)}>
             <UserPlus aria-hidden />
-            Add person
+            {t("adminAddPerson")}
           </Button>
         </div>
         {users.isError || usersRetry.isRetrying ? (
           <LoadFailedRow
             className="mx-3.5 mb-3.5"
-            message="Couldn’t load people."
+            message={t("adminPeopleLoadFailed")}
             onRetry={usersRetry.retry}
             isRetrying={usersRetry.isRetrying}
           />
@@ -284,14 +308,14 @@ export function PeopleTab({ hidden }: { hidden?: boolean }) {
           <Table className="max-md:min-w-0 max-md:[&_:is(th,td):nth-child(n+3):not(:last-child)]:hidden">
             <TableHeader>
               <tr>
-                <TableHead>Person</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Signs in with</TableHead>
-                <TableHead className="text-right">Notes</TableHead>
-                <TableHead className="text-right">Tags</TableHead>
-                <TableHead>Joined</TableHead>
+                <TableHead>{t("adminColumnPerson")}</TableHead>
+                <TableHead>{t("adminColumnRole")}</TableHead>
+                <TableHead>{t("adminColumnSignsInWith")}</TableHead>
+                <TableHead className="text-right">{t("adminNotes")}</TableHead>
+                <TableHead className="text-right">{t("adminTags")}</TableHead>
+                <TableHead>{t("adminColumnJoined")}</TableHead>
                 <TableHead>
-                  <span className="sr-only">Options</span>
+                  <span className="sr-only">{t("adminColumnOptions")}</span>
                 </TableHead>
               </tr>
             </TableHeader>
@@ -307,26 +331,32 @@ export function PeopleTab({ hidden }: { hidden?: boolean }) {
                       {user.isAdmin ? (
                         <Badge tone="ink">
                           <ShieldCheck aria-hidden />
-                          Admin
+                          {t("adminRoleAdmin")}
                         </Badge>
                       ) : (
-                        <span className="text-muted-foreground">Member</span>
+                        <span className="text-muted-foreground">
+                          {t("adminRoleMember")}
+                        </span>
                       )}
                     </TableCell>
                     <TableCell dim>
-                      {user.authMethod === "oidc" ? providerName : "Password"}
+                      {user.authMethod === "oidc"
+                        ? providerName
+                        : t("adminSignInPassword")}
                     </TableCell>
                     <TableCell numeric>{user._count?.notes ?? 0}</TableCell>
                     <TableCell numeric>{user._count?.tags ?? 0}</TableCell>
                     <TableCell dim>
-                      {format(new Date(user.createdAt), "MMM d, yyyy")}
+                      {joinedDate.format(new Date(user.createdAt))}
                     </TableCell>
                     <TableCell className="w-11 pr-2.5 text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <button
                             type="button"
-                            aria-label={`Options for ${user.name}`}
+                            aria-label={t("adminPersonOptions", {
+                              name: user.name,
+                            })}
                             className="grid size-7 cursor-pointer place-items-center rounded-md border-0 bg-transparent text-muted-foreground hover:bg-foreground/6 hover:text-foreground aria-expanded:bg-foreground/6 [&_svg]:size-4"
                           >
                             <Ellipsis aria-hidden />
@@ -335,14 +365,14 @@ export function PeopleTab({ hidden }: { hidden?: boolean }) {
                         <DropdownMenuContent align="end" className="min-w-52.5">
                           <DropdownMenuItem onSelect={() => setEditing(user)}>
                             <Pencil />
-                            Edit
+                            {t("commonEdit")}
                           </DropdownMenuItem>
                           {user.authMethod !== "oidc" && (
                             <DropdownMenuItem
                               onSelect={() => setResetting(user)}
                             >
                               <KeyRound />
-                              Reset password
+                              {t("adminResetPassword")}
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuSeparator />
@@ -352,7 +382,7 @@ export function PeopleTab({ hidden }: { hidden?: boolean }) {
                             onSelect={() => setDeleting(user)}
                           >
                             <Trash2 />
-                            Delete
+                            {t("commonDelete")}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -367,8 +397,8 @@ export function PeopleTab({ hidden }: { hidden?: boolean }) {
                     className="px-3.5 py-6 text-center text-muted-foreground"
                   >
                     {searched
-                      ? `No one matches “${searched}”.`
-                      : "No one here yet."}
+                      ? t("adminNoMatch", { query: searched })
+                      : t("adminNoPeople")}
                   </td>
                 </tr>
               )}
@@ -377,17 +407,15 @@ export function PeopleTab({ hidden }: { hidden?: boolean }) {
         )}
         {users.data && !users.isError && !usersRetry.isRetrying && (
           <div className="flex items-center justify-between gap-2.5 border-border/55 border-t px-3.5 py-2.5 text-meta text-muted-foreground">
-            <span>
-              {rows.length} of {total} {total === 1 ? "person" : "people"}
-            </span>
+            <span>{t("adminShownCount", { shown: rows.length, total })}</span>
             {rows.length < total && (
               <Button
                 variant="quiet"
                 size="sm"
                 onClick={() => setLimit((prev) => prev + PAGE_SIZE)}
-                busy={users.isPlaceholderData && "Loading…"}
+                busy={users.isPlaceholderData && t("uiLoading")}
               >
-                Show more
+                {t("adminShowMore")}
               </Button>
             )}
           </div>
@@ -408,10 +436,12 @@ export function PeopleTab({ hidden }: { hidden?: boolean }) {
       <ConfirmationDialog
         open={!!resetting}
         onOpenChange={(open) => !open && setResetting(null)}
-        title={`Reset ${firstName(shownResetting?.name ?? "")}’s password?`}
-        description="Their current password will stop working right away. You’ll see the new password next."
-        confirmLabel="Reset password"
-        busyLabel="Resetting…"
+        title={t("adminResetTitle", {
+          name: firstName(shownResetting?.name ?? ""),
+        })}
+        description={t("adminResetMessage")}
+        confirmLabel={t("adminResetPassword")}
+        busyLabel={t("adminResetting")}
         variant="primary"
         isPending={reset.isPending}
         onConfirm={() => resetting && reset.mutate(resetting)}
@@ -423,44 +453,54 @@ export function PeopleTab({ hidden }: { hidden?: boolean }) {
       <ConfirmationDialog
         open={!!declining}
         onOpenChange={(open) => !open && setDeclining(null)}
-        title={`Decline ${firstName(shownDeclining?.name ?? "")}’s request?`}
-        description="Their account will be deleted. They can ask again by signing up."
-        confirmLabel="Decline"
-        busyLabel="Declining…"
+        title={t("adminDeclineTitle", {
+          name: firstName(shownDeclining?.name ?? ""),
+        })}
+        description={t("adminDeclineMessage")}
+        confirmLabel={t("adminDecline")}
+        busyLabel={t("adminDeclining")}
         isPending={decline.isPending}
         onConfirm={() => declining && decline.mutate(declining)}
       />
       <ConfirmationDialog
         open={!!deleting}
         onOpenChange={(open) => !open && setDeleting(null)}
-        title={`Delete ${shownDeleting?.name ?? ""}?`}
+        title={t("adminDeleteTitle", { name: shownDeleting?.name ?? "" })}
         description={
           <>
-            This can’t be undone. The following will be permanently deleted:
+            {t("adminDeleteMessage")}
             <ul className="m-0 mt-2 grid list-none gap-1.5 p-0 text-foreground [&_li]:flex [&_li]:items-center [&_li]:gap-2 [&_svg]:size-3.75 [&_svg]:text-muted-foreground">
               <li>
                 <UserRound aria-hidden />
-                Their account
+                {t("adminDeleteTheirAccount")}
               </li>
               <li>
                 <NotebookPen aria-hidden />
-                {plural(shownDeleting?._count?.notes ?? 0, "note")}
+                {t("adminDeleteNotes", {
+                  count: shownDeleting?._count?.notes ?? 0,
+                })}
               </li>
               <li>
                 <Hash aria-hidden />
-                {plural(shownDeleting?._count?.tags ?? 0, "tag")}
+                {t("adminDeleteTags", {
+                  count: shownDeleting?._count?.tags ?? 0,
+                })}
               </li>
             </ul>
             {shownDeleting?.isAdmin && (
               <span className="mt-3 flex items-center gap-2 rounded-lg bg-warn px-3 py-2.5 text-meta text-warn-foreground [&_svg]:size-4">
                 <ShieldAlert aria-hidden />
-                {firstName(shownDeleting.name)} is an admin.
+                {t("adminDeleteIsAdmin", {
+                  name: firstName(shownDeleting.name),
+                })}
               </span>
             )}
           </>
         }
-        confirmLabel={`Delete ${firstName(shownDeleting?.name ?? "")}`}
-        busyLabel="Deleting…"
+        confirmLabel={t("adminDeleteConfirm", {
+          name: firstName(shownDeleting?.name ?? ""),
+        })}
+        busyLabel={t("uiDeleting")}
         isPending={remove.isPending}
         onConfirm={() => deleting && remove.mutate(deleting)}
       />

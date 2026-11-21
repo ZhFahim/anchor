@@ -1,7 +1,29 @@
 import type * as React from "react";
+import type { Messages } from "@/i18n/messages";
+import type { Translate } from "@/i18n/translate";
 import { TAG_COLORS } from "@/lib/design/tokens";
 
 type TagColor = (typeof TAG_COLORS)[number];
+
+const COLOR_NAME_KEYS = {
+  red: "colorRed",
+  pink: "colorPink",
+  purple: "colorPurple",
+  deepPurple: "colorDeepPurple",
+  indigo: "colorIndigo",
+  blue: "colorBlue",
+  lightBlue: "colorLightBlue",
+  cyan: "colorCyan",
+  teal: "colorTeal",
+  green: "colorGreen",
+  lightGreen: "colorLightGreen",
+  lime: "colorLime",
+  amber: "colorAmber",
+  orange: "colorOrange",
+  deepOrange: "colorDeepOrange",
+  brown: "colorBrown",
+  blueGrey: "colorBlueGrey",
+} as const satisfies Record<TagColor["name"], keyof Messages>;
 
 function findTagColor(stored: string | null | undefined): TagColor | undefined {
   if (!stored) return undefined;
@@ -23,11 +45,13 @@ export function tagColorStyle(
 }
 
 /** A color's name for people: “Deep purple”. */
-export function tagColorName(stored: string | null | undefined): string {
+export function tagColorName(
+  stored: string | null | undefined,
+  t: Translate,
+): string {
   const color = findTagColor(stored);
-  if (!color) return stored ?? "No color";
-  const words = color.name.replace(/([A-Z])/g, " $1").toLowerCase();
-  return words[0].toUpperCase() + words.slice(1);
+  if (!color) return stored ?? t("colorNone");
+  return t(COLOR_NAME_KEYS[color.name]);
 }
 
 const tagNameOrder = new Intl.Collator("en");

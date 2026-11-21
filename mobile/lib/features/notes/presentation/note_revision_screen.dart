@@ -327,7 +327,7 @@ class _NoteRevisionScreenState extends ConsumerState<NoteRevisionScreen> {
     final l10n = context.l10n;
     final meta = revision == null
         ? null
-        : [
+        : l10n.joinDetails([
             if (historyHasMultipleAuthors(revisions) || revision.author != null)
               revisionAuthorName(revision, me, l10n),
             if (revision.cause == RevisionCause.restore)
@@ -335,7 +335,7 @@ class _NoteRevisionScreenState extends ConsumerState<NoteRevisionScreen> {
             target == null
                 ? l10n.revisionComparedCurrent
                 : comparedWithLabel(target.createdAtLocal, l10n),
-          ].join(' · ');
+          ]);
 
     final titleStyle = context.noteTypography.versionTitle.copyWith(
       color: themeColors.appText,

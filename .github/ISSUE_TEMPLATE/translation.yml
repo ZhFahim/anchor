@@ -1,0 +1,36 @@
+name: Translation
+description: Start or improve a translation, or report a wrong one.
+title: "[Translation] "
+labels: ["i18n"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping translate Anchor. The [contributing guide](https://github.com/ZhFahim/anchor/blob/main/.github/CONTRIBUTING.md#translations) explains the files and the rules. You can send a pull request without opening an issue; this form is for saying you're working on a language, or for reporting a wrong translation.
+
+  - type: input
+    id: language
+    attributes:
+      label: Language
+      description: Its name and code, for example "German (de)" or "Portuguese, Brazil (pt-BR)".
+    validations:
+      required: true
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What is this about?
+      options:
+        - I'm starting this language
+        - I'm finishing or improving this language
+        - A translation is wrong
+    validations:
+      required: true
+
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: For a wrong translation, say where it shows, what it says now and what it should say. A screenshot helps.
+    validations:
+      required: false

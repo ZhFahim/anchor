@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronRight } from "lucide-react";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTagMap } from "@/features/tags/hooks";
@@ -139,6 +140,7 @@ export const NotesBoard = React.forwardRef<HTMLDivElement, NotesBoardProps>(
 NotesBoard.displayName = "NotesBoard";
 
 export function NotesBoardSkeleton({ loading }: { loading: boolean }) {
+  const t = useTranslations();
   const shown = useDelayedFlag(loading);
   const boardRef = React.useRef<HTMLDivElement>(null);
   const rulerRef = React.useRef<HTMLDivElement>(null);
@@ -148,7 +150,7 @@ export function NotesBoardSkeleton({ loading }: { loading: boolean }) {
     <div
       ref={boardRef}
       role="status"
-      aria-label="Loading notes"
+      aria-label={t("notesLoading")}
       className="relative"
     >
       <div

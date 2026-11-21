@@ -11,6 +11,7 @@ import {
   TriangleAlert,
   Upload,
 } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import * as React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,15 +26,17 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { FieldDescription, FieldError } from "@/components/ui/field";
-import { cn, plural } from "@/lib/utils";
+import type { Translate } from "@/i18n/translate";
+import { cn } from "@/lib/utils";
 import type { PickedFile } from "../adapters/zip";
 import { type ImportReport, useImport } from "../hooks/use-import";
+import { importIssueText } from "../import-text";
 import {
   fromDataTransfer,
   fromFileList,
   MAX_PICKED_FILES,
 } from "../picked-files";
-import type { ImportSkippedItem } from "../types";
+import type { ImportSkippedItem, ParsedImport } from "../types";
 
 interface ImportDialogProps {
   open: boolean;
@@ -41,15 +44,28 @@ interface ImportDialogProps {
 }
 
 /** “takeout.zip”, “Obsidian vault” (a folder), or “12 files”. */
-function pickedName(files: PickedFile[]) {
+function pickedName(files: PickedFile[], t: Translate) {
   if (files.length === 1) return files[0].file.name;
   const roots = new Set(files.map((f) => f.path.split("/")[0]));
   return roots.size === 1 && files[0].path.includes("/")
     ? [...roots][0]
-    : plural(files.length, "file");
+    : t("importFileCount", { count: files.length });
+}
+
+function formatLabel(formatId: ParsedImport["formatId"], t: Translate) {
+  switch (formatId) {
+    case "anchor":
+      return t("importFormatAnchor");
+    case "google-keep":
+      return "Google Keep";
+    case "markdown":
+      return t("importFormatMarkdown");
+  }
 }
 
 export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
+  const t = useTranslations();
+  const locale = useLocale();
   const importer = useImport();
   const [name, setName] = React.useState("");
   const [isFolder, setIsFolder] = React.useState(false);
@@ -63,7 +79,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
 
   const pick = (files: PickedFile[], isDropTruncated = false) => {
     if (!files.length) return;
-    setName(pickedName(files));
+    setName(pickedName(files, t));
     setIsFolder(files.length > 1 && files[0].path.includes("/"));
     setIsTruncated(isDropTruncated);
     importer.selectFiles(files);
@@ -80,11 +96,8 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
         onEscapeKeyDown={(e) => importer.isRunning && e.preventDefault()}
       >
         <DialogHeader>
-          <DialogTitle>Import notes</DialogTitle>
-          <DialogDescription>
-            Import from an Anchor backup, a Google Keep export, or Markdown
-            files.
-          </DialogDescription>
+          <DialogTitle>{t("importTitle")}</DialogTitle>
+          <DialogDescription>{t("importDescription")}</DialogDescription>
         </DialogHeader>
         <DialogBody className="gap-3">
           {step === "pick" && (
@@ -107,26 +120,41 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
                 <div className="grid flex-1 leading-[1.35]">
                   <b className="truncate font-semibold text-ui">{name}</b>
                   <small className="text-muted-foreground text-small">
-                    {parsed.formatLabel}
+                    {formatLabel(parsed.formatId, t)}
                   </small>
                 </div>
                 <Button variant="quiet" size="sm" onClick={importer.reset}>
-                  Change
+                  {t("importChangeFile")}
                 </Button>
               </div>
               <div className="grid grid-cols-3 gap-2">
-                <Stat count={parsed.notes.length} one="note" />
-                <Stat count={importer.previewTagCount} one="tag" />
-                <Stat count={parsed.attachmentCount} one="attachment" />
+                <Stat
+                  count={parsed.notes.length}
+                  label={t("importStatNotes", { count: parsed.notes.length })}
+                />
+                <Stat
+                  count={importer.previewTagCount}
+                  label={t("importStatTags", {
+                    count: importer.previewTagCount,
+                  })}
+                />
+                <Stat
+                  count={parsed.attachmentCount}
+                  label={t("importStatAttachments", {
+                    count: parsed.attachmentCount,
+                  })}
+                />
               </div>
               {isTruncated && (
                 <FieldDescription>
-                  {`Only the first ${MAX_PICKED_FILES.toLocaleString("en-US")} files were read.`}
+                  {t("importTruncated", { count: MAX_PICKED_FILES })}
                 </FieldDescription>
               )}
               {parsed.skipped.length > 0 && (
                 <Issues
-                  title={`${plural(parsed.skipped.length, "item")} will be skipped`}
+                  title={t("importWillBeSkipped", {
+                    count: parsed.skipped.length,
+                  })}
                   items={parsed.skipped}
                 />
               )}
@@ -134,16 +162,16 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
                 <CheckRow
                   checked={importer.options.skipExisting}
                   onChange={(v) => importer.setOption("skipExisting", v)}
-                  label="Skip notes that already exist"
-                  hint="Otherwise they are imported as copies."
+                  label={t("importSkipExisting")}
+                  hint={t("importSkipExistingHint")}
                 />
               )}
               {parsed.formatId === "markdown" && parsed.hasFolders && (
                 <CheckRow
                   checked={importer.options.folderTags}
                   onChange={(v) => importer.setOption("folderTags", v)}
-                  label="Use folder names as tags"
-                  hint="Nextcloud categories and Obsidian folders become tags."
+                  label={t("importFolderTags")}
+                  hint={t("importFolderTagsHint")}
                 />
               )}
             </>
@@ -154,19 +182,26 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
               <div className="flex justify-between font-medium text-control tabular-nums">
                 <span>
                   {progress?.phase === "attachments"
-                    ? `Uploading attachments ${progress.done} of ${progress.total}`
-                    : `Importing notes ${progress?.done ?? 0} of ${progress?.total ?? parsed?.notes.length ?? 0}`}
+                    ? t("importProgressAttachments", {
+                        done: progress.done,
+                        total: progress.total,
+                      })
+                    : t("importProgressNotes", {
+                        done: progress?.done ?? 0,
+                        total: progress?.total ?? parsed?.notes.length ?? 0,
+                      })}
                 </span>
                 <span>
-                  {progress?.total
-                    ? Math.round((progress.done / progress.total) * 100)
-                    : 0}
-                  %
+                  {new Intl.NumberFormat(locale, { style: "percent" }).format(
+                    progress?.total
+                      ? Math.round((progress.done / progress.total) * 100) / 100
+                      : 0,
+                  )}
                 </span>
               </div>
               <div
                 role="progressbar"
-                aria-label="Import"
+                aria-label={t("importProgressLabel")}
                 aria-valuemin={0}
                 aria-valuemax={progress?.total ?? 0}
                 aria-valuenow={progress?.done ?? 0}
@@ -185,9 +220,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
               {stopped ? (
                 <FieldError>{importer.runError}</FieldError>
               ) : (
-                <FieldDescription>
-                  Keep this tab open until the import finishes.
-                </FieldDescription>
+                <FieldDescription>{t("importKeepTabOpen")}</FieldDescription>
               )}
             </div>
           )}
@@ -197,33 +230,33 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
         <DialogFooter>
           {step === "pick" && (
             <Button variant="quiet" onClick={() => close(false)}>
-              Cancel
+              {t("commonCancel")}
             </Button>
           )}
           {step === "preview" && parsed && (
             <>
               <Button variant="quiet" onClick={() => close(false)}>
-                Cancel
+                {t("commonCancel")}
               </Button>
               <Button onClick={importer.start} disabled={!parsed.notes.length}>
                 <Upload aria-hidden />
-                Import {plural(parsed.notes.length, "note")}
+                {t("importStart", { count: parsed.notes.length })}
               </Button>
             </>
           )}
           {stopped && (
             <>
               <Button variant="quiet" onClick={() => close(false)}>
-                Close
+                {t("commonClose")}
               </Button>
               <Button onClick={importer.retry}>
                 <RotateCw aria-hidden />
-                Try again
+                {t("commonRetry")}
               </Button>
             </>
           )}
           {step === "report" && (
-            <Button onClick={() => close(false)}>Done</Button>
+            <Button onClick={() => close(false)}>{t("commonDone")}</Button>
           )}
         </DialogFooter>
       </DialogContent>
@@ -242,6 +275,7 @@ function DropArea({
   error: string | null;
   onFiles: (files: PickedFile[], isTruncated?: boolean) => void;
 }) {
+  const t = useTranslations();
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = React.useState(false);
   const errorId = React.useId();
@@ -296,22 +330,24 @@ function DropArea({
         {reading ? (
           <>
             <LoaderCircle aria-hidden className="animate-spin" />
-            <b className="font-semibold text-lead">Reading {name}…</b>
+            <b className="font-semibold text-lead">
+              {t("importReading", { name })}
+            </b>
             <span className="text-meta text-muted-foreground">
-              Large exports can take a few seconds.
+              {t("importReadingHint")}
             </span>
           </>
         ) : (
           <>
             <FileArchive aria-hidden />
-            <b className="font-semibold text-lead">
-              Drop a zip or a folder here
-            </b>
+            <b className="font-semibold text-lead">{t("importDropTitle")}</b>
             <span className="text-meta text-muted-foreground">
-              or click to choose files
+              {t("importDropHint")}
             </span>
             <span className="mt-1 flex flex-wrap justify-center gap-1.5">
-              <Badge className="bg-foreground/5">Anchor backup</Badge>
+              <Badge className="bg-foreground/5">
+                {t("importFormatAnchor")}
+              </Badge>
               <Badge className="bg-foreground/5">Google Keep</Badge>
               <Badge className="bg-foreground/5">Markdown</Badge>
             </span>
@@ -335,13 +371,11 @@ function DropArea({
   );
 }
 
-function Stat({ count, one }: { count: number; one: string }) {
+function Stat({ count, label }: { count: number; label: string }) {
   return (
     <div className="grid gap-0.5 rounded-xl px-3.5 py-3 shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--border)_70%,transparent)]">
       <b className="text-page tabular-nums">{count}</b>
-      <span className="text-muted-foreground text-small">
-        {count === 1 ? one : `${one}s`}
-      </span>
+      <span className="text-muted-foreground text-small">{label}</span>
     </div>
   );
 }
@@ -385,6 +419,7 @@ function Issues({
   items: ImportSkippedItem[];
   open?: boolean;
 }) {
+  const t = useTranslations();
   return (
     <details
       open={open}
@@ -401,7 +436,11 @@ function Issues({
       <ul className="m-0 grid max-h-44 gap-1 overflow-auto pr-3 pb-2.5 pl-8">
         {items.map((entry, i) => (
           <li key={i} className="wrap-break-word">
-            <b className="font-semibold">{entry.item}</b>: {entry.reason}
+            {t.rich("importIssueLine", {
+              item: entry.item,
+              reason: importIssueText(entry, t),
+              b: (chunks) => <b className="font-semibold">{chunks}</b>,
+            })}
           </li>
         ))}
       </ul>
@@ -410,16 +449,19 @@ function Issues({
 }
 
 function Report({ report }: { report: ImportReport }) {
+  const t = useTranslations();
   const issueCount = report.issues.length;
   const imported = report.created + report.remapped;
-  const pills = [
-    [report.created, "imported"],
-    [report.remapped, "imported as copies"],
-    [report.skipped, "already there"],
-    [report.failed, "failed"],
-    [report.attachmentsUploaded, "attachments uploaded"],
-    [report.attachmentsFailed, "attachments failed"],
-  ].filter(([count]) => count) as [number, string][];
+  const pills = (
+    [
+      ["importReportCreated", report.created],
+      ["importReportRemapped", report.remapped],
+      ["importReportSkipped", report.skipped],
+      ["importReportFailed", report.failed],
+      ["importReportAttachmentsUploaded", report.attachmentsUploaded],
+      ["importReportAttachmentsFailed", report.attachmentsFailed],
+    ] as const
+  ).filter(([, count]) => count);
   return (
     <>
       <div className="flex items-center gap-2.5 font-semibold text-lead [&>svg]:size-5.5">
@@ -431,35 +473,42 @@ function Report({ report }: { report: ImportReport }) {
           <CircleAlert aria-hidden className="text-muted-foreground" />
         )}
         {imported || report.skipped
-          ? `${plural(imported, "note")} imported${issueCount ? `, ${issueCount} need${issueCount === 1 ? "s" : ""} attention` : ""}`
-          : "Nothing was imported"}
+          ? issueCount
+            ? t("importReportImportedWithIssues", {
+                count: imported,
+                issues: issueCount,
+              })
+            : t("importReportImported", { count: imported })
+          : t("importReportNothing")}
       </div>
       {pills.length > 1 && (
         <ul className="m-0 flex list-none flex-wrap gap-1.5 p-0">
-          {pills.map(([count, label]) => (
+          {pills.map(([key, count]) => (
             <li
-              key={label}
+              key={key}
               className="rounded-pill bg-muted px-2.5 py-1 text-meta text-muted-foreground"
             >
-              <b className="font-semibold text-foreground tabular-nums">
-                {count}
-              </b>{" "}
-              {label}
+              {t.rich(key, {
+                count,
+                b: (chunks) => (
+                  <b className="font-semibold text-foreground tabular-nums">
+                    {chunks}
+                  </b>
+                ),
+              })}
             </li>
           ))}
         </ul>
       )}
       {issueCount > 0 && (
         <Issues
-          title={`${plural(issueCount, "item")} need${issueCount === 1 ? "s" : ""} attention`}
+          title={t("importNeedAttention", { count: issueCount })}
           items={report.issues}
           open
         />
       )}
       {report.restoredTrashed && (
-        <FieldDescription>
-          Notes restored to the trash get a fresh 30 days there.
-        </FieldDescription>
+        <FieldDescription>{t("importRestoredTrashed")}</FieldDescription>
       )}
     </>
   );

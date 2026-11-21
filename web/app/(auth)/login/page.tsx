@@ -4,6 +4,7 @@ import { HTTPError } from "ky";
 import { ArrowLeft, KeyRound, LoaderCircle } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
@@ -25,11 +26,13 @@ import {
 } from "@/features/auth/components/auth-parts";
 import { getSafeRedirectUrl } from "@/features/auth/utils/redirect";
 import {
+  providerValues,
   serverSignInError,
   signInError,
 } from "@/features/auth/utils/sign-in-error";
 
 export default function LoginPage() {
+  const t = useTranslations();
   const searchParams = useSearchParams();
   const login = useLogin();
   const oidc = useOidcConfig();
@@ -40,12 +43,12 @@ export default function LoginPage() {
   const [password, setPassword] = React.useState("");
   const passwordRef = React.useRef<HTMLInputElement>(null);
 
-  const providerName = oidc.data?.providerName || "your provider";
+  const providerName = oidc.data?.providerName || undefined;
   const providerNameAtStart =
-    providerName[0].toUpperCase() + providerName.slice(1);
+    providerName && providerName[0].toUpperCase() + providerName.slice(1);
   const isProviderOnly =
     !!oidc.data?.enabled && !!oidc.data?.disableInternalAuth;
-  const errorMessage = signInError(login.error, providerName);
+  const errorMessage = signInError(t, login.error, providerName);
 
   const signInWithProvider = () => {
     const returnTo = getSafeRedirectUrl(searchParams.get("returnTo") || "/");
@@ -59,36 +62,46 @@ export default function LoginPage() {
         className="m-0 mt-3.5 flex items-center gap-2.5 text-lead text-muted-foreground [&_svg]:size-4.5"
       >
         <LoaderCircle aria-hidden className="animate-spin" />
-        Signing you in…
+        {t("authSigningYouIn")}
       </p>
     );
 
   const { failure } = oidcCallback;
   const isPending =
     errorMessage === "pending" ||
-    (failure?.by === "server" && /pending/i.test(failure.message));
+    (failure?.by === "server" && failure.reason === "ACCOUNT_PENDING");
   if (failure && !isPending)
     return (
       <AuthStatusScreen
         illustration="callback"
-        title="Sign-in didn’t finish"
+        title={t("authCallbackFailedTitle")}
         text={
           failure.by === "provider"
-            ? `${providerNameAtStart} sent you back without signing you in. ${isProviderOnly ? "Try again." : "Try again, or sign in with your email."}`
-            : serverSignInError(failure.status, isProviderOnly)
+            ? t(
+                isProviderOnly
+                  ? "authProviderSentBack"
+                  : "authProviderSentBackOrEmail",
+                providerValues(providerNameAtStart),
+              )
+            : serverSignInError(t, failure.status, isProviderOnly)
         }
       >
         {failure.by === "provider" && (
           <p className="m-0 -mt-1.5 mb-1 text-muted-foreground text-small">
-            {providerNameAtStart} said:{" "}
-            <code className="rounded-[5px] bg-foreground/7 px-1.25 py-px font-mono text-foreground">
-              {failure.message}
-            </code>
+            {t.rich("authProviderSaid", {
+              ...providerValues(providerNameAtStart),
+              message: failure.message,
+              code: (chunks) => (
+                <code className="rounded-[5px] bg-foreground/7 px-1.25 py-px font-mono text-foreground">
+                  {chunks}
+                </code>
+              ),
+            })}
           </p>
         )}
         <Button size="lg" className="w-full" onClick={signInWithProvider}>
           <KeyRound aria-hidden />
-          Try again with {providerName}
+          {t("authTryAgainWith", providerValues(providerName))}
         </Button>
         <Button
           size="lg"
@@ -97,7 +110,7 @@ export default function LoginPage() {
           onClick={oidcCallback.clearFailure}
         >
           <ArrowLeft aria-hidden />
-          Back to sign in
+          {t("authBackToSignIn")}
         </Button>
       </AuthStatusScreen>
     );
@@ -114,7 +127,10 @@ export default function LoginPage() {
 
   return (
     <>
-      <AuthHeading title="Welcome back" sub="Sign in to continue to Anchor." />
+      <AuthHeading
+        title={t("authWelcomeBack")}
+        sub={t("authSignInSubtitle", { app: t("appName") })}
+      />
       {oidc.data?.enabled && (
         <>
           <Button
@@ -124,7 +140,7 @@ export default function LoginPage() {
             onClick={signInWithProvider}
           >
             <KeyRound aria-hidden />
-            Continue with {providerName}
+            {t("authContinueWith", { provider: oidc.data.providerName })}
           </Button>
           {!isProviderOnly && <OrDivider />}
         </>
@@ -137,12 +153,11 @@ export default function LoginPage() {
               className={`${linkButtonClass} self-center whitespace-nowrap`}
               onClick={() => oidc.refetch()}
             >
-              Try again
+              {t("commonRetry")}
             </button>
           }
         >
-          Couldn’t load the sign-in options. You can still sign in with your
-          email.
+          {t("authOptionsLoadFailed")}
         </AuthMessage>
       )}
       {errorMessage && <AuthMessage>{errorMessage}</AuthMessage>}
@@ -166,7 +181,7 @@ export default function LoginPage() {
             );
           }}
         >
-          <Field label="Email">
+          <Field label={t("authEmailLabel")}>
             <Input
               type="email"
               autoComplete="email"
@@ -179,7 +194,7 @@ export default function LoginPage() {
               }}
             />
           </Field>
-          <Field label="Password">
+          <Field label={t("authPasswordLabel")}>
             <PasswordInput
               ref={passwordRef}
               autoComplete="current-password"
@@ -196,18 +211,22 @@ export default function LoginPage() {
             type="submit"
             size="lg"
             className="w-full"
-            busy={login.isPending && "Signing in…"}
+            busy={login.isPending && t("authSigningIn")}
           >
-            Sign in
+            {t("authSignIn")}
           </Button>
         </form>
       )}
       {!isProviderOnly && registrationMode.data?.mode !== "disabled" && (
         <p className="m-0 text-center text-muted-foreground text-ui">
-          New to Anchor?{" "}
-          <Link href="/register" className={linkButtonClass}>
-            Create an account
-          </Link>
+          {t.rich("authNewToAnchor", {
+            app: t("appName"),
+            link: (chunks) => (
+              <Link href="/register" className={linkButtonClass}>
+                {chunks}
+              </Link>
+            ),
+          })}
         </p>
       )}
     </>

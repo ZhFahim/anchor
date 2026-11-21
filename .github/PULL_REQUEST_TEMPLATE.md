@@ -28,6 +28,7 @@ Fixes #
 - [ ] I ran the app and tested the change by hand on each platform it touches.
 - [ ] I reviewed the changes myself and can answer questions about them.
 - [ ] It does one thing and has no unrelated changes.
+- [ ] New text people see is in the English language files with a description for translators, not in the code.
 
 ## AI use
 

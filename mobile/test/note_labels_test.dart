@@ -214,7 +214,7 @@ void main() {
     test('says when a trashed note goes for good', () {
       expect(
         trashDeletionLabel(DateTime(2026, 8, 1, 12), _english, now: now),
-        'Will be deleted on Aug 31.',
+        'Will be deleted on August 31.',
       );
       expect(
         trashDeletionLabel(null, _english),

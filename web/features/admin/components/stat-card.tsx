@@ -1,3 +1,4 @@
+import { useLocale, useTranslations } from "next-intl";
 import type * as React from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -16,6 +17,8 @@ export function StatCard({
   failed?: boolean;
   caption: string;
 }) {
+  const t = useTranslations();
+  const locale = useLocale();
   return (
     <div
       data-slot="card"
@@ -27,13 +30,13 @@ export function StatCard({
       </span>
       {value === undefined && failed ? (
         <b className="text-display text-muted-foreground leading-[1.1] max-md:text-page">
-          —<span className="sr-only">Not loaded</span>
+          —<span className="sr-only">{t("adminStatNotLoaded")}</span>
         </b>
       ) : value === undefined ? (
         <Skeleton className="my-1.5 h-7 w-16" />
       ) : (
         <b className="text-display leading-[1.1] tabular-nums max-md:text-page">
-          {value.toLocaleString()}
+          {value.toLocaleString(locale)}
         </b>
       )}
       <small className="text-muted-foreground text-small max-md:hidden">

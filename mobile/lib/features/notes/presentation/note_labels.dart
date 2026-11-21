@@ -1,7 +1,7 @@
 import 'package:intl/intl.dart';
 
 import '../../../core/text/date_formats.dart';
-import '../../../l10n/app_localizations.dart';
+import '../../../l10n/l10n.dart';
 import '../domain/note.dart';
 import '../domain/note_attachment.dart';
 import '../domain/note_dates.dart';
@@ -50,6 +50,10 @@ String _fullDate(DateTime date) => DateFormat.yMMMMd(dateLocale).format(date);
 String _shortDate(DateTime date, DateTime now) => date.year == now.year
     ? DateFormat.MMMd(dateLocale).format(date)
     : DateFormat.yMMMd(dateLocale).format(date);
+
+String _longDate(DateTime date, DateTime now) => date.year == now.year
+    ? DateFormat.MMMMd(dateLocale).format(date)
+    : DateFormat.yMMMMd(dateLocale).format(date);
 
 T byDay<T>(
   DateTime date,
@@ -158,7 +162,7 @@ String trashDeletionLabel(
 }) {
   if (trashedAt == null) return l10n.trashDeletesAfter(trashDays);
   final deletedOn = trashedAt.toLocal().add(const Duration(days: trashDays));
-  return l10n.trashDeletesOn(_shortDate(deletedOn, now ?? DateTime.now()));
+  return l10n.trashDeletesOn(_longDate(deletedOn, now ?? DateTime.now()));
 }
 
 String revisionLabel(RevisionCause cause, AppLocalizations l10n) =>
@@ -187,10 +191,10 @@ String lineChangesLabel(LineCounts counts, AppLocalizations l10n) {
   ].where((kind) => kind.$1 > 0).toList();
   if (kinds.isEmpty) return l10n.historyNoChanges;
   final (count, inLines, _) = kinds.first;
-  return [
+  return l10n.joinList([
     inLines(count),
     for (final (count, _, short) in kinds.skip(1)) short(count),
-  ].join(', ');
+  ]);
 }
 
 String attachmentAddedLabel(

@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, Copy } from "lucide-react";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { copyText } from "@/lib/clipboard";
 
@@ -17,11 +18,12 @@ export function CodeCopyButtons({
 }: {
   container: HTMLDivElement | null;
 }) {
+  const t = useTranslations();
   const [spots, setSpots] = React.useState<Spot[]>([]);
   const [hover, setHover] = React.useState(-1);
   const [status, setStatus] = React.useState<{
     index: number;
-    word: string;
+    isCopied: boolean;
   } | null>(null);
 
   React.useEffect(() => {
@@ -93,9 +95,9 @@ export function CodeCopyButtons({
       const sel = getSelection();
       sel?.removeAllRanges();
       sel?.addRange(range);
-      setStatus({ index, word: "Selected" });
+      setStatus({ index, isCopied: false });
     };
-    copyText(text).then(() => setStatus({ index, word: "Copied" }), select);
+    copyText(text).then(() => setStatus({ index, isCopied: true }), select);
   };
 
   return (
@@ -112,7 +114,11 @@ export function CodeCopyButtons({
         >
           {status?.index === i ? <Check aria-hidden /> : <Copy aria-hidden />}
           <span aria-live="polite">
-            {status?.index === i ? status.word : "Copy"}
+            {status?.index !== i
+              ? t("commonCopy")
+              : status.isCopied
+                ? t("commonCopied")
+                : t("editorCodeSelected")}
           </span>
         </button>
       ))}

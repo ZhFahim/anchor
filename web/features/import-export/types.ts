@@ -48,10 +48,29 @@ export type CanonicalNote = {
   attachments: CanonicalAttachment[];
 };
 
-export type ImportSkippedItem = {
-  item: string;
-  reason: string;
-};
+export type ImportIssueReason =
+  | "backupAttachmentMissing"
+  | "noteFileUnreadable"
+  | "trashedInKeep"
+  | "exportAttachmentMissing"
+  | "attachmentNotFound"
+  | "emptyFile"
+  | "noteTooLarge"
+  | "noteFailed"
+  | "contentInvalid"
+  | "backgroundUnknown"
+  | "importedWithProblem"
+  | "attachmentUnreadable"
+  | "attachmentUploadFailed";
+
+export type ImportSkippedItem =
+  | { item: string; reason: ImportIssueReason }
+  | {
+      item: string;
+      reason: "unsupportedFileType";
+      /** A MIME type or a file extension */
+      fileType: string;
+    };
 
 export type ImportTag = {
   name: string;
@@ -60,7 +79,6 @@ export type ImportTag = {
 
 export type ParsedImport = {
   formatId: "anchor" | "google-keep" | "markdown";
-  formatLabel: string;
   notes: CanonicalNote[];
   /** Unique tags referenced across all notes, carrying colors for restore */
   tags: ImportTag[];
@@ -87,12 +105,19 @@ export type ImportNoteItem = {
 
 type ImportNoteStatus = "created" | "skipped" | "remapped" | "failed";
 
+export type ImportNoteWarning = {
+  code: string;
+  params?: Record<string, string | number>;
+};
+
 export type ImportNoteResult = {
   ref: string;
   status: ImportNoteStatus;
   noteId?: string;
   warning?: string;
+  warnings?: ImportNoteWarning[];
   error?: string;
+  errorCode?: string;
 };
 
 export type ImportNotesResponse = {

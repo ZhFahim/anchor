@@ -314,7 +314,10 @@ textarea.n-title {
 }
 .ro-acts {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: --spacing(1);
+  max-width: 100%;
   margin-left: auto;
 }
 .ro-bar.nudge {

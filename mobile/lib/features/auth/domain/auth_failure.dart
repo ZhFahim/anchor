@@ -3,13 +3,17 @@ import '../../../core/network/api_error.dart';
 sealed class AuthFailure implements Exception {
   const AuthFailure();
 
-  /// [message] is a sentence, or a list for fields the server turned down.
   /// [error] stands for any answer not matched here.
   factory AuthFailure.fromResponse(
     int? status,
     Object? message, {
     required ApiError error,
+    String? code,
+    Map<String, Object?> params = const {},
+    List<String>? fields,
   }) {
+    final byCode = _fromCode(code, params, fields);
+    if (byCode != null) return byCode;
     if (status == 400 && message is List) {
       return InvalidInputFailure([
         for (final item in message) '$item'.split(' ').first,
@@ -39,6 +43,28 @@ sealed class AuthFailure implements Exception {
     };
   }
 }
+
+AuthFailure? _fromCode(
+  String? code,
+  Map<String, Object?> params,
+  List<String>? fields,
+) => switch (code) {
+  'INVALID_CREDENTIALS' => const InvalidCredentialsFailure(),
+  'OIDC_ACCOUNT' => const PasswordlessAccountFailure(),
+  'ACCOUNT_PENDING' => const PendingApprovalFailure(),
+  'PASSWORD_SIGN_IN_DISABLED' ||
+  'PASSWORD_SIGN_UP_DISABLED' => PasswordSignInDisabledFailure(
+    provider: params['provider'] as String?,
+    isSignUp: code == 'PASSWORD_SIGN_UP_DISABLED',
+  ),
+  'REGISTRATION_DISABLED' => const RegistrationClosedFailure(),
+  'CURRENT_PASSWORD_INCORRECT' => const WrongCurrentPasswordFailure(),
+  'PASSWORD_UNCHANGED' => const SamePasswordFailure(),
+  'USER_EXISTS' => const EmailTakenFailure(),
+  'LAST_ADMIN' => const LastAdminFailure(),
+  'VALIDATION_FAILED' when fields != null => InvalidInputFailure(fields),
+  _ => null,
+};
 
 /// The server ends with "Sign in with Pocket ID." or "Sign up with …".
 final _providerPattern = RegExp(r'with (.+)\.$');

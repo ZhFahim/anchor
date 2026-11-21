@@ -1,0 +1,78 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "NSAppleMusicUsageDescription": {
+      "comment": "iPhone permission prompt: why the app asks for the music library.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anchor uses your music library to add audio files to notes."
+          }
+        }
+      }
+    },
+    "NSCameraUsageDescription": {
+      "comment": "iPhone permission prompt: why the app asks for the camera. Starts with the app's name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anchor uses the camera to take pictures for your notes and your profile photo."
+          }
+        }
+      }
+    },
+    "NSLocalNetworkUsageDescription": {
+      "comment": "iPhone permission prompt: why the app asks to use the local network.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anchor connects to your server when it is on your local network."
+          }
+        }
+      }
+    },
+    "NSMicrophoneUsageDescription": {
+      "comment": "iPhone permission prompt: why the app asks for the microphone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anchor uses the microphone to record voice notes."
+          }
+        }
+      }
+    },
+    "NSPhotoLibraryAddUsageDescription": {
+      "comment": "iPhone permission prompt: why the app asks to add photos to the library.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anchor saves pictures from your notes to your photo library."
+          }
+        }
+      }
+    },
+    "NSPhotoLibraryUsageDescription": {
+      "comment": "iPhone permission prompt: why the app asks to read the photo library.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anchor uses your photo library to add pictures to notes and to choose your profile photo."
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

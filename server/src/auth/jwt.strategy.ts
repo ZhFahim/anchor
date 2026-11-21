@@ -4,6 +4,8 @@ import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { AuthConfig } from '../config/configuration';
+import { coded } from '../common/errors/coded';
+import { ErrorCode } from '../common/errors/error-code';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -35,12 +37,18 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
 
     if (!user) {
-      throw new UnauthorizedException('User not found');
+      throw coded(
+        new UnauthorizedException('User not found'),
+        ErrorCode.USER_NOT_FOUND,
+      );
     }
 
     // Reject pending users
     if (user.status === 'pending') {
-      throw new UnauthorizedException('Account pending approval');
+      throw coded(
+        new UnauthorizedException('Account pending approval'),
+        ErrorCode.ACCOUNT_PENDING,
+      );
     }
 
     return user;

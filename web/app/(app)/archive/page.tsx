@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { ArchiveRestore, Trash2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { AppPage, PageTitle } from "@/components/layout/app-page";
 import { IconButton } from "@/components/ui/button";
@@ -31,11 +32,11 @@ import { archivedNotesQuery } from "@/features/notes/queries";
 import { deletedNotesText, deleteNotesWarning } from "@/features/notes/trash";
 import type { Note } from "@/features/notes/types";
 import { eachLimited } from "@/lib/each";
-import { plural } from "@/lib/utils";
 
 const NO_NOTES: Note[] = [];
 
 export default function ArchivePage() {
+  const t = useTranslations();
   const refresh = useRefreshNotes();
   const [confirmRemove, setConfirmRemove] = React.useState<{
     ids: string[];
@@ -53,7 +54,7 @@ export default function ArchivePage() {
     try {
       await run();
     } catch {
-      toast.error("Couldn’t undo that");
+      toast.error(t("notesUndoFailed"));
     }
     refresh();
   };
@@ -82,19 +83,14 @@ export default function ArchivePage() {
       list.stopPicking();
       setConfirmRemove(null);
       if (kind === "unarchive") {
-        toast.success(
-          ids.length === 1
-            ? "Note unarchived"
-            : `${plural(ids.length, "note")} unarchived`,
-          {
-            undo: () => undo(() => bulkArchiveNotes(ids)),
-          },
-        );
+        toast.success(t("archiveUnarchived", { count: ids.length }), {
+          undo: () => undo(() => bulkArchiveNotes(ids)),
+        });
         return;
       }
       const ownedIds = context?.ownedIds ?? [];
       toast.success(
-        deletedNotesText(ownedIds.length, ids.length - ownedIds.length),
+        deletedNotesText(ownedIds.length, ids.length - ownedIds.length, t),
         ownedIds.length
           ? { undo: () => undo(() => eachLimited(ownedIds, restoreNote)) }
           : undefined,
@@ -102,7 +98,12 @@ export default function ArchivePage() {
     },
     onError: (_, variables) =>
       toast.error(
-        `Couldn’t ${variables.kind === "unarchive" ? "unarchive" : "delete"} ${variables.ids.length === 1 ? "note" : "notes"}`,
+        t(
+          variables.kind === "unarchive"
+            ? "notesUnarchiveFailed"
+            : "notesDeleteFailed",
+          { count: variables.ids.length },
+        ),
         { retry: () => noteAction.mutate(variables) },
       ),
   });
@@ -110,17 +111,17 @@ export default function ArchivePage() {
   const mutateNotes = noteAction.mutate;
   const renderActions = React.useCallback(
     (note: Note) => (
-      <Tip label="Unarchive">
+      <Tip label={t("notesUnarchive")}>
         <IconButton
           size="sm"
-          label="Unarchive"
+          label={t("notesUnarchive")}
           onClick={() => mutateNotes({ kind: "unarchive", ids: [note.id] })}
         >
           <ArchiveRestore />
         </IconButton>
       </Tip>
     ),
-    [mutateNotes],
+    [mutateNotes, t],
   );
 
   const deleteChosen = () => {
@@ -143,29 +144,29 @@ export default function ArchivePage() {
           <PageTitle
             count={isLoading || loadFailed ? undefined : list.visible.length}
           >
-            Archive
+            {t("archiveTitle")}
           </PageTitle>
         }
         actions={
           hasNotes && (
-            <NoteListActions list={list} placeholder="Search archive" />
+            <NoteListActions list={list} placeholder={t("archiveSearch")} />
           )
         }
       >
         <p className="m-0 -mt-2 mb-1 text-muted-foreground text-ui">
-          Archived notes are hidden from your notes list.
+          {t("archiveSubtitle")}
         </p>
         <NotesBoardSkeleton loading={isLoading} />
         {loadFailed && (
           <LoadFailedState
-            title="Couldn’t load your archive"
+            title={t("archiveLoadFailed")}
             onRetry={() => refetch()}
             isRetrying={isFetching}
           />
         )}
         {!isLoading && !loadFailed && !hasNotes && (
-          <EmptyState illustration="archive" title="No archived notes">
-            Archive notes you want to keep but don’t need to see every day.
+          <EmptyState illustration="archive" title={t("archiveEmptyTitle")}>
+            {t("archiveEmptyHelp")}
           </EmptyState>
         )}
         {hasNotes && !list.visible.length && <NoSearchResults list={list} />}
@@ -192,7 +193,7 @@ export default function ArchivePage() {
         actions={[
           {
             key: "unarchive",
-            label: "Unarchive",
+            label: t("notesUnarchive"),
             icon: <ArchiveRestore aria-hidden />,
             onClick: () =>
               noteAction.mutate({
@@ -202,7 +203,7 @@ export default function ArchivePage() {
           },
           {
             key: "delete",
-            label: "Delete",
+            label: t("commonDelete"),
             icon: <Trash2 aria-hidden />,
             onClick: deleteChosen,
           },
@@ -212,13 +213,14 @@ export default function ArchivePage() {
       <ConfirmationDialog
         open={!!confirmRemove}
         onOpenChange={(open) => !open && setConfirmRemove(null)}
-        title={`Delete ${plural(removeCount, "note")}?`}
+        title={t("notesDeleteTitle", { count: removeCount })}
         description={deleteNotesWarning(
           removeCount - removeSharedCount,
           removeSharedCount,
+          t,
         )}
-        confirmLabel="Delete"
-        busyLabel="Deleting…"
+        confirmLabel={t("commonDelete")}
+        busyLabel={t("notesDeleting")}
         isPending={noteAction.isPending}
         onConfirm={() =>
           confirmRemove &&

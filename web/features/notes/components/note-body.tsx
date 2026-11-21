@@ -1,4 +1,5 @@
 import { CircleCheck } from "lucide-react";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import {
@@ -48,6 +49,7 @@ export function NoteBody({
   className,
   ref,
 }: NoteBodyProps) {
+  const t = useTranslations();
   const card = variant === "card";
   const shown = blocks.filter(
     (b) => (b.type === "code" && !card) || b.runs.some((r) => r.text.trim()),
@@ -93,12 +95,21 @@ export function NoteBody({
                     </span>
                   )}
                   <span className="tx">
-                    {block.type === "check" && (
-                      <span className="sr-only">
-                        {block.done ? "Checked: " : "Not checked: "}
-                      </span>
+                    {block.type === "check" ? (
+                      t.rich(
+                        block.done ? "notesItemChecked" : "notesItemUnchecked",
+                        {
+                          hidden: (chunks) => (
+                            <span className="sr-only">{chunks}</span>
+                          ),
+                          item: () => (
+                            <TextRuns runs={block.runs} card={card} />
+                          ),
+                        },
+                      )
+                    ) : (
+                      <TextRuns runs={block.runs} card={card} />
                     )}
-                    <TextRuns runs={block.runs} card={card} />
                   </span>
                 </li>
               ))}
@@ -112,13 +123,14 @@ export function NoteBody({
 }
 
 function Block({ row, card }: { row: Row; card: boolean }) {
+  const t = useTranslations();
   if (row.type === "done")
     return (
       <div className="sum">
         <CircleCheck aria-hidden />
         {row.isAll && row.count > 1
-          ? `All ${row.count} done`
-          : `${row.count} done`}
+          ? t("notesDoneAll", { count: row.count })
+          : t("notesDoneCount", { count: row.count })}
       </div>
     );
   const block = row as NoteBlock;

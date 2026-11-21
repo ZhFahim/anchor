@@ -113,7 +113,7 @@
               "other": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "%lld files couldn’t be added."
+                  "value": "%1$lld files couldn’t be added."
                 }
               }
             }
@@ -137,7 +137,7 @@
               "other": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "%lld files can’t be added. Anchor adds pictures and audio."
+                  "value": "%1$lld files can’t be added. Anchor adds pictures and audio."
                 }
               }
             }
@@ -161,7 +161,7 @@
               "other": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "%lld files are over 50 MB, so they can’t be added."
+                  "value": "%1$lld files are over 50 MB, so they can’t be added."
                 }
               }
             }
@@ -188,7 +188,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Remove %@"
+            "value": "Remove %1$@"
           }
         }
       }
@@ -200,7 +200,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tag %@"
+            "value": "Tag %1$@"
           }
         }
       }

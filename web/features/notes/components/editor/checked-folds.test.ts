@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { englishT } from "@/i18n/translate";
 import {
   checkedFoldStyles,
   checkedItemsLabel,
@@ -51,7 +52,7 @@ describe("checkedFoldStyles", () => {
   });
 
   it("names the count", () => {
-    expect(checkedItemsLabel(1)).toBe("1 checked item");
-    expect(checkedItemsLabel(4)).toBe("4 checked items");
+    expect(checkedItemsLabel(englishT, 1)).toBe("1 checked item");
+    expect(checkedItemsLabel(englishT, 4)).toBe("4 checked items");
   });
 });

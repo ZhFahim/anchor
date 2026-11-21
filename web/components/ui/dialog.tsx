@@ -2,6 +2,7 @@
 
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { IconButton } from "@/components/ui/button";
 import { toastHostRef } from "@/components/ui/toast";
@@ -139,6 +140,7 @@ function DialogContent({
   onCloseAutoFocus,
   ...props
 }: DialogContentProps) {
+  const t = useTranslations();
   const returnFocusRef = React.useContext(ReturnFocusContext);
   const contentRef = React.useCallback(
     (el: HTMLDivElement | null) => {
@@ -191,7 +193,7 @@ function DialogContent({
             <DialogPrimitive.Close asChild>
               <IconButton
                 size="sm"
-                label="Close"
+                label={t("commonClose")}
                 className="absolute top-[calc(var(--dialog-top)+(var(--text-heading)*var(--text-heading--line-height)-28px)/2)] right-3.5"
               >
                 <X />

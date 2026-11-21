@@ -10,22 +10,24 @@ import {
   Trash2,
   UserRound,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { glidePill, prefersReducedMotion } from "@/lib/motion";
 import { onUserScroll } from "@/lib/user-scroll";
 
 const SECTIONS = [
-  { id: "profile", label: "Profile", icon: UserRound },
-  { id: "appearance", label: "Appearance", icon: SunMoon },
-  { id: "editor", label: "Editor", icon: PencilLine },
-  { id: "token", label: "API token", icon: KeyRound },
-  { id: "data", label: "Import and export", icon: HardDriveDownload },
-  { id: "password", label: "Password", icon: Lock },
-  { id: "delete-account", label: "Delete account", icon: Trash2 },
-  { id: "about", label: "About", icon: Info },
+  { id: "profile", labelKey: "settingsProfile", icon: UserRound },
+  { id: "appearance", labelKey: "settingsAppearance", icon: SunMoon },
+  { id: "editor", labelKey: "settingsEditor", icon: PencilLine },
+  { id: "token", labelKey: "settingsApiToken", icon: KeyRound },
+  { id: "data", labelKey: "settingsImportExport", icon: HardDriveDownload },
+  { id: "password", labelKey: "settingsPassword", icon: Lock },
+  { id: "delete-account", labelKey: "settingsDeleteAccount", icon: Trash2 },
+  { id: "about", labelKey: "settingsAbout", icon: Info },
 ] as const;
 
 export function SettingsNav() {
+  const t = useTranslations();
   const [activeSection, setActiveSection] = React.useState<string>(
     SECTIONS[0].id,
   );
@@ -85,7 +87,7 @@ export function SettingsNav() {
   return (
     <nav
       data-settings-nav
-      aria-label="Settings sections"
+      aria-label={t("settingsSections")}
       className="sticky top-20 isolate grid gap-px max-md:static max-md:-mx-gutter-phone max-md:flex max-md:gap-1.5 max-md:overflow-x-auto max-md:px-gutter-phone max-md:scrollbar-none"
     >
       {SECTIONS.map((section) => (
@@ -106,7 +108,7 @@ export function SettingsNav() {
           className="relative flex h-8.5 items-center gap-2.5 rounded-md px-2.5 font-medium text-muted-foreground text-ui no-underline hover:bg-foreground/6 hover:text-foreground aria-[current=location]:bg-foreground/6 aria-[current=location]:font-semibold aria-[current=location]:text-foreground max-md:h-8 max-md:flex-none max-md:rounded-pill max-md:bg-muted max-md:px-3 [&>svg]:size-4 aria-[current=location]:[&>svg]:text-accent-strong max-md:[&>svg]:hidden"
         >
           <section.icon aria-hidden />
-          {section.label}
+          {t(section.labelKey)}
         </a>
       ))}
     </nav>

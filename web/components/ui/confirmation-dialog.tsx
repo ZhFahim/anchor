@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,11 +35,12 @@ export function ConfirmationDialog({
   description,
   confirmLabel,
   busyLabel,
-  cancelLabel = "Cancel",
+  cancelLabel,
   variant = "destructive",
   isPending = false,
   fallbackFocus,
 }: ConfirmationDialogProps) {
+  const t = useTranslations();
   const shownTitle = useLastShown(title, open);
   const shownDescription = useLastShown(description, open);
   const shownConfirmLabel = useLastShown(confirmLabel, open);
@@ -65,12 +67,15 @@ export function ConfirmationDialog({
             onClick={() => onOpenChange(false)}
             disabled={isPending}
           >
-            {cancelLabel}
+            {cancelLabel ?? t("commonCancel")}
           </Button>
           <Button
             variant={variant}
             onClick={onConfirm}
-            busy={isPending && (busyLabel ?? `${shownConfirmLabel}…`)}
+            busy={
+              isPending &&
+              (busyLabel ?? t("uiBusy", { action: shownConfirmLabel }))
+            }
           >
             {shownConfirmLabel}
           </Button>

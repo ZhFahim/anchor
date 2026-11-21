@@ -60,6 +60,7 @@ class ShareSheetApp extends StatelessWidget {
       themeAnimationStyle: AnimationStyle.noAnimation,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
+      localeListResolutionCallback: appLocaleFor,
       builder: (context, child) {
         // The status bar sits over the app that shared.
         final behind = systemBarsStyle(

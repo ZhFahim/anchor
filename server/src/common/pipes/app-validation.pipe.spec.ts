@@ -66,4 +66,21 @@ describe('AppValidationPipe', () => {
       ),
     ).resolves.toEqual({ name: 'a', note: 'b' });
   });
+
+  it('adds a code and each field with the rules it broke', async () => {
+    try {
+      await pipe.transform({ name: 42 }, bodyOf(TolerantDto));
+    } catch (error) {
+      const response = (error as BadRequestException).getResponse();
+      expect(response).toMatchObject({
+        statusCode: 400,
+        error: 'Bad Request',
+        message: ['name must be a string'],
+        code: 'VALIDATION_FAILED',
+        fields: [{ field: 'name', rules: ['isString'] }],
+      });
+      return;
+    }
+    throw new Error('expected the pipe to reject');
+  });
 });

@@ -9,6 +9,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { toastHostRef } from "@/components/ui/toast";
 import { useAttachmentBlob } from "../../hooks/use-attachment-blob";
@@ -32,6 +33,7 @@ export function Viewer({
   /** True when it put focus back in the strip. */
   onReturnFocus: (pictureId: string) => boolean;
 }) {
+  const t = useTranslations();
   // The last picture stays while the viewer fades out.
   const [last, setLast] = React.useState(id);
   if (id && id !== last) setLast(id);
@@ -82,30 +84,36 @@ export function Viewer({
                   {picture.originalFilename}
                 </DialogPrimitive.Title>
                 <div className="vw-count">
-                  {index + 1} of {pictures.length}
+                  {t("attachmentViewerCount", {
+                    index: index + 1,
+                    count: pictures.length,
+                  })}
                 </div>
               </div>
               <div className="vw-actions">
                 <button
                   type="button"
-                  aria-label="Download"
+                  aria-label={t("attachmentDownload")}
                   onClick={download}
                   disabled={!blobUrl}
                 >
                   <Download aria-hidden />
-                  <span className="vw-lbl">Download</span>
+                  <span className="vw-lbl">{t("attachmentDownload")}</span>
                 </button>
                 {canDelete(picture) && (
                   <button
                     type="button"
-                    aria-label="Delete"
+                    aria-label={t("commonDelete")}
                     onClick={() => onDelete(picture)}
                   >
                     <Trash2 aria-hidden />
-                    <span className="vw-lbl">Delete</span>
+                    <span className="vw-lbl">{t("commonDelete")}</span>
                   </button>
                 )}
-                <DialogPrimitive.Close className="vw-x" aria-label="Close">
+                <DialogPrimitive.Close
+                  className="vw-x"
+                  aria-label={t("commonClose")}
+                >
                   <X aria-hidden />
                 </DialogPrimitive.Close>
               </div>
@@ -131,7 +139,7 @@ export function Viewer({
               <button
                 type="button"
                 className="vw-nav"
-                aria-label="Previous picture"
+                aria-label={t("attachmentPrevious")}
                 disabled={pictures.length < 2}
                 onClick={() => go(-1)}
               >
@@ -141,9 +149,9 @@ export function Viewer({
                 {error ? (
                   <div className="vw-fail">
                     <CircleAlert aria-hidden />
-                    Couldn’t load the picture
+                    {t("attachmentPictureLoadFailed")}
                     <button type="button" onClick={retry}>
-                      Try again
+                      {t("commonRetry")}
                     </button>
                   </div>
                 ) : blobUrl ? (
@@ -159,7 +167,7 @@ export function Viewer({
               <button
                 type="button"
                 className="vw-nav"
-                aria-label="Next picture"
+                aria-label={t("attachmentNext")}
                 disabled={pictures.length < 2}
                 onClick={() => go(1)}
               >
@@ -167,8 +175,8 @@ export function Viewer({
               </button>
             </div>
             <div className="vw-hint">
-              <span className="dk">← → to move · Esc to close</span>
-              <span className="ph">Swipe to move</span>
+              <span className="dk">{t("attachmentViewerKeys")}</span>
+              <span className="ph">{t("attachmentViewerSwipe")}</span>
             </div>
           </DialogPrimitive.Content>
         )}

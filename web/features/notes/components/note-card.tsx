@@ -2,6 +2,7 @@
 
 import { Check, ImageOff, Paperclip, Users } from "lucide-react";
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import * as React from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -9,6 +10,7 @@ import { Tip } from "@/components/ui/tooltip";
 import { MoreChip, TagChip } from "@/features/tags/components/tag-chip";
 import type { TagLabel } from "@/features/tags/types";
 import { sortTagsByName } from "@/features/tags/utils";
+import type { Translate } from "@/i18n/translate";
 import { useHighlightPaint } from "@/lib/highlight-paint";
 import { useNearScreen } from "@/lib/hooks/use-near-screen";
 import { rememberCard } from "@/lib/morph";
@@ -36,26 +38,43 @@ interface NoteCardProps {
 
 const ROW_LIMIT: Record<CardLayout, number> = { list: 2, grid: 4, masonry: 6 };
 
-const dayFormat = new Intl.DateTimeFormat(undefined, {
-  month: "short",
-  day: "numeric",
-});
-const dayAndYearFormat = new Intl.DateTimeFormat(undefined, {
-  month: "short",
-  day: "numeric",
-  year: "numeric",
-});
+const dateFormatsByLocale = new Map<
+  string,
+  { day: Intl.DateTimeFormat; dayAndYear: Intl.DateTimeFormat }
+>();
+
+function dateFormatsOf(locale: string) {
+  let formats = dateFormatsByLocale.get(locale);
+  if (!formats) {
+    formats = {
+      day: new Intl.DateTimeFormat(locale, { month: "short", day: "numeric" }),
+      dayAndYear: new Intl.DateTimeFormat(locale, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }),
+    };
+    dateFormatsByLocale.set(locale, formats);
+  }
+  return formats;
+}
 
 /** “Today”, “Yesterday”, “Sep 22”, or “Sep 22, 2025” in another year. */
-export function formatCardDate(iso: string, now = new Date()): string {
+export function formatCardDate(
+  iso: string,
+  t: Translate,
+  locale: string,
+  now = new Date(),
+): string {
   const date = new Date(iso);
   const startOfDay = (d: Date) =>
     new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
   const daysAgo = Math.round((startOfDay(now) - startOfDay(date)) / 86400000);
-  if (daysAgo === 0) return "Today";
-  if (daysAgo === 1) return "Yesterday";
+  if (daysAgo === 0) return t("notesDateToday");
+  if (daysAgo === 1) return t("notesDateYesterday");
+  const formats = dateFormatsOf(locale);
   return (
-    date.getFullYear() === now.getFullYear() ? dayFormat : dayAndYearFormat
+    date.getFullYear() === now.getFullYear() ? formats.day : formats.dayAndYear
   ).format(date);
 }
 
@@ -81,6 +100,8 @@ export const NoteCard = React.memo(function NoteCard({
   renderActions,
   dateLabel,
 }: NoteCardProps) {
+  const t = useTranslations();
+  const locale = useLocale();
   const blocks = cardBlocks(note);
   const hasHighlights = blocks.some((block) =>
     block.runs.some((run) => run.highlight),
@@ -94,7 +115,7 @@ export const NoteCard = React.memo(function NoteCard({
     hasHighlights,
   );
   const title = hasTitle(note.title) ? note.title : "";
-  const label = title || "Untitled";
+  const label = title || t("commonUntitled");
   const isList = layout === "list";
   const pictureIds = note.imagePreviewIds ?? [];
   const attachmentCount = note.attachmentCount ?? 0;
@@ -115,14 +136,18 @@ export const NoteCard = React.memo(function NoteCard({
 
   const shareCount =
     note.permission === "owner" ? (note.shareIds?.length ?? 0) : 0;
-  const sharedWithLabel = `Shared with ${shareCount} ${shareCount === 1 ? "person" : "people"}`;
+  const sharedWithLabel = t("shareSharedWithCount", { count: shareCount });
   const footer = (
     <div className="nc-foot">
       {note.reminder && (
         <ReminderChip noteId={note.id} reminder={note.reminder} size="sm" />
       )}
       {note.sharedBy && (
-        <Tip label={`Shared by ${note.sharedBy.name.split(" ")[0]}`}>
+        <Tip
+          label={t("shareSharedBy", {
+            name: note.sharedBy.name.split(" ")[0],
+          })}
+        >
           <span className="relative z-5">
             <Avatar
               id={note.sharedBy.id}
@@ -140,7 +165,7 @@ export const NoteCard = React.memo(function NoteCard({
             <button
               type="button"
               className="nc-count relative z-5 -mx-1 min-h-6 min-w-6 cursor-pointer justify-center rounded-xs bg-transparent px-1 py-0 text-inherit hover:text-foreground"
-              aria-label={`${sharedWithLabel}. Open Share`}
+              aria-label={t("shareSharedWithOpen", { count: shareCount })}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -160,14 +185,14 @@ export const NoteCard = React.memo(function NoteCard({
       {attachmentCount > 0 && !pictureIds.length && (
         <span
           className="nc-count"
-          title={`${attachmentCount} ${attachmentCount === 1 ? "attachment" : "attachments"}`}
+          title={t("notesAttachmentCount", { count: attachmentCount })}
         >
           <Paperclip aria-hidden />
           {attachmentCount}
         </span>
       )}
       <span className={cn("nc-date", dateLabel && "nc-status")}>
-        {dateLabel ?? formatCardDate(note.updatedAt)}
+        {dateLabel ?? formatCardDate(note.updatedAt, t, locale)}
       </span>
     </div>
   );
@@ -211,7 +236,7 @@ export const NoteCard = React.memo(function NoteCard({
         <button
           type="button"
           className="nc-pick"
-          aria-label={`Select ${label}`}
+          aria-label={t("notesSelectNote", { title: label })}
           aria-pressed={!!picked}
           onClick={(e) => {
             e.stopPropagation();
@@ -231,7 +256,9 @@ export const NoteCard = React.memo(function NoteCard({
                 isWanted={loadPictures}
               />
               {i === shownPictures.length - 1 && hiddenCount > 0 && (
-                <span className="more">+{hiddenCount}</span>
+                <span className="more">
+                  {t("notesMoreAttachments", { count: hiddenCount })}
+                </span>
               )}
             </div>
           ))}
@@ -265,7 +292,9 @@ export const NoteCard = React.memo(function NoteCard({
             isWanted={loadPictures}
           />
           {attachmentCount > 1 && (
-            <span className="more">+{attachmentCount - 1}</span>
+            <span className="more">
+              {t("notesMoreAttachments", { count: attachmentCount - 1 })}
+            </span>
           )}
         </div>
       )}
@@ -283,6 +312,7 @@ function CardPicture({
   attachmentId: string;
   isWanted: boolean;
 }) {
+  const t = useTranslations();
   const { blobUrl, isLoading, error } = useAttachmentBlob(
     noteId,
     attachmentId,
@@ -295,7 +325,7 @@ function CardPicture({
     return (
       <span
         className="grid size-full place-items-center text-note-muted"
-        title="Couldn’t load this picture"
+        title={t("notesPictureLoadFailed")}
       >
         <ImageOff aria-hidden className="size-4.5" />
       </span>

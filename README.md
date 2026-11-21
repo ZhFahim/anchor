@@ -270,6 +270,10 @@ Future planned features:
 
 Contributions are welcome. Please read the [contributing guide](.github/CONTRIBUTING.md) before you open an issue or a pull request. New features and large changes need an agreed issue first.
 
+### Translations
+
+Anchor can be translated into your language. [TRANSLATIONS.md](TRANSLATIONS.md) shows which languages exist and how complete they are, and the [contributing guide](.github/CONTRIBUTING.md#translations) explains how to add one.
+
 ## Community
 
 Questions? Join us on [Discord](https://discord.gg/sAfqjy8EYK). Found a bug or have an idea? [Open an issue](https://github.com/zhfahim/anchor/issues/new/choose).

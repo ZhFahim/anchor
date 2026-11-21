@@ -1,5 +1,8 @@
 import { strToU8, zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
+import { englishT } from "@/i18n/translate";
+import { importFileErrorText, importIssueText } from "../import-text";
+import type { ParsedImport } from "../types";
 import { anchorAdapter } from "./anchor";
 import { anchorManifestFixture } from "./fixtures/anchor-manifest";
 import {
@@ -24,6 +27,7 @@ import {
 import { googleKeepAdapter } from "./google-keep";
 import { detectFormat } from "./index";
 import { markdownAdapter } from "./markdown";
+import { ImportFileError } from "./types";
 import { readFiles, readZip, type ZipArchive } from "./zip";
 
 function anchorZipBytes(): Uint8Array {
@@ -57,6 +61,21 @@ function buildKeepZip(prefix = "Takeout/Keep/"): ZipArchive {
 
 const picked = (files: File[]) =>
   files.map((file) => ({ path: file.name, file }));
+
+const skippedInEnglish = (parsed: ParsedImport) =>
+  parsed.skipped.map((issue) => ({
+    item: issue.item,
+    reason: importIssueText(issue, englishT),
+  }));
+
+async function refusalOf(parsing: Promise<unknown>): Promise<string> {
+  const error = await parsing.then(
+    () => undefined,
+    (refusal: unknown) => refusal,
+  );
+  expect(error).toBeInstanceOf(ImportFileError);
+  return importFileErrorText(error as ImportFileError, englishT);
+}
 
 function markdownZip(entries: Record<string, string | Uint8Array>): ZipArchive {
   return readZip(
@@ -232,7 +251,7 @@ describe("anchorAdapter.parse", () => {
         ),
       }),
     );
-    await expect(anchorAdapter.parse(zip)).rejects.toThrow(/newer version/);
+    expect(await refusalOf(anchorAdapter.parse(zip))).toMatch(/newer version/);
   });
 
   it("rejects manifests with a missing version field", async () => {
@@ -240,7 +259,7 @@ describe("anchorAdapter.parse", () => {
     const zip = readZip(
       zipSync({ "manifest.json": strToU8(JSON.stringify(versionless)) }),
     );
-    await expect(anchorAdapter.parse(zip)).rejects.toThrow(/newer version/);
+    expect(await refusalOf(anchorAdapter.parse(zip))).toMatch(/newer version/);
   });
 });
 
@@ -255,7 +274,7 @@ describe("googleKeepAdapter.parse", () => {
       "Receipt",
       "Shopping thoughts",
     ]);
-    expect(parsed.skipped).toContainEqual({
+    expect(skippedInEnglish(parsed)).toContainEqual({
       item: "Old junk",
       reason: "Trashed in Google Keep",
     });
@@ -300,7 +319,7 @@ describe("googleKeepAdapter.parse", () => {
     expect(image.filename).toBe("receipt.jpg");
     expect(image.supported).toBe(true);
     expect(audio.supported).toBe(false);
-    expect(parsed.skipped).toContainEqual({
+    expect(skippedInEnglish(parsed)).toContainEqual({
       item: "voice-memo.3gp",
       reason: "Unsupported file type (audio/3gpp)",
     });
@@ -442,11 +461,11 @@ describe("markdownAdapter.parse", () => {
     );
 
     expect(parsed.notes.map((note) => note.title)).toEqual(["Real"]);
-    expect(parsed.skipped).toContainEqual({
+    expect(skippedInEnglish(parsed)).toContainEqual({
       item: "Blank",
       reason: "Empty file",
     });
-    expect(parsed.skipped).toContainEqual({
+    expect(skippedInEnglish(parsed)).toContainEqual({
       item: "gone.png",
       reason: "Attachment file not found",
     });

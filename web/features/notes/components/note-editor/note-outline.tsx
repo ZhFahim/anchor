@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { createPortal } from "react-dom";
 import { DURATION, EASE } from "@/lib/design/tokens";
@@ -22,6 +23,7 @@ export function NoteOutline({
 }: {
   root: React.RefObject<HTMLElement | null>;
 }) {
+  const t = useTranslations();
   const [noteElement, setNoteElement] = React.useState<HTMLElement | null>(
     null,
   );
@@ -190,7 +192,7 @@ export function NoteOutline({
     <nav
       ref={nav}
       className={cn("outline", open && "open")}
-      aria-label="Outline"
+      aria-label={t("editorOutline")}
       onKeyDown={(e) => {
         if (e.key === "Escape" && open) {
           e.stopPropagation();
@@ -209,7 +211,7 @@ export function NoteOutline({
         className="ol-peek"
         aria-expanded={open}
         aria-controls={listId}
-        aria-label={`Outline, ${headings.length} headings`}
+        aria-label={t("editorOutlineButton", { count: headings.length })}
         onClick={() => setOpen((o) => !o)}
       >
         {dashes.map((dash, i) => (

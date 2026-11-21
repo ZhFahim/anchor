@@ -2,6 +2,8 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { DoorOpen, Lock, UserCheck } from "lucide-react";
+import { useTranslations } from "next-intl";
+import type { ReactNode } from "react";
 import { LoadFailedRow } from "@/components/ui/empty-state";
 import { RadioCards } from "@/components/ui/radio-cards";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,7 +20,10 @@ import type { RegistrationMode } from "../types";
 import { LockNote } from "./admin-parts";
 import { SingleSignOn } from "./single-sign-on";
 
+const code = (chunks: ReactNode) => <code>{chunks}</code>;
+
 export function SignInTab({ hidden }: { hidden?: boolean }) {
+  const t = useTranslations();
   const queryClient = useQueryClient();
   const registration = useQuery({
     queryKey: adminKeys.registration,
@@ -45,7 +50,7 @@ export function SignInTab({ hidden }: { hidden?: boolean }) {
     },
     onError: (_, mode, context) => {
       queryClient.setQueryData(adminKeys.registration, context?.before);
-      toast.error("Couldn’t change who can sign up", {
+      toast.error(t("adminSignupChangeFailed"), {
         retry: () => saveMode.mutate(mode),
       });
     },
@@ -56,20 +61,19 @@ export function SignInTab({ hidden }: { hidden?: boolean }) {
     <div hidden={hidden} className="grid max-w-180 gap-6.5">
       <section className="grid gap-2.5">
         <SectionHeader
-          title="Who can sign up"
-          description="Choose who can create an account."
+          title={t("adminWhoCanSignUp")}
+          description={t("adminWhoCanSignUpHelp")}
           saved={<SaveStatus state={registrationSaveState} />}
         />
         {locked && (
           <LockNote>
-            Set by <code>USER_SIGNUP</code> on the server. Remove it there to
-            change it here.
+            {t.rich("adminSignupLocked", { variable: "USER_SIGNUP", code })}
           </LockNote>
         )}
         {(registration.isError && !registration.data) ||
         registrationRetry.isRetrying ? (
           <LoadFailedRow
-            message="Couldn’t load who can sign up."
+            message={t("adminSignupLoadFailed")}
             onRetry={registrationRetry.retry}
             isRetrying={registrationRetry.isRetrying}
           />
@@ -77,30 +81,30 @@ export function SignInTab({ hidden }: { hidden?: boolean }) {
           <Skeleton className="h-22 w-full rounded-xl" />
         ) : (
           <RadioCards
-            aria-label="Who can sign up"
+            aria-label={t("adminWhoCanSignUp")}
             value={registration.data?.mode ?? "enabled"}
             onValueChange={(mode) => saveMode.mutate(mode)}
             className="grid-cols-3 max-md:grid-cols-1"
             options={[
               {
                 value: "enabled",
-                label: "Open",
+                label: t("adminSignupOpen"),
                 icon: <DoorOpen />,
-                description: "Anyone can create an account.",
+                description: t("adminSignupOpenHelp"),
                 disabled: locked,
               },
               {
                 value: "review",
-                label: "Needs approval",
+                label: t("adminSignupReview"),
                 icon: <UserCheck />,
-                description: "New accounts need an admin’s approval.",
+                description: t("adminSignupReviewHelp"),
                 disabled: locked,
               },
               {
                 value: "disabled",
-                label: "Closed",
+                label: t("adminSignupClosed"),
                 icon: <Lock />,
-                description: "Only admins can add people.",
+                description: t("adminSignupClosedHelp"),
                 disabled: locked,
               },
             ]}

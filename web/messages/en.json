@@ -1,0 +1,4341 @@
+{
+  "@@locale": "en",
+  "authWelcomeBack": "Welcome back",
+  "@authWelcomeBack": {
+    "description": "Title of the sign-in page."
+  },
+  "authSignInSubtitle": "Sign in to continue to {app}.",
+  "@authSignInSubtitle": {
+    "description": "Under the sign-in page title.",
+    "placeholders": {
+      "app": {
+        "type": "String",
+        "example": "Anchor"
+      }
+    }
+  },
+  "authContinueWith": "Continue with {provider}",
+  "@authContinueWith": {
+    "description": "Button on the sign-in and sign-up pages that signs in through the server's sign-in provider. {provider} is the provider's name as the server's admin set it.",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "Pocket ID"
+      }
+    }
+  },
+  "authOr": "or",
+  "@authOr": {
+    "description": "Short: between the sign-in provider button and the email and password fields."
+  },
+  "authOptionsLoadFailed": "Couldn’t load the sign-in options. You can still sign in with your email.",
+  "@authOptionsLoadFailed": {
+    "description": "Message at the top of the sign-in page when the server's sign-in settings couldn't be loaded. A Try again button follows it."
+  },
+  "authEmailLabel": "Email",
+  "@authEmailLabel": {
+    "description": "Label of the email field on the sign-in and sign-up pages. Noun."
+  },
+  "authEmailPlaceholder": "you@example.com",
+  "@authEmailPlaceholder": {
+    "description": "Example text in the empty email field on the sign-up page. Keep the example.com domain."
+  },
+  "authPasswordLabel": "Password",
+  "@authPasswordLabel": {
+    "description": "Label of the password field on the sign-in and sign-up pages. Noun."
+  },
+  "authNameLabel": "Name",
+  "@authNameLabel": {
+    "description": "Label of the name field on the sign-up page. Noun."
+  },
+  "authNamePlaceholder": "Your name",
+  "@authNamePlaceholder": {
+    "description": "Example text in the empty name field on the sign-up page."
+  },
+  "authSignIn": "Sign in",
+  "@authSignIn": {
+    "description": "Button that submits the sign-in form. Verb."
+  },
+  "authSigningIn": "Signing in…",
+  "@authSigningIn": {
+    "description": "Text on the Sign in button while signing in."
+  },
+  "authSigningYouIn": "Signing you in…",
+  "@authSigningYouIn": {
+    "description": "Shown on the sign-in page while a sign-in through the sign-in provider finishes."
+  },
+  "authNewToAnchor": "New to {app}? <link>Create an account</link>",
+  "@authNewToAnchor": {
+    "description": "Line under the sign-in form. The words between <link> and </link> are a link to the sign-up page.",
+    "placeholders": {
+      "app": {
+        "type": "String",
+        "example": "Anchor"
+      }
+    }
+  },
+  "authHaveAccount": "Already have an account? <link>Sign in</link>",
+  "@authHaveAccount": {
+    "description": "Line under the sign-up form. The words between <link> and </link> are a link to the sign-in page."
+  },
+  "authBackToSignIn": "Back to sign in",
+  "@authBackToSignIn": {
+    "description": "Button that returns to the sign-in page."
+  },
+  "authCallbackFailedTitle": "Sign-in didn’t finish",
+  "@authCallbackFailedTitle": {
+    "description": "Title of the page shown when a sign-in through the sign-in provider failed."
+  },
+  "authProviderSentBack": "{hasName, select, yes {{provider} sent you back without signing you in. Try again.} other {Your provider sent you back without signing you in. Try again.}}",
+  "@authProviderSentBack": {
+    "description": "Text on the page shown when the sign-in provider returned an error, on a server where only the provider can sign people in. {hasName} is yes when the provider's name is known, then {provider} is that name.",
+    "placeholders": {
+      "hasName": {
+        "type": "String",
+        "example": "yes"
+      },
+      "provider": {
+        "type": "String",
+        "example": "Pocket ID"
+      }
+    }
+  },
+  "authProviderSentBackOrEmail": "{hasName, select, yes {{provider} sent you back without signing you in. Try again, or sign in with your email.} other {Your provider sent you back without signing you in. Try again, or sign in with your email.}}",
+  "@authProviderSentBackOrEmail": {
+    "description": "Text on the page shown when the sign-in provider returned an error, on a server that also allows signing in with email and password. {hasName} is yes when the provider's name is known, then {provider} is that name.",
+    "placeholders": {
+      "hasName": {
+        "type": "String",
+        "example": "yes"
+      },
+      "provider": {
+        "type": "String",
+        "example": "Pocket ID"
+      }
+    }
+  },
+  "authProviderSaid": "{hasName, select, yes {{provider} said: <code>{message}</code>} other {Your provider said: <code>{message}</code>}}",
+  "@authProviderSaid": {
+    "description": "Small line under the text when the sign-in provider returned an error. {message} is the provider's own error text, often in English, shown as code. {hasName} is yes when the provider's name is known, then {provider} is that name.",
+    "placeholders": {
+      "hasName": {
+        "type": "String",
+        "example": "yes"
+      },
+      "provider": {
+        "type": "String",
+        "example": "Pocket ID"
+      },
+      "message": {
+        "type": "String",
+        "example": "access_denied"
+      }
+    }
+  },
+  "authTryAgainWith": "{hasName, select, yes {Try again with {provider}} other {Try again with your provider}}",
+  "@authTryAgainWith": {
+    "description": "Button that starts a sign-in through the sign-in provider again after it failed. {hasName} is yes when the provider's name is known, then {provider} is that name.",
+    "placeholders": {
+      "hasName": {
+        "type": "String",
+        "example": "yes"
+      },
+      "provider": {
+        "type": "String",
+        "example": "Pocket ID"
+      }
+    }
+  },
+  "authSignInWithProviderInstead": "{hasName, select, yes {Sign in with {provider} instead.} other {Sign in with your provider instead.}}",
+  "@authSignInWithProviderInstead": {
+    "description": "Error on the sign-in page when the server has turned off signing in with email and password. {hasName} is yes when the provider's name is known, then {provider} is that name.",
+    "placeholders": {
+      "hasName": {
+        "type": "String",
+        "example": "yes"
+      },
+      "provider": {
+        "type": "String",
+        "example": "Pocket ID"
+      }
+    }
+  },
+  "authAccountUsesProvider": "{hasName, select, yes {This account signs in with {provider}. Use the button above.} other {This account signs in with your provider. Use the button above.}}",
+  "@authAccountUsesProvider": {
+    "description": "Error on the sign-in page when the account has no password because it was made through the sign-in provider. The button above is the provider's sign-in button. {hasName} is yes when the provider's name is known, then {provider} is that name.",
+    "placeholders": {
+      "hasName": {
+        "type": "String",
+        "example": "yes"
+      },
+      "provider": {
+        "type": "String",
+        "example": "Pocket ID"
+      }
+    }
+  },
+  "authSignUpWithProviderInstead": "{hasName, select, yes {Sign up with {provider} instead.} other {Sign up with your provider instead.}}",
+  "@authSignUpWithProviderInstead": {
+    "description": "Error on the sign-up page when the server has turned off signing up with email and password. {hasName} is yes when the provider's name is known, then {provider} is that name.",
+    "placeholders": {
+      "hasName": {
+        "type": "String",
+        "example": "yes"
+      },
+      "provider": {
+        "type": "String",
+        "example": "Pocket ID"
+      }
+    }
+  },
+  "authIncorrectCredentials": "Incorrect email or password.",
+  "@authIncorrectCredentials": {
+    "description": "Error at the top of the sign-in form when the email or password is wrong."
+  },
+  "authTooManyTries": "Too many tries. Wait a minute, then try again.",
+  "@authTooManyTries": {
+    "description": "Error on the sign-in and sign-up pages when the server refuses more attempts for a while."
+  },
+  "authSignInFailed": "Couldn’t sign in. Try again.",
+  "@authSignInFailed": {
+    "description": "Error at the top of the sign-in form when the sign-in failed for another reason."
+  },
+  "authSignInExpired": "That sign-in has expired. Try again.",
+  "@authSignInExpired": {
+    "description": "Text on the page shown when the server refused a sign-in through the sign-in provider, on a server where only the provider can sign people in."
+  },
+  "authSignInExpiredOrEmail": "That sign-in has expired. Try again, or sign in with your email.",
+  "@authSignInExpiredOrEmail": {
+    "description": "Text on the page shown when the server refused a sign-in through the sign-in provider, on a server that also allows signing in with email and password."
+  },
+  "authWelcomeBackName": "Welcome back, {name}",
+  "@authWelcomeBackName": {
+    "description": "Message shown after signing in. {name} is the person's first name.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Ada"
+      }
+    }
+  },
+  "authWelcomeName": "Welcome to {app}, {name}",
+  "@authWelcomeName": {
+    "description": "Message shown after creating an account. {name} is the person's first name.",
+    "placeholders": {
+      "app": {
+        "type": "String",
+        "example": "Anchor"
+      },
+      "name": {
+        "type": "String",
+        "example": "Ada"
+      }
+    }
+  },
+  "authCreateYourAccount": "Create your account",
+  "@authCreateYourAccount": {
+    "description": "Title of the sign-up page."
+  },
+  "authApprovalNeeded": "An admin approves new accounts before you can sign in.",
+  "@authApprovalNeeded": {
+    "description": "Under the sign-up page title when an admin must approve new accounts."
+  },
+  "authRegisterSubtitle": "Start capturing your thoughts.",
+  "@authRegisterSubtitle": {
+    "description": "Under the sign-up page title, a short welcoming line."
+  },
+  "authCreateAccount": "Create account",
+  "@authCreateAccount": {
+    "description": "Button that submits the sign-up form. Verb phrase."
+  },
+  "authCreatingAccount": "Creating account…",
+  "@authCreatingAccount": {
+    "description": "Text on the Create account button while the account is being made."
+  },
+  "authPasswordHelp": "{count, plural, =1{At least 1 character.} other{At least {count} characters.}}",
+  "@authPasswordHelp": {
+    "description": "Hint under the password field on the sign-up page.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "8"
+      }
+    }
+  },
+  "authEnterName": "Enter your name.",
+  "@authEnterName": {
+    "description": "Error under the name field on the sign-up page when it's left empty."
+  },
+  "authEnterValidEmail": "Enter a valid email address.",
+  "@authEnterValidEmail": {
+    "description": "Error under an email field when the address isn't valid."
+  },
+  "authPasswordTooShort": "{count, plural, =1{Use at least 1 character.} other{Use at least {count} characters.}}",
+  "@authPasswordTooShort": {
+    "description": "Error under a password field when the password is too short.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "8"
+      }
+    }
+  },
+  "authNameTooLong": "{count, plural, =1{Enter a name of up to 1 character.} other{Enter a name of up to {count} characters.}}",
+  "@authNameTooLong": {
+    "description": "Error under a name field when the server refused the name as too long.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "100"
+      }
+    }
+  },
+  "authEmailTakenSignIn": "An account with this email already exists. Sign in instead?",
+  "@authEmailTakenSignIn": {
+    "description": "Error under the email field on the sign-up page when the email is already in use."
+  },
+  "authCreateFailed": "Couldn’t create your account.",
+  "@authCreateFailed": {
+    "description": "Error at the top of the sign-up form when the account couldn't be made for another reason."
+  },
+  "authSignUpsClosedTitle": "Sign-ups are closed",
+  "@authSignUpsClosedTitle": {
+    "description": "Title of the sign-up page when the server takes no new accounts."
+  },
+  "authSignUpsClosedText": "Ask an admin to create an account for you.",
+  "@authSignUpsClosedText": {
+    "description": "Text under the title when the server takes no new accounts."
+  },
+  "authPendingTitle": "You’re on the list",
+  "@authPendingTitle": {
+    "description": "Title of the page shown after signing up or signing in, while an admin hasn't approved the account yet."
+  },
+  "authPendingText": "An admin needs to approve your account. Try signing in again later.",
+  "@authPendingText": {
+    "description": "Text under the title while an admin hasn't approved the account yet."
+  },
+  "authArtTitle": "Your thoughts, secured.",
+  "@authArtTitle": {
+    "description": "Large line beside the sign-in and sign-up forms, under a collage of sample notes. Shown on wide screens only."
+  },
+  "authArtText": "Notes, checklists and reminders on your own server, in sync with your phone.",
+  "@authArtText": {
+    "description": "Line under “Your thoughts, secured.” beside the sign-in and sign-up forms."
+  },
+  "authSampleToday": "Today",
+  "@authSampleToday": {
+    "description": "Short: date on a sample note card in the decorative collage beside the sign-in form."
+  },
+  "authSampleTripTitle": "Lisbon trip",
+  "@authSampleTripTitle": {
+    "description": "Title of a sample travel note in the decorative collage beside the sign-in form. All sample notes may use places and things that suit the language."
+  },
+  "authSampleTripText": "Five days in <b>Lisbon</b>, with a day trip to Sintra. Flights land at <yellow>9:40 on Friday</yellow>.",
+  "@authSampleTripText": {
+    "description": "Text of the sample travel note. <b> marks bold words and <yellow> words with a yellow highlight."
+  },
+  "authSampleTripHeading": "Before the trip",
+  "@authSampleTripHeading": {
+    "description": "Heading in the sample travel note, above a checklist."
+  },
+  "authSampleTripPassport": "Renew the passport",
+  "@authSampleTripPassport": {
+    "description": "Checklist item in the sample travel note."
+  },
+  "authSampleTripChargers": "Pack chargers and a travel adapter",
+  "@authSampleTripChargers": {
+    "description": "Checklist item in the sample travel note."
+  },
+  "authSampleTagTravel": "travel",
+  "@authSampleTagTravel": {
+    "description": "Tag name on the sample travel note, in lowercase like a tag a person typed."
+  },
+  "authSampleTagFamily": "family",
+  "@authSampleTagFamily": {
+    "description": "Tag name on the sample travel note, in lowercase like a tag a person typed."
+  },
+  "authSampleGoalsTitle": "Week 29 goals",
+  "@authSampleGoalsTitle": {
+    "description": "Title of a sample note with goals for a week, in the decorative collage beside the sign-in form."
+  },
+  "authSampleGoalsSync": "Ship the sync fix",
+  "@authSampleGoalsSync": {
+    "description": "Numbered item in the sample goals note."
+  },
+  "authSampleGoalsRetry": "Retry the token refresh",
+  "@authSampleGoalsRetry": {
+    "description": "Numbered sub-item in the sample goals note."
+  },
+  "authSampleGoalsSlowNetwork": "Test on a slow network",
+  "@authSampleGoalsSlowNetwork": {
+    "description": "Numbered sub-item in the sample goals note."
+  },
+  "authSampleGoalsEditor": "Tidy up the editor",
+  "@authSampleGoalsEditor": {
+    "description": "Numbered item in the sample goals note."
+  },
+  "authSampleGoalsReleaseNotes": "Draft the <green>release notes</green>",
+  "@authSampleGoalsReleaseNotes": {
+    "description": "Numbered item in the sample goals note. <green> marks words with a green highlight."
+  },
+  "authSampleTagWork": "work",
+  "@authSampleTagWork": {
+    "description": "Tag name on the sample goals note, in lowercase like a tag a person typed."
+  },
+  "authSampleTagBugs": "bugs",
+  "@authSampleTagBugs": {
+    "description": "Tag name on the sample goals note, in lowercase like a tag a person typed. Software bugs."
+  },
+  "authSampleGroceriesTitle": "Groceries",
+  "@authSampleGroceriesTitle": {
+    "description": "Title of a sample shopping list in the decorative collage beside the sign-in form."
+  },
+  "authSampleGroceriesOatMilk": "Oat milk",
+  "@authSampleGroceriesOatMilk": {
+    "description": "Checklist item in the sample shopping list."
+  },
+  "authSampleGroceriesBread": "Sourdough loaf",
+  "@authSampleGroceriesBread": {
+    "description": "Checklist item in the sample shopping list."
+  },
+  "authSampleGroceriesTomatoes": "Tomatoes and basil",
+  "@authSampleGroceriesTomatoes": {
+    "description": "Checklist item in the sample shopping list."
+  },
+  "authSampleGroceriesCoffee": "Coffee beans",
+  "@authSampleGroceriesCoffee": {
+    "description": "Checklist item in the sample shopping list."
+  },
+  "authSampleTagShopping": "shopping",
+  "@authSampleTagShopping": {
+    "description": "Tag name on the sample shopping list, in lowercase like a tag a person typed."
+  },
+  "authSampleReadingTitle": "Reading list",
+  "@authSampleReadingTitle": {
+    "description": "Title of a sample list of books in the decorative collage beside the sign-in form."
+  },
+  "authSampleReadingFirstBook": "The Design of Everyday Things",
+  "@authSampleReadingFirstBook": {
+    "description": "Book title in the sample reading list, shown in italics. Use the published title in the language if there is one."
+  },
+  "authSampleReadingChapter": "Chapter 4, on constraints",
+  "@authSampleReadingChapter": {
+    "description": "Bullet under the first book in the sample reading list."
+  },
+  "authSampleReadingSecondBook": "Four Thousand Weeks",
+  "@authSampleReadingSecondBook": {
+    "description": "Book title in the sample reading list. Use the published title in the language if there is one."
+  },
+  "authSampleReadingQuote": "The day will never arrive when you finally have everything under control.",
+  "@authSampleReadingQuote": {
+    "description": "Quote from the second book in the sample reading list."
+  },
+  "authSampleTagReading": "reading",
+  "@authSampleTagReading": {
+    "description": "Tag name on the sample reading list, in lowercase like a tag a person typed."
+  },
+  "authSampleBreadTitle": "Sourdough",
+  "@authSampleBreadTitle": {
+    "description": "Title of a sample bread recipe in the decorative collage beside the sign-in form."
+  },
+  "authSampleBreadStarter": "Feed the starter the night before",
+  "@authSampleBreadStarter": {
+    "description": "Numbered step in the sample bread recipe. The starter is the sourdough culture."
+  },
+  "authSampleBreadMix": "Mix 500 g flour with 350 g water",
+  "@authSampleBreadMix": {
+    "description": "Numbered step in the sample bread recipe."
+  },
+  "authSampleBreadRest": "Rest <blue>30 minutes</blue>, then add salt",
+  "@authSampleBreadRest": {
+    "description": "Numbered step in the sample bread recipe. <blue> marks words with a blue highlight."
+  },
+  "authSampleBreadFold": "Fold four times, 30 minutes apart",
+  "@authSampleBreadFold": {
+    "description": "Numbered step in the sample bread recipe."
+  },
+  "authSampleBreadShape": "Shape, then proof overnight",
+  "@authSampleBreadShape": {
+    "description": "Numbered step in the sample bread recipe."
+  },
+  "authSampleBreadBake": "Bake at 250°C for 40 minutes",
+  "@authSampleBreadBake": {
+    "description": "Numbered step in the sample bread recipe."
+  },
+  "authSampleTagRecipes": "recipes",
+  "@authSampleTagRecipes": {
+    "description": "Tag name on the sample bread recipe, in lowercase like a tag a person typed."
+  },
+  "appLoading": "Loading {app}",
+  "@appLoading": {
+    "description": "Screen reader text of the loading screen shown while the app starts.",
+    "placeholders": {
+      "app": {
+        "type": "String",
+        "example": "Anchor"
+      }
+    }
+  },
+  "appConnecting": "Connecting…",
+  "@appConnecting": {
+    "description": "Short: shown under the app's logo when starting takes long, and on the server down page while it tries to reach the server."
+  },
+  "appErrorCode": "Error {id}",
+  "@appErrorCode": {
+    "description": "Small label on the error page with a short code that tells this error apart.",
+    "placeholders": {
+      "id": {
+        "type": "String",
+        "example": "7f3a-21c9"
+      }
+    }
+  },
+  "appErrorTitle": "Something went wrong",
+  "@appErrorTitle": {
+    "description": "Title of the page shown when the app hits an unexpected error."
+  },
+  "appErrorText": "An unexpected error occurred. Reloading the page usually fixes it. Your saved notes are safe.",
+  "@appErrorText": {
+    "description": "Text under the title of the page shown when the app hits an unexpected error."
+  },
+  "appReload": "Reload",
+  "@appReload": {
+    "description": "Button on the error page that loads the page again. Verb."
+  },
+  "appCopyErrorDetails": "Copy error details",
+  "@appCopyErrorDetails": {
+    "description": "Button on the error page that copies details about the error, for a bug report."
+  },
+  "appErrorDetailsCopied": "Error details copied",
+  "@appErrorDetailsCopied": {
+    "description": "Message after the error details were copied."
+  },
+  "appErrorDetailsCopyFailed": "Couldn’t copy the details",
+  "@appErrorDetailsCopyFailed": {
+    "description": "Message when the error details couldn't be copied."
+  },
+  "appNotFoundTitle": "Page not found",
+  "@appNotFoundTitle": {
+    "description": "Title of the page shown for an address that doesn't exist in the app."
+  },
+  "appNotFoundText": "Check the address, or go back to your notes.",
+  "@appNotFoundText": {
+    "description": "Text under the title of the page not found page."
+  },
+  "appGoToNotes": "Go to your notes",
+  "@appGoToNotes": {
+    "description": "Button on the page not found page that opens the list of notes."
+  },
+  "appSearchNotes": "Search notes",
+  "@appSearchNotes": {
+    "description": "Button on the page not found page that opens the notes search. Verb phrase."
+  },
+  "appServerDownTitle": "Can’t connect to the server",
+  "@appServerDownTitle": {
+    "description": "Title of the page shown when the app's server doesn't answer."
+  },
+  "appServerDownText": "{host} isn’t responding. Your notes are safe on the server.",
+  "@appServerDownText": {
+    "description": "Text under the title when the server doesn't answer. {host} is the server's address.",
+    "placeholders": {
+      "host": {
+        "type": "String",
+        "example": "notes.example.com"
+      }
+    }
+  },
+  "appRetryCountdown": "{count, plural, =1{Trying again in 1 second} other{Trying again in {count} seconds}}",
+  "@appRetryCountdown": {
+    "description": "Countdown under the Try again button while the server doesn't answer. It counts down every second.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "15"
+      }
+    }
+  },
+  "appServerDownHelpTitle": "What you can do",
+  "@appServerDownHelpTitle": {
+    "description": "Heading of a box that opens with tips when the server doesn't answer."
+  },
+  "appServerDownCheckConnection": "Check your internet connection.",
+  "@appServerDownCheckConnection": {
+    "description": "Tip in the box shown when the server doesn't answer."
+  },
+  "appServerDownRestarting": "The server may be restarting. {app} will keep trying.",
+  "@appServerDownRestarting": {
+    "description": "Tip in the box shown when the server doesn't answer.",
+    "placeholders": {
+      "app": {
+        "type": "String",
+        "example": "Anchor"
+      }
+    }
+  },
+  "appServerDownContact": "If it’s still down after a few minutes, contact the person who runs <b>{host}</b>.",
+  "@appServerDownContact": {
+    "description": "Tip in the box shown when the server doesn't answer. {host} is the server's address, shown in bold.",
+    "placeholders": {
+      "host": {
+        "type": "String",
+        "example": "notes.example.com"
+      }
+    }
+  },
+  "appServerDownNoAnswer": "The server didn’t answer <code>{request}</code>.",
+  "@appServerDownNoAnswer": {
+    "description": "Small technical line at the bottom of the box shown when the server doesn't answer. {request} is the request the app sent, shown as code.",
+    "placeholders": {
+      "request": {
+        "type": "String",
+        "example": "GET /api/auth/me"
+      }
+    }
+  },
+  "appName": "Anchor",
+  "@appName": {
+    "description": "The app's name. Usually kept as it is."
+  },
+  "appDescription": "Your thoughts, secured",
+  "@appDescription": {
+    "description": "The web app's one-line description, read by search engines and shown when the app is installed."
+  },
+  "commonCancel": "Cancel",
+  "@commonCancel": {
+    "description": "Button that closes a dialog without doing anything. Verb."
+  },
+  "commonSave": "Save",
+  "@commonSave": {
+    "description": "Button that saves changes. Verb."
+  },
+  "commonDelete": "Delete",
+  "@commonDelete": {
+    "description": "Button that deletes something. Verb."
+  },
+  "commonClose": "Close",
+  "@commonClose": {
+    "description": "Button or label that closes a panel or dialog. Verb."
+  },
+  "commonDone": "Done",
+  "@commonDone": {
+    "description": "Button that finishes a task and closes it. Short."
+  },
+  "commonUndo": "Undo",
+  "@commonUndo": {
+    "description": "Button in a message that takes back what was just done. Verb."
+  },
+  "commonRetry": "Try again",
+  "@commonRetry": {
+    "description": "Button that repeats something that failed. Verb phrase."
+  },
+  "commonBack": "Back",
+  "@commonBack": {
+    "description": "Button that goes to the page before. Short."
+  },
+  "commonEdit": "Edit",
+  "@commonEdit": {
+    "description": "Button that opens something for changes. Verb."
+  },
+  "commonRemove": "Remove",
+  "@commonRemove": {
+    "description": "Button that takes something out. Verb."
+  },
+  "commonCopy": "Copy",
+  "@commonCopy": {
+    "description": "Button that copies text. Verb."
+  },
+  "commonCopied": "Copied",
+  "@commonCopied": {
+    "description": "Short message after something is copied."
+  },
+  "commonUntitled": "Untitled",
+  "@commonUntitled": {
+    "description": "Shown in place of a note's title when it has none."
+  },
+  "commonOffline": "You’re offline",
+  "@commonOffline": {
+    "description": "Shown when there is no connection."
+  },
+  "errorUnreachable": "Couldn’t reach the server. Check your connection and try again.",
+  "@errorUnreachable": {
+    "description": "Error when the server can't be reached."
+  },
+  "errorServer": "Something went wrong on the server. Try again in a moment.",
+  "@errorServer": {
+    "description": "Error when the server fails."
+  },
+  "editorToolbarFormatting": "Formatting",
+  "@editorToolbarFormatting": {
+    "description": "Screen reader name of the editor’s formatting toolbar above the note text."
+  },
+  "editorToolTip": "{label} ({shortcut})",
+  "@editorToolTip": {
+    "description": "Tooltip and screen reader label of an editor toolbar button that has a keyboard shortcut, such as “Bold (⌘B)”. {label} is the button’s name; {shortcut} is the key combination, shown as it is."
+  },
+  "editorRedo": "Redo",
+  "@editorRedo": {
+    "description": "Editor toolbar button that repeats a change that was undone. Verb."
+  },
+  "editorBold": "Bold",
+  "@editorBold": {
+    "description": "Editor toolbar button that makes text bold, on the main toolbar and the small toolbar over selected text."
+  },
+  "editorItalic": "Italic",
+  "@editorItalic": {
+    "description": "Editor toolbar button that makes text italic."
+  },
+  "editorUnderline": "Underline",
+  "@editorUnderline": {
+    "description": "Editor toolbar button that underlines text."
+  },
+  "editorStrikethrough": "Strikethrough",
+  "@editorStrikethrough": {
+    "description": "Editor toolbar button that crosses text out."
+  },
+  "editorHighlight": "Highlight",
+  "@editorHighlight": {
+    "description": "Tooltip of the editor toolbar button that marks text with the last used color. Verb."
+  },
+  "editorHighlightWith": "Highlight with {color}",
+  "@editorHighlightWith": {
+    "description": "Screen reader label of the editor toolbar button that marks text with the last used color. {color} is a color name, such as Yellow."
+  },
+  "editorHighlightColors": "Highlight colors",
+  "@editorHighlightColors": {
+    "description": "Screen reader name of the row of highlight colors, and of the button that opens it."
+  },
+  "editorBackToFormatting": "Back to formatting",
+  "@editorBackToFormatting": {
+    "description": "Screen reader label of the button that leaves the highlight colors and shows the formatting toolbar again, on phones."
+  },
+  "editorRemoveHighlight": "Remove highlight",
+  "@editorRemoveHighlight": {
+    "description": "Button that removes the color mark from text."
+  },
+  "editorFormatSelection": "Format selection",
+  "@editorFormatSelection": {
+    "description": "Screen reader name of the small toolbar that appears over selected text."
+  },
+  "editorHighlightYellow": "Yellow",
+  "@editorHighlightYellow": {
+    "description": "Name of a highlight color, as a button label and inside “Highlight with {color}”."
+  },
+  "editorHighlightGreen": "Green",
+  "@editorHighlightGreen": {
+    "description": "Name of a highlight color, as a button label and inside “Highlight with {color}”."
+  },
+  "editorHighlightBlue": "Blue",
+  "@editorHighlightBlue": {
+    "description": "Name of a highlight color, as a button label and inside “Highlight with {color}”."
+  },
+  "editorHighlightPink": "Pink",
+  "@editorHighlightPink": {
+    "description": "Name of a highlight color, as a button label and inside “Highlight with {color}”."
+  },
+  "editorHighlightPurple": "Purple",
+  "@editorHighlightPurple": {
+    "description": "Name of a highlight color, as a button label and inside “Highlight with {color}”."
+  },
+  "editorHeading1": "Heading 1",
+  "@editorHeading1": {
+    "description": "Line style for the biggest heading, in the editor toolbar and the slash menu."
+  },
+  "editorHeading2": "Heading 2",
+  "@editorHeading2": {
+    "description": "Line style for a medium heading, in the editor toolbar and the slash menu."
+  },
+  "editorHeading3": "Heading 3",
+  "@editorHeading3": {
+    "description": "Line style for the smallest heading, in the editor toolbar and the slash menu."
+  },
+  "editorChecklist": "Checklist",
+  "@editorChecklist": {
+    "description": "Line style with checkboxes, in the slash menu and as a starter button in an empty note."
+  },
+  "editorChecklistTip": "Checklist (tick with {shortcut})",
+  "@editorChecklistTip": {
+    "description": "Tooltip and screen reader label of the editor toolbar button that starts a checklist. {shortcut} is the key combination that ticks an item, shown as it is."
+  },
+  "editorBulletList": "Bullet list",
+  "@editorBulletList": {
+    "description": "Line style for a list with dots, in the editor toolbar and the slash menu."
+  },
+  "editorNumberedList": "Numbered list",
+  "@editorNumberedList": {
+    "description": "Line style for a list with numbers, in the editor toolbar and the slash menu."
+  },
+  "editorOutdent": "Outdent",
+  "@editorOutdent": {
+    "description": "Editor toolbar button that moves a list item one level out. Verb."
+  },
+  "editorIndent": "Indent",
+  "@editorIndent": {
+    "description": "Editor toolbar button that moves a list item one level in. Verb."
+  },
+  "editorQuote": "Quote",
+  "@editorQuote": {
+    "description": "Line style for quoted text, in the editor toolbar and the slash menu. Noun."
+  },
+  "editorCodeBlock": "Code block",
+  "@editorCodeBlock": {
+    "description": "Line style for computer code in a fixed-width font, in the editor toolbar and the slash menu."
+  },
+  "editorLink": "Link",
+  "@editorLink": {
+    "description": "Editor toolbar button and slash menu item that add a web link to text. Noun."
+  },
+  "editorEditLink": "Edit link",
+  "@editorEditLink": {
+    "description": "Editor toolbar button, and button in the small bubble over a link, that change an existing link."
+  },
+  "editorAddAttachment": "Add a picture or audio",
+  "@editorAddAttachment": {
+    "description": "Editor toolbar button that adds a picture or an audio file to the note."
+  },
+  "editorText": "Text",
+  "@editorText": {
+    "description": "Slash menu item that turns a line back into plain text."
+  },
+  "editorPictureOrAudio": "Picture or audio",
+  "@editorPictureOrAudio": {
+    "description": "Slash menu item, and starter button in an empty note, that add a picture or an audio file."
+  },
+  "editorSlashWordsChecklist": "todo to-do task checkbox list",
+  "@editorSlashWordsChecklist": {
+    "description": "Search words for the slash menu item “Checklist”, separated by spaces. Use the words people would type in your language; the English words keep working anyway."
+  },
+  "editorSlashWordsHeading1": "h1 title",
+  "@editorSlashWordsHeading1": {
+    "description": "Search words for the slash menu item “Heading 1”, separated by spaces. Use the words people would type in your language; the English words keep working anyway."
+  },
+  "editorSlashWordsHeading2": "h2 subtitle subheading",
+  "@editorSlashWordsHeading2": {
+    "description": "Search words for the slash menu item “Heading 2”, separated by spaces. Use the words people would type in your language; the English words keep working anyway."
+  },
+  "editorSlashWordsHeading3": "h3 subheading",
+  "@editorSlashWordsHeading3": {
+    "description": "Search words for the slash menu item “Heading 3”, separated by spaces. Use the words people would type in your language; the English words keep working anyway."
+  },
+  "editorSlashWordsBullets": "unordered ul dashes",
+  "@editorSlashWordsBullets": {
+    "description": "Search words for the slash menu item “Bullet list”, separated by spaces. Use the words people would type in your language; the English words keep working anyway."
+  },
+  "editorSlashWordsNumbers": "ordered ol",
+  "@editorSlashWordsNumbers": {
+    "description": "Search words for the slash menu item “Numbered list”, separated by spaces. Use the words people would type in your language; the English words keep working anyway."
+  },
+  "editorSlashWordsQuote": "blockquote citation",
+  "@editorSlashWordsQuote": {
+    "description": "Search words for the slash menu item “Quote”, separated by spaces. Use the words people would type in your language; the English words keep working anyway."
+  },
+  "editorSlashWordsCode": "pre snippet",
+  "@editorSlashWordsCode": {
+    "description": "Search words for the slash menu item “Code block”, separated by spaces. Use the words people would type in your language; the English words keep working anyway."
+  },
+  "editorSlashWordsText": "paragraph plain normal body",
+  "@editorSlashWordsText": {
+    "description": "Search words for the slash menu item “Text”, separated by spaces. Use the words people would type in your language; the English words keep working anyway."
+  },
+  "editorSlashWordsLink": "url web address",
+  "@editorSlashWordsLink": {
+    "description": "Search words for the slash menu item “Link”, separated by spaces. Use the words people would type in your language; the English words keep working anyway."
+  },
+  "editorSlashWordsAttachment": "image img photo file voice recording attachment",
+  "@editorSlashWordsAttachment": {
+    "description": "Search words for the slash menu item “Picture or audio”, separated by spaces. Use the words people would type in your language; the English words keep working anyway."
+  },
+  "editorSlashHint": "Type / to add a block",
+  "@editorSlashHint": {
+    "description": "Faint hint in an empty line of the note: typing a slash opens a menu of line styles. Keep the slash."
+  },
+  "editorSlashSearchHint": "Type to search",
+  "@editorSlashSearchHint": {
+    "description": "Faint hint after a typed slash: typing more narrows the slash menu."
+  },
+  "editorSlashMenu": "Add a block",
+  "@editorSlashMenu": {
+    "description": "Screen reader name of the slash menu, the list of line styles that opens after typing a slash."
+  },
+  "editorSlashNoResults": "No results",
+  "@editorSlashNoResults": {
+    "description": "Shown in the slash menu when nothing matches what was typed."
+  },
+  "editorSlashMove": "move",
+  "@editorSlashMove": {
+    "description": "Short: shown after the up and down arrow keys at the foot of the slash menu. Verb, lowercase in English."
+  },
+  "editorSlashAdd": "add",
+  "@editorSlashAdd": {
+    "description": "Short: shown after the Enter key at the foot of the slash menu. Verb, lowercase in English."
+  },
+  "editorSlashKeys": "Up and down arrows move, Enter adds",
+  "@editorSlashKeys": {
+    "description": "Screen reader text for the key hints at the foot of the slash menu."
+  },
+  "editorLinkTitle": "Link",
+  "@editorLinkTitle": {
+    "description": "Screen reader name of the box that adds or changes a link, and of the small bubble over a link. Noun."
+  },
+  "editorLinkTextField": "Text",
+  "@editorLinkTextField": {
+    "description": "Label of the field for the words a link shows."
+  },
+  "editorLinkTextPlaceholder": "Text to display",
+  "@editorLinkTextPlaceholder": {
+    "description": "Placeholder in the field for the words a link shows."
+  },
+  "editorLinkAddressField": "Link",
+  "@editorLinkAddressField": {
+    "description": "Label of the field for a link’s web address. Noun."
+  },
+  "editorLinkAddressPlaceholder": "Paste or type a link",
+  "@editorLinkAddressPlaceholder": {
+    "description": "Placeholder in the field for a link’s web address."
+  },
+  "editorAddLink": "Add link",
+  "@editorAddLink": {
+    "description": "Button that adds the link, in the box that adds a link."
+  },
+  "editorLinkOpen": "Open",
+  "@editorLinkOpen": {
+    "description": "Short: opens the link in a new tab. One of four icon buttons in a small bubble over a link. Verb."
+  },
+  "editorLinkCopy": "Copy link",
+  "@editorLinkCopy": {
+    "description": "Button in the small bubble over a link that copies its web address."
+  },
+  "editorLinkRemove": "Remove link",
+  "@editorLinkRemove": {
+    "description": "Button in the small bubble over a link that turns the link back into plain text."
+  },
+  "editorLinkCopied": "Link copied",
+  "@editorLinkCopied": {
+    "description": "Message after a link’s web address was copied."
+  },
+  "editorLinkCopyFailed": "Couldn’t copy the link",
+  "@editorLinkCopyFailed": {
+    "description": "Error message when copying a link’s web address failed."
+  },
+  "editorCodeSelected": "Selected",
+  "@editorCodeSelected": {
+    "description": "Short: shown on a code block’s copy button when the code couldn’t be copied and was selected instead, so it can be copied by hand."
+  },
+  "editorEmptyItem": "Empty item",
+  "@editorEmptyItem": {
+    "description": "Screen reader name of the checkbox of a checklist item that has no text."
+  },
+  "editorCheckedItems": "{count, plural, =1{1 checked item} other{{count} checked items}}",
+  "@editorCheckedItems": {
+    "description": "Button that folds or unfolds the checked items at the end of a checklist."
+  },
+  "editorDragToReorder": "Drag to reorder",
+  "@editorDragToReorder": {
+    "description": "Screen reader label of the handle that moves a checklist item up or down."
+  },
+  "editorItemsUnchecked": "{count, plural, =1{Item unchecked} other{{count} items unchecked}}",
+  "@editorItemsUnchecked": {
+    "description": "Message after “Uncheck all” in the note’s menu, with an Undo button."
+  },
+  "editorCheckedItemsDeleted": "{count, plural, =1{Checked item deleted} other{{count} checked items deleted}}",
+  "@editorCheckedItemsDeleted": {
+    "description": "Message after “Delete checked items” in the note’s menu, with an Undo button."
+  },
+  "editorUndoFailed": "Couldn’t undo that",
+  "@editorUndoFailed": {
+    "description": "Error message when an Undo in the note failed, such as for “Uncheck all”, “Delete checked items” or a removed reminder."
+  },
+  "editorPlaceholder": "Start typing...",
+  "@editorPlaceholder": {
+    "description": "Placeholder in an empty text editor."
+  },
+  "editorPlaceholderNew": "Start writing",
+  "@editorPlaceholderNew": {
+    "description": "Placeholder in the text of a new note."
+  },
+  "editorPlaceholderEmpty": "Write something",
+  "@editorPlaceholderEmpty": {
+    "description": "Placeholder in the text of a saved note that has no text."
+  },
+  "editorNoteText": "Note text",
+  "@editorNoteText": {
+    "description": "Screen reader name of the note’s text box."
+  },
+  "editorNoteTextReadOnly": "Note text, read-only",
+  "@editorNoteTextReadOnly": {
+    "description": "Screen reader name of the note’s text when it can’t be changed."
+  },
+  "editorLoadingNote": "Loading the note…",
+  "@editorLoadingNote": {
+    "description": "Shown while a very long note is being laid out."
+  },
+  "editorOutline": "Outline",
+  "@editorOutline": {
+    "description": "Screen reader name of the list of the note’s headings at the side of a long note. Noun."
+  },
+  "editorOutlineButton": "{count, plural, =1{Outline, 1 heading} other{Outline, {count} headings}}",
+  "@editorOutlineButton": {
+    "description": "Screen reader label of the button that opens the list of the note’s headings."
+  },
+  "noteLabel": "Note",
+  "@noteLabel": {
+    "description": "Screen reader name of the open note and of the toolbar at its top. Noun."
+  },
+  "noteAddReminder": "Add a reminder",
+  "@noteAddReminder": {
+    "description": "Bell button at the top of a note that has no reminder."
+  },
+  "noteReminder": "Reminder: {reminder}",
+  "@noteReminder": {
+    "description": "Bell button at the top of a note that has a reminder. {reminder} is when it rings, such as “Tomorrow, 9:00 AM”."
+  },
+  "noteLateReminder": "Late reminder: {reminder}",
+  "@noteLateReminder": {
+    "description": "Bell button at the top of a note whose reminder time has passed. {reminder} is when it rang."
+  },
+  "noteVersionHistory": "Version history",
+  "@noteVersionHistory": {
+    "description": "Button and menu item that open the note’s earlier versions."
+  },
+  "noteBackground": "Background",
+  "@noteBackground": {
+    "description": "Button at the top of a note that picks its color or pattern. Noun."
+  },
+  "notePin": "Pin",
+  "@notePin": {
+    "description": "Button and menu item that keep the note at the top of the list. Verb."
+  },
+  "noteUnpin": "Unpin",
+  "@noteUnpin": {
+    "description": "Button and menu item that stop keeping the note at the top of the list. Verb."
+  },
+  "noteShare": "Share",
+  "@noteShare": {
+    "description": "Button and menu item that share the note with other people. Verb."
+  },
+  "noteSharing": "Sharing",
+  "@noteSharing": {
+    "description": "Button at the top of a note that is already shared; it opens who the note is shared with."
+  },
+  "noteMore": "More",
+  "@noteMore": {
+    "description": "Button at the top of a note that opens a menu with more actions."
+  },
+  "noteArchive": "Archive",
+  "@noteArchive": {
+    "description": "Menu item that hides the note from the notes list without deleting it. Verb."
+  },
+  "noteUnarchive": "Unarchive",
+  "@noteUnarchive": {
+    "description": "Menu item and button that bring an archived note back to the notes list. Verb."
+  },
+  "noteMoveToTrash": "Move to trash",
+  "@noteMoveToTrash": {
+    "description": "Menu item that deletes the note the person owns; it can be restored from the trash."
+  },
+  "noteRemoveFromMine": "Remove from my notes",
+  "@noteRemoveFromMine": {
+    "description": "Menu item that removes a note someone else shared from the person’s notes."
+  },
+  "noteUncheckAll": "Uncheck all",
+  "@noteUncheckAll": {
+    "description": "Menu item that clears every checkbox in the note’s checklists."
+  },
+  "noteDeleteCheckedItems": "Delete checked items",
+  "@noteDeleteCheckedItems": {
+    "description": "Menu item that deletes every checked item in the note’s checklists."
+  },
+  "noteSaved": "Saved",
+  "@noteSaved": {
+    "description": "Short: status at the top of a note after its changes were saved."
+  },
+  "noteSaving": "Saving…",
+  "@noteSaving": {
+    "description": "Short: status at the top of a note while its changes are being saved."
+  },
+  "noteWaitingToSave": "Waiting to save",
+  "@noteWaitingToSave": {
+    "description": "Short: status at the top of a note while its changes can’t reach the server yet."
+  },
+  "noteSaveFailed": "Couldn’t save",
+  "@noteSaveFailed": {
+    "description": "Short: status at the top of a note when saving failed, followed by a Try again button."
+  },
+  "noteWaitingServer": "The server isn’t answering. Keep this tab open so your changes can be saved.",
+  "@noteWaitingServer": {
+    "description": "Tooltip of “Waiting to save” while online but the server doesn’t answer."
+  },
+  "noteWaitingOffline": "You’re offline. Keep this tab open so your changes can be saved.",
+  "@noteWaitingOffline": {
+    "description": "Tooltip of “Waiting to save” while offline."
+  },
+  "noteLoading": "Loading note",
+  "@noteLoading": {
+    "description": "Screen reader name of the placeholder shown while a note loads."
+  },
+  "noteLoadFailedTitle": "Couldn’t load this note",
+  "@noteLoadFailedTitle": {
+    "description": "Title of the page shown when a note couldn’t be loaded."
+  },
+  "noteLoadFailedText": "Check your connection, then try again.",
+  "@noteLoadFailedText": {
+    "description": "Help under “Couldn’t load this note”."
+  },
+  "noteBackToNotes": "Back to your notes",
+  "@noteBackToNotes": {
+    "description": "Button that goes to the notes list from a note that couldn’t be shown."
+  },
+  "noteUnavailableTitle": "This note isn’t available",
+  "@noteUnavailableTitle": {
+    "description": "Title of the page shown when a note is gone or the person can’t open it."
+  },
+  "noteUnavailableText": "It may have been deleted, or you no longer have access to it.",
+  "@noteUnavailableText": {
+    "description": "Help under “This note isn’t available”."
+  },
+  "noteOpenTrash": "Open trash",
+  "@noteOpenTrash": {
+    "description": "Button that goes to the trash from a note that isn’t available."
+  },
+  "noteTrashBar": "<b>In trash.</b> It will be deleted on {date}.",
+  "@noteTrashBar": {
+    "description": "Bar at the top of a note in the trash. {date} is the day it will be deleted for good, with the full month name, such as “September 22”. Keep the <b> tags around the first sentence."
+  },
+  "noteInTrash": "In trash",
+  "@noteInTrash": {
+    "description": "Screen reader name of the buttons in the bar at the top of a note in the trash."
+  },
+  "noteRestore": "Restore",
+  "@noteRestore": {
+    "description": "Button that takes a note out of the trash. Verb."
+  },
+  "noteRestoring": "Restoring…",
+  "@noteRestoring": {
+    "description": "Shown on the Restore button while the note is taken out of the trash."
+  },
+  "noteDeletePermanently": "Delete permanently",
+  "@noteDeletePermanently": {
+    "description": "Button that deletes a note in the trash for good, and the confirm button of its dialog."
+  },
+  "noteViewOnlyBar": "<b>View only.</b> Shared by {name}.",
+  "@noteViewOnlyBar": {
+    "description": "Bar at the top of a note shared with the person without edit rights. {name} is the first name of who shared it. Keep the <b> tags around the first sentence."
+  },
+  "noteArchivedBar": "<b>Archived.</b> It’s hidden from your notes list.",
+  "@noteArchivedBar": {
+    "description": "Bar at the top of an archived note. Keep the <b> tags around the first sentence."
+  },
+  "noteRefusedBar": "<b>You can no longer edit this note.</b>",
+  "@noteRefusedBar": {
+    "description": "Bar at the top of a note after its owner took away the person’s edit rights. Keep the <b> tags."
+  },
+  "noteStartWith": "Start with",
+  "@noteStartWith": {
+    "description": "Screen reader name of the row of starter buttons in an empty note: Checklist, List, Picture or audio."
+  },
+  "noteStartList": "List",
+  "@noteStartList": {
+    "description": "Starter button in an empty note that starts a bulleted list. Noun."
+  },
+  "noteStartHint": "or type <kbd>/</kbd> for more",
+  "@noteStartHint": {
+    "description": "Hint after the starter buttons in an empty note: typing a slash opens a menu of line styles. Keep the <kbd> tags around the slash. Lowercase in English, it continues the row of buttons."
+  },
+  "noteEditedToday": "Edited today",
+  "@noteEditedToday": {
+    "description": "Under the note’s title: the note was last changed today."
+  },
+  "noteEditedYesterday": "Edited yesterday",
+  "@noteEditedYesterday": {
+    "description": "Under the note’s title: the note was last changed yesterday."
+  },
+  "noteEditedOn": "Edited {date}",
+  "@noteEditedOn": {
+    "description": "Under the note’s title: the day the note was last changed. {date} is a short date such as “Sep 22” or “Sep 22, 2025”."
+  },
+  "noteWordCount": "{count, plural, =1{1 word} other{{count} words}}",
+  "@noteWordCount": {
+    "description": "Under the note’s title: how many words the note has."
+  },
+  "noteSharedBy": "Shared by {name}",
+  "@noteSharedBy": {
+    "description": "Under the note’s title: who shared the note with the person. {name} is a first name."
+  },
+  "noteSharedWithOne": "Shared with {first}",
+  "@noteSharedWithOne": {
+    "description": "Under the note’s title: the note is shared with one person. {first} is a first name."
+  },
+  "noteSharedWithTwo": "Shared with {first} and {second}",
+  "@noteSharedWithTwo": {
+    "description": "Under the note’s title: the note is shared with two people. {first} and {second} are first names."
+  },
+  "noteSharedWithThree": "Shared with {first}, {second} and {third}",
+  "@noteSharedWithThree": {
+    "description": "Under the note’s title: the note is shared with three people. {first}, {second} and {third} are first names."
+  },
+  "noteSharedWithMore": "{count, plural, =1{Shared with {first}, {second} and 1 other} other{Shared with {first}, {second} and {count} others}}",
+  "@noteSharedWithMore": {
+    "description": "Under the note’s title: the note is shared with four or more people. {first} and {second} are first names; {count} is how many more people it is shared with."
+  },
+  "noteDropToAttach": "Drop to attach",
+  "@noteDropToAttach": {
+    "description": "Shown over the note while files are dragged onto it."
+  },
+  "noteTitle": "Title",
+  "@noteTitle": {
+    "description": "Label and placeholder of the note’s title field. Noun."
+  },
+  "noteTags": "Tags",
+  "@noteTags": {
+    "description": "Screen reader name of the row of the note’s tags under its title."
+  },
+  "noteTagsLoadFailed": "Couldn’t load tags.",
+  "@noteTagsLoadFailed": {
+    "description": "Shown in the note’s tag row when its tags couldn’t be loaded, followed by a Try again button."
+  },
+  "noteRemoveTag": "Remove tag {name}",
+  "@noteRemoveTag": {
+    "description": "Screen reader label of the small button that takes a tag off the note. {name} is the tag’s name."
+  },
+  "noteChangeReminder": "Change the reminder",
+  "@noteChangeReminder": {
+    "description": "Tooltip of the reminder chip under the note’s title."
+  },
+  "noteReminderLate": "Late:",
+  "@noteReminderLate": {
+    "description": "Screen reader text read before the time of a reminder that has passed, on the reminder chip under the note’s title."
+  },
+  "noteAddTag": "Add tag",
+  "@noteAddTag": {
+    "description": "Button under the note’s title that adds a tag to the note."
+  },
+  "noteCreateTagFailed": "Couldn’t create tag",
+  "@noteCreateTagFailed": {
+    "description": "Error message when a new tag couldn’t be made from the note."
+  },
+  "noteDeleteForeverTitle": "Permanently delete this note?",
+  "@noteDeleteForeverTitle": {
+    "description": "Title of the dialog that confirms deleting a note in the trash for good."
+  },
+  "noteDeleteForeverText": "This can’t be undone. People you shared it with will lose access too.",
+  "@noteDeleteForeverText": {
+    "description": "Text of the dialog that confirms deleting a note in the trash for good."
+  },
+  "noteDeleting": "Deleting…",
+  "@noteDeleting": {
+    "description": "Shown on the confirm button while the note is being deleted for good."
+  },
+  "noteLeaveTitle": "Remove this note from your notes?",
+  "@noteLeaveTitle": {
+    "description": "Title of the dialog that confirms removing a note someone else shared."
+  },
+  "noteLeaveText": "To see it again, its owner has to share it with you again.",
+  "@noteLeaveText": {
+    "description": "Text of the dialog that confirms removing a note someone else shared."
+  },
+  "noteRemoving": "Removing…",
+  "@noteRemoving": {
+    "description": "Shown on the confirm button while a shared note is being removed from the person’s notes."
+  },
+  "noteChangedElsewhereKept": "This note was changed elsewhere. Your version is kept, and the other one is in History.",
+  "@noteChangedElsewhereKept": {
+    "description": "Message when the note changed on another device at the same time; it has a History button."
+  },
+  "noteChangedElsewhereHistory": "History",
+  "@noteChangedElsewhereHistory": {
+    "description": "Button in the “changed elsewhere” message that opens the note’s version history. Short."
+  },
+  "noteChangedElsewhereReloaded": "This note was changed elsewhere and has been reloaded.",
+  "@noteChangedElsewhereReloaded": {
+    "description": "Message when the note changed on another device and its text was replaced with that version."
+  },
+  "historyEarlierVersion": "Earlier version",
+  "@historyEarlierVersion": {
+    "description": "Label of a version saved by an ordinary edit of the note."
+  },
+  "historyNotSaved": "Not saved",
+  "@historyNotSaved": {
+    "description": "Label of a version that couldn’t be saved because the note had already changed on another device."
+  },
+  "historyBeforeRestore": "Before a restore",
+  "@historyBeforeRestore": {
+    "description": "Label of a version saved just before an older version was put back."
+  },
+  "historySomeone": "Someone",
+  "@historySomeone": {
+    "description": "The author of a version when their account no longer exists."
+  },
+  "historyYou": "You",
+  "@historyYou": {
+    "description": "The author of a version when it is the person using the app."
+  },
+  "historyToday": "Today",
+  "@historyToday": {
+    "description": "Heading over today’s versions in the list of versions."
+  },
+  "historyYesterday": "Yesterday",
+  "@historyYesterday": {
+    "description": "Heading over yesterday’s versions in the list of versions."
+  },
+  "historyTodayAt": "Today at {time}",
+  "@historyTodayAt": {
+    "description": "When a version was saved, at the top of the version page. {time} is a time such as “2:14 PM”."
+  },
+  "historyYesterdayAt": "Yesterday at {time}",
+  "@historyYesterdayAt": {
+    "description": "When a version was saved, at the top of the version page. {time} is a time such as “2:14 PM”."
+  },
+  "historyDateAt": "{date} at {time}",
+  "@historyDateAt": {
+    "description": "When a version was saved, at the top of the version page. {date} is a date such as “August 2, 2026”; {time} is a time such as “2:14 PM”."
+  },
+  "historyEditedJustNow": "Edited just now",
+  "@historyEditedJustNow": {
+    "description": "Under “Current version”: the note was changed less than a minute ago."
+  },
+  "historyEditedMinutesAgo": "{count, plural, =1{Edited 1 min ago} other{Edited {count} min ago}}",
+  "@historyEditedMinutesAgo": {
+    "description": "Under “Current version”: how many minutes ago the note was changed. “min” is short for minutes."
+  },
+  "historyEditedTodayAt": "Edited today at {time}",
+  "@historyEditedTodayAt": {
+    "description": "Under “Current version”: the note was changed today. {time} is a time such as “2:14 PM”."
+  },
+  "historyEditedYesterdayAt": "Edited yesterday at {time}",
+  "@historyEditedYesterdayAt": {
+    "description": "Under “Current version”: the note was changed yesterday. {time} is a time such as “2:14 PM”."
+  },
+  "historyEditedDateAt": "Edited {date} at {time}",
+  "@historyEditedDateAt": {
+    "description": "Under “Current version”: when the note was changed. {date} is a date such as “August 2, 2026”; {time} is a time such as “2:14 PM”."
+  },
+  "historyComparedTodayAt": "Compared with today at {time}",
+  "@historyComparedTodayAt": {
+    "description": "Above a version’s changes: which version it is compared with, saved today. {time} is a time such as “2:14 PM”."
+  },
+  "historyComparedYesterdayAt": "Compared with yesterday at {time}",
+  "@historyComparedYesterdayAt": {
+    "description": "Above a version’s changes: which version it is compared with, saved yesterday. {time} is a time such as “2:14 PM”."
+  },
+  "historyComparedDateAt": "Compared with {date} at {time}",
+  "@historyComparedDateAt": {
+    "description": "Above a version’s changes: which version it is compared with. {date} is a date such as “August 2, 2026”; {time} is a time such as “2:14 PM”."
+  },
+  "historyComparedCurrent": "Compared with the current version",
+  "@historyComparedCurrent": {
+    "description": "Above a version’s changes: it is compared with the note as it is now."
+  },
+  "historyAdded": "{count, plural, =1{1 added} other{{count} added}}",
+  "@historyAdded": {
+    "description": "Short: how many lines a version added, after a plus sign above its changes."
+  },
+  "historyRemoved": "{count, plural, =1{1 removed} other{{count} removed}}",
+  "@historyRemoved": {
+    "description": "Short: how many lines a version removed, after a minus sign above its changes."
+  },
+  "historyChanged": "{count, plural, =1{1 changed} other{{count} changed}}",
+  "@historyChanged": {
+    "description": "Short: how many lines a version changed, after a plus-minus sign above its changes."
+  },
+  "historyConflictYours": "<b>Not saved.</b> Your edit wasn’t saved because the note changed on another device first. Restore it, or copy what you need.",
+  "@historyConflictYours": {
+    "description": "Notice on a version the person wrote that couldn’t be saved. Keep the <b> tags around the first sentence."
+  },
+  "historyConflictNamed": "<b>Not saved.</b> {name}’s edit wasn’t saved because the note changed on another device first. Restore it, or copy what you need.",
+  "@historyConflictNamed": {
+    "description": "Notice on a version someone else wrote that couldn’t be saved. {name} is that person’s name. Keep the <b> tags around the first sentence."
+  },
+  "historyConflictSomeone": "<b>Not saved.</b> Someone’s edit wasn’t saved because the note changed on another device first. Restore it, or copy what you need.",
+  "@historyConflictSomeone": {
+    "description": "Notice on a version that couldn’t be saved, written by someone whose account no longer exists. Keep the <b> tags around the first sentence."
+  },
+  "historyLoadVersionFailed": "Couldn’t load this version.",
+  "@historyLoadVersionFailed": {
+    "description": "Shown when a version’s text couldn’t be loaded, followed by a Try again button."
+  },
+  "historySameAsNext": "Same text as the version after this one.",
+  "@historySameAsNext": {
+    "description": "Shown when a version has the same text as the newer version after it."
+  },
+  "historySameAsNow": "Same text as the note is now.",
+  "@historySameAsNow": {
+    "description": "Shown when a version has the same text as the note has now."
+  },
+  "historyNoText": "This version has no text.",
+  "@historyNoText": {
+    "description": "Shown in place of the text of a version that is empty."
+  },
+  "historyAlreadyMatches": "The note already matches this version",
+  "@historyAlreadyMatches": {
+    "description": "Message after Restore when the note already had this version’s text."
+  },
+  "historyRestored": "Version restored",
+  "@historyRestored": {
+    "description": "Message after a version was put back on the note, with an Undo button."
+  },
+  "historyRestoreFailed": "Couldn’t restore this version",
+  "@historyRestoreFailed": {
+    "description": "Error message when putting a version back failed, with a Try again button."
+  },
+  "historyUndoRestoreFailed": "Couldn’t undo the restore",
+  "@historyUndoRestoreFailed": {
+    "description": "Error message when undoing a restore failed."
+  },
+  "historyBackToList": "Back to the version list",
+  "@historyBackToList": {
+    "description": "Back button on a version page on phones, where the list of versions is a separate screen."
+  },
+  "historyBackToNote": "Back to the note",
+  "@historyBackToNote": {
+    "description": "Back button that closes version history and returns to the note."
+  },
+  "historyCurrentVersion": "Current version",
+  "@historyCurrentVersion": {
+    "description": "The note’s latest text: first row of the list of versions and title of its page."
+  },
+  "historyNewer": "Newer version",
+  "@historyNewer": {
+    "description": "Button that shows the next newer version."
+  },
+  "historyOlder": "Older version",
+  "@historyOlder": {
+    "description": "Button that shows the next older version."
+  },
+  "historyWaitingToSave": "Waiting for the note to save",
+  "@historyWaitingToSave": {
+    "description": "Tooltip of the Restore button while the note’s latest changes are still being saved."
+  },
+  "historyRestoreTip": "Put this version back on the note",
+  "@historyRestoreTip": {
+    "description": "Tooltip of the Restore button on a version page."
+  },
+  "historyRestore": "Restore",
+  "@historyRestore": {
+    "description": "Button that puts a version back on the note. Verb."
+  },
+  "historyRestoring": "Restoring…",
+  "@historyRestoring": {
+    "description": "Shown on the Restore button while a version is being put back."
+  },
+  "historyLoadingVersion": "Loading this version",
+  "@historyLoadingVersion": {
+    "description": "Screen reader name of the placeholder shown while a version loads."
+  },
+  "historyVersions": "Versions",
+  "@historyVersions": {
+    "description": "Screen reader name of the list of the note’s versions."
+  },
+  "historyTitle": "History",
+  "@historyTitle": {
+    "description": "Heading of the side panel with the list of the note’s versions."
+  },
+  "historyClose": "Close history",
+  "@historyClose": {
+    "description": "Button that closes version history."
+  },
+  "historyKeysHint": "<arrows>Up and down arrows</arrows> to move between versions",
+  "@historyKeysHint": {
+    "description": "Hint at the foot of the list of versions. The words inside <arrows> are read by screen readers only; others see the arrow keys there. Keep the <arrows> tags."
+  },
+  "historyKeptFor": "Versions older than 90 days are deleted.",
+  "@historyKeptFor": {
+    "description": "Small note at the foot of the list of versions."
+  },
+  "historyEmptyTitle": "No earlier versions yet",
+  "@historyEmptyTitle": {
+    "description": "Title shown when the note has no earlier versions."
+  },
+  "historyEmptyText": "A version is kept each time the note changes, for 90 days.",
+  "@historyEmptyText": {
+    "description": "Help under “No earlier versions yet”."
+  },
+  "historyLoadFailed": "Couldn’t load versions.",
+  "@historyLoadFailed": {
+    "description": "Shown in the list of versions when it couldn’t be loaded, followed by a Try again button."
+  },
+  "historyLoadMoreFailed": "Couldn’t load older versions.",
+  "@historyLoadMoreFailed": {
+    "description": "Shown at the end of the list of versions when older ones couldn’t be loaded, followed by a Try again button."
+  },
+  "historyUnchangedLines": "{count, plural, =1{1 unchanged line} other{{count} unchanged lines}}",
+  "@historyUnchangedLines": {
+    "description": "Button that shows lines a version didn’t change, which are folded away."
+  },
+  "historyLineChecked": "Checked:",
+  "@historyLineChecked": {
+    "description": "Screen reader text read before a checked checklist item in a version."
+  },
+  "historyLineNotChecked": "Not checked:",
+  "@historyLineNotChecked": {
+    "description": "Screen reader text read before an unchecked checklist item in a version."
+  },
+  "historyLineAdded": "Added:",
+  "@historyLineAdded": {
+    "description": "Screen reader text read before a line the version added."
+  },
+  "historyLineRemoved": "Removed:",
+  "@historyLineRemoved": {
+    "description": "Screen reader text read before a line the version removed."
+  },
+  "historyLineChanged": "Changed:",
+  "@historyLineChanged": {
+    "description": "Screen reader text read before a line the version changed."
+  },
+  "attachmentRejectedOne": "Can’t add {first}. Pick pictures or audio up to {limit} MB.",
+  "@attachmentRejectedOne": {
+    "description": "Error message when a file can’t be added to a note. {first} is the file’s name; {limit} is the largest size allowed, in megabytes."
+  },
+  "attachmentRejectedTwo": "Can’t add {first} and {second}. Pick pictures or audio up to {limit} MB.",
+  "@attachmentRejectedTwo": {
+    "description": "Error message when two files can’t be added to a note. {first} and {second} are file names; {limit} is the largest size allowed, in megabytes."
+  },
+  "attachmentRejectedMore": "{count, plural, =1{Can’t add {first}, {second} and 1 more. Pick pictures or audio up to {limit} MB.} other{Can’t add {first}, {second} and {count} more. Pick pictures or audio up to {limit} MB.}}",
+  "@attachmentRejectedMore": {
+    "description": "Error message when three or more files can’t be added to a note. {first} and {second} are file names; {count} is how many more files; {limit} is the largest size allowed, in megabytes."
+  },
+  "attachmentNoteNotSaved": "Couldn’t save the note, so the files weren’t added.",
+  "@attachmentNoteNotSaved": {
+    "description": "Read by screen readers when files were dropped on a new note that couldn’t be saved."
+  },
+  "attachmentSomeFailed": "{total, plural, =1{Couldn’t upload {failed} of 1 file} other{Couldn’t upload {failed} of {total} files}}",
+  "@attachmentSomeFailed": {
+    "description": "Error message when some of several files couldn’t be uploaded. {failed} is how many failed; {total} is how many were sent."
+  },
+  "attachmentFilesAdded": "{count, plural, =1{1 file added} other{{count} files added}}",
+  "@attachmentFilesAdded": {
+    "description": "Message after several files were added to a note."
+  },
+  "attachmentUploadFailedName": "Couldn’t upload {name}",
+  "@attachmentUploadFailedName": {
+    "description": "Error message when a file couldn’t be uploaded. {name} is the file’s name."
+  },
+  "attachmentAdded": "{name} added",
+  "@attachmentAdded": {
+    "description": "Read by screen readers after a file was added to the note. {name} is the file’s name."
+  },
+  "attachmentDeleted": "{name} deleted",
+  "@attachmentDeleted": {
+    "description": "Message after a file was removed from a note, with an Undo button. {name} is the file’s name."
+  },
+  "attachmentDeleteFailed": "Couldn’t delete {name}",
+  "@attachmentDeleteFailed": {
+    "description": "Error message when a file couldn’t be removed from a note. {name} is the file’s name."
+  },
+  "attachmentMoveFailed": "Couldn’t move the file",
+  "@attachmentMoveFailed": {
+    "description": "Error message when the new order of a note’s files couldn’t be saved."
+  },
+  "attachmentMoved": "Moved to {place} of {count}",
+  "@attachmentMoved": {
+    "description": "Read by screen readers after a file was moved in the row of files. {place} is its new position; {count} is how many files of its kind there are."
+  },
+  "attachmentStrip": "Attachments",
+  "@attachmentStrip": {
+    "description": "Screen reader name of the row of pictures and audio files in a note."
+  },
+  "attachmentAdd": "Add",
+  "@attachmentAdd": {
+    "description": "Short: label on a small square tile at the end of the row of files that adds a picture or audio file. Verb."
+  },
+  "attachmentOpenViewer": "{name}, open viewer",
+  "@attachmentOpenViewer": {
+    "description": "Screen reader label of a picture in the note that opens it in a large view. {name} is the file’s name."
+  },
+  "attachmentRetryName": "Try again, {name}",
+  "@attachmentRetryName": {
+    "description": "Screen reader label of the Try again button on a file that couldn’t load or upload. {name} is the file’s name."
+  },
+  "attachmentDeleteName": "Delete {name}",
+  "@attachmentDeleteName": {
+    "description": "Screen reader label of the small button that removes a file from the note. {name} is the file’s name."
+  },
+  "attachmentPlay": "Play {name}",
+  "@attachmentPlay": {
+    "description": "Screen reader label of the button that plays an audio file. {name} is the file’s name."
+  },
+  "attachmentPause": "Pause {name}",
+  "@attachmentPause": {
+    "description": "Screen reader label of the button that pauses an audio file. {name} is the file’s name."
+  },
+  "attachmentLoadFailed": "Couldn’t load",
+  "@attachmentLoadFailed": {
+    "description": "Short: shown on an audio file that couldn’t be loaded, followed by a Try again button."
+  },
+  "attachmentPosition": "{name} position",
+  "@attachmentPosition": {
+    "description": "Screen reader name of the slider that moves through an audio file. {name} is the file’s name."
+  },
+  "attachmentTimeOf": "{position} of {duration}",
+  "@attachmentTimeOf": {
+    "description": "Screen reader value of an audio file’s slider. {position} and {duration} are times such as “0:42” and “3:10”."
+  },
+  "attachmentRemoveName": "Remove {name}",
+  "@attachmentRemoveName": {
+    "description": "Screen reader label of the small button that removes a file that failed to upload. {name} is the file’s name."
+  },
+  "attachmentCancelName": "Cancel {name}",
+  "@attachmentCancelName": {
+    "description": "Screen reader label of the small button that stops a file’s upload. {name} is the file’s name. Verb."
+  },
+  "attachmentUploading": "Uploading…",
+  "@attachmentUploading": {
+    "description": "Short: shown on an audio file while it uploads."
+  },
+  "attachmentUploadFailed": "Couldn’t upload",
+  "@attachmentUploadFailed": {
+    "description": "Short: shown on an audio file that couldn’t be uploaded, followed by a Try again button."
+  },
+  "attachmentUploadingName": "Uploading {name}",
+  "@attachmentUploadingName": {
+    "description": "Screen reader name of the progress ring on a picture while it uploads. {name} is the file’s name."
+  },
+  "attachmentViewerCount": "{index} of {count}",
+  "@attachmentViewerCount": {
+    "description": "In the large picture view: which picture is shown, such as “2 of 5”."
+  },
+  "attachmentDownload": "Download",
+  "@attachmentDownload": {
+    "description": "Short: button in the large picture view that saves the picture. Verb."
+  },
+  "attachmentPrevious": "Previous picture",
+  "@attachmentPrevious": {
+    "description": "Screen reader label of the button that shows the picture before in the large picture view."
+  },
+  "attachmentNext": "Next picture",
+  "@attachmentNext": {
+    "description": "Screen reader label of the button that shows the next picture in the large picture view."
+  },
+  "attachmentPictureLoadFailed": "Couldn’t load the picture",
+  "@attachmentPictureLoadFailed": {
+    "description": "Shown in the large picture view when the picture couldn’t be loaded, followed by a Try again button."
+  },
+  "attachmentViewerKeys": "← → to move · Esc to close",
+  "@attachmentViewerKeys": {
+    "description": "Hint at the foot of the large picture view on computers. Keep the arrows and the dot; “Esc” is the name of the Escape key as printed on keyboards."
+  },
+  "attachmentViewerSwipe": "Swipe to move",
+  "@attachmentViewerSwipe": {
+    "description": "Hint at the foot of the large picture view on phones: swipe sideways to see the other pictures."
+  },
+  "importExportSectionTitle": "Import and export",
+  "@importExportSectionTitle": {
+    "description": "Heading of the Settings section for importing and exporting notes."
+  },
+  "exportSettingsTitle": "Export",
+  "@exportSettingsTitle": {
+    "description": "Title of the Settings row for exporting notes. Noun. Short."
+  },
+  "exportSettingsText": "Download all your notes as a backup, or to move them to another app.",
+  "@exportSettingsText": {
+    "description": "Explanation under the Export title in Settings."
+  },
+  "importSettingsTitle": "Import",
+  "@importSettingsTitle": {
+    "description": "Title of the Settings row for importing notes. Noun. Short."
+  },
+  "importSettingsText": "Import from an Anchor backup, Google Keep, or Markdown files from Obsidian and Nextcloud Notes.",
+  "@importSettingsText": {
+    "description": "Explanation under the Import title in Settings. Anchor, Google Keep, Markdown, Obsidian and Nextcloud Notes are product names; keep them as they are."
+  },
+  "importButton": "Import",
+  "@importButton": {
+    "description": "Button in Settings that opens the import dialog. Verb. Short."
+  },
+  "exportButton": "Export",
+  "@exportButton": {
+    "description": "Button in Settings that opens a menu of export formats. Verb. Short."
+  },
+  "exportAnchorLabel": "Anchor backup (.zip)",
+  "@exportAnchorLabel": {
+    "description": "Export menu item that downloads a full Anchor backup as a zip file. Keep “.zip” as it is."
+  },
+  "exportAnchorHint": "Everything, to restore later: notes, tags and attachments",
+  "@exportAnchorHint": {
+    "description": "Small text under “Anchor backup (.zip)” in the export menu."
+  },
+  "exportMarkdownLabel": "Markdown files (.zip)",
+  "@exportMarkdownLabel": {
+    "description": "Export menu item that downloads the notes as Markdown files in a zip file. Markdown is a file format name; keep it and “.zip” as they are."
+  },
+  "exportMarkdownHint": "Plain .md files for Obsidian, Nextcloud Notes and others",
+  "@exportMarkdownHint": {
+    "description": "Small text under “Markdown files (.zip)” in the export menu. Obsidian and Nextcloud Notes are app names; keep them and “.md” as they are."
+  },
+  "exportPreparing": "Preparing your export…",
+  "@exportPreparing": {
+    "description": "Message shown while the server builds the export file."
+  },
+  "exportDownloaded": "Export downloaded",
+  "@exportDownloaded": {
+    "description": "Short message after the export file has downloaded."
+  },
+  "exportFailed": "Couldn’t export your notes",
+  "@exportFailed": {
+    "description": "Short error message when the export fails. It has a Try again button."
+  },
+  "importTitle": "Import notes",
+  "@importTitle": {
+    "description": "Title of the import dialog."
+  },
+  "importDescription": "Import from an Anchor backup, a Google Keep export, or Markdown files.",
+  "@importDescription": {
+    "description": "Text under the title of the import dialog. Anchor, Google Keep and Markdown are product and format names; keep them as they are."
+  },
+  "importDropTitle": "Drop a zip or a folder here",
+  "@importDropTitle": {
+    "description": "Main text of the import dialog’s drop area, where people drag a zip file or a folder."
+  },
+  "importDropHint": "or click to choose files",
+  "@importDropHint": {
+    "description": "Text under “Drop a zip or a folder here”; clicking the drop area opens the file picker. Starts in lowercase in English because it continues the line above."
+  },
+  "importReading": "Reading {name}…",
+  "@importReading": {
+    "description": "Shown in the drop area while the picked files are read. {name} is the file name, the folder name, or a number of files such as “12 files”."
+  },
+  "importReadingHint": "Large exports can take a few seconds.",
+  "@importReadingHint": {
+    "description": "Text under “Reading {name}…” in the drop area."
+  },
+  "importFormatAnchor": "Anchor backup",
+  "@importFormatAnchor": {
+    "description": "Name of the Anchor backup file format: a badge in the drop area and the format shown under the picked file’s name. Short."
+  },
+  "importFormatMarkdown": "Markdown files",
+  "@importFormatMarkdown": {
+    "description": "Name of the Markdown format, shown under the picked file’s name. Markdown is a format name; keep it as it is. Short."
+  },
+  "importFileCount": "{count, plural, =1{1 file} other{{count} files}}",
+  "@importFileCount": {
+    "description": "Stands in for a name when several loose files are picked, under the import dialog’s drop area and in “Reading {name}…”."
+  },
+  "importChangeFile": "Change",
+  "@importChangeFile": {
+    "description": "Button beside the picked file in the import dialog that goes back to pick other files. Verb. Short."
+  },
+  "importStatNotes": "{count, plural, =1{note} other{notes}}",
+  "@importStatNotes": {
+    "description": "Label under the number of notes found, in the import preview. The number is shown in large type above it, so the label has no number. Short."
+  },
+  "importStatTags": "{count, plural, =1{tag} other{tags}}",
+  "@importStatTags": {
+    "description": "Label under the number of tags found, in the import preview. The number is shown in large type above it, so the label has no number. Short."
+  },
+  "importStatAttachments": "{count, plural, =1{attachment} other{attachments}}",
+  "@importStatAttachments": {
+    "description": "Label under the number of attachments (pictures and recordings) found, in the import preview. The number is shown in large type above it, so the label has no number. Short."
+  },
+  "importTruncated": "{count, plural, other{Only the first # files were read.}}",
+  "@importTruncated": {
+    "description": "Note in the import preview when a dropped folder had more files than the import reads. # is the most it reads, such as 5,000. English uses one form; add the plural forms your language needs."
+  },
+  "importWillBeSkipped": "{count, plural, =1{1 item will be skipped} other{{count} items will be skipped}}",
+  "@importWillBeSkipped": {
+    "description": "Title of a list in the import preview of files and notes that won’t be imported. An item is a note or a file."
+  },
+  "importSkipExisting": "Skip notes that already exist",
+  "@importSkipExisting": {
+    "description": "Checkbox in the import preview of an Anchor backup."
+  },
+  "importSkipExistingHint": "Otherwise they are imported as copies.",
+  "@importSkipExistingHint": {
+    "description": "Small text under “Skip notes that already exist”."
+  },
+  "importFolderTags": "Use folder names as tags",
+  "@importFolderTags": {
+    "description": "Checkbox in the import preview of Markdown files that sit in folders."
+  },
+  "importFolderTagsHint": "Nextcloud categories and Obsidian folders become tags.",
+  "@importFolderTagsHint": {
+    "description": "Small text under “Use folder names as tags”. Nextcloud and Obsidian are app names; keep them as they are."
+  },
+  "importStart": "{count, plural, =1{Import 1 note} other{Import {count} notes}}",
+  "@importStart": {
+    "description": "Button in the import preview that starts the import. Verb."
+  },
+  "importProgressNotes": "Importing notes {done} of {total}",
+  "@importProgressNotes": {
+    "description": "Progress line while notes are sent to the server. {done} is how many are done, {total} how many there are."
+  },
+  "importProgressAttachments": "Uploading attachments {done} of {total}",
+  "@importProgressAttachments": {
+    "description": "Progress line while attachments are uploaded. {done} is how many are done, {total} how many there are."
+  },
+  "importProgressLabel": "Import",
+  "@importProgressLabel": {
+    "description": "Name of the import progress bar, read by screen readers. Noun. Short."
+  },
+  "importKeepTabOpen": "Keep this tab open until the import finishes.",
+  "@importKeepTabOpen": {
+    "description": "Text under the import progress bar. The tab is the browser tab."
+  },
+  "importNothingFound": "Nothing to import here. Drop an Anchor backup, a Google Takeout zip, or a folder of Markdown (.md) files.",
+  "@importNothingFound": {
+    "description": "Error under the drop area when the picked files are none of the formats the import reads. Anchor, Google Takeout and Markdown are product and format names; keep them and “.md” as they are."
+  },
+  "importNoNotes": "No importable notes found in this file.",
+  "@importNoNotes": {
+    "description": "Error under the drop area when the picked file has the right format but no notes in it."
+  },
+  "importFileUnreadable": "Couldn’t read this file.",
+  "@importFileUnreadable": {
+    "description": "Error under the drop area when the picked file can’t be read, for example a damaged zip file."
+  },
+  "importBackupTooNew": "This backup is from a newer version of Anchor. Update your server, then try again.",
+  "@importBackupTooNew": {
+    "description": "Error under the drop area when the Anchor backup was made by a newer version than this server runs."
+  },
+  "importErrorUnreachable": "Couldn’t reach the server. Check your connection, then try again.",
+  "@importErrorUnreachable": {
+    "description": "Error under the import progress bar when the server can’t be reached before any note was saved. It has a Try again button."
+  },
+  "importErrorUnreachableStopped": "{total, plural, =1{Couldn’t reach the server. The import stopped at {done} of 1 note; the notes before that are saved.} other{Couldn’t reach the server. The import stopped at {done} of {total} notes; the notes before that are saved.}}",
+  "@importErrorUnreachableStopped": {
+    "description": "Error under the import progress bar when the server can’t be reached partway. {done} is how many notes were saved, {total} how many there are. It has a Try again button that goes on from there. Give every plural form your language needs."
+  },
+  "importErrorFailed": "Couldn’t import your notes.",
+  "@importErrorFailed": {
+    "description": "Error under the import progress bar when the server turns the import down before any note was saved. It has a Try again button."
+  },
+  "importErrorFailedStopped": "{total, plural, =1{Couldn’t import your notes. The import stopped at {done} of 1 note; the notes before that are saved.} other{Couldn’t import your notes. The import stopped at {done} of {total} notes; the notes before that are saved.}}",
+  "@importErrorFailedStopped": {
+    "description": "Error under the import progress bar when the server turns the import down partway. {done} is how many notes were saved, {total} how many there are. Give every plural form your language needs."
+  },
+  "importErrorAttachmentsStopped": "{total, plural, =1{Couldn’t reach the server. The import stopped at {done} of 1 attachment; the notes and the attachments before that are saved.} other{Couldn’t reach the server. The import stopped at {done} of {total} attachments; the notes and the attachments before that are saved.}}",
+  "@importErrorAttachmentsStopped": {
+    "description": "Error under the import progress bar when the server can’t be reached while attachments upload. {done} is how many attachments are done, {total} how many there are. It has a Try again button that goes on from there. Give every plural form your language needs."
+  },
+  "importReportNothing": "Nothing was imported",
+  "@importReportNothing": {
+    "description": "Heading of the import result when no note was imported."
+  },
+  "importReportImported": "{count, plural, =1{1 note imported} other{{count} notes imported}}",
+  "@importReportImported": {
+    "description": "Heading of the import result."
+  },
+  "importReportImportedWithIssues": "{count, plural, =1{1 note imported} other{{count} notes imported}}, {issues, plural, =1{1 needs attention} other{{issues} need attention}}",
+  "@importReportImportedWithIssues": {
+    "description": "Heading of the import result when some items had problems. {count} is the number of notes imported, {issues} the number of notes and files that need a look."
+  },
+  "importReportCreated": "{count, plural, other{<b>{count}</b> imported}}",
+  "@importReportCreated": {
+    "description": "Small label in the import result: the number of notes imported. Keep <b> and </b> around the number; it shows in bold. English uses one form; add the plural forms your language needs. Short."
+  },
+  "importReportRemapped": "{count, plural, other{<b>{count}</b> imported as copies}}",
+  "@importReportRemapped": {
+    "description": "Small label in the import result: the number of notes imported as copies because the same note was already in the account. Keep <b> and </b> around the number. English uses one form; add the plural forms your language needs. Short."
+  },
+  "importReportSkipped": "{count, plural, other{<b>{count}</b> already there}}",
+  "@importReportSkipped": {
+    "description": "Small label in the import result: the number of notes left out because they were already in the account. Keep <b> and </b> around the number. English uses one form; add the plural forms your language needs. Short."
+  },
+  "importReportFailed": "{count, plural, other{<b>{count}</b> failed}}",
+  "@importReportFailed": {
+    "description": "Small label in the import result: the number of notes that couldn’t be imported. Keep <b> and </b> around the number. English uses one form; add the plural forms your language needs. Short."
+  },
+  "importReportAttachmentsUploaded": "{count, plural, =1{<b>{count}</b> attachment uploaded} other{<b>{count}</b> attachments uploaded}}",
+  "@importReportAttachmentsUploaded": {
+    "description": "Small label in the import result: the number of attachments uploaded. Keep <b> and </b> around the number. Give every plural form your language needs. Short."
+  },
+  "importReportAttachmentsFailed": "{count, plural, =1{<b>{count}</b> attachment failed} other{<b>{count}</b> attachments failed}}",
+  "@importReportAttachmentsFailed": {
+    "description": "Small label in the import result: the number of attachments that couldn’t be uploaded. Keep <b> and </b> around the number. Give every plural form your language needs. Short."
+  },
+  "importNeedAttention": "{count, plural, =1{1 item needs attention} other{{count} items need attention}}",
+  "@importNeedAttention": {
+    "description": "Title of the list of notes and files with problems, in the import result. An item is a note or a file."
+  },
+  "importRestoredTrashed": "Notes restored to the trash get a fresh 30 days there.",
+  "@importRestoredTrashed": {
+    "description": "Note in the import result when notes that were in the trash came back into the trash. Notes in the trash are deleted after 30 days."
+  },
+  "importIssueLine": "<b>{item}</b>: {reason}",
+  "@importIssueLine": {
+    "description": "One line in the list of skipped items or items that need attention. {item} is a note title or a file name, shown in bold; {reason} is one of the importIssue messages. Keep <b> and </b> around {item}."
+  },
+  "importIssueBackupAttachmentMissing": "Attachment file missing from backup archive",
+  "@importIssueBackupAttachmentMissing": {
+    "description": "Why an attachment is skipped: the Anchor backup lists it but the file isn’t in the zip. Follows a file name and a colon."
+  },
+  "importIssueNoteFileUnreadable": "Unreadable note file",
+  "@importIssueNoteFileUnreadable": {
+    "description": "Why a note is skipped: its file in the Google Keep export can’t be read. Follows a file name and a colon."
+  },
+  "importIssueTrashedInKeep": "Trashed in Google Keep",
+  "@importIssueTrashedInKeep": {
+    "description": "Why a note is skipped: it was in the trash in Google Keep. Google Keep is a product name; keep it as it is. Follows a note title and a colon."
+  },
+  "importIssueExportAttachmentMissing": "Attachment file not found in export",
+  "@importIssueExportAttachmentMissing": {
+    "description": "Why an attachment is skipped: the Google Keep note names it but the file isn’t in the export. Follows a file name and a colon."
+  },
+  "importIssueUnsupportedFileType": "Unsupported file type ({fileType})",
+  "@importIssueUnsupportedFileType": {
+    "description": "Why an attachment is skipped: Anchor can’t store that kind of file. {fileType} is a technical type such as “audio/3gpp” or a file ending such as “pdf”. Follows a file name and a colon."
+  },
+  "importIssueAttachmentNotFound": "Attachment file not found",
+  "@importIssueAttachmentNotFound": {
+    "description": "Why a picture in a Markdown note is skipped: the file it points to isn’t among the picked files. Follows a file name and a colon."
+  },
+  "importIssueEmptyFile": "Empty file",
+  "@importIssueEmptyFile": {
+    "description": "Why a Markdown file is skipped: it has no text. Follows a file name and a colon."
+  },
+  "importIssueNoteTooLarge": "Note is too large (over 1 MB of formatted content)",
+  "@importIssueNoteTooLarge": {
+    "description": "Why a Markdown file is skipped: the note would be larger than Anchor allows. MB is megabytes. Follows a file name and a colon."
+  },
+  "importIssueNoteFailed": "Couldn’t import this note",
+  "@importIssueNoteFailed": {
+    "description": "Why a note needs attention: the server turned it down. Follows a note title and a colon."
+  },
+  "importIssueContentInvalid": "Its text couldn’t be read, so it was left out",
+  "@importIssueContentInvalid": {
+    "description": "Why a note needs attention: it was imported without its text. Follows a note title and a colon."
+  },
+  "importIssueBackgroundUnknown": "Its background isn’t one Anchor has, so it was left plain",
+  "@importIssueBackgroundUnknown": {
+    "description": "Why a note needs attention: it was imported without its background color. Follows a note title and a colon."
+  },
+  "importIssueWarning": "Imported with a problem",
+  "@importIssueWarning": {
+    "description": "Why a note needs attention, when the server reports a problem this app has no words for. Follows a note title and a colon."
+  },
+  "importIssueAttachmentUnreadable": "Couldn’t read the file",
+  "@importIssueAttachmentUnreadable": {
+    "description": "Why an attachment needs attention: its file couldn’t be read from the picked files. Follows a file name and a colon."
+  },
+  "importIssueAttachmentUploadFailed": "Couldn’t upload the attachment",
+  "@importIssueAttachmentUploadFailed": {
+    "description": "Why an attachment needs attention: the server turned the upload down. Follows a file name and a colon."
+  },
+  "notesTitle": "Notes",
+  "@notesTitle": {
+    "description": "Title of the page that lists every note. Noun."
+  },
+  "notesSearch": "Search notes",
+  "@notesSearch": {
+    "description": "Hint inside the empty search field on the notes page."
+  },
+  "notesSearchTag": "Search #{tag}",
+  "@notesSearchTag": {
+    "description": "Hint inside the empty search field on a tag’s page. Keep the # right before the tag name.",
+    "placeholders": {
+      "tag": {
+        "type": "String",
+        "example": "travel"
+      }
+    }
+  },
+  "notesNew": "New note",
+  "@notesNew": {
+    "description": "Button, and floating button, that starts a new note. Short."
+  },
+  "notesShowAll": "Show all notes",
+  "@notesShowAll": {
+    "description": "Tooltip and screen reader label of the X button beside a tag’s name at the top of its page. It goes back to every note."
+  },
+  "notesLoadFailed": "Couldn’t load your notes",
+  "@notesLoadFailed": {
+    "description": "Title shown in place of the notes when they didn’t load, above a Try again button."
+  },
+  "notesEmptyTitle": "No notes yet",
+  "@notesEmptyTitle": {
+    "description": "Title of the empty notes page before the person has any notes."
+  },
+  "notesEmptyHelp": "Create a note, or import your notes from Google Keep or Markdown in Settings.",
+  "@notesEmptyHelp": {
+    "description": "Help under “No notes yet”. Google Keep and Markdown are names; keep them as they are. Settings is the name of the settings page."
+  },
+  "notesGroupPinned": "Pinned",
+  "@notesGroupPinned": {
+    "description": "Heading above the pinned notes, followed by their count. Short."
+  },
+  "notesGroupOthers": "Others",
+  "@notesGroupOthers": {
+    "description": "Heading above the notes that aren’t pinned, when some notes are pinned. Short."
+  },
+  "notesGroupArchived": "Archived",
+  "@notesGroupArchived": {
+    "description": "Heading of the archived notes listed below the others in search results and on a tag’s page, followed by their count. On a tag’s page it can be clicked to show or hide them. Short."
+  },
+  "notesArchivedLoadFailed": "Couldn’t load archived notes.",
+  "@notesArchivedLoadFailed": {
+    "description": "Shown under the Archived heading when the archived notes didn’t load, next to a Try again button."
+  },
+  "notesLoading": "Loading notes",
+  "@notesLoading": {
+    "description": "Screen reader label of the gray placeholder cards shown while notes load."
+  },
+  "notesSelectMode": "Select",
+  "@notesSelectMode": {
+    "description": "Button in the top bar that turns on picking several notes at once. Verb. Short."
+  },
+  "notesNoResultsTitle": "No results for “{query}”",
+  "@notesNoResultsTitle": {
+    "description": "Title shown when a search finds no notes.",
+    "placeholders": {
+      "query": {
+        "type": "String",
+        "example": "recipes"
+      }
+    }
+  },
+  "notesNoResultsHelp": "Check the spelling or try different words.",
+  "@notesNoResultsHelp": {
+    "description": "Help under the title shown when a search finds no notes."
+  },
+  "notesClearSearch": "Clear search",
+  "@notesClearSearch": {
+    "description": "Button that empties the search field when a search finds no notes."
+  },
+  "notesTag": "Tag",
+  "@notesTag": {
+    "description": "Button in the bar shown while picking notes: adds or removes tags on the picked notes. Verb. Short: fits the selection bar."
+  },
+  "notesPin": "Pin",
+  "@notesPin": {
+    "description": "Button in the selection bar that pins the picked notes to the top. Verb. Short."
+  },
+  "notesUnpin": "Unpin",
+  "@notesUnpin": {
+    "description": "Button in the selection bar that unpins the picked notes. Verb. Short."
+  },
+  "notesArchive": "Archive",
+  "@notesArchive": {
+    "description": "Button in the selection bar that moves the picked notes to the archive. Verb. Short."
+  },
+  "notesUnarchive": "Unarchive",
+  "@notesUnarchive": {
+    "description": "Button that moves notes from the archive back to Notes, in the selection bar and on an archived note card. Verb. Short."
+  },
+  "notesPinnedCount": "{count, plural, =1{1 note pinned} other{{count} notes pinned}}",
+  "@notesPinnedCount": {
+    "description": "Message after the picked notes were pinned, with an Undo button.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "notesUnpinnedCount": "{count, plural, =1{1 note unpinned} other{{count} notes unpinned}}",
+  "@notesUnpinnedCount": {
+    "description": "Message after the picked notes were unpinned, with an Undo button.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "notesArchivedCount": "{count, plural, =1{1 note archived} other{{count} notes archived}}",
+  "@notesArchivedCount": {
+    "description": "Message after the picked notes were moved to the archive, with an Undo button.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "notesUnarchivedCount": "{count, plural, =1{1 note unarchived} other{{count} notes unarchived}}",
+  "@notesUnarchivedCount": {
+    "description": "Message after the picked notes were moved out of the archive, with an Undo button.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "notesPinFailed": "{count, plural, =1{Couldn’t pin note} other{Couldn’t pin notes}}",
+  "@notesPinFailed": {
+    "description": "Error message when pinning notes failed, with a Try again button.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "notesUnpinFailed": "{count, plural, =1{Couldn’t unpin note} other{Couldn’t unpin notes}}",
+  "@notesUnpinFailed": {
+    "description": "Error message when unpinning notes failed, with a Try again button.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "notesArchiveFailed": "{count, plural, =1{Couldn’t archive note} other{Couldn’t archive notes}}",
+  "@notesArchiveFailed": {
+    "description": "Error message when moving notes to the archive failed, with a Try again button.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "notesUnarchiveFailed": "{count, plural, =1{Couldn’t unarchive note} other{Couldn’t unarchive notes}}",
+  "@notesUnarchiveFailed": {
+    "description": "Error message when moving notes out of the archive failed, with a Try again button.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "notesDeleteFailed": "{count, plural, =1{Couldn’t delete note} other{Couldn’t delete notes}}",
+  "@notesDeleteFailed": {
+    "description": "Error message when moving notes to the trash failed, with a Try again button.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "notesUndoFailed": "Couldn’t undo that",
+  "@notesUndoFailed": {
+    "description": "Error message when the Undo button of a message didn’t work."
+  },
+  "notesDeleteTitle": "{count, plural, =1{Delete 1 note?} other{Delete {count} notes?}}",
+  "@notesDeleteTitle": {
+    "description": "Title of the dialog that confirms deleting the picked notes when some of them were shared with the person.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "notesDeleteSharedWarning": "{count, plural, =1{1 note shared with you will be removed from your notes. To see it again, the owner has to share it with you again.} other{{count} notes shared with you will be removed from your notes. To see them again, the owner has to share them with you again.}}",
+  "@notesDeleteSharedWarning": {
+    "description": "Message of the dialog that confirms deleting notes, when every picked note was shared with the person by someone else.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "notesDeleteMixedWarning": "{owned, plural, =1{1 note will be moved to trash.} other{{owned} notes will be moved to trash.}} {shared, plural, =1{1 note shared with you will be removed from your notes. To see it again, the owner has to share it with you again.} other{{shared} notes shared with you will be removed from your notes. To see them again, the owner has to share them with you again.}}",
+  "@notesDeleteMixedWarning": {
+    "description": "Message of the dialog that confirms deleting notes: {owned} are the person’s own notes, which go to the trash, and {shared} are notes others shared with them, which leave their list.",
+    "placeholders": {
+      "owned": {
+        "type": "int",
+        "example": "2"
+      },
+      "shared": {
+        "type": "int",
+        "example": "1"
+      }
+    }
+  },
+  "notesDeleting": "Deleting…",
+  "@notesDeleting": {
+    "description": "Button text while notes are being deleted, after the person confirmed."
+  },
+  "notesMovedToTrashCount": "{count, plural, =1{1 note moved to trash} other{{count} notes moved to trash}}",
+  "@notesMovedToTrashCount": {
+    "description": "Message after the person’s own notes were moved to the trash, with an Undo button.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "notesRemovedCount": "{count, plural, =1{1 note removed from your notes} other{{count} notes removed from your notes}}",
+  "@notesRemovedCount": {
+    "description": "Message after notes that others shared with the person were taken off their list.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "notesTrashedMixed": "{owned, plural, =1{1 note moved to trash.} other{{owned} notes moved to trash.}} {shared, plural, other{{shared} removed from your notes.}}",
+  "@notesTrashedMixed": {
+    "description": "Message after deleting picked notes: {owned} of the person’s own notes went to the trash and {shared} notes others shared with them left their list. It has an Undo button.",
+    "placeholders": {
+      "owned": {
+        "type": "int",
+        "example": "2"
+      },
+      "shared": {
+        "type": "int",
+        "example": "1"
+      }
+    }
+  },
+  "notesArchived": "Note archived",
+  "@notesArchived": {
+    "description": "Message after the open note was moved to the archive, with an Undo button."
+  },
+  "notesMovedToTrash": "Note moved to trash",
+  "@notesMovedToTrash": {
+    "description": "Message after the open note was moved to the trash, with an Undo button."
+  },
+  "notesRemoved": "Note removed from your notes",
+  "@notesRemoved": {
+    "description": "Message after the person took a note someone else shared with them off their list."
+  },
+  "notesMoveToTrashFailed": "Couldn’t move note to trash",
+  "@notesMoveToTrashFailed": {
+    "description": "Error message when moving the open note to the trash failed, with a Try again button."
+  },
+  "notesRemoveFailed": "Couldn’t remove note",
+  "@notesRemoveFailed": {
+    "description": "Error message when taking a note shared with the person off their list failed, with a Try again button."
+  },
+  "notesDateToday": "Today",
+  "@notesDateToday": {
+    "description": "Date on a note card or in a note when it was last edited today."
+  },
+  "notesDateYesterday": "Yesterday",
+  "@notesDateYesterday": {
+    "description": "Date on a note card or in a note when it was last edited yesterday."
+  },
+  "notesSelectNote": "Select {title}",
+  "@notesSelectNote": {
+    "description": "Screen reader label of the round check button on a note card that picks the note.",
+    "placeholders": {
+      "title": {
+        "type": "String",
+        "example": "Shopping list"
+      }
+    }
+  },
+  "notesAttachmentCount": "{count, plural, =1{1 attachment} other{{count} attachments}}",
+  "@notesAttachmentCount": {
+    "description": "Tooltip of the paper clip count on a note card.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "notesPictureLoadFailed": "Couldn’t load this picture",
+  "@notesPictureLoadFailed": {
+    "description": "Tooltip of the broken picture icon on a note card when a picture didn’t load."
+  },
+  "notesMoreAttachments": "+{count}",
+  "@notesMoreAttachments": {
+    "description": "Over the last picture on a note card: how many more attachments the note has. Very short.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "notesItemChecked": "<hidden>Checked: </hidden><item></item>",
+  "@notesItemChecked": {
+    "description": "A ticked checklist item on a note card. Only screen readers read the words between <hidden> and </hidden>; <item></item> is where the item’s text goes. Keep both tags."
+  },
+  "notesItemUnchecked": "<hidden>Not checked: </hidden><item></item>",
+  "@notesItemUnchecked": {
+    "description": "A checklist item that isn’t ticked, on a note card. Only screen readers read the words between <hidden> and </hidden>; <item></item> is where the item’s text goes. Keep both tags."
+  },
+  "notesDoneCount": "{count, plural, other{{count} done}}",
+  "@notesDoneCount": {
+    "description": "Line on a note card in place of ticked checklist items: how many are ticked. Short.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "notesDoneAll": "{count, plural, other{All {count} done}}",
+  "@notesDoneAll": {
+    "description": "Line on a note card in place of its checklist when every item is ticked. Short.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "notesBackground": "Background",
+  "@notesBackground": {
+    "description": "Screen reader title of the panel that picks a note’s color or pattern. Noun."
+  },
+  "notesBackgroundColor": "Color",
+  "@notesBackgroundColor": {
+    "description": "Section label for note background colors. Noun. Short."
+  },
+  "notesBackgroundPattern": "Pattern",
+  "@notesBackgroundPattern": {
+    "description": "Section label for note backgrounds with a repeating pattern. Noun. Short."
+  },
+  "notesBackgroundSample": "Aa",
+  "@notesBackgroundSample": {
+    "description": "Sample letters shown on each color in the background picker, to show how text looks on it. Use one capital and one small letter of your alphabet, or one or two characters of your script."
+  },
+  "archiveTitle": "Archive",
+  "@archiveTitle": {
+    "description": "Title of the archive page. Noun."
+  },
+  "archiveSearch": "Search archive",
+  "@archiveSearch": {
+    "description": "Hint inside the empty search field on the archive page."
+  },
+  "archiveSubtitle": "Archived notes are hidden from your notes list.",
+  "@archiveSubtitle": {
+    "description": "Line under the Archive title."
+  },
+  "archiveLoadFailed": "Couldn’t load your archive",
+  "@archiveLoadFailed": {
+    "description": "Title shown in place of the archived notes when they didn’t load, above a Try again button."
+  },
+  "archiveEmptyTitle": "No archived notes",
+  "@archiveEmptyTitle": {
+    "description": "Title of the archive page when it has no notes."
+  },
+  "archiveEmptyHelp": "Archive notes you want to keep but don’t need to see every day.",
+  "@archiveEmptyHelp": {
+    "description": "Help on the empty archive page, where “Archive” is a verb."
+  },
+  "archiveUnarchived": "{count, plural, =1{Note unarchived} other{{count} notes unarchived}}",
+  "@archiveUnarchived": {
+    "description": "Message after notes were moved out of the archive, with an Undo button.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "trashTitle": "Trash",
+  "@trashTitle": {
+    "description": "Title of the trash page. Noun."
+  },
+  "trashSearch": "Search trash",
+  "@trashSearch": {
+    "description": "Hint inside the empty search field on the trash page."
+  },
+  "trashSubtitle": "{count, plural, =1{Notes in the trash are permanently deleted after 1 day.} other{Notes in the trash are permanently deleted after {count} days.}}",
+  "@trashSubtitle": {
+    "description": "Line under the Trash title.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "30"
+      }
+    }
+  },
+  "trashLoadFailed": "Couldn’t load your trash",
+  "@trashLoadFailed": {
+    "description": "Title shown in place of the notes in the trash when they didn’t load, above a Try again button."
+  },
+  "trashEmptyStateTitle": "Trash is empty",
+  "@trashEmptyStateTitle": {
+    "description": "Title of the trash page when it has no notes."
+  },
+  "trashEmptyStateHelp": "{count, plural, =1{Notes you delete stay here for 1 day.} other{Notes you delete stay here for {count} days.}}",
+  "@trashEmptyStateHelp": {
+    "description": "Help on the empty trash page.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "30"
+      }
+    }
+  },
+  "trashDaysLeft": "{count, plural, =1{1 day left} other{{count} days left}}",
+  "@trashDaysLeft": {
+    "description": "Small label on a note card in the trash: days until the note is permanently deleted. Short.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "23"
+      }
+    }
+  },
+  "trashEmptyAction": "Empty trash",
+  "@trashEmptyAction": {
+    "description": "Button in the top bar of the trash page, and the button of its dialog, that permanently deletes every note in the trash. Verb phrase."
+  },
+  "trashRestore": "Restore",
+  "@trashRestore": {
+    "description": "Button that brings notes back from the trash, on a card and in the selection bar. Verb. Short."
+  },
+  "trashDeletePermanently": "Delete permanently",
+  "@trashDeletePermanently": {
+    "description": "Button that permanently deletes notes in the trash, on a card, in the selection bar and in the dialog that confirms it."
+  },
+  "trashRestored": "{count, plural, =1{Note restored} other{{count} notes restored}}",
+  "@trashRestored": {
+    "description": "Message after notes were brought back from the trash, with an Undo button.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "trashRestoreFailed": "{count, plural, =1{Couldn’t restore note} other{Couldn’t restore notes}}",
+  "@trashRestoreFailed": {
+    "description": "Error message when bringing notes back from the trash failed, with a Try again button.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "trashEmptied": "Trash emptied",
+  "@trashEmptied": {
+    "description": "Message after every note in the trash was permanently deleted."
+  },
+  "trashDeleted": "{count, plural, =1{Note permanently deleted} other{{count} notes permanently deleted}}",
+  "@trashDeleted": {
+    "description": "Message after notes in the trash were permanently deleted.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "trashEmptyFailed": "Couldn’t empty trash",
+  "@trashEmptyFailed": {
+    "description": "Error message when emptying the trash failed, with a Try again button."
+  },
+  "trashDeleteFailed": "{count, plural, =1{Couldn’t delete note} other{Couldn’t delete notes}}",
+  "@trashDeleteFailed": {
+    "description": "Error message when permanently deleting notes failed, with a Try again button.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "trashEmptyConfirmTitle": "Empty trash?",
+  "@trashEmptyConfirmTitle": {
+    "description": "Title of the dialog that confirms emptying the trash."
+  },
+  "trashEmptyConfirmMessage": "{count, plural, =1{1 note will be permanently deleted. This can’t be undone.} other{{count} notes will be permanently deleted. This can’t be undone.}}",
+  "@trashEmptyConfirmMessage": {
+    "description": "Message of the dialog that confirms emptying the trash.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "12"
+      }
+    }
+  },
+  "trashDeleteConfirmTitle": "{count, plural, =1{Permanently delete this note?} other{Permanently delete {count} notes?}}",
+  "@trashDeleteConfirmTitle": {
+    "description": "Title of the dialog that confirms permanently deleting notes in the trash.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "trashDeleteConfirmMessage": "{count, plural, =1{This can’t be undone. People you shared it with will lose access too.} other{This can’t be undone. People you shared them with will lose access too.}}",
+  "@trashDeleteConfirmMessage": {
+    "description": "Message of the dialog that confirms permanently deleting notes in the trash.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "trashEmptying": "Emptying trash…",
+  "@trashEmptying": {
+    "description": "Button text while the trash is being emptied, after the person confirmed."
+  },
+  "tagsTitle": "Tags",
+  "@tagsTitle": {
+    "description": "Screen reader title of the tag picker of one note, and name of its list of tags. Noun."
+  },
+  "tagsAddTitle": "Add tags",
+  "@tagsAddTitle": {
+    "description": "Screen reader title of the tag picker opened for several picked notes."
+  },
+  "tagsFindOrCreate": "Find or create a tag",
+  "@tagsFindOrCreate": {
+    "description": "Hint inside the empty search field at the top of the tag picker."
+  },
+  "tagsLoadFailed": "Couldn’t load tags.",
+  "@tagsLoadFailed": {
+    "description": "Shown in the tag picker when the tags didn’t load, next to a Try again button."
+  },
+  "tagsCreateNamed": "Create <b>“{name}”</b>",
+  "@tagsCreateNamed": {
+    "description": "Row at the end of the tag picker that makes a new tag from the typed name. The words between <b> and </b> are bold.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "travel"
+      }
+    }
+  },
+  "tagsEmpty": "No tags yet. Type a name to create one.",
+  "@tagsEmpty": {
+    "description": "Shown in the tag picker when the person has no tags."
+  },
+  "tagsHintMove": "move",
+  "@tagsHintMove": {
+    "description": "Keyboard hint at the bottom of the tag picker, after the up and down arrow keys. Verb. Very short, lowercase in English."
+  },
+  "tagsHintPick": "pick",
+  "@tagsHintPick": {
+    "description": "Keyboard hint at the bottom of the tag picker, after the Enter key. Verb. Very short, lowercase in English."
+  },
+  "tagsHintsSpoken": "Up and down arrows move, Enter picks",
+  "@tagsHintsSpoken": {
+    "description": "Screen reader text of the keyboard hints at the bottom of the tag picker."
+  },
+  "tagsNoteCount": "{count, plural, =1{1 note} other{{count} notes}}",
+  "@tagsNoteCount": {
+    "description": "At the bottom of the tag picker opened for several picked notes: how many notes it tags. Short.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "tagsRemove": "Remove tag",
+  "@tagsRemove": {
+    "description": "Screen reader label of the X button on a tag chip that takes the tag off the note."
+  },
+  "tagsMoreCount": "+{count}",
+  "@tagsMoreCount": {
+    "description": "Small chip after the first tags on a note card: how many more tags the note has. Very short.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "tagsEmptyTitle": "No notes tagged #{tag}",
+  "@tagsEmptyTitle": {
+    "description": "Title of a tag’s page when no notes have the tag. Keep the # right before the tag name.",
+    "placeholders": {
+      "tag": {
+        "type": "String",
+        "example": "travel"
+      }
+    }
+  },
+  "tagsEmptyHelp": "New notes you create here get this tag.",
+  "@tagsEmptyHelp": {
+    "description": "Help on a tag’s page when no notes have the tag."
+  },
+  "tagsUpdateFailed": "Couldn’t update tags",
+  "@tagsUpdateFailed": {
+    "description": "Error message when adding or removing a tag on picked notes failed, with a Try again button."
+  },
+  "tagsUpdatedOn": "{count, plural, =1{Tags updated on 1 note} other{Tags updated on {count} notes}}",
+  "@tagsUpdatedOn": {
+    "description": "Message after the tag picker for picked notes closed with changes, with an Undo button.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "tagsCreateFailed": "Couldn’t create #{name}",
+  "@tagsCreateFailed": {
+    "description": "Error message when a new tag typed in the tag picker couldn’t be made. Keep the # right before the tag name.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "travel"
+      }
+    }
+  },
+  "tagsNewTitle": "New tag",
+  "@tagsNewTitle": {
+    "description": "Title of the dialog that makes a new tag."
+  },
+  "tagsRenameTitle": "Rename tag",
+  "@tagsRenameTitle": {
+    "description": "Title of the dialog that renames a tag."
+  },
+  "tagsNameLabel": "Name",
+  "@tagsNameLabel": {
+    "description": "Label of the tag name field in the new tag and rename tag dialogs. Noun."
+  },
+  "tagsNamePlaceholder": "For example, travel",
+  "@tagsNamePlaceholder": {
+    "description": "Hint inside the empty tag name field. “travel” is a sample tag name; translate it."
+  },
+  "tagsNameTaken": "A tag named “{name}” already exists.",
+  "@tagsNameTaken": {
+    "description": "Error under the tag name field when the person already has a tag with that name.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "travel"
+      }
+    }
+  },
+  "tagsColorLabel": "Color",
+  "@tagsColorLabel": {
+    "description": "Label of the color choices in the new tag dialog. Noun. Short."
+  },
+  "tagsNamePreview": "tag name",
+  "@tagsNamePreview": {
+    "description": "Sample text in the tag preview of the new tag dialog before a name is typed. Lowercase in English."
+  },
+  "tagsCreate": "Create tag",
+  "@tagsCreate": {
+    "description": "Button that makes the new tag in the new tag dialog."
+  },
+  "tagsRenameAction": "Rename",
+  "@tagsRenameAction": {
+    "description": "Button that saves the new name in the rename tag dialog. Verb. Short."
+  },
+  "tagsCreating": "Creating…",
+  "@tagsCreating": {
+    "description": "Button text while a new tag is being made."
+  },
+  "tagsRenaming": "Renaming…",
+  "@tagsRenaming": {
+    "description": "Button text while a tag is being renamed."
+  },
+  "tagsDialogCreateFailed": "Couldn’t create #{name}.",
+  "@tagsDialogCreateFailed": {
+    "description": "Error in the new tag dialog when the server didn’t make the tag. Keep the # right before the tag name.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "travel"
+      }
+    }
+  },
+  "tagsDialogCreateOffline": "Couldn’t create #{name}. Check your connection.",
+  "@tagsDialogCreateOffline": {
+    "description": "Error in the new tag dialog when the server couldn’t be reached. Keep the # right before the tag name.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "travel"
+      }
+    }
+  },
+  "tagsDialogCreateChanged": "Couldn’t create #{name}. It was changed somewhere else.",
+  "@tagsDialogCreateChanged": {
+    "description": "Error in the new tag dialog when the tag was changed on another device at the same time. Keep the # right before the tag name.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "travel"
+      }
+    }
+  },
+  "tagsDialogRenameFailed": "Couldn’t rename the tag.",
+  "@tagsDialogRenameFailed": {
+    "description": "Error in the rename tag dialog when the server didn’t rename the tag."
+  },
+  "tagsDialogRenameOffline": "Couldn’t rename the tag. Check your connection.",
+  "@tagsDialogRenameOffline": {
+    "description": "Error in the rename tag dialog when the server couldn’t be reached."
+  },
+  "tagsDialogRenameChanged": "Couldn’t rename the tag. It was changed somewhere else.",
+  "@tagsDialogRenameChanged": {
+    "description": "Error in the rename tag dialog when the tag was changed on another device at the same time."
+  },
+  "reminderTitle": "Reminder",
+  "@reminderTitle": {
+    "description": "Title of the reminder picker, and tooltip of the reminder chip on a note. Noun."
+  },
+  "reminderSubtitle": "Sent to the Anchor app on your phone",
+  "@reminderSubtitle": {
+    "description": "Under the title of the reminder picker: the web app doesn’t ring, the phone app does. Anchor is the app’s name."
+  },
+  "reminderPassedTooltip": "Reminder time has passed",
+  "@reminderPassedTooltip": {
+    "description": "Tooltip of a reminder chip whose time has passed."
+  },
+  "reminderChipLate": "<hidden>Late: </hidden>{when}",
+  "@reminderChipLate": {
+    "description": "A reminder chip whose time has passed. Only screen readers read the words between <hidden> and </hidden>. Keep the tags.",
+    "placeholders": {
+      "when": {
+        "type": "String",
+        "example": "Sep 1, 5:00 PM"
+      }
+    }
+  },
+  "reminderDayTime": "{day}, {time}",
+  "@reminderDayTime": {
+    "description": "A reminder’s day and time, such as “Today, 6:05 PM” or “Fri, Aug 21, 9:00 AM”.",
+    "placeholders": {
+      "day": {
+        "type": "String",
+        "example": "Today"
+      },
+      "time": {
+        "type": "String",
+        "example": "6:05 PM"
+      }
+    }
+  },
+  "reminderWithRepeat": "{when} · {repeat}",
+  "@reminderWithRepeat": {
+    "description": "A repeating reminder on a reminder chip, such as “Mon, Aug 24, 5:00 PM · Weekly”.",
+    "placeholders": {
+      "when": {
+        "type": "String",
+        "example": "Mon, Aug 24, 5:00 PM"
+      },
+      "repeat": {
+        "type": "String",
+        "example": "Weekly"
+      }
+    }
+  },
+  "reminderToday": "Today",
+  "@reminderToday": {
+    "description": "The current day, in a reminder time such as “Today, 6:05 PM”."
+  },
+  "reminderTomorrow": "Tomorrow",
+  "@reminderTomorrow": {
+    "description": "The next day: in a reminder time such as “Tomorrow, 9:00 AM”, as a quick reminder choice, and as how soon a reminder rings."
+  },
+  "reminderLaterToday": "Later today",
+  "@reminderLaterToday": {
+    "description": "Quick reminder choice for a time later on the same day."
+  },
+  "reminderNextWeek": "Next week",
+  "@reminderNextWeek": {
+    "description": "Quick reminder choice for the same day next week."
+  },
+  "reminderWhen": "When",
+  "@reminderWhen": {
+    "description": "Screen reader name of the list of reminder times."
+  },
+  "reminderPickDate": "Pick a date",
+  "@reminderPickDate": {
+    "description": "Row in the reminder picker that opens a calendar and a list of times to choose any time."
+  },
+  "reminderTime": "Time",
+  "@reminderTime": {
+    "description": "Screen reader label of the field where a reminder time can be typed. Noun."
+  },
+  "reminderTimePlaceholder": "Type a time, like 4 PM",
+  "@reminderTimePlaceholder": {
+    "description": "Hint inside the empty time field of the reminder picker. Use a time written the way people in your language write it."
+  },
+  "reminderTimes": "Times",
+  "@reminderTimes": {
+    "description": "Screen reader name of the grid of times to pick from in the reminder picker."
+  },
+  "reminderRepeat": "Repeat",
+  "@reminderRepeat": {
+    "description": "Switch in the reminder picker that makes the reminder ring again and again. Verb."
+  },
+  "reminderHowOften": "How often",
+  "@reminderHowOften": {
+    "description": "Screen reader name of the row of choices for how often a reminder repeats."
+  },
+  "reminderRepeatDaily": "Daily",
+  "@reminderRepeatDaily": {
+    "description": "How often a reminder rings. Short: one of four tabs in a row, and the end of a reminder chip."
+  },
+  "reminderRepeatWeekly": "Weekly",
+  "@reminderRepeatWeekly": {
+    "description": "How often a reminder rings. Short: one of four tabs in a row, and the end of a reminder chip."
+  },
+  "reminderRepeatMonthly": "Monthly",
+  "@reminderRepeatMonthly": {
+    "description": "How often a reminder rings. Short: one of four tabs in a row, and the end of a reminder chip."
+  },
+  "reminderRepeatYearly": "Yearly",
+  "@reminderRepeatYearly": {
+    "description": "How often a reminder rings. Short: one of four tabs in a row, and the end of a reminder chip."
+  },
+  "reminderNone": "No reminder",
+  "@reminderNone": {
+    "description": "Big summary line at the top of the reminder picker before a time is picked."
+  },
+  "reminderRemoved": "Reminder removed",
+  "@reminderRemoved": {
+    "description": "Message after the reminder was removed from a note, with an Undo button."
+  },
+  "reminderPickWhen": "Pick when to be reminded",
+  "@reminderPickWhen": {
+    "description": "Under the summary at the top of the reminder picker before a time is picked."
+  },
+  "reminderTimePassed": "That time has passed",
+  "@reminderTimePassed": {
+    "description": "Summary at the top of the reminder picker when the picked time is in the past."
+  },
+  "reminderInMinutes": "{count, plural, =1{In 1 minute} other{In {count} minutes}}",
+  "@reminderInMinutes": {
+    "description": "How soon a reminder rings, under the summary in the reminder picker.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "30"
+      }
+    }
+  },
+  "reminderInHours": "{count, plural, =1{In 1 hour} other{In {count} hours}}",
+  "@reminderInHours": {
+    "description": "How soon a reminder rings, under the summary in the reminder picker.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "reminderInDays": "{count, plural, =1{In 1 day} other{In {count} days}}",
+  "@reminderInDays": {
+    "description": "How soon a reminder rings, under the summary in the reminder picker.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "4"
+      }
+    }
+  },
+  "reminderRepeatsDaily": "Repeats every day",
+  "@reminderRepeatsDaily": {
+    "description": "Under the summary in the reminder picker for a reminder that rings every day."
+  },
+  "reminderRepeatsWeekly": "Repeats every {weekday}",
+  "@reminderRepeatsWeekly": {
+    "description": "Under the summary in the reminder picker for a reminder that rings weekly.",
+    "placeholders": {
+      "weekday": {
+        "type": "String",
+        "example": "Tuesday"
+      }
+    }
+  },
+  "reminderRepeatsMonthly": "Repeats monthly on day {day}",
+  "@reminderRepeatsMonthly": {
+    "description": "Under the summary in the reminder picker for a reminder that rings monthly. {day} is the day of the month.",
+    "placeholders": {
+      "day": {
+        "type": "int",
+        "example": "14"
+      }
+    }
+  },
+  "reminderRepeatsYearly": "Repeats every year on {date}",
+  "@reminderRepeatsYearly": {
+    "description": "Under the summary in the reminder picker for a reminder that rings once a year.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "Aug 2"
+      }
+    }
+  },
+  "shareTitle": "Share note",
+  "@shareTitle": {
+    "description": "Title of the share dialog for a note without a title."
+  },
+  "shareTitleNamed": "Share “{title}”",
+  "@shareTitleNamed": {
+    "description": "Title of the share dialog, naming the note.",
+    "placeholders": {
+      "title": {
+        "type": "String",
+        "example": "Shopping list"
+      }
+    }
+  },
+  "shareSearch": "Add people by name or email",
+  "@shareSearch": {
+    "description": "Hint inside the empty field of the share dialog that finds people, and its screen reader label."
+  },
+  "sharePeople": "People",
+  "@sharePeople": {
+    "description": "Screen reader name of the list of people found by the search in the share dialog."
+  },
+  "shareRecent": "Recently shared with",
+  "@shareRecent": {
+    "description": "Section label in the share dialog for people the person shared notes with before."
+  },
+  "shareNoMatches": "No one found for “{term}”. You can only share with people who have an account on this server.",
+  "@shareNoMatches": {
+    "description": "Shown in the share dialog when the search finds no one.",
+    "placeholders": {
+      "term": {
+        "type": "String",
+        "example": "ada"
+      }
+    }
+  },
+  "shareWithAccess": "People with access",
+  "@shareWithAccess": {
+    "description": "Section label in the share dialog for everyone who can see the note."
+  },
+  "shareYou": "{name} (you)",
+  "@shareYou": {
+    "description": "The person’s own name in the share dialog’s list of people.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Ada Lovelace"
+      }
+    }
+  },
+  "shareOwner": "Owner",
+  "@shareOwner": {
+    "description": "Beside the person’s own name in the share dialog: they own the note. Noun."
+  },
+  "shareLoadFailed": "Couldn’t load the people with access.",
+  "@shareLoadFailed": {
+    "description": "Shown in the share dialog when the list of people the note is shared with didn’t load, next to a Try again button."
+  },
+  "sharePrivacyNote": "Only people you add can open it.",
+  "@sharePrivacyNote": {
+    "description": "Small line at the bottom of the share dialog. “it” is the note."
+  },
+  "shareCanView": "Can view",
+  "@shareCanView": {
+    "description": "Access level in the share dialog: the person can read the note. Short."
+  },
+  "shareCanViewHelp": "Can read the note",
+  "@shareCanViewHelp": {
+    "description": "Small text under “Can view” in the access menu of the share dialog."
+  },
+  "shareCanEdit": "Can edit",
+  "@shareCanEdit": {
+    "description": "Access level in the share dialog: the person can change the note. Short."
+  },
+  "shareCanEditHelp": "Can change the text and pictures",
+  "@shareCanEditHelp": {
+    "description": "Small text under “Can edit” in the access menu of the share dialog."
+  },
+  "shareAccessFor": "Access for {name}",
+  "@shareAccessFor": {
+    "description": "Screen reader name of the menu that changes one person’s access to the note.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Ada Lovelace"
+      }
+    }
+  },
+  "shareRemoveAccess": "Remove access",
+  "@shareRemoveAccess": {
+    "description": "Menu item in the share dialog that stops sharing the note with one person."
+  },
+  "shareAdded": "Shared with {name}",
+  "@shareAdded": {
+    "description": "Message after the note was shared with a person. {name} is their first name.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Ada"
+      }
+    }
+  },
+  "shareFailed": "Couldn’t share with {name}",
+  "@shareFailed": {
+    "description": "Error message when sharing the note with a person failed. {name} is their first name.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Ada"
+      }
+    }
+  },
+  "shareNowCanEdit": "{name} can now edit",
+  "@shareNowCanEdit": {
+    "description": "Message after a person was given edit access to the note. {name} is their first name.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Ada"
+      }
+    }
+  },
+  "shareNowCanView": "{name} can now view",
+  "@shareNowCanView": {
+    "description": "Message after a person was changed to view-only access to the note. {name} is their first name.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Ada"
+      }
+    }
+  },
+  "shareChangeFailed": "Couldn’t change access for {name}",
+  "@shareChangeFailed": {
+    "description": "Error message when changing a person’s access to the note failed. {name} is their first name.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Ada"
+      }
+    }
+  },
+  "shareRevoked": "{name} no longer has access",
+  "@shareRevoked": {
+    "description": "Message after a person was removed from a shared note, with an Undo button. {name} is their first name.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Ada"
+      }
+    }
+  },
+  "shareRevokeFailed": "Couldn’t remove access for {name}",
+  "@shareRevokeFailed": {
+    "description": "Error message when removing a person from a shared note failed. {name} is their first name.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Ada"
+      }
+    }
+  },
+  "shareSharedBy": "Shared by {name}",
+  "@shareSharedBy": {
+    "description": "Tooltip of the small picture on a note card: who shared the note with the person. {name} is their first name.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Ada"
+      }
+    }
+  },
+  "shareSharedWithCount": "{count, plural, =1{Shared with 1 person} other{Shared with {count} people}}",
+  "@shareSharedWithCount": {
+    "description": "Tooltip of the people count on a note card: how many people the note is shared with.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "shareSharedWithOpen": "{count, plural, =1{Shared with 1 person. Open Share} other{Shared with {count} people. Open Share}}",
+  "@shareSharedWithOpen": {
+    "description": "Screen reader label of the people count on a note card, which opens the share dialog. “Share” is the name of that dialog.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "viewButton": "View",
+  "@viewButton": {
+    "description": "Button in the top bar that opens the layout and sort options. Noun. Short."
+  },
+  "viewOptions": "View options",
+  "@viewOptions": {
+    "description": "Screen reader name of the panel with layout and sort options."
+  },
+  "viewLayout": "Layout",
+  "@viewLayout": {
+    "description": "Heading of the layout choices in the view options. Noun. Short."
+  },
+  "viewMasonry": "Masonry",
+  "@viewMasonry": {
+    "description": "Layout of note cards in columns of different heights, like a brick wall. Short: one of three tiles in a row."
+  },
+  "viewGrid": "Grid",
+  "@viewGrid": {
+    "description": "Layout of note cards in rows of the same height. Short: one of three tiles in a row."
+  },
+  "viewList": "List",
+  "@viewList": {
+    "description": "Layout of note cards in one column. Short: one of three tiles in a row."
+  },
+  "viewSortBy": "Sort by",
+  "@viewSortBy": {
+    "description": "Heading of the sort choices in the view options."
+  },
+  "viewSortEdited": "Last edited",
+  "@viewSortEdited": {
+    "description": "Sort choice: by the time each note was last changed."
+  },
+  "viewSortCreated": "Date created",
+  "@viewSortCreated": {
+    "description": "Sort choice: by the time each note was made."
+  },
+  "viewSortTitle": "Title",
+  "@viewSortTitle": {
+    "description": "Sort choice: by each note’s title. Noun."
+  },
+  "viewOrder": "Order",
+  "@viewOrder": {
+    "description": "Screen reader name of the two choices for the sort direction. Noun."
+  },
+  "viewNewestFirst": "Newest first",
+  "@viewNewestFirst": {
+    "description": "Sort direction for dates. Short: one of two tabs in a row."
+  },
+  "viewOldestFirst": "Oldest first",
+  "@viewOldestFirst": {
+    "description": "Sort direction for dates. Short: one of two tabs in a row."
+  },
+  "viewAToZ": "A to Z",
+  "@viewAToZ": {
+    "description": "Sort direction for titles, in alphabetical order. Short: one of two tabs in a row."
+  },
+  "viewZToA": "Z to A",
+  "@viewZToA": {
+    "description": "Sort direction for titles, in reverse alphabetical order. Short: one of two tabs in a row."
+  },
+  "colorNone": "No color",
+  "@colorNone": {
+    "description": "Read by screen readers for a tag whose color isn’t one of the app’s colors."
+  },
+  "colorDefault": "Default",
+  "@colorDefault": {
+    "description": "Name of the note background with no color, shown as its tooltip and read by screen readers."
+  },
+  "colorRed": "Red",
+  "@colorRed": {
+    "description": "Name of a tag color or a note background color, shown as its tooltip and read by screen readers."
+  },
+  "colorPink": "Pink",
+  "@colorPink": {
+    "description": "Name of a tag color or a note background color, shown as its tooltip and read by screen readers."
+  },
+  "colorPurple": "Purple",
+  "@colorPurple": {
+    "description": "Name of a tag color or a note background color, shown as its tooltip and read by screen readers."
+  },
+  "colorDeepPurple": "Deep purple",
+  "@colorDeepPurple": {
+    "description": "Name of a tag color, shown as its tooltip and read by screen readers. Darker than purple."
+  },
+  "colorIndigo": "Indigo",
+  "@colorIndigo": {
+    "description": "Name of a tag color or a note background color, shown as its tooltip and read by screen readers. A dark blue."
+  },
+  "colorBlue": "Blue",
+  "@colorBlue": {
+    "description": "Name of a tag color or a note background color, shown as its tooltip and read by screen readers."
+  },
+  "colorLightBlue": "Light blue",
+  "@colorLightBlue": {
+    "description": "Name of a tag color, shown as its tooltip and read by screen readers. Paler than blue."
+  },
+  "colorCyan": "Cyan",
+  "@colorCyan": {
+    "description": "Name of a tag color, shown as its tooltip and read by screen readers. A bright blue-green."
+  },
+  "colorTeal": "Teal",
+  "@colorTeal": {
+    "description": "Name of a tag color or a note background color, shown as its tooltip and read by screen readers. A dark blue-green."
+  },
+  "colorGreen": "Green",
+  "@colorGreen": {
+    "description": "Name of a tag color or a note background color, shown as its tooltip and read by screen readers."
+  },
+  "colorLightGreen": "Light green",
+  "@colorLightGreen": {
+    "description": "Name of a tag color, shown as its tooltip and read by screen readers. Paler than green."
+  },
+  "colorLime": "Lime",
+  "@colorLime": {
+    "description": "Name of a tag color, shown as its tooltip and read by screen readers. A yellow-green."
+  },
+  "colorAmber": "Amber",
+  "@colorAmber": {
+    "description": "Name of a tag color, shown as its tooltip and read by screen readers. A golden orange-yellow."
+  },
+  "colorOrange": "Orange",
+  "@colorOrange": {
+    "description": "Name of a tag color or a note background color, shown as its tooltip and read by screen readers."
+  },
+  "colorDeepOrange": "Deep orange",
+  "@colorDeepOrange": {
+    "description": "Name of a tag color, shown as its tooltip and read by screen readers. Redder than orange."
+  },
+  "colorBrown": "Brown",
+  "@colorBrown": {
+    "description": "Name of a tag color or a note background color, shown as its tooltip and read by screen readers."
+  },
+  "colorBlueGrey": "Blue gray",
+  "@colorBlueGrey": {
+    "description": "Name of a tag color, shown as its tooltip and read by screen readers. A grayish blue."
+  },
+  "colorYellow": "Yellow",
+  "@colorYellow": {
+    "description": "Name of a tag color or a note background color, shown as its tooltip and read by screen readers."
+  },
+  "colorPatternDots": "Dots",
+  "@colorPatternDots": {
+    "description": "Name of a note background pattern made of small dots, shown as its tooltip and read by screen readers."
+  },
+  "colorPatternGrid": "Grid",
+  "@colorPatternGrid": {
+    "description": "Name of a note background pattern of squares, like graph paper, shown as its tooltip and read by screen readers."
+  },
+  "colorPatternLines": "Lines",
+  "@colorPatternLines": {
+    "description": "Name of a note background pattern of lines, like ruled paper, shown as its tooltip and read by screen readers."
+  },
+  "colorPatternWaves": "Waves",
+  "@colorPatternWaves": {
+    "description": "Name of a note background pattern of wavy lines, shown as its tooltip and read by screen readers."
+  },
+  "colorPatternGroceries": "Groceries",
+  "@colorPatternGroceries": {
+    "description": "Name of a note background pattern of small shopping bag drawings, shown as its tooltip and read by screen readers."
+  },
+  "colorPatternMusic": "Music",
+  "@colorPatternMusic": {
+    "description": "Name of a note background pattern of small music note drawings, shown as its tooltip and read by screen readers."
+  },
+  "colorPatternTravel": "Travel",
+  "@colorPatternTravel": {
+    "description": "Name of a note background pattern of small airplane drawings, shown as its tooltip and read by screen readers."
+  },
+  "colorPatternCode": "Code",
+  "@colorPatternCode": {
+    "description": "Name of a note background pattern of small computer code symbols, shown as its tooltip and read by screen readers."
+  },
+  "navSidebar": "Sidebar",
+  "@navSidebar": {
+    "description": "Screen reader name of the side panel with the pages, the tags and the account menu."
+  },
+  "navMenu": "Menu",
+  "@navMenu": {
+    "description": "Screen reader title of the sidebar when it opens over the page on small screens. Noun."
+  },
+  "navOpenMenu": "Open menu",
+  "@navOpenMenu": {
+    "description": "Screen reader label of the menu button at the top of each page on small screens. Verb phrase."
+  },
+  "navNewNote": "New note",
+  "@navNewNote": {
+    "description": "Button at the top of the sidebar that starts a new note. Short: the sidebar is narrow."
+  },
+  "navNewNoteShortcut": "New note ({shortcut})",
+  "@navNewNoteShortcut": {
+    "description": "Tooltip of the New note button while the sidebar is folded to icons. {shortcut} is the keyboard key that does the same, N."
+  },
+  "navPages": "Pages",
+  "@navPages": {
+    "description": "Screen reader name of the sidebar list with Notes, Archive and Trash. Noun."
+  },
+  "navNotes": "Notes",
+  "@navNotes": {
+    "description": "Sidebar link to the list of notes. Noun. Short."
+  },
+  "navArchive": "Archive",
+  "@navArchive": {
+    "description": "Sidebar link to the archived notes. Noun. Short."
+  },
+  "navTrash": "Trash",
+  "@navTrash": {
+    "description": "Sidebar link to the deleted notes. Noun. Short."
+  },
+  "navTags": "Tags",
+  "@navTags": {
+    "description": "Heading above the tags in the sidebar, and the screen reader name of that list. Noun. Short."
+  },
+  "navNewTag": "New tag",
+  "@navNewTag": {
+    "description": "Tooltip and screen reader label of the plus button beside the Tags heading in the sidebar."
+  },
+  "navTagsLoadFailed": "Couldn’t load tags",
+  "@navTagsLoadFailed": {
+    "description": "Shown in the sidebar, beside a Try again button, when the tags couldn't be loaded. Short."
+  },
+  "navTagsLoadFailedRetry": "Couldn’t load tags. Try again",
+  "@navTagsLoadFailedRetry": {
+    "description": "Tooltip and screen reader label of the retry button shown in place of the tags while the sidebar is folded."
+  },
+  "navNoTags": "No tags yet",
+  "@navNoTags": {
+    "description": "Shown in the sidebar where the tags go when there are none."
+  },
+  "navTagTip": "#{name} · {count, plural, =1{1 note} other{{count} notes}}",
+  "@navTagTip": {
+    "description": "Tooltip of a tag while the sidebar is folded to icons: the tag's name after a # sign, then how many notes have the tag. Keep the # before the name."
+  },
+  "navTagOptions": "Options for {name}",
+  "@navTagOptions": {
+    "description": "Screen reader label of the … button beside a tag in the sidebar, which opens the tag's menu. {name} is the tag's name."
+  },
+  "navTagMenu": "Tag {name}",
+  "@navTagMenu": {
+    "description": "Screen reader name of a tag's menu in the sidebar. {name} is the tag's name."
+  },
+  "navTagRename": "Rename",
+  "@navTagRename": {
+    "description": "Item in a tag's menu that opens the dialog to rename the tag. Verb."
+  },
+  "navTagColor": "Color",
+  "@navTagColor": {
+    "description": "Small heading above the color choices in a tag's menu. Noun. Short."
+  },
+  "navDeleteTag": "Delete tag",
+  "@navDeleteTag": {
+    "description": "Item in a tag's menu, and the button of the dialog that confirms it, that deletes the tag. Verb phrase."
+  },
+  "navDeleteTagTitle": "Delete tag “{name}”?",
+  "@navDeleteTagTitle": {
+    "description": "Title of the dialog that asks before a tag is deleted. {name} is the tag's name."
+  },
+  "navDeleteTagMessage": "{count, plural, =1{The tag will be removed from 1 note. Your notes won’t be deleted.} other{The tag will be removed from {count} notes. Your notes won’t be deleted.}}",
+  "@navDeleteTagMessage": {
+    "description": "Text of the dialog that asks before a tag is deleted, when notes have the tag. {count} is how many."
+  },
+  "navDeleteTagUnused": "No notes use this tag.",
+  "@navDeleteTagUnused": {
+    "description": "Text of the dialog that asks before a tag is deleted, when no note has the tag."
+  },
+  "navTagColorFailed": "Couldn’t change the color of #{name}",
+  "@navTagColorFailed": {
+    "description": "Error message when a tag's new color couldn't be saved. {name} is the tag's name, after a # sign."
+  },
+  "navTagDeleteFailed": "Couldn’t delete #{name}",
+  "@navTagDeleteFailed": {
+    "description": "Error message when a tag couldn't be deleted. {name} is the tag's name, after a # sign."
+  },
+  "navOffline": "Offline",
+  "@navOffline": {
+    "description": "Status at the bottom of the sidebar when there is no connection. Short."
+  },
+  "navOfflineUnsaved": "Offline · {count, plural, =1{1 unsaved change} other{{count} unsaved changes}}",
+  "@navOfflineUnsaved": {
+    "description": "Status at the bottom of the sidebar when there is no connection and changes wait to be saved on the server. {count} is how many. Short."
+  },
+  "navCollapseSidebar": "Collapse sidebar",
+  "@navCollapseSidebar": {
+    "description": "Screen reader label of the button that folds the sidebar to a row of icons. Verb phrase."
+  },
+  "navExpandSidebar": "Expand sidebar",
+  "@navExpandSidebar": {
+    "description": "Screen reader label of the button that opens the folded sidebar to its full width. Verb phrase."
+  },
+  "navExpandSidebarShortcut": "Expand sidebar ({shortcut})",
+  "@navExpandSidebarShortcut": {
+    "description": "Tooltip of the button that opens the folded sidebar. {shortcut} is the key combination that does the same, such as ⌘\\ or Ctrl+\\."
+  },
+  "navKeepSidebarOpen": "Keep sidebar open",
+  "@navKeepSidebarOpen": {
+    "description": "Screen reader label of the same button while the folded sidebar shows over the page for a moment. Verb phrase."
+  },
+  "navCollapse": "Collapse",
+  "@navCollapse": {
+    "description": "Label of the button at the bottom of the sidebar that folds it to icons. Verb. Short."
+  },
+  "navKeepOpen": "Keep open",
+  "@navKeepOpen": {
+    "description": "Label of the same button while the folded sidebar shows over the page for a moment. Verb phrase. Short."
+  },
+  "navAccount": "Account",
+  "@navAccount": {
+    "description": "Screen reader name of the menu that opens from the person's name at the bottom of the sidebar. Noun."
+  },
+  "navSettings": "Settings",
+  "@navSettings": {
+    "description": "Item in the account menu that opens Settings. Noun."
+  },
+  "navAdmin": "Admin",
+  "@navAdmin": {
+    "description": "Item in the account menu, shown to admins, that opens the admin page. Noun."
+  },
+  "navTheme": "Theme",
+  "@navTheme": {
+    "description": "Label in the account menu before the light, dark and system theme buttons. Noun. Short."
+  },
+  "navThemeLight": "Light",
+  "@navThemeLight": {
+    "description": "Tooltip and screen reader label of the sun button in the account menu, which makes the app light. Adjective."
+  },
+  "navThemeDark": "Dark",
+  "@navThemeDark": {
+    "description": "Tooltip and screen reader label of the moon button in the account menu, which makes the app dark. Adjective."
+  },
+  "navThemeSystem": "Match system",
+  "@navThemeSystem": {
+    "description": "Tooltip and screen reader label of the screen button in the account menu, which makes the app follow the device's light or dark setting."
+  },
+  "navSignOut": "Sign out",
+  "@navSignOut": {
+    "description": "Item in the account menu that signs the person out. Verb phrase."
+  },
+  "navSearch": "Search",
+  "@navSearch": {
+    "description": "Screen reader label of the search button at the top of a page on small screens. Verb."
+  },
+  "navClearSearch": "Clear search",
+  "@navClearSearch": {
+    "description": "Tooltip and screen reader label of the x button in the search field. Verb phrase."
+  },
+  "uiBusy": "{action}…",
+  "@uiBusy": {
+    "description": "What a button shows while it works, when no other words were given. {action} is the button's own label, such as Delete."
+  },
+  "uiDeleting": "Deleting…",
+  "@uiDeleting": {
+    "description": "Label of a delete button while the deleting runs. Short."
+  },
+  "uiSaving": "Saving…",
+  "@uiSaving": {
+    "description": "Label of a save button, or a small status beside a setting, while changes are saved. Short."
+  },
+  "uiSaved": "Saved",
+  "@uiSaved": {
+    "description": "Small status beside a setting, or a short message, after changes are saved. Short."
+  },
+  "uiLoading": "Loading…",
+  "@uiLoading": {
+    "description": "Label of a Show more button while more rows load. Short."
+  },
+  "uiTryingAgain": "Trying again…",
+  "@uiTryingAgain": {
+    "description": "Label of the Try again button while a failed load runs again. Short."
+  },
+  "uiLoadFailedText": "Check your connection, then try again.",
+  "@uiLoadFailedText": {
+    "description": "Text under the heading of a page or panel that couldn't load, above a Try again button."
+  },
+  "uiShowPassword": "Show password",
+  "@uiShowPassword": {
+    "description": "Screen reader label of the button in a password field that shows the hidden password. Verb phrase."
+  },
+  "uiHidePassword": "Hide password",
+  "@uiHidePassword": {
+    "description": "Screen reader label of the button in a password field that hides the shown password. Verb phrase."
+  },
+  "uiShow": "Show",
+  "@uiShow": {
+    "description": "Small button inside a password field that shows the password. Verb. Short."
+  },
+  "uiHide": "Hide",
+  "@uiHide": {
+    "description": "Small button inside a password field that hides the password. Verb. Short."
+  },
+  "uiLanguage": "Language",
+  "@uiLanguage": {
+    "description": "Screen reader name of the language menu on the sign-in pages and in Settings. Noun."
+  },
+  "uiLanguageCurrent": "Language: {language}",
+  "@uiLanguageCurrent": {
+    "description": "Screen reader label of the button that opens the language menu. {language} is the name of the language the page is in, written in that language.",
+    "placeholders": {
+      "language": {
+        "type": "String",
+        "example": "Deutsch"
+      }
+    }
+  },
+  "uiLanguageAutomatic": "Automatic",
+  "@uiLanguageAutomatic": {
+    "description": "First choice in the language menu: use the browser's language. Short."
+  },
+  "uiLanguageAutomaticHelp": "Follows your browser",
+  "@uiLanguageAutomaticHelp": {
+    "description": "Small text under Automatic in the language menu. Short."
+  },
+  "uiSelectedNotes": "Selected notes",
+  "@uiSelectedNotes": {
+    "description": "Screen reader name of the bar at the bottom of the page while notes are selected."
+  },
+  "uiSelectAll": "Select all",
+  "@uiSelectAll": {
+    "description": "Screen reader label of the round check box in the selection bar that selects or clears every note. Verb phrase."
+  },
+  "uiSelectedCount": "{count, plural, =1{1 selected} other{{count} selected}}",
+  "@uiSelectedCount": {
+    "description": "How many notes are selected, in the selection bar. {count} is how many. Short."
+  },
+  "uiSelectNotes": "Select notes",
+  "@uiSelectNotes": {
+    "description": "Shown in the selection bar while no note is selected yet. Verb phrase. Short."
+  },
+  "uiStopSelecting": "Stop selecting",
+  "@uiStopSelecting": {
+    "description": "Screen reader label of the x button that closes the selection bar. Verb phrase."
+  },
+  "uiCtrlKey": "Ctrl",
+  "@uiCtrlKey": {
+    "description": "Name of the Control key in keyboard shortcuts, as printed on keyboards in your language: “Strg” in German."
+  },
+  "uiStopSelectingShortcut": "Stop selecting ({shortcut})",
+  "@uiStopSelectingShortcut": {
+    "description": "Tooltip of the x button that closes the selection bar. {shortcut} is the key that does the same, Esc."
+  },
+  "uiToastDismiss": "Dismiss",
+  "@uiToastDismiss": {
+    "description": "Screen reader label of the x button that closes a message at the bottom of the screen. Verb."
+  },
+  "uiCalendarPreviousMonth": "Previous month",
+  "@uiCalendarPreviousMonth": {
+    "description": "Screen reader label of the left arrow above a calendar, which shows the month before."
+  },
+  "uiCalendarNextMonth": "Next month",
+  "@uiCalendarNextMonth": {
+    "description": "Screen reader label of the right arrow above a calendar, which shows the month after."
+  },
+  "settingsTitle": "Settings",
+  "@settingsTitle": {
+    "description": "Title of the Settings page. Noun."
+  },
+  "settingsSections": "Settings sections",
+  "@settingsSections": {
+    "description": "Screen reader name of the list of links to each part of the Settings page."
+  },
+  "settingsProfile": "Profile",
+  "@settingsProfile": {
+    "description": "Heading of the Settings part with the profile picture and name, and its link in the Settings menu. Noun. Short."
+  },
+  "settingsAppearance": "Appearance",
+  "@settingsAppearance": {
+    "description": "Heading of the Settings part with the theme, and its link in the Settings menu. Noun. Short."
+  },
+  "settingsEditor": "Editor",
+  "@settingsEditor": {
+    "description": "Heading of the Settings part with the note editor options, and its link in the Settings menu. Noun. Short."
+  },
+  "settingsApiToken": "API token",
+  "@settingsApiToken": {
+    "description": "Heading of the Settings part with the key other apps use to read notes, its link in the Settings menu, and the screen reader name of the field with the key. Short."
+  },
+  "settingsImportExport": "Import and export",
+  "@settingsImportExport": {
+    "description": "Link in the Settings menu to the part for bringing notes in and saving them as files. Short."
+  },
+  "settingsPassword": "Password",
+  "@settingsPassword": {
+    "description": "Heading of the Settings part for changing the password, its link in the Settings menu, and the password field in the dialog that deletes the account. Noun. Short."
+  },
+  "settingsDeleteAccount": "Delete account",
+  "@settingsDeleteAccount": {
+    "description": "Heading of the Settings part for deleting the account, its link in the Settings menu, and the buttons that delete it. Verb phrase. Short."
+  },
+  "settingsAbout": "About",
+  "@settingsAbout": {
+    "description": "Heading of the last Settings part, with the app's version, and its link in the Settings menu. Short."
+  },
+  "settingsAppVersion": "Anchor {version}",
+  "@settingsAppVersion": {
+    "description": "The app's name and version under About in Settings. {version} is the version number, such as 0.18.1."
+  },
+  "settingsTagline": "Your thoughts, secured.",
+  "@settingsTagline": {
+    "description": "The app's short slogan, under its name and version in Settings."
+  },
+  "settingsSaveFailed": "Couldn’t save",
+  "@settingsSaveFailed": {
+    "description": "Small status beside a setting when the change couldn't be saved, before a Try again link. Short."
+  },
+  "settingsProfileHelp": "How you appear to people you share notes with.",
+  "@settingsProfileHelp": {
+    "description": "Text under the Profile heading in Settings."
+  },
+  "settingsUploadPicture": "Upload a picture",
+  "@settingsUploadPicture": {
+    "description": "Button that picks a file for the profile picture. Verb phrase."
+  },
+  "settingsUploading": "Uploading…",
+  "@settingsUploading": {
+    "description": "Label of the Upload a picture button while the picture is sent. Short."
+  },
+  "settingsPictureHelp": "JPG, PNG or WebP, up to {megabytes} MB.",
+  "@settingsPictureHelp": {
+    "description": "Help under the profile picture buttons: which files work. {megabytes} is the largest size, in megabytes."
+  },
+  "settingsPictureWrongType": "That file isn’t a picture Anchor can use. Pick a JPG, PNG or WebP.",
+  "@settingsPictureWrongType": {
+    "description": "Error under the profile picture buttons when the picked file isn't a JPG, PNG or WebP picture."
+  },
+  "settingsPictureOverLimit": "That picture is over {megabytes} MB. Pick a smaller one.",
+  "@settingsPictureOverLimit": {
+    "description": "Error under the profile picture buttons when the picked picture is too big. {megabytes} is the largest size, in megabytes."
+  },
+  "settingsPictureUploadOffline": "Couldn’t upload the picture. Check your connection.",
+  "@settingsPictureUploadOffline": {
+    "description": "Error under the profile picture buttons when the server couldn't be reached."
+  },
+  "settingsPictureTooBig": "Couldn’t upload the picture. It’s too big.",
+  "@settingsPictureTooBig": {
+    "description": "Error under the profile picture buttons when the server turned the picture down for its size."
+  },
+  "settingsPictureUploadFailed": "Couldn’t upload the picture.",
+  "@settingsPictureUploadFailed": {
+    "description": "Error under the profile picture buttons when the upload failed for another reason."
+  },
+  "settingsPictureUpdated": "Profile picture updated",
+  "@settingsPictureUpdated": {
+    "description": "Message after a new profile picture is saved."
+  },
+  "settingsPictureRemoved": "Profile picture removed",
+  "@settingsPictureRemoved": {
+    "description": "Message, with an Undo button, after the profile picture is removed."
+  },
+  "settingsPictureRemoveFailed": "Couldn’t remove the profile picture",
+  "@settingsPictureRemoveFailed": {
+    "description": "Error message when the profile picture couldn't be removed, with a Try again button."
+  },
+  "settingsName": "Name",
+  "@settingsName": {
+    "description": "Label of the field with the person's name in Settings. Noun. Short."
+  },
+  "settingsEmail": "Email",
+  "@settingsEmail": {
+    "description": "Label of the field with the person's email address in Settings. Noun. Short."
+  },
+  "settingsEmailHelp": "Only an admin can change your email.",
+  "@settingsEmailHelp": {
+    "description": "Help under the read-only email field in Settings."
+  },
+  "settingsTheme": "Theme",
+  "@settingsTheme": {
+    "description": "Title of the theme row in Settings, and the screen reader name of its choices. Noun. Short."
+  },
+  "settingsThemeHelp": "Choose how Anchor looks.",
+  "@settingsThemeHelp": {
+    "description": "Text under the Theme title in Settings."
+  },
+  "settingsThemeLight": "Light",
+  "@settingsThemeLight": {
+    "description": "Theme choice in Settings that keeps the app light. Adjective. Short."
+  },
+  "settingsThemeLightHelp": "Always light",
+  "@settingsThemeLightHelp": {
+    "description": "Text under the Light theme choice in Settings. Short."
+  },
+  "settingsThemeDark": "Dark",
+  "@settingsThemeDark": {
+    "description": "Theme choice in Settings that keeps the app dark. Adjective. Short."
+  },
+  "settingsThemeDarkHelp": "Always dark",
+  "@settingsThemeDarkHelp": {
+    "description": "Text under the Dark theme choice in Settings. Short."
+  },
+  "settingsThemeSystem": "Match system",
+  "@settingsThemeSystem": {
+    "description": "Theme choice in Settings that follows the device's light or dark setting. Short."
+  },
+  "settingsThemeSystemHelp": "Follows your device",
+  "@settingsThemeSystemHelp": {
+    "description": "Text under the Match system theme choice in Settings. Short."
+  },
+  "settingsLanguage": "Language",
+  "@settingsLanguage": {
+    "description": "Title of the language row in Settings. Noun. Short."
+  },
+  "settingsLanguageHelp": "Choose the language Anchor uses.",
+  "@settingsLanguageHelp": {
+    "description": "Text under the Language title in Settings."
+  },
+  "settingsMoveChecked": "Move checked items to the bottom",
+  "@settingsMoveChecked": {
+    "description": "Title of the switch in Settings that moves checked checklist items below the others."
+  },
+  "settingsMoveCheckedHelp": "Checked items move below the unchecked ones.",
+  "@settingsMoveCheckedHelp": {
+    "description": "Text under the Move checked items to the bottom switch in Settings."
+  },
+  "settingsApiTokenHelp": "Lets other apps read your notes.",
+  "@settingsApiTokenHelp": {
+    "description": "Text under the API token heading in Settings."
+  },
+  "settingsTokenLoadFailed": "Couldn’t load your token.",
+  "@settingsTokenLoadFailed": {
+    "description": "Shown in the API token part of Settings, beside a Try again button, when the token couldn't be loaded."
+  },
+  "settingsShowToken": "Show token",
+  "@settingsShowToken": {
+    "description": "Tooltip and screen reader label of the eye button that shows the hidden API token. Verb phrase."
+  },
+  "settingsHideToken": "Hide token",
+  "@settingsHideToken": {
+    "description": "Tooltip and screen reader label of the eye button that hides the shown API token. Verb phrase."
+  },
+  "settingsCopyToken": "Copy token",
+  "@settingsCopyToken": {
+    "description": "Tooltip and screen reader label of the button that copies the API token. Verb phrase."
+  },
+  "settingsTokenCopied": "Token copied",
+  "@settingsTokenCopied": {
+    "description": "Message after the API token is copied."
+  },
+  "settingsTokenCopyFailed": "Couldn’t copy the token",
+  "@settingsTokenCopyFailed": {
+    "description": "Error message when the API token couldn't be copied."
+  },
+  "settingsTokenWarning": "Anyone with this token can read your notes. If it leaks, regenerate it.",
+  "@settingsTokenWarning": {
+    "description": "Warning under the API token field in Settings."
+  },
+  "settingsTokenRegenerate": "Regenerate",
+  "@settingsTokenRegenerate": {
+    "description": "Button, and the button of the dialog that confirms it, that replaces the API token with a new one. Verb. Short."
+  },
+  "settingsTokenRegenerating": "Regenerating…",
+  "@settingsTokenRegenerating": {
+    "description": "Label of the Regenerate button while the new token is made. Short."
+  },
+  "settingsTokenRevoke": "Revoke",
+  "@settingsTokenRevoke": {
+    "description": "Button, and the button of the dialog that confirms it, that stops the API token from working. Verb. Short."
+  },
+  "settingsTokenRevoking": "Revoking…",
+  "@settingsTokenRevoking": {
+    "description": "Label of the Revoke button while the token is stopped. Short."
+  },
+  "settingsNoToken": "No token",
+  "@settingsNoToken": {
+    "description": "Title in the API token part of Settings when there is no token yet. Short."
+  },
+  "settingsNoTokenHelp": "Generate one when an app asks for it.",
+  "@settingsNoTokenHelp": {
+    "description": "Text under No token in Settings."
+  },
+  "settingsGenerateToken": "Generate token",
+  "@settingsGenerateToken": {
+    "description": "Button that makes a first API token. Verb phrase."
+  },
+  "settingsTokenGenerating": "Generating…",
+  "@settingsTokenGenerating": {
+    "description": "Label of the Generate token button while the token is made. Short."
+  },
+  "settingsTokenGenerated": "API token generated",
+  "@settingsTokenGenerated": {
+    "description": "Message after a first API token is made."
+  },
+  "settingsTokenRegenerated": "API token regenerated. Update it in your apps.",
+  "@settingsTokenRegenerated": {
+    "description": "Message after the API token is replaced with a new one."
+  },
+  "settingsTokenGenerateFailed": "Couldn’t generate a token",
+  "@settingsTokenGenerateFailed": {
+    "description": "Error message when a first API token couldn't be made, with a Try again button."
+  },
+  "settingsTokenRegenerateFailed": "Couldn’t regenerate the token",
+  "@settingsTokenRegenerateFailed": {
+    "description": "Error message when the API token couldn't be replaced, with a Try again button."
+  },
+  "settingsTokenRevoked": "API token revoked",
+  "@settingsTokenRevoked": {
+    "description": "Message after the API token is stopped."
+  },
+  "settingsTokenRevokeFailed": "Couldn’t revoke the token",
+  "@settingsTokenRevokeFailed": {
+    "description": "Error message when the API token couldn't be stopped, with a Try again button."
+  },
+  "settingsRegenerateTitle": "Regenerate the API token?",
+  "@settingsRegenerateTitle": {
+    "description": "Title of the dialog that asks before the API token is replaced."
+  },
+  "settingsRegenerateMessage": "The current token will stop working right away. Apps that use it will need the new one.",
+  "@settingsRegenerateMessage": {
+    "description": "Text of the dialog that asks before the API token is replaced."
+  },
+  "settingsRevokeTitle": "Revoke the API token?",
+  "@settingsRevokeTitle": {
+    "description": "Title of the dialog that asks before the API token is stopped."
+  },
+  "settingsRevokeMessage": "Apps that use it will lose access to your notes. You can generate a new token at any time.",
+  "@settingsRevokeMessage": {
+    "description": "Text of the dialog that asks before the API token is stopped."
+  },
+  "settingsPasswordManagedBy": "Your password is managed by {provider}",
+  "@settingsPasswordManagedBy": {
+    "description": "Title in the Password part of Settings for people who sign in with another service. {provider} is that service's name, as the admin set it."
+  },
+  "settingsPasswordManagedElsewhere": "Your password is managed by your sign-in provider",
+  "@settingsPasswordManagedElsewhere": {
+    "description": "Title in the Password part of Settings for people who sign in with another service that has no name set."
+  },
+  "settingsPasswordChangeAt": "Change it in {provider}.",
+  "@settingsPasswordChangeAt": {
+    "description": "Text under the managed password title in Settings. {provider} is the sign-in service's name, as the admin set it."
+  },
+  "settingsPasswordChangeAtProvider": "Change it in your sign-in provider.",
+  "@settingsPasswordChangeAtProvider": {
+    "description": "Text under the managed password title in Settings when the sign-in service has no name set."
+  },
+  "settingsCurrentPassword": "Current password",
+  "@settingsCurrentPassword": {
+    "description": "Label of the field for the password used now, in the Password part of Settings."
+  },
+  "settingsNewPassword": "New password",
+  "@settingsNewPassword": {
+    "description": "Label of the field for the password to change to, in the Password part of Settings."
+  },
+  "settingsPasswordHelp": "{count, plural, =1{At least 1 character.} other{At least {count} characters.}}",
+  "@settingsPasswordHelp": {
+    "description": "Help under the New password field in Settings. {count} is the shortest length allowed."
+  },
+  "settingsPasswordTooShort": "{count, plural, =1{Use at least 1 character.} other{Use at least {count} characters.}}",
+  "@settingsPasswordTooShort": {
+    "description": "Error under the New password field in Settings when the password is too short. {count} is the shortest length allowed."
+  },
+  "settingsPasswordWrongCurrent": "That isn’t your current password.",
+  "@settingsPasswordWrongCurrent": {
+    "description": "Error under the Current password field in Settings when it is wrong."
+  },
+  "settingsPasswordUnchanged": "Use a password that’s different from your current one.",
+  "@settingsPasswordUnchanged": {
+    "description": "Error under the New password field in Settings when it is the same as the current one."
+  },
+  "settingsPasswordChangeFailed": "Couldn’t change the password. Try again in a moment.",
+  "@settingsPasswordChangeFailed": {
+    "description": "Error under the password fields in Settings when the server couldn't change the password."
+  },
+  "settingsChangePassword": "Change password",
+  "@settingsChangePassword": {
+    "description": "Button in Settings that saves the new password. Verb phrase."
+  },
+  "settingsChangingPassword": "Changing password…",
+  "@settingsChangingPassword": {
+    "description": "Label of the Change password button while the password is changed. Short."
+  },
+  "settingsPasswordChanged": "Password changed",
+  "@settingsPasswordChanged": {
+    "description": "Message after the password is changed."
+  },
+  "settingsDeleteWarningTitle": "This can’t be undone",
+  "@settingsDeleteWarningTitle": {
+    "description": "Title in the Delete account part of Settings, beside the Delete account button."
+  },
+  "settingsDeleteWarningText": "Permanently delete your account and everything in it from this server. To keep a copy of your notes, export them first.",
+  "@settingsDeleteWarningText": {
+    "description": "Text in the Delete account part of Settings."
+  },
+  "settingsDeleteDialogTitle": "Delete your account?",
+  "@settingsDeleteDialogTitle": {
+    "description": "Title of the dialog that asks before the person's own account is deleted."
+  },
+  "settingsDeleteDialogMessage": "This can’t be undone. Your account, notes, tags, attachments and reminders will be permanently deleted from this server. Notes you shared will no longer be available to other people.",
+  "@settingsDeleteDialogMessage": {
+    "description": "Text of the dialog that asks before the person's own account is deleted."
+  },
+  "settingsDeleteConfirmHelp": "Enter your password to confirm.",
+  "@settingsDeleteConfirmHelp": {
+    "description": "Help under the password field in the dialog that deletes the account."
+  },
+  "settingsDeleteWrongPassword": "That isn’t your password.",
+  "@settingsDeleteWrongPassword": {
+    "description": "Error under the password field in the dialog that deletes the account, when the password is wrong."
+  },
+  "settingsDeleteOnlyAdmin": "You’re the only admin on this server. Make someone else an admin first.",
+  "@settingsDeleteOnlyAdmin": {
+    "description": "Error in the dialog that deletes the account, when the person is the server's only admin."
+  },
+  "settingsDeleteFailed": "Couldn’t delete your account. Try again in a moment.",
+  "@settingsDeleteFailed": {
+    "description": "Error in the dialog that deletes the account, when the server couldn't delete it."
+  },
+  "settingsAccountDeleted": "Account deleted",
+  "@settingsAccountDeleted": {
+    "description": "Message after the person's own account is deleted."
+  },
+  "adminTitle": "Admin",
+  "@adminTitle": {
+    "description": "Title of the admin page, and the screen reader name of its tabs. Noun."
+  },
+  "adminPeople": "People",
+  "@adminPeople": {
+    "description": "Label of the count of accounts on the admin page, and the tab with the list of accounts. Noun. Short."
+  },
+  "adminNotes": "Notes",
+  "@adminNotes": {
+    "description": "Label of the count of all notes on the admin page, and the column with each person's note count. Noun. Short."
+  },
+  "adminTags": "Tags",
+  "@adminTags": {
+    "description": "Label of the count of all tags on the admin page, and the column with each person's tag count. Noun. Short."
+  },
+  "adminWaitingCount": "{count, plural, =0{No one waiting} =1{1 waiting} other{{count} waiting}}",
+  "@adminWaitingCount": {
+    "description": "Under the count of people on the admin page, and read by screen readers on the badge of the People tab: how many people wait for an admin to approve their account. Short."
+  },
+  "adminNotesCaption": "Including trash",
+  "@adminNotesCaption": {
+    "description": "Under the count of notes on the admin page: the count has deleted notes too. Short."
+  },
+  "adminTagsCaption": "Across all people",
+  "@adminTagsCaption": {
+    "description": "Under the count of tags on the admin page: the count is for every account. Short."
+  },
+  "adminStatNotLoaded": "Not loaded",
+  "@adminStatNotLoaded": {
+    "description": "Read by screen readers in place of a count on the admin page that couldn't load."
+  },
+  "adminStatsLoadFailed": "Couldn’t load the counts.",
+  "@adminStatsLoadFailed": {
+    "description": "Shown on the admin page, beside a Try again button, when the counts couldn't load."
+  },
+  "adminSignInTab": "Sign-in",
+  "@adminSignInTab": {
+    "description": "Tab on the admin page with the settings for signing up and signing in. Noun. Short."
+  },
+  "adminRequestedYesterday": "Requested yesterday",
+  "@adminRequestedYesterday": {
+    "description": "Beside a person who waits for approval: they asked for an account yesterday."
+  },
+  "adminRequestedAgo": "Requested {time}",
+  "@adminRequestedAgo": {
+    "description": "Beside a person who waits for approval: when they asked for an account. {time} is a time before now written by the browser, such as “2 hours ago”."
+  },
+  "adminRequestedOn": "Requested {date}",
+  "@adminRequestedOn": {
+    "description": "Beside a person who waits for approval: the day they asked for an account. {date} is a short date, such as “Sep 3”."
+  },
+  "adminPersonYou": "{name} (you)",
+  "@adminPersonYou": {
+    "description": "A person's name in the list of people on the admin page, when it is the admin looking at it."
+  },
+  "adminPendingLoadFailed": "Couldn’t load who’s waiting for approval.",
+  "@adminPendingLoadFailed": {
+    "description": "Shown on the admin page, beside a Try again button, when the people waiting for approval couldn't load."
+  },
+  "adminWaitingForApproval": "{count, plural, =1{1 person waiting for approval} other{{count} people waiting for approval}}",
+  "@adminWaitingForApproval": {
+    "description": "Heading above the people who asked for an account and wait for an admin. {count} is how many."
+  },
+  "adminDecline": "Decline",
+  "@adminDecline": {
+    "description": "Button, and the button of the dialog that confirms it, that turns down a person's request for an account. Verb. Short."
+  },
+  "adminDeclining": "Declining…",
+  "@adminDeclining": {
+    "description": "Label of the Decline button while the request is turned down. Short."
+  },
+  "adminApprove": "Approve",
+  "@adminApprove": {
+    "description": "Button that lets a person who asked for an account sign in. Verb. Short."
+  },
+  "adminApproving": "Approving…",
+  "@adminApproving": {
+    "description": "Label of the Approve button while the account is approved. Short."
+  },
+  "adminCanSignIn": "{name} can sign in now",
+  "@adminCanSignIn": {
+    "description": "Message after an admin approves or adds a person. {name} is the person's first name."
+  },
+  "adminApproveFailed": "Couldn’t approve {name}",
+  "@adminApproveFailed": {
+    "description": "Error message when a person's account couldn't be approved, with a Try again button. {name} is the person's first name."
+  },
+  "adminDeclined": "{name}’s request declined",
+  "@adminDeclined": {
+    "description": "Message after an admin turns down a person's request for an account. {name} is the person's first name."
+  },
+  "adminDeclineFailed": "Couldn’t decline {name}",
+  "@adminDeclineFailed": {
+    "description": "Error message when a person's request couldn't be turned down. {name} is the person's first name."
+  },
+  "adminDeclineTitle": "Decline {name}’s request?",
+  "@adminDeclineTitle": {
+    "description": "Title of the dialog that asks before a person's request for an account is turned down. {name} is the person's first name."
+  },
+  "adminDeclineMessage": "Their account will be deleted. They can ask again by signing up.",
+  "@adminDeclineMessage": {
+    "description": "Text of the dialog that asks before a person's request for an account is turned down."
+  },
+  "adminFindPeople": "Find people",
+  "@adminFindPeople": {
+    "description": "Placeholder and screen reader label of the search field above the list of people. Verb phrase."
+  },
+  "adminAddPerson": "Add person",
+  "@adminAddPerson": {
+    "description": "Button that opens the dialog to make an account for someone, and the button in that dialog that makes it. Verb phrase. Short."
+  },
+  "adminPeopleLoadFailed": "Couldn’t load people.",
+  "@adminPeopleLoadFailed": {
+    "description": "Shown on the admin page, beside a Try again button, when the list of people couldn't load."
+  },
+  "adminColumnPerson": "Person",
+  "@adminColumnPerson": {
+    "description": "Column heading in the list of people: the name and email. Noun. Short."
+  },
+  "adminColumnRole": "Role",
+  "@adminColumnRole": {
+    "description": "Column heading in the list of people: Admin or Member. Noun. Short."
+  },
+  "adminColumnSignsInWith": "Signs in with",
+  "@adminColumnSignsInWith": {
+    "description": "Column heading in the list of people: a password or the sign-in service's name. Short."
+  },
+  "adminColumnJoined": "Joined",
+  "@adminColumnJoined": {
+    "description": "Column heading in the list of people: the day the account was made. Short."
+  },
+  "adminColumnOptions": "Options",
+  "@adminColumnOptions": {
+    "description": "Screen reader name of the last column in the list of people, with each person's menu button. Noun."
+  },
+  "adminRoleAdmin": "Admin",
+  "@adminRoleAdmin": {
+    "description": "Role badge of an admin in the list of people, and the label of the switch that makes a person an admin. Noun. Short."
+  },
+  "adminRoleMember": "Member",
+  "@adminRoleMember": {
+    "description": "Role of a person who isn't an admin, in the list of people. Noun. Short."
+  },
+  "adminSignInPassword": "Password",
+  "@adminSignInPassword": {
+    "description": "In the Signs in with column: the person signs in with an email and password. Noun. Short."
+  },
+  "adminPersonOptions": "Options for {name}",
+  "@adminPersonOptions": {
+    "description": "Screen reader label of the … button on a person's row, which opens their menu. {name} is the person's full name."
+  },
+  "adminResetPassword": "Reset password",
+  "@adminResetPassword": {
+    "description": "Item in a person's menu, and the button of the dialog that confirms it, that gives the person a new password. Verb phrase."
+  },
+  "adminResetting": "Resetting…",
+  "@adminResetting": {
+    "description": "Label of the Reset password button while the new password is made. Short."
+  },
+  "adminResetTitle": "Reset {name}’s password?",
+  "@adminResetTitle": {
+    "description": "Title of the dialog that asks before a person's password is reset. {name} is the person's first name."
+  },
+  "adminResetMessage": "Their current password will stop working right away. You’ll see the new password next.",
+  "@adminResetMessage": {
+    "description": "Text of the dialog that asks before a person's password is reset."
+  },
+  "adminPasswordReset": "{name}’s password was reset",
+  "@adminPasswordReset": {
+    "description": "Message after a person's password is reset. {name} is the person's first name."
+  },
+  "adminResetFailed": "Couldn’t reset {name}’s password",
+  "@adminResetFailed": {
+    "description": "Error message when a person's password couldn't be reset. {name} is the person's first name."
+  },
+  "adminNoMatch": "No one matches “{query}”.",
+  "@adminNoMatch": {
+    "description": "Shown in the list of people when no one matches the search. {query} is what was typed."
+  },
+  "adminNoPeople": "No one here yet.",
+  "@adminNoPeople": {
+    "description": "Shown in the list of people when there are no accounts."
+  },
+  "adminShownCount": "{shown} of {total, plural, =1{1 person} other{{total} people}}",
+  "@adminShownCount": {
+    "description": "Under the list of people: how many rows show out of how many accounts there are. {shown} and {total} are numbers."
+  },
+  "adminShowMore": "Show more",
+  "@adminShowMore": {
+    "description": "Button under the list of people that loads more rows. Verb phrase. Short."
+  },
+  "adminDeleteTitle": "Delete {name}?",
+  "@adminDeleteTitle": {
+    "description": "Title of the dialog that asks before a person's account is deleted. {name} is the person's full name."
+  },
+  "adminDeleteMessage": "This can’t be undone. The following will be permanently deleted:",
+  "@adminDeleteMessage": {
+    "description": "Text of the dialog that asks before a person's account is deleted, above a list of what goes."
+  },
+  "adminDeleteTheirAccount": "Their account",
+  "@adminDeleteTheirAccount": {
+    "description": "First item in the list of what goes when a person's account is deleted."
+  },
+  "adminDeleteNotes": "{count, plural, =1{1 note} other{{count} notes}}",
+  "@adminDeleteNotes": {
+    "description": "Item in the list of what goes when a person's account is deleted: their notes. {count} is how many."
+  },
+  "adminDeleteTags": "{count, plural, =1{1 tag} other{{count} tags}}",
+  "@adminDeleteTags": {
+    "description": "Item in the list of what goes when a person's account is deleted: their tags. {count} is how many."
+  },
+  "adminDeleteIsAdmin": "{name} is an admin.",
+  "@adminDeleteIsAdmin": {
+    "description": "Warning in the dialog that deletes an admin's account. {name} is the person's first name."
+  },
+  "adminDeleteConfirm": "Delete {name}",
+  "@adminDeleteConfirm": {
+    "description": "Button of the dialog that deletes a person's account. {name} is the person's first name. Verb phrase."
+  },
+  "adminDeleted": "{name}’s account deleted",
+  "@adminDeleted": {
+    "description": "Message after a person's account is deleted. {name} is the person's first name."
+  },
+  "adminDeleteOnlyAdmin": "Couldn’t delete {name}. They’re the only admin.",
+  "@adminDeleteOnlyAdmin": {
+    "description": "Error message when the server's only admin couldn't be deleted. {name} is the person's first name."
+  },
+  "adminDeleteFailed": "Couldn’t delete {name}",
+  "@adminDeleteFailed": {
+    "description": "Error message when a person's account couldn't be deleted. {name} is the person's first name."
+  },
+  "adminAddPersonTitle": "Add a person",
+  "@adminAddPersonTitle": {
+    "description": "Title of the dialog where an admin makes an account for someone."
+  },
+  "adminAddPersonMessage": "They can sign in right away and change their password in Settings.",
+  "@adminAddPersonMessage": {
+    "description": "Text of the dialog where an admin makes an account for someone."
+  },
+  "adminName": "Name",
+  "@adminName": {
+    "description": "Label of the name field in the dialogs that add or change a person. Noun. Short."
+  },
+  "adminNamePlaceholder": "Their name",
+  "@adminNamePlaceholder": {
+    "description": "Placeholder of the name field in the dialog that adds a person. Short."
+  },
+  "adminEmail": "Email",
+  "@adminEmail": {
+    "description": "Label of the email field in the dialogs that add or change a person. Noun. Short."
+  },
+  "adminEmailPlaceholder": "name@example.com",
+  "@adminEmailPlaceholder": {
+    "description": "Placeholder of the email field in the dialog that adds a person: a made-up email address. Keep example.com as the domain."
+  },
+  "adminPassword": "Password",
+  "@adminPassword": {
+    "description": "Label of the password field in the dialog that adds a person. Noun. Short."
+  },
+  "adminPasswordPlaceholder": "{count, plural, =1{At least 1 character} other{At least {count} characters}}",
+  "@adminPasswordPlaceholder": {
+    "description": "Placeholder of the password field in the dialog that adds a person. {count} is the shortest length allowed. Short."
+  },
+  "adminGeneratePassword": "Generate",
+  "@adminGeneratePassword": {
+    "description": "Small button inside the password field that fills in a random password. Verb. Short."
+  },
+  "adminAdding": "Adding…",
+  "@adminAdding": {
+    "description": "Label of the Add person button while the account is made. Short."
+  },
+  "adminEnterName": "Enter their name.",
+  "@adminEnterName": {
+    "description": "Error under the name field in the dialogs that add or change a person, when it is empty."
+  },
+  "adminEmailTaken": "An account with this email already exists.",
+  "@adminEmailTaken": {
+    "description": "Error under the email field in the dialogs that add or change a person, when another account has that email."
+  },
+  "adminAddFailed": "Couldn’t add {name}",
+  "@adminAddFailed": {
+    "description": "Error message when a new account couldn't be made. {name} is the person's first name."
+  },
+  "adminEditTitle": "Edit {name}",
+  "@adminEditTitle": {
+    "description": "Title of the dialog that changes a person's name, email and role. {name} is the person's full name."
+  },
+  "adminOwnRole": "You can’t change your own role. Another admin can.",
+  "@adminOwnRole": {
+    "description": "Text under the Admin switch when an admin edits their own account."
+  },
+  "adminRoleHelp": "Can add people and change sign-in settings.",
+  "@adminRoleHelp": {
+    "description": "Text under the Admin switch in the dialog that changes a person: what an admin can do."
+  },
+  "adminSaveFailed": "Couldn’t save the changes",
+  "@adminSaveFailed": {
+    "description": "Error message when the changes to a person couldn't be saved."
+  },
+  "adminNewPasswordTitle": "New password for {name}",
+  "@adminNewPasswordTitle": {
+    "description": "Title of the dialog that shows a person's new password, and the screen reader name of the field with it. {name} is the person's first name."
+  },
+  "adminNewPasswordMessage": "Share it with {name} securely. It won’t be shown again.",
+  "@adminNewPasswordMessage": {
+    "description": "Text of the dialog that shows a person's new password. {name} is the person's first name."
+  },
+  "adminCopyPasswordFailed": "Couldn’t copy the password",
+  "@adminCopyPasswordFailed": {
+    "description": "Error message when the new password couldn't be copied."
+  },
+  "adminWhoCanSignUp": "Who can sign up",
+  "@adminWhoCanSignUp": {
+    "description": "Heading of the sign-up choices on the admin page, and the screen reader name of the choices."
+  },
+  "adminWhoCanSignUpHelp": "Choose who can create an account.",
+  "@adminWhoCanSignUpHelp": {
+    "description": "Text under the Who can sign up heading."
+  },
+  "adminSignupLocked": "Set by <code>{variable}</code> on the server. Remove it there to change it here.",
+  "@adminSignupLocked": {
+    "description": "Note above the sign-up choices when the server's settings file fixes them. {variable} is the setting's name, USER_SIGNUP. Keep the <code> tags around it."
+  },
+  "adminSignupLoadFailed": "Couldn’t load who can sign up.",
+  "@adminSignupLoadFailed": {
+    "description": "Shown on the admin page, beside a Try again button, when the sign-up setting couldn't load."
+  },
+  "adminSignupChangeFailed": "Couldn’t change who can sign up",
+  "@adminSignupChangeFailed": {
+    "description": "Error message when the sign-up setting couldn't be saved, with a Try again button."
+  },
+  "adminSignupOpen": "Open",
+  "@adminSignupOpen": {
+    "description": "Sign-up choice: anyone can make an account. Adjective. Short."
+  },
+  "adminSignupOpenHelp": "Anyone can create an account.",
+  "@adminSignupOpenHelp": {
+    "description": "Text under the Open sign-up choice."
+  },
+  "adminSignupReview": "Needs approval",
+  "@adminSignupReview": {
+    "description": "Sign-up choice: new accounts wait for an admin to approve them. Short."
+  },
+  "adminSignupReviewHelp": "New accounts need an admin’s approval.",
+  "@adminSignupReviewHelp": {
+    "description": "Text under the Needs approval sign-up choice."
+  },
+  "adminSignupClosed": "Closed",
+  "@adminSignupClosed": {
+    "description": "Sign-up choice: no one can make an account themselves. Adjective. Short."
+  },
+  "adminSignupClosedHelp": "Only admins can add people.",
+  "@adminSignupClosedHelp": {
+    "description": "Text under the Closed sign-up choice."
+  },
+  "adminSingleSignOn": "Single sign-on",
+  "@adminSingleSignOn": {
+    "description": "Heading of the admin settings for signing in with another service, and the name shown in the Signs in with column when that service has no name set. Noun."
+  },
+  "adminSsoHelp": "Let people sign in with your identity provider, like Pocket ID or Authelia (OIDC).",
+  "@adminSsoHelp": {
+    "description": "Text under the Single sign-on heading. Pocket ID and Authelia are product names; OIDC is the name of the standard."
+  },
+  "adminSsoLocked": "Set by <code>{enabled}</code>, <code>{issuer}</code> and <code>{client}</code> on the server. Remove them there to change these here.",
+  "@adminSsoLocked": {
+    "description": "Note above the single sign-on settings when the server's settings file fixes them. {enabled}, {issuer} and {client} are the settings' names, such as OIDC_ENABLED. Keep the <code> tags around them."
+  },
+  "adminSsoLoadFailed": "Couldn’t load the single sign-on settings.",
+  "@adminSsoLoadFailed": {
+    "description": "Shown on the admin page, beside a Try again button, when the single sign-on settings couldn't load."
+  },
+  "adminSsoToggle": "Sign in with a provider",
+  "@adminSsoToggle": {
+    "description": "Title of the switch that turns on signing in with another service."
+  },
+  "adminSsoButtonHelp": "Adds a “Continue with {provider}” button to the sign-in page.",
+  "@adminSsoButtonHelp": {
+    "description": "Text under the Sign in with a provider switch. {provider} is the service's name, as the admin typed it. Use the same words as the button on the sign-in page."
+  },
+  "adminSsoButtonHelpUnnamed": "Adds a “Continue with your provider” button to the sign-in page.",
+  "@adminSsoButtonHelpUnnamed": {
+    "description": "Text under the Sign in with a provider switch while no provider name is typed."
+  },
+  "adminSsoProviderName": "Provider name",
+  "@adminSsoProviderName": {
+    "description": "Label of the field for the sign-in service's name. Short."
+  },
+  "adminSsoProviderNameHelp": "Shown on the sign-in button.",
+  "@adminSsoProviderNameHelp": {
+    "description": "Help under the Provider name field."
+  },
+  "adminSsoIssuerUrl": "Issuer URL",
+  "@adminSsoIssuerUrl": {
+    "description": "Label of the field for the sign-in service's web address. Technical term from the OIDC standard. Short."
+  },
+  "adminSsoIssuerMissing": "Enter the issuer URL.",
+  "@adminSsoIssuerMissing": {
+    "description": "Error under the Issuer URL field when it is empty."
+  },
+  "adminSsoIssuerInvalid": "Enter a full URL, like https://auth.example.com.",
+  "@adminSsoIssuerInvalid": {
+    "description": "Error under the Issuer URL field when it isn't a full web address. Keep the example address as it is."
+  },
+  "adminSsoClientId": "Client ID",
+  "@adminSsoClientId": {
+    "description": "Label of the field for the ID the sign-in service gave Anchor. Technical term from the OIDC standard. Short."
+  },
+  "adminSsoClientIdMissing": "Enter the client ID.",
+  "@adminSsoClientIdMissing": {
+    "description": "Error under the Client ID field when it is empty."
+  },
+  "adminSsoClientSecret": "Client secret",
+  "@adminSsoClientSecret": {
+    "description": "Label of the field for the secret the sign-in service gave Anchor. Technical term from the OIDC standard. Short."
+  },
+  "adminSsoOptional": "Optional",
+  "@adminSsoOptional": {
+    "description": "Small note beside the Client secret label: the field may stay empty. Short."
+  },
+  "adminSsoSecretOnServer": "Set on the server.",
+  "@adminSsoSecretOnServer": {
+    "description": "Help under the Client secret field when the server's settings file fixes it."
+  },
+  "adminSsoSecretSaved": "Saved",
+  "@adminSsoSecretSaved": {
+    "description": "Placeholder of the read-only Client secret field when a secret is saved. Short."
+  },
+  "adminSsoSecretNone": "None",
+  "@adminSsoSecretNone": {
+    "description": "Placeholder of the read-only Client secret field when no secret is saved. Short."
+  },
+  "adminSsoSecretHidden": "The saved secret is never shown.",
+  "@adminSsoSecretHidden": {
+    "description": "Help under the Client secret field when a secret is saved."
+  },
+  "adminSsoSecretReplace": "Saved. Type a new one to replace it.",
+  "@adminSsoSecretReplace": {
+    "description": "Placeholder of the Client secret field when a secret is saved."
+  },
+  "adminSsoSecretClear": "Clear",
+  "@adminSsoSecretClear": {
+    "description": "Small button inside the Client secret field that removes the saved secret. Verb. Short."
+  },
+  "adminSsoSecretPhoneHelp": "The Anchor phone app needs a public client, so leave this empty if people sign in from their phones.",
+  "@adminSsoSecretPhoneHelp": {
+    "description": "Help under the empty Client secret field. A public client is an OIDC term for a sign-in setup without a secret."
+  },
+  "adminSsoSecretPhonePlaceholder": "Leave empty for the phone app",
+  "@adminSsoSecretPhonePlaceholder": {
+    "description": "Placeholder of the empty Client secret field. Short."
+  },
+  "adminSsoOnly": "Only sign in with {provider}",
+  "@adminSsoOnly": {
+    "description": "Title of the switch that turns off email and password sign-in. {provider} is the sign-in service's name, as the admin typed it."
+  },
+  "adminSsoOnlyUnnamed": "Only sign in with your provider",
+  "@adminSsoOnlyUnnamed": {
+    "description": "Title of the switch that turns off email and password sign-in, while no provider name is typed."
+  },
+  "adminSsoOnlyHelp": "Turns off sign-in and sign-up with email and password.",
+  "@adminSsoOnlyHelp": {
+    "description": "Text under the Only sign in with switch."
+  },
+  "adminSsoCallbackUrl": "Callback URL",
+  "@adminSsoCallbackUrl": {
+    "description": "Label, and screen reader name, of the read-only field with the address the sign-in service sends people back to. Technical term from the OIDC standard. Short."
+  },
+  "adminSsoCallbackHelp": "Add this as the redirect URL in {provider}. It’s based on <code>{variable}</code>.",
+  "@adminSsoCallbackHelp": {
+    "description": "Help under the Callback URL field. {provider} is the sign-in service's name, as the admin typed it. {variable} is the server setting's name, APP_URL. Keep the <code> tags around it."
+  },
+  "adminSsoCallbackHelpUnnamed": "Add this as the redirect URL in your provider. It’s based on <code>{variable}</code>.",
+  "@adminSsoCallbackHelpUnnamed": {
+    "description": "Help under the Callback URL field while no provider name is typed. {variable} is the server setting's name, APP_URL. Keep the <code> tags around it."
+  },
+  "adminSsoCopyFailed": "Couldn’t copy the address",
+  "@adminSsoCopyFailed": {
+    "description": "Error message when the callback address couldn't be copied."
+  },
+  "adminSsoUnsaved": "You have unsaved changes to single sign-on.",
+  "@adminSsoUnsaved": {
+    "description": "Text of the bar at the bottom of the admin page while the single sign-on settings have changes that aren't saved."
+  },
+  "adminSsoDiscard": "Discard",
+  "@adminSsoDiscard": {
+    "description": "Button in that bar that throws away the unsaved changes. Verb. Short."
+  },
+  "adminSsoSaved": "Single sign-on settings saved",
+  "@adminSsoSaved": {
+    "description": "Message after the single sign-on settings are saved."
+  },
+  "adminSsoSaveFailed": "Couldn’t save single sign-on",
+  "@adminSsoSaveFailed": {
+    "description": "Error message when the single sign-on settings couldn't be saved, with a Try again button."
+  }
+}

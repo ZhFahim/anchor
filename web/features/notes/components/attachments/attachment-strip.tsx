@@ -2,10 +2,12 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Mic, Plus } from "lucide-react";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { createPortal } from "react-dom";
 import { create } from "zustand";
 import { toast } from "@/components/ui/toast";
+import type { Translate } from "@/i18n/translate";
 import { eachLimited } from "@/lib/each";
 import { useRovingFocus } from "@/lib/hooks/use-roving-focus";
 import { useFlip } from "@/lib/use-flip";
@@ -64,11 +66,18 @@ export function shortFileName(name: string, max = 20) {
   return `${name.slice(0, max - extension.length - 1)}…${extension}`;
 }
 
-/** “a.pdf”, “a.pdf and b.mov”, “a.pdf, b.mov and 2 more”. */
-function names(files: File[]) {
-  const fileNames = files.map((f) => shortFileName(f.name));
-  if (fileNames.length <= 2) return fileNames.join(" and ");
-  return `${fileNames[0]}, ${fileNames[1]} and ${fileNames.length - 2} more`;
+function rejectedMessage(t: Translate, files: File[]) {
+  const [first, second] = files.map((f) => shortFileName(f.name));
+  const limit = Math.round(MAX_ATTACHMENT_SIZE / (1024 * 1024));
+  if (files.length === 1) return t("attachmentRejectedOne", { first, limit });
+  if (files.length === 2)
+    return t("attachmentRejectedTwo", { first, second, limit });
+  return t("attachmentRejectedMore", {
+    first,
+    second,
+    count: files.length - 2,
+    limit,
+  });
 }
 
 /** Moves `id` before index `to` among shown files of its kind; null if it stays put. */
@@ -148,6 +157,7 @@ export function AttachmentStrip({
   dropping,
   onHasFiles,
 }: AttachmentStripProps) {
+  const t = useTranslations();
   const queryClient = useQueryClient();
   const roving = useRovingFocus<HTMLDivElement>({
     itemSelector: 'button, [role="slider"]:not([aria-disabled="true"])',
@@ -251,10 +261,7 @@ export function AttachmentStrip({
       (f) => !isAcceptedAttachmentType(f) || f.size > MAX_ATTACHMENT_SIZE,
     );
     const accepted = files.filter((f) => !rejected.includes(f));
-    if (rejected.length)
-      toast.error(
-        `Can’t add ${names(rejected)}. Pick pictures or audio up to 50 MB.`,
-      );
+    if (rejected.length) toast.error(rejectedMessage(t, rejected));
     if (!accepted.length) return;
 
     const fresh: Upload[] = accepted.map((file) => {
@@ -277,7 +284,7 @@ export function AttachmentStrip({
       const id = await ensureNoteId();
       if (!id) {
         for (const u of fresh) patch(u.key, { failed: true });
-        setAnnouncement("Couldn’t save the note, so the files weren’t added.");
+        setAnnouncement(t("attachmentNoteNotSaved"));
         return;
       }
       const tried: { upload: Upload; isAdded: boolean }[] = [];
@@ -292,17 +299,27 @@ export function AttachmentStrip({
       );
       queryClient.invalidateQueries({ queryKey: ["notes"] });
 
-      const added = tried.filter((t) => t.isAdded).length;
+      const added = tried.filter((attempt) => attempt.isAdded).length;
       const failed = tried.length - added;
       if (tried.length > 1) {
         if (failed)
-          toast.error(`Couldn’t upload ${failed} of ${tried.length} files`);
-        else if (!rejected.length) toast.success(`${added} files added`);
+          toast.error(
+            t("attachmentSomeFailed", { failed, total: tried.length }),
+          );
+        else if (!rejected.length)
+          toast.success(t("attachmentFilesAdded", { count: added }));
       } else if (tried.length === 1) {
         const { name } = tried[0].upload.file;
         if (isMounted.current)
-          setAnnouncement(failed ? `Couldn’t upload ${name}` : `${name} added`);
-        else if (failed) toast.error(`Couldn’t upload ${shortFileName(name)}`);
+          setAnnouncement(
+            failed
+              ? t("attachmentUploadFailedName", { name })
+              : t("attachmentAdded", { name }),
+          );
+        else if (failed)
+          toast.error(
+            t("attachmentUploadFailedName", { name: shortFileName(name) }),
+          );
       }
     } finally {
       stopWarning();
@@ -327,8 +344,8 @@ export function AttachmentStrip({
         queryClient.invalidateQueries({ queryKey: ["notes"] });
       setAnnouncement(
         outcome === "added"
-          ? `${upload.file.name} added`
-          : `Couldn’t upload ${upload.file.name}`,
+          ? t("attachmentAdded", { name: upload.file.name })
+          : t("attachmentUploadFailedName", { name: upload.file.name }),
       );
     } finally {
       stopWarning();
@@ -351,7 +368,7 @@ export function AttachmentStrip({
     flip.prepare();
     mark(attachment.id, true);
     const name = shortFileName(attachment.originalFilename);
-    toast.success(`${name} deleted`, {
+    toast.success(t("attachmentDeleted", { name }), {
       undo: () => {
         flip.prepare();
         mark(attachment.id, false);
@@ -368,7 +385,7 @@ export function AttachmentStrip({
           },
           () => {
             mark(attachment.id, false);
-            toast.error(`Couldn’t delete ${name}`);
+            toast.error(t("attachmentDeleteFailed", { name }));
           },
         );
       },
@@ -398,7 +415,7 @@ export function AttachmentStrip({
     const add =
       strip.current?.querySelector<HTMLElement>(".att-add") ??
       document.querySelector<HTMLElement>(
-        'button[aria-label="Add a picture or audio"]',
+        `button[aria-label="${CSS.escape(t("editorAddAttachment"))}"]`,
       );
     add?.focus();
     return !!add && document.activeElement === add;
@@ -442,7 +459,7 @@ export function AttachmentStrip({
     },
     onError: (_error, { before }) => {
       queryClient.setQueryData(["attachments", noteId], before);
-      toast.error("Couldn’t move the file");
+      toast.error(t("attachmentMoveFailed"));
     },
     // Only the last move refetches, or an earlier answer puts a tile back.
     onSettled: () => {
@@ -475,7 +492,9 @@ export function AttachmentStrip({
     );
     queryClient.setQueryData(["attachments", noteId], moved.list);
     reorder.mutate({ ids: moved.list.map((a) => a.id), before });
-    setAnnouncement(`Moved to ${moved.place + 1} of ${moved.size}`);
+    setAnnouncement(
+      t("attachmentMoved", { place: moved.place + 1, count: moved.size }),
+    );
   };
 
   const nudge = (e: React.KeyboardEvent, kind: Kind, id: string) => {
@@ -644,7 +663,7 @@ export function AttachmentStrip({
             ref={strip}
             className="strip"
             role="toolbar"
-            aria-label="Attachments"
+            aria-label={t("attachmentStrip")}
             onFocus={roving.onFocus}
             onKeyDown={roving.onKeyDown}
           >
@@ -712,7 +731,7 @@ export function AttachmentStrip({
                 onClick={() => input.current?.click()}
               >
                 <Plus aria-hidden />
-                Add
+                {t("attachmentAdd")}
               </button>
             )}
           </div>

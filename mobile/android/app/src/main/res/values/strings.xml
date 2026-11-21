@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Written by tool/native_strings.dart. -->
 <resources>
-    <string name="app_name">Anchor Notes</string>
+    <string name="app_name" translatable="false">Anchor Notes</string>
+    <string name="widget_app_name" translatable="false">Anchor</string>
     <string name="widget_label">Notes</string>
     <string name="widget_description">See your notes and start a new one from the home screen.</string>
-    <string name="widget_app_name">Anchor</string>
     <string name="widget_new_note">New note</string>
     <string name="widget_empty">No notes yet.\nTap + to write your first one.</string>
     <string name="widget_logged_out">Sign in to Anchor\nto see your notes here.</string>

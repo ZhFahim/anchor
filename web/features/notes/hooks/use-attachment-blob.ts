@@ -51,7 +51,7 @@ function dropUrl(blob: Blob) {
 interface UseAttachmentBlobResult {
   blobUrl: string | null;
   isLoading: boolean;
-  error: string | null;
+  error: Error | null;
   retry: () => void;
 }
 
@@ -80,11 +80,7 @@ export function useAttachmentBlob(
   return {
     blobUrl,
     isLoading: !blobUrl && query.isFetching,
-    error: query.error
-      ? query.error instanceof Error
-        ? query.error.message
-        : "Failed to load"
-      : null,
+    error: query.error,
     retry: () => void query.refetch(),
   };
 }

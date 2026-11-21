@@ -2320,7 +2320,7 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 day left} other{{count} days left}}'**
   String trashDaysLeft(int count);
 
-  /// Follows the bold “In trash.” at the bottom of a note opened from the trash.
+  /// Follows the bold “In trash.” at the bottom of a note opened from the trash. {date} has the full month name.
   ///
   /// In en, this message translates to:
   /// **'Will be deleted on {date}.'**
@@ -4119,6 +4119,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remove {name}'**
   String shareRemoveItem(String name);
+
+  /// Android home screen widget: its name in the list of widgets. Short.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get nativeWidgetLabel;
+
+  /// Android home screen widget: the sentence under its name in the list of widgets.
+  ///
+  /// In en, this message translates to:
+  /// **'See your notes and start a new one from the home screen.'**
+  String get nativeWidgetDescription;
+
+  /// Android home screen widget: spoken label of the + button that starts a note. Verb phrase.
+  ///
+  /// In en, this message translates to:
+  /// **'New note'**
+  String get nativeWidgetNewNote;
+
+  /// Android home screen widget: shown when there are no notes. Keep the line break and the + sign.
+  ///
+  /// In en, this message translates to:
+  /// **'No notes yet.\nTap + to write your first one.'**
+  String get nativeWidgetEmpty;
+
+  /// Android home screen widget: shown when nobody is signed in. Keep the line break. Anchor is the app's name.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to Anchor\nto see your notes here.'**
+  String get nativeWidgetSignedOut;
+
+  /// iPhone permission prompt: why the app asks for the camera. Starts with the app's name.
+  ///
+  /// In en, this message translates to:
+  /// **'Anchor uses the camera to take pictures for your notes and your profile photo.'**
+  String get nativeCameraUse;
+
+  /// iPhone permission prompt: why the app asks for the microphone.
+  ///
+  /// In en, this message translates to:
+  /// **'Anchor uses the microphone to record voice notes.'**
+  String get nativeMicrophoneUse;
+
+  /// iPhone permission prompt: why the app asks to read the photo library.
+  ///
+  /// In en, this message translates to:
+  /// **'Anchor uses your photo library to add pictures to notes and to choose your profile photo.'**
+  String get nativePhotoLibraryUse;
+
+  /// iPhone permission prompt: why the app asks to add photos to the library.
+  ///
+  /// In en, this message translates to:
+  /// **'Anchor saves pictures from your notes to your photo library.'**
+  String get nativePhotoLibraryAddUse;
+
+  /// iPhone permission prompt: why the app asks for the music library.
+  ///
+  /// In en, this message translates to:
+  /// **'Anchor uses your music library to add audio files to notes.'**
+  String get nativeMusicUse;
+
+  /// iPhone permission prompt: why the app asks to use the local network.
+  ///
+  /// In en, this message translates to:
+  /// **'Anchor connects to your server when it is on your local network.'**
+  String get nativeLocalNetworkUse;
+
+  /// Settings row that opens the phone's page for choosing the app's language. Noun. Short.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get settingsLanguage;
+
+  /// The name of this language, written the way people who speak it write it, such as Deutsch or Español. Shown in Settings next to Language.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get languageName;
+
+  /// Goes between two sentences read one after the other, such as a note card's title and its text for a screen reader. Keep the space if your language uses one.
+  ///
+  /// In en, this message translates to:
+  /// **'. '**
+  String get sentenceSeparator;
+
+  /// Goes between the items of a list, such as "3 lines added, 1 removed". Keep the space if your language uses one.
+  ///
+  /// In en, this message translates to:
+  /// **', '**
+  String get listSeparator;
+
+  /// Goes between short details shown on one line, such as a person's name and a count of changes. Keep the spaces if your language uses them.
+  ///
+  /// In en, this message translates to:
+  /// **' · '**
+  String get detailSeparator;
 }
 
 class _AppLocalizationsDelegate

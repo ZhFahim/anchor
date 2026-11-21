@@ -7,6 +7,8 @@ import {
   ATTACHMENT_ALLOWED_MIME_TYPES,
   ATTACHMENT_MAX_FILE_SIZE,
 } from '../constants/notes.constants';
+import { coded } from '../../common/errors/coded';
+import { ErrorCode } from '../../common/errors/error-code';
 
 const NOTE_FOLDER_NAME = /^[\w-]+$/;
 
@@ -16,7 +18,10 @@ export function noteAttachmentDir(
   noteId: string,
 ): string {
   if (!NOTE_FOLDER_NAME.test(noteId)) {
-    throw new BadRequestException('Invalid note id');
+    throw coded(
+      new BadRequestException('Invalid note id'),
+      ErrorCode.NOTE_ID_INVALID,
+    );
   }
   return path.join(attachmentsDir, noteId);
 }
@@ -41,14 +46,25 @@ export async function removeNoteAttachmentDir(
 
 export function assertValidAttachmentFile(file?: Express.Multer.File): void {
   if (!file) {
-    throw new BadRequestException('No file provided');
+    throw coded(
+      new BadRequestException('No file provided'),
+      ErrorCode.FILE_MISSING,
+    );
   }
   if (!ATTACHMENT_ALLOWED_MIME_TYPES.has(file.mimetype)) {
-    throw new BadRequestException(`File type ${file.mimetype} is not allowed`);
+    throw coded(
+      new BadRequestException(`File type ${file.mimetype} is not allowed`),
+      ErrorCode.FILE_TYPE_NOT_ALLOWED,
+      { type: file.mimetype },
+    );
   }
   if (file.size > ATTACHMENT_MAX_FILE_SIZE) {
-    throw new BadRequestException(
-      `File size exceeds ${ATTACHMENT_MAX_FILE_SIZE / 1024 / 1024}MB limit`,
+    throw coded(
+      new BadRequestException(
+        `File size exceeds ${ATTACHMENT_MAX_FILE_SIZE / 1024 / 1024}MB limit`,
+      ),
+      ErrorCode.FILE_TOO_LARGE,
+      { limitMb: ATTACHMENT_MAX_FILE_SIZE / 1024 / 1024 },
     );
   }
 }

@@ -2,6 +2,7 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { HTTPError } from "ky";
+import { useTranslations } from "next-intl";
 import { useCallback, useRef, useState } from "react";
 import { detectFormat } from "../adapters";
 import { ImportFileError } from "../adapters/types";
@@ -12,9 +13,12 @@ import {
   importNotes,
   toImportNoteItem,
 } from "../api";
+import { importFileErrorText } from "../import-text";
 import type {
   CanonicalNote,
+  ImportIssueReason,
   ImportNoteResult,
+  ImportNoteWarning,
   ImportSkippedItem,
   ParsedImport,
 } from "../types";
@@ -123,6 +127,7 @@ function attachmentUploads(
 }
 
 export function useImport() {
+  const t = useTranslations();
   const queryClient = useQueryClient();
 
   const [step, setStep] = useState<ImportStep>("pick");
@@ -168,43 +173,44 @@ export function useImport() {
     isRunningRef.current = false;
   }, [step, refreshLists]);
 
-  const selectFiles = useCallback(async (files: PickedFile[]) => {
-    const pickId = ++pickIdRef.current;
-    const isAbandoned = () => pickId !== pickIdRef.current;
-    setPickError(null);
-    setIsDetecting(true);
-    try {
-      const detected = await detectFormat(files);
-      if (isAbandoned()) return;
-      if (!detected) {
+  const selectFiles = useCallback(
+    async (files: PickedFile[]) => {
+      const pickId = ++pickIdRef.current;
+      const isAbandoned = () => pickId !== pickIdRef.current;
+      setPickError(null);
+      setIsDetecting(true);
+      try {
+        const detected = await detectFormat(files);
+        if (isAbandoned()) return;
+        if (!detected) {
+          setPickError(t("importNothingFound"));
+          return;
+        }
+        const result = await detected.adapter.parse(detected.zip);
+        if (isAbandoned()) return;
+        if (!result.notes.length) {
+          setPickError(t("importNoNotes"));
+          return;
+        }
+        setParsed(result);
+        setOptions({
+          ...DEFAULT_OPTIONS,
+          folderTags: result.hasFolders === true,
+        });
+        setStep("preview");
+      } catch (error) {
+        if (isAbandoned()) return;
         setPickError(
-          "Nothing to import here. Drop an Anchor backup, a Google Takeout zip, or a folder of Markdown (.md) files.",
+          error instanceof ImportFileError
+            ? importFileErrorText(error, t)
+            : t("importFileUnreadable"),
         );
-        return;
+      } finally {
+        if (!isAbandoned()) setIsDetecting(false);
       }
-      const result = await detected.adapter.parse(detected.zip);
-      if (isAbandoned()) return;
-      if (!result.notes.length) {
-        setPickError("No importable notes found in this file.");
-        return;
-      }
-      setParsed(result);
-      setOptions({
-        ...DEFAULT_OPTIONS,
-        folderTags: result.hasFolders === true,
-      });
-      setStep("preview");
-    } catch (error) {
-      if (isAbandoned()) return;
-      setPickError(
-        error instanceof ImportFileError
-          ? error.message
-          : "Couldn’t read this file.",
-      );
-    } finally {
-      if (!isAbandoned()) setIsDetecting(false);
-    }
-  }, []);
+    },
+    [t],
+  );
 
   const finishRun = useCallback(
     (
@@ -229,14 +235,14 @@ export function useImport() {
           .filter((result) => result.status === "failed")
           .map((result) => ({
             item: labelOf(result.ref),
-            reason: "Couldn’t import this note",
+            reason: "noteFailed" as const,
           })),
-        ...results
-          .filter((result) => result.warning)
-          .map((result) => ({
+        ...results.flatMap((result) =>
+          (result.warnings ?? []).map((warning) => ({
             item: labelOf(result.ref),
-            reason: result.warning ?? "",
+            reason: warningReason(warning),
           })),
+        ),
         ...attachmentFailures,
       ];
 
@@ -319,16 +325,16 @@ export function useImport() {
     } catch (error) {
       isRunningRef.current = false;
       const done = results.length;
-      const stoppedAt = `The import stopped at ${done} of ${totalNotes} notes; the notes before that are saved.`;
+      const counts = { done, total: totalNotes };
       if (serverUnreachable(error))
         setRunError(
-          `Couldn’t reach the server. ${done ? stoppedAt : "Check your connection, then try again."}`,
+          done
+            ? t("importErrorUnreachableStopped", counts)
+            : t("importErrorUnreachable"),
         );
       else
         setRunError(
-          done
-            ? `Couldn’t import your notes. ${stoppedAt}`
-            : "Couldn’t import your notes.",
+          done ? t("importErrorFailedStopped", counts) : t("importErrorFailed"),
         );
       return;
     }
@@ -359,7 +365,7 @@ export function useImport() {
         } catch {
           failures.push({
             item: upload.filename,
-            reason: "Couldn’t read the file",
+            reason: "attachmentUnreadable",
           });
           showProgress();
           continue;
@@ -381,7 +387,7 @@ export function useImport() {
           }
           failures.push({
             item: upload.filename,
-            reason: "Couldn’t upload the attachment",
+            reason: "attachmentUploadFailed",
           });
         }
         showProgress();
@@ -398,12 +404,12 @@ export function useImport() {
     if (stopped) {
       const done = uploadedRef.current + failures.length;
       setRunError(
-        `Couldn’t reach the server. The import stopped at ${done} of ${uploads.length} attachments; the notes and the attachments before that are saved.`,
+        t("importErrorAttachmentsStopped", { done, total: uploads.length }),
       );
       return;
     }
     finishRun(parsed, uploadedRef.current, failures);
-  }, [parsed, finishRun, options]);
+  }, [parsed, finishRun, options, t]);
 
   const setOption = useCallback(
     <K extends keyof ImportOptions>(key: K, value: ImportOptions[K]) => {
@@ -435,4 +441,15 @@ export function useImport() {
     retry: run,
     reset,
   };
+}
+
+function warningReason(warning: ImportNoteWarning): ImportIssueReason {
+  switch (warning.code) {
+    case "IMPORT_CONTENT_INVALID":
+      return "contentInvalid";
+    case "IMPORT_BACKGROUND_UNKNOWN":
+      return "backgroundUnknown";
+    default:
+      return "importedWithProblem";
+  }
 }

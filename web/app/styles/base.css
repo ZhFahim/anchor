@@ -227,7 +227,7 @@
       [data-slot="segmented-control"]:not([data-variant="tiles"]),
       [data-slot="tag-chip"],
       section[aria-labelledby^="set-"] > header + div,
-      :has(> [role="listbox"][aria-label="Add a block"]),
+      :has(> [data-slot="slash-menu"]),
       .tb,
       .float,
       .hl-pop,
@@ -265,10 +265,8 @@
       [data-settings-nav] a,
       [role="tab"],
       button[data-day],
-      [aria-label="Reminder"] [role="radio"],
       [role="radiogroup"][aria-labelledby="tag-color-label"] > [role="radio"],
       [data-slot="menu"] [role="menuitemradio"],
-      [aria-label="Background"] [role="radio"],
       [role="listbox"] > [role="option"],
       .hs-row,
       .tb .b,
@@ -309,7 +307,7 @@
       [data-slot="selection-bar"] [role="checkbox"]
     ):is([aria-checked="true"], [aria-checked="mixed"]),
   :root
-    [role="listbox"][aria-label="Tags"]
+    [data-slot="tag-list"]
     > [role="option"]:is([aria-checked="true"], [aria-checked="mixed"])
     > span:last-child,
   :root .anchor-quill .ql-editor li[data-list="checked"] > .ql-ui,
@@ -327,7 +325,7 @@
   }
   :root [data-slot="checkbox"] b,
   :root [data-slot="selection-bar"] [role="checkbox"]::after,
-  :root [role="listbox"][aria-label="Tags"] > [role="option"] > span::after {
+  :root [data-slot="tag-list"] > [role="option"] > span::after {
     background: HighlightText;
   }
   :root mark.hl {

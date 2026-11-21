@@ -13,6 +13,7 @@ import {
   UserMinus,
   UserPlus,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { create } from "zustand";
 import { Avatar } from "@/components/ui/avatar";
@@ -38,6 +39,7 @@ import { Input } from "@/components/ui/input";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/toast";
 import { useAuthStore } from "@/features/auth";
+import type { Messages } from "@/i18n/messages";
 import { useDelayedFlag } from "@/lib/hooks/use-delayed-flag";
 import { cn } from "@/lib/utils";
 import {
@@ -56,17 +58,17 @@ import type {
 
 const ACCESS: Record<
   NoteSharePermission,
-  { label: string; icon: React.ReactNode; description: string }
+  { label: keyof Messages; icon: React.ReactNode; description: keyof Messages }
 > = {
   viewer: {
-    label: "Can view",
+    label: "shareCanView",
     icon: <Eye />,
-    description: "Can read the note",
+    description: "shareCanViewHelp",
   },
   editor: {
-    label: "Can edit",
+    label: "shareCanEdit",
     icon: <Pencil />,
-    description: "Can change the text and pictures",
+    description: "shareCanEditHelp",
   },
 };
 
@@ -99,6 +101,7 @@ export function ShareDialog({
   noteId,
   title,
 }: ShareDialogProps) {
+  const t = useTranslations();
   const queryClient = useQueryClient();
   const me = useAuthStore((s) => s.user);
   const pending = usePendingRevokes((s) => s.ids);
@@ -136,10 +139,10 @@ export function ShareDialog({
       ]);
       setAddedShareId(share.id);
       refresh();
-      toast.success(`Shared with ${firstName(user.name)}`);
+      toast.success(t("shareAdded", { name: firstName(user.name) }));
     },
     onError: (_e, user) =>
-      toast.error(`Couldn’t share with ${firstName(user.name)}`),
+      toast.error(t("shareFailed", { name: firstName(user.name) })),
   });
 
   const changeAccess = useMutation({
@@ -158,13 +161,17 @@ export function ShareDialog({
     onSuccess: (_s, { share, permission }) => {
       refresh();
       toast.success(
-        `${firstName(share.sharedWithUser.name)} ${permission === "editor" ? "can now edit" : "can now view"}`,
+        t(permission === "editor" ? "shareNowCanEdit" : "shareNowCanView", {
+          name: firstName(share.sharedWithUser.name),
+        }),
       );
     },
     onError: (_e, { share }) => {
       refresh();
       toast.error(
-        `Couldn’t change access for ${firstName(share.sharedWithUser.name)}`,
+        t("shareChangeFailed", {
+          name: firstName(share.sharedWithUser.name),
+        }),
       );
     },
   });
@@ -172,7 +179,7 @@ export function ShareDialog({
   const removeAccess = (share: NoteShare) => {
     const name = firstName(share.sharedWithUser.name);
     setPending(share.id, true);
-    toast.success(`${name} no longer has access`, {
+    toast.success(t("shareRevoked", { name }), {
       undo: () => setPending(share.id, false),
       onClose: () => {
         revokeShare(noteId, share.id).then(
@@ -185,7 +192,7 @@ export function ShareDialog({
           },
           () => {
             setPending(share.id, false);
-            toast.error(`Couldn’t remove access for ${name}`);
+            toast.error(t("shareRevokeFailed", { name }));
           },
         );
       },
@@ -203,7 +210,7 @@ export function ShareDialog({
       >
         <DialogHeader>
           <DialogTitle>
-            {title?.trim() ? `Share “${title}”` : "Share note"}
+            {title?.trim() ? t("shareTitleNamed", { title }) : t("shareTitle")}
           </DialogTitle>
         </DialogHeader>
         <DialogBody className="gap-3.5">
@@ -222,7 +229,7 @@ export function ShareDialog({
             onPick={(user) => addPerson.mutate(user)}
           />
           <div className="mt-1.5 -mb-0.5 text-label text-muted-foreground uppercase">
-            People with access
+            {t("shareWithAccess")}
           </div>
           <div className="-mx-2 grid gap-0.5">
             {me && (
@@ -234,7 +241,7 @@ export function ShareDialog({
                 src={me.profileImage}
               >
                 <span className="pr-2 text-meta text-muted-foreground">
-                  Owner
+                  {t("shareOwner")}
                 </span>
               </Person>
             )}
@@ -245,7 +252,7 @@ export function ShareDialog({
               />
             ) : isLoadingError ? (
               <LoadFailedRow
-                message="Couldn’t load the people with access."
+                message={t("shareLoadFailed")}
                 onRetry={() => void refetch()}
                 isRetrying={isFetching}
                 className="mx-2 mt-1"
@@ -275,9 +282,9 @@ export function ShareDialog({
         <DialogFooter className="justify-between">
           <span className="flex items-center gap-2 text-meta text-muted-foreground [&_svg]:size-3.75">
             <Lock aria-hidden />
-            Only people you add can open it.
+            {t("sharePrivacyNote")}
           </span>
-          <Button onClick={() => onOpenChange(false)}>Done</Button>
+          <Button onClick={() => onOpenChange(false)}>{t("commonDone")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -301,6 +308,7 @@ function Person({
   you?: boolean;
   children: React.ReactNode;
 }) {
+  const t = useTranslations();
   return (
     <div
       className={cn(
@@ -311,8 +319,7 @@ function Person({
       <Avatar id={id} name={name} src={src} />
       <span className="grid min-w-0 flex-1 leading-[1.3]">
         <b className="truncate font-semibold text-ui">
-          {name}
-          {you && " (you)"}
+          {you ? t("shareYou", { name }) : name}
         </b>
         <small className="truncate text-muted-foreground text-small">
           {email}
@@ -332,6 +339,7 @@ function AccessMenu({
   onChange: (permission: NoteSharePermission) => void;
   onRemove: () => void;
 }) {
+  const t = useTranslations();
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -339,14 +347,14 @@ function AccessMenu({
           type="button"
           className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border-0 bg-transparent pr-2 pl-3 font-medium text-control text-foreground hover:bg-foreground/6 aria-expanded:bg-foreground/6 [&_svg]:size-3.75 [&_svg]:text-muted-foreground"
         >
-          {ACCESS[share.permission].label}
+          {t(ACCESS[share.permission].label)}
           <ChevronDown aria-hidden />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
         className="w-61"
-        aria-label={`Access for ${share.sharedWithUser.name}`}
+        aria-label={t("shareAccessFor", { name: share.sharedWithUser.name })}
       >
         <MenuPrimitive.RadioGroup
           value={share.permission}
@@ -362,9 +370,9 @@ function AccessMenu({
             >
               {ACCESS[permission].icon}
               <span className="grid flex-1 gap-0.5 leading-[1.3]">
-                {ACCESS[permission].label}
+                {t(ACCESS[permission].label)}
                 <small className="whitespace-normal text-muted-foreground text-small">
-                  {ACCESS[permission].description}
+                  {t(ACCESS[permission].description)}
                 </small>
               </span>
               <MenuPrimitive.ItemIndicator className="mt-0.5">
@@ -376,7 +384,7 @@ function AccessMenu({
         <DropdownMenuSeparator />
         <DropdownMenuItem tone="danger" onSelect={onRemove}>
           <UserMinus />
-          Remove access
+          {t("shareRemoveAccess")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -394,6 +402,7 @@ function PeopleSearch({
   busy: boolean;
   onPick: (user: UserSearchResult) => void;
 }) {
+  const t = useTranslations();
   const [query, setQuery] = React.useState("");
   const [listWanted, setListWanted] = React.useState(false);
   const [activeIndex, setActiveIndex] = React.useState(0);
@@ -465,14 +474,14 @@ function PeopleSearch({
           )
         }
         role="combobox"
-        aria-label="Add people by name or email"
+        aria-label={t("shareSearch")}
         aria-expanded={listShown}
         aria-controls={listId}
         aria-autocomplete="list"
         aria-activedescendant={
           listShown && options.length ? `${listId}-${highlighted}` : undefined
         }
-        placeholder="Add people by name or email"
+        placeholder={t("shareSearch")}
         autoComplete="off"
         value={query}
         boxClassName="h-10.5"
@@ -507,20 +516,19 @@ function PeopleSearch({
         <div
           role="listbox"
           id={listId}
-          aria-label="People"
+          aria-label={t("sharePeople")}
           className="absolute inset-x-0 top-[calc(100%+6px)] z-(--z-popover) grid max-h-70 gap-px overflow-auto rounded-popover bg-card p-1.5 shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--border)_70%,transparent),var(--sh-menu)] animate-pop-in"
           onMouseDown={(e) => e.preventDefault()}
         >
           {noMatches ? (
             <div className="px-2.5 py-3.5 text-center text-control text-muted-foreground">
-              No one found for “{term}”. You can only share with people who have
-              an account on this server.
+              {t("shareNoMatches", { term })}
             </div>
           ) : (
             <>
               {!hasTerm && (
                 <div className="px-2.5 pt-2 pb-1 text-label text-muted-foreground uppercase">
-                  Recently shared with
+                  {t("shareRecent")}
                 </div>
               )}
               {options.map((user, i) => (
