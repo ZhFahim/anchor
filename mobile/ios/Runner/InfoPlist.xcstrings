@@ -10,6 +10,12 @@
             "state": "translated",
             "value": "Anchor uses your music library to add audio files to notes."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anchor verwendet deine Musikmediathek, um Audiodateien zu Notizen hinzuzufügen."
+          }
         }
       }
     },
@@ -21,6 +27,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Anchor uses the camera to take pictures for your notes and your profile photo."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anchor verwendet die Kamera, um Fotos für deine Notizen und dein Profilbild aufzunehmen."
           }
         }
       }
@@ -34,6 +46,12 @@
             "state": "translated",
             "value": "Anchor connects to your server when it is on your local network."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anchor verbindet sich mit deinem Server, wenn er sich in deinem lokalen Netzwerk befindet."
+          }
         }
       }
     },
@@ -45,6 +63,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Anchor uses the microphone to record voice notes."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anchor verwendet das Mikrofon, um Sprachnotizen aufzunehmen."
           }
         }
       }
@@ -58,6 +82,12 @@
             "state": "translated",
             "value": "Anchor saves pictures from your notes to your photo library."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anchor speichert Bilder aus deinen Notizen in deiner Fotomediathek."
+          }
         }
       }
     },
@@ -69,6 +99,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Anchor uses your photo library to add pictures to notes and to choose your profile photo."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anchor verwendet deine Fotomediathek, damit du Bilder zu Notizen hinzufügen und dein Profilbild auswählen kannst."
           }
         }
       }

@@ -10,6 +10,12 @@
             "state": "translated",
             "value": "New note"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neue Notiz"
+          }
         }
       }
     },
@@ -21,6 +27,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Title"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Titel"
           }
         }
       }
@@ -34,6 +46,12 @@
             "state": "translated",
             "value": "Start writing"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schreib los"
+          }
         }
       }
     },
@@ -45,6 +63,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cancel"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abbrechen"
           }
         }
       }
@@ -58,6 +82,12 @@
             "state": "translated",
             "value": "Save"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speichern"
+          }
         }
       }
     },
@@ -69,6 +99,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Close"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schließen"
           }
         }
       }
@@ -82,6 +118,12 @@
             "state": "translated",
             "value": "Sign in to Anchor to save what you share."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Melde dich bei Anchor an, um geteilte Inhalte zu speichern."
+          }
         }
       }
     },
@@ -93,6 +135,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "There’s nothing here that Anchor can save."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hier ist nichts dabei, was Anchor speichern kann."
           }
         }
       }
@@ -114,6 +162,24 @@
                 "stringUnit": {
                   "state": "translated",
                   "value": "%1$lld files couldn’t be added."
+                }
+              }
+            }
+          }
+        },
+        "de": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "1 Datei konnte nicht hinzugefügt werden."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%1$lld Dateien konnten nicht hinzugefügt werden."
                 }
               }
             }
@@ -142,6 +208,24 @@
               }
             }
           }
+        },
+        "de": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "1 Datei kann nicht hinzugefügt werden. Anchor unterstützt nur Bilder und Audiodateien."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%1$lld Dateien können nicht hinzugefügt werden. Anchor unterstützt nur Bilder und Audiodateien."
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -166,6 +250,24 @@
               }
             }
           }
+        },
+        "de": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "1 Datei ist größer als 50 MB und kann nicht hinzugefügt werden."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%1$lld Dateien sind größer als 50 MB und können nicht hinzugefügt werden."
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -177,6 +279,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Only the first 20 files are added."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nur die ersten 20 Dateien werden hinzugefügt."
           }
         }
       }
@@ -190,6 +298,12 @@
             "state": "translated",
             "value": "Remove %1$@"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ entfernen"
+          }
         }
       }
     },
@@ -198,6 +312,12 @@
       "extractionState": "manual",
       "localizations": {
         "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tag %1$@"
+          }
+        },
+        "de": {
           "stringUnit": {
             "state": "translated",
             "value": "Tag %1$@"

@@ -62,7 +62,8 @@ const useLastHighlightColor = create<{
   },
 }));
 
-const highlightKeys = () => (isMac() ? "⇧⌘H" : "Ctrl+Shift+H");
+const highlightKeys = (t: ReturnType<typeof useTranslations>) =>
+  isMac() ? "⇧⌘H" : `${t("uiCtrlKey")}+${t("uiShiftKey")}+H`;
 
 const useColorsMenu = create<{ isOpen: boolean }>(() => ({ isOpen: false }));
 
@@ -196,7 +197,7 @@ export function HighlightSplitButton({
                 ? undefined
                 : t("editorToolTip", {
                     label: t("editorHighlight"),
-                    shortcut: highlightKeys(),
+                    shortcut: highlightKeys(t),
                   })
             }
           >
@@ -210,7 +211,7 @@ export function HighlightSplitButton({
                       label: t("editorHighlightWith", {
                         color: t(COLOR_NAMES[last]),
                       }),
-                      shortcut: highlightKeys(),
+                      shortcut: highlightKeys(t),
                     })
               }
               aria-disabled={disabled || undefined}

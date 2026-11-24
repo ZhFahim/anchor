@@ -7,3 +7,4 @@ This file is written by `node i18n/status.mjs`. Don't edit it by hand.
 | Language | Phone | Web | Missing | Translators |
 | --- | --- | --- | --- | --- |
 | English (source) | 100% | 100% |  |  |
+| Deutsch (de) | 100% | 100% | 0 |  |

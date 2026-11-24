@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Written by tool/native_strings.dart. -->
+<resources>
+    <string name="widget_label">Notizen</string>
+    <string name="widget_description">Sieh dir deine Notizen an und erstelle neue direkt vom Startbildschirm aus.</string>
+    <string name="widget_new_note">Neue Notiz</string>
+    <string name="widget_empty">Noch keine Notizen.\nTippe auf +, um deine erste zu schreiben.</string>
+    <string name="widget_logged_out">Melde dich bei Anchor an,\num hier deine Notizen zu sehen.</string>
+</resources>

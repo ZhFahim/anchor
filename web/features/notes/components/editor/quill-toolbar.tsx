@@ -184,7 +184,8 @@ export function QuillToolbar({
   const isChecklist =
     listValue === LIST_FORMATS.CHECKED || listValue === LIST_FORMATS.UNCHECKED;
   const isInCode = !!format["code-block"];
-  const modKey = isMac() ? "⌘" : "Ctrl+";
+  const ctrlKey = t("uiCtrlKey");
+  const modKey = isMac() ? "⌘" : `${ctrlKey}+`;
   const withKeys = (label: string, shortcut: string) =>
     t("editorToolTip", { label, shortcut });
 
@@ -248,7 +249,7 @@ export function QuillToolbar({
         },
       )}
       {toolButton(
-        withKeys(t("editorRedo"), isMac() ? "⇧⌘Z" : "Ctrl+Y"),
+        withKeys(t("editorRedo"), isMac() ? "⇧⌘Z" : `${ctrlKey}+Y`),
         <Redo2 />,
         () => onUndoRedo("redo"),
         { disabled: !canRedo },
@@ -313,7 +314,9 @@ export function QuillToolbar({
       )}
       {divider}
       {toolButton(
-        t("editorChecklistTip", { shortcut: isMac() ? "⌘↵" : "Ctrl+Enter" }),
+        t("editorChecklistTip", {
+          shortcut: isMac() ? "⌘↵" : `${ctrlKey}+${t("uiEnterKey")}`,
+        }),
         <ListChecks />,
         () => quill && toggleList(quill, "unchecked"),
         { active: isChecklist, toggle: true },
@@ -331,7 +334,7 @@ export function QuillToolbar({
         { active: listValue === LIST_FORMATS.ORDERED, toggle: true },
       )}
       {toolButton(
-        withKeys(t("editorOutdent"), "Shift+Tab"),
+        withKeys(t("editorOutdent"), `${t("uiShiftKey")}+Tab`),
         <IndentDecrease />,
         () => changeIndent(-1),
         {

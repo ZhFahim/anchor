@@ -3470,6 +3470,14 @@
   "@uiCtrlKey": {
     "description": "Name of the Control key in keyboard shortcuts, as printed on keyboards in your language: “Strg” in German."
   },
+  "uiShiftKey": "Shift",
+  "@uiShiftKey": {
+    "description": "Name of the Shift key in keyboard shortcuts, as printed on keyboards in your language: “Umschalt” in German."
+  },
+  "uiEnterKey": "Enter",
+  "@uiEnterKey": {
+    "description": "Name of the Enter key in keyboard shortcuts, as apps in your language write it: “Eingabe” in German."
+  },
   "uiStopSelectingShortcut": "Stop selecting ({shortcut})",
   "@uiStopSelectingShortcut": {
     "description": "Tooltip of the x button that closes the selection bar. {shortcut} is the key that does the same, Esc."
